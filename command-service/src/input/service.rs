@@ -1,5 +1,6 @@
-use std::sync::Arc;
-
+use crate::communication::{GenericMessage, MessageRouter};
+use crate::input::{Error, KafkaInputConfig};
+use crate::output::OutputPlugin;
 use futures_util::stream::StreamExt;
 use log::{error, log_enabled, trace, Level};
 use rdkafka::config::RDKafkaLogLevel;
@@ -7,20 +8,20 @@ use rdkafka::consumer::{Consumer, DefaultConsumerContext, StreamConsumer};
 use rdkafka::error::KafkaError;
 use rdkafka::message::{Headers, OwnedMessage};
 use rdkafka::{ClientConfig, Message};
+use std::process;
+use std::sync::Arc;
+use utils::metrics::counter;
+use utils::task_limiter::TaskLimiter;
 use uuid::Uuid;
 
-use crate::communication::{GenericMessage, MessageRouter};
-use crate::input::{Error, KafkaInputConfig};
-use utils::{metrics::counter, task_limiter::TaskLimiter};
-
-pub struct KafkaInput {
+pub struct KafkaInput<P: OutputPlugin> {
     consumer: Arc<StreamConsumer<DefaultConsumerContext>>,
-    message_router: MessageRouter,
+    message_router: MessageRouter<P>,
     task_limiter: TaskLimiter,
 }
 
-impl KafkaInput {
-    pub fn new(config: KafkaInputConfig, message_router: MessageRouter) -> Result<Self, Error> {
+impl<P: OutputPlugin> KafkaInput<P> {
+    pub fn new(config: KafkaInputConfig, message_router: MessageRouter<P>) -> Result<Self, Error> {
         let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::default()
             .set("group.id", &config.group_id)
             .set("bootstrap.servers", &config.brokers)
@@ -43,7 +44,7 @@ impl KafkaInput {
     }
 
     async fn handle_message(
-        router: MessageRouter,
+        router: MessageRouter<P>,
         message: Result<OwnedMessage, KafkaError>,
     ) -> Result<(), Error> {
         counter!("cdl.command-service.input-request", 1);
@@ -119,13 +120,12 @@ impl KafkaInput {
                 }
             }
 
-            self.task_limiter
-                .run(async move || {
-                    if let Err(err) = Self::handle_message(router, message).await {
-                        error!("Failed to handle message: {}", err);
-                    }
-                })
-                .await;
+            self.task_limiter.run(async move || {
+                if let Err(error) = Self::handle_message(router, message).await {
+                    error!("Failed to handle message '{}'", error);
+                    process::abort();
+                }
+            }).await;
         }
 
         Ok(())

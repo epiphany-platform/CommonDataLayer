@@ -1,6 +1,5 @@
-use thiserror::Error as DeriveError;
-
 use crate::output::{druid, psql, sleigh, victoria_metrics};
+use thiserror::Error as DeriveError;
 
 #[derive(Debug, DeriveError)]
 pub enum OutputError {

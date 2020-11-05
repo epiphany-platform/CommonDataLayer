@@ -1,11 +1,9 @@
-use std::time::Duration;
-
-use rdkafka::producer::{FutureProducer, FutureRecord};
-use rdkafka::ClientConfig;
-use uuid::Uuid;
-
 pub use config::ReportServiceConfig;
 pub use error::Error;
+use rdkafka::producer::{FutureProducer, FutureRecord};
+use rdkafka::ClientConfig;
+use std::time::Duration;
+use uuid::Uuid;
 
 const APPLICATION_NAME: &str = "Command Service";
 

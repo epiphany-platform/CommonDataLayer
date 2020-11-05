@@ -1,4 +1,4 @@
-#![feature(never_type, async_closure, box_syntax)]
+#![feature(async_closure)]
 
 pub mod args;
 pub mod communication;

@@ -1,7 +1,6 @@
-use std::str::Utf8Error;
-
-use crate::communication;
+use crate::{communication, report};
 use rdkafka::error::KafkaError;
+use std::str::Utf8Error;
 use thiserror::Error as DeriveError;
 
 #[derive(Debug, DeriveError)]
@@ -30,4 +29,6 @@ pub enum Error {
     CommunicationError(communication::Error),
     #[error("Channel was closed on sender side")]
     SenderDropped,
+    #[error("Failed to initialize reporting module")]
+    FailedToInitializeReporting(report::Error),
 }

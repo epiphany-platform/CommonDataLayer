@@ -1,18 +1,14 @@
-use async_trait::async_trait;
-use bb8::{Pool, PooledConnection};
-use log::{error, trace};
-
-pub use config::SleighOutputConfig;
-use document_storage::grpc::schema::StoreRequest;
-pub use error::Error;
-use utils::metrics::counter;
-
 use crate::communication::resolution::Resolution;
-use crate::communication::{GenericMessage, ReceivedMessageBundle};
+use crate::communication::GenericMessage;
 use crate::output::error::OutputError;
 use crate::output::sleigh::connection_pool::SleighConnectionManager;
 use crate::output::OutputPlugin;
-use utils::status_endpoints;
+use bb8::{Pool, PooledConnection};
+pub use config::SleighOutputConfig;
+use document_storage::grpc::schema::StoreRequest;
+pub use error::Error;
+use log::{error, trace};
+use utils::metrics::counter;
 
 mod connection_pool;
 
@@ -61,32 +57,22 @@ impl SleighOutputPlugin {
     }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl OutputPlugin for SleighOutputPlugin {
-    async fn handle_message(
-        &self,
-        recv_msg_bundle: ReceivedMessageBundle,
-    ) -> Result<(), OutputError> {
+    async fn handle_message(&self, msg: GenericMessage) -> Result<Resolution, OutputError> {
         let pool = self.pool.clone();
 
-        tokio::spawn(async move {
-            let resolution = match pool.get().await {
-                Ok(client) => SleighOutputPlugin::store_message(recv_msg_bundle.msg, client).await,
-                Err(err) => {
-                    error!("Failed to get connection from pool {:?}", err);
-                    Resolution::CommandServiceFailure {
-                        object_id: recv_msg_bundle.msg.object_id,
-                    }
+        let resolution = match pool.get().await {
+            Ok(client) => SleighOutputPlugin::store_message(msg, client).await,
+            Err(err) => {
+                error!("Failed to get connection from pool {:?}", err);
+                Resolution::CommandServiceFailure {
+                    object_id: msg.object_id,
                 }
-            };
-
-            if recv_msg_bundle.status_sender.send(resolution).is_err() {
-                error!("Failed to send status to report service");
-                status_endpoints::mark_as_unhealthy();
             }
-        });
+        };
 
-        Ok(())
+        Ok(resolution)
     }
 
     fn name(&self) -> &'static str {

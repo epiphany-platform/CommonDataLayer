@@ -102,12 +102,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d25d88fd6b8041580a654f9d0c581a047baee2b3efee13275f2fc392fc75034"
 
 [[package]]
-name = "array-init"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f30bbe2f5e3d117f55bd8c7a1f9191e4a5deba9f15f595bbea4f670c59c765db"
-
-[[package]]
 name = "array_tool"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1345,9 +1339,8 @@ dependencies = [
 
 [[package]]
 name = "indradb-lib"
-version = "1.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cd20a863d06a431fbda1fa47289a053111c04f855f70d871c6a7fedf06dec478"
+version = "1.0.3"
+source = "git+https://github.com/jespersm/indradb?branch=sled#c612f8f654341866d3e4147d4ced99a2f6219d3c"
 dependencies = [
  "byteorder",
  "chrono",
@@ -1356,7 +1349,7 @@ dependencies = [
  "rand 0.7.3",
  "regex",
  "serde_json",
- "sled 0.32.1",
+ "sled 0.31.0",
  "uuid",
 ]
 
@@ -3082,12 +3075,10 @@ checksum = "c111b5bd5695e56cffe5129854aa230b39c93a305372fdbb2668ca2394eea9f8"
 
 [[package]]
 name = "sled"
-version = "0.32.1"
+version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7e3dbbb8ee10611bd1d020767c27599ccbbf8365f7e0ed7e54429cc8b9433ad8"
+checksum = "8fb6824dde66ad33bf20c6e8476f5b82b871bc8bc3c129a10ea2f7dae5060fa3"
 dependencies = [
- "array-init",
- "backtrace",
  "crc32fast",
  "crossbeam-epoch 0.8.2",
  "crossbeam-utils 0.7.2",
@@ -3095,7 +3086,7 @@ dependencies = [
  "fxhash",
  "libc",
  "log",
- "parking_lot 0.11.0",
+ "parking_lot 0.10.2",
 ]
 
 [[package]]
