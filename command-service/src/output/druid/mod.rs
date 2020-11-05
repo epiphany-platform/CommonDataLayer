@@ -1,19 +1,16 @@
 use std::{sync::Arc, time::Duration};
 
-use async_trait::async_trait;
-use log::error;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::ClientConfig;
 
 use utils::metrics::counter;
 
 use crate::communication::resolution::Resolution;
-use crate::communication::{GenericMessage, ReceivedMessageBundle};
+use crate::communication::GenericMessage;
 pub use crate::output::druid::config::DruidOutputConfig;
 pub use crate::output::druid::error::Error;
 use crate::output::error::OutputError;
 use crate::output::OutputPlugin;
-use utils::status_endpoints;
 
 mod config;
 mod error;
@@ -21,33 +18,6 @@ mod error;
 pub struct DruidOutputPlugin {
     producer: FutureProducer,
     topic: Arc<String>,
-}
-
-#[async_trait]
-impl OutputPlugin for DruidOutputPlugin {
-    async fn handle_message(
-        &self,
-        recv_msg_bundle: ReceivedMessageBundle,
-    ) -> Result<(), OutputError> {
-        let producer = self.producer.clone();
-        let topic = Arc::clone(&self.topic);
-
-        tokio::spawn(async move {
-            let msg = recv_msg_bundle.msg;
-            let resolution = DruidOutputPlugin::store_message(producer, msg, topic.as_str()).await;
-
-            if recv_msg_bundle.status_sender.send(resolution).is_err() {
-                error!("Failed to send status to report service");
-                status_endpoints::mark_as_unhealthy();
-            }
-        });
-
-        Ok(())
-    }
-
-    fn name(&self) -> &'static str {
-        "Druid timeseries"
-    }
 }
 
 impl DruidOutputPlugin {
@@ -88,5 +58,21 @@ impl DruidOutputPlugin {
                 Resolution::Success
             }
         }
+    }
+}
+
+#[async_trait::async_trait]
+impl OutputPlugin for DruidOutputPlugin {
+    async fn handle_message(&self, msg: GenericMessage) -> Result<Resolution, OutputError> {
+        let producer = self.producer.clone();
+        let topic = Arc::clone(&self.topic);
+
+        let resolution = DruidOutputPlugin::store_message(producer, msg, topic.as_str()).await;
+
+        Ok(resolution)
+    }
+
+    fn name(&self) -> &'static str {
+        "Druid timeseries"
     }
 }

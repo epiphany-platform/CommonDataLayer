@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use futures_util::stream::StreamExt;
-use log::{error, log_enabled, trace, Level};
+use log::{log_enabled, trace, Level};
 use rdkafka::config::RDKafkaLogLevel;
 use rdkafka::consumer::{Consumer, DefaultConsumerContext, StreamConsumer};
 use rdkafka::error::KafkaError;
@@ -11,16 +11,17 @@ use uuid::Uuid;
 
 use crate::communication::{GenericMessage, MessageRouter};
 use crate::input::{Error, KafkaInputConfig};
-use utils::{metrics::counter, task_limiter::TaskLimiter};
+use crate::output::OutputPlugin;
+use utils::metrics::counter;
 
-pub struct KafkaInput {
+pub struct KafkaInput<P: OutputPlugin> {
     consumer: Arc<StreamConsumer<DefaultConsumerContext>>,
-    message_router: MessageRouter,
-    task_limiter: TaskLimiter,
+    message_router: Arc<MessageRouter<P>>,
+    // task_limiter: TaskLimiter,
 }
 
-impl KafkaInput {
-    pub fn new(config: KafkaInputConfig, message_router: MessageRouter) -> Result<Self, Error> {
+impl<P: OutputPlugin> KafkaInput<P> {
+    pub fn new(config: KafkaInputConfig, message_router: MessageRouter<P>) -> Result<Self, Error> {
         let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::default()
             .set("group.id", &config.group_id)
             .set("bootstrap.servers", &config.brokers)
@@ -37,13 +38,12 @@ impl KafkaInput {
 
         Ok(Self {
             consumer: Arc::new(consumer),
-            message_router,
-            task_limiter: TaskLimiter::new(config.task_limit),
+            message_router: Arc::new(message_router),
         })
     }
 
     async fn handle_message(
-        router: MessageRouter,
+        router: Arc<MessageRouter<P>>,
         message: Result<OwnedMessage, KafkaError>,
     ) -> Result<(), Error> {
         counter!("cdl.command-service.input-request", 1);
@@ -119,13 +119,7 @@ impl KafkaInput {
                 }
             }
 
-            self.task_limiter
-                .run(async move || {
-                    if let Err(err) = Self::handle_message(router, message).await {
-                        error!("Failed to handle message: {}", err);
-                    }
-                })
-                .await;
+            Self::handle_message(router, message).await.unwrap()
         }
 
         Ok(())

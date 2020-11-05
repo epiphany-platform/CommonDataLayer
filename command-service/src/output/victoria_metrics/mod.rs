@@ -1,4 +1,3 @@
-use async_trait::async_trait;
 use log::error;
 use reqwest::Url;
 use reqwest::{Client, StatusCode};
@@ -7,7 +6,7 @@ use thiserror::Error as DeriveError;
 use utils::metrics::counter;
 
 use crate::communication::resolution::Resolution;
-use crate::communication::{GenericMessage, ReceivedMessageBundle};
+use crate::communication::GenericMessage;
 use crate::output::error::OutputError;
 use crate::output::victoria_metrics::config::VictoriaMetricsConfig;
 use crate::output::OutputPlugin;
@@ -15,7 +14,6 @@ use itertools::Itertools;
 use serde_json::Value;
 use std::iter;
 use url::ParseError;
-use utils::status_endpoints;
 use uuid::Uuid;
 
 pub mod config;
@@ -50,29 +48,17 @@ impl VictoriaMetricsOutputPlugin {
     }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl OutputPlugin for VictoriaMetricsOutputPlugin {
-    async fn handle_message(
-        &self,
-        recv_msg_bundle: ReceivedMessageBundle,
-    ) -> Result<(), OutputError> {
+    async fn handle_message(&self, msg: GenericMessage) -> Result<Resolution, OutputError> {
         let mut url = self.url.clone();
         let client = self.client.clone();
-        let msg = recv_msg_bundle.msg;
-        let status_sender = recv_msg_bundle.status_sender;
 
-        tokio::spawn(async move {
-            url.set_query(Some(&format!("db={}", msg.schema_id)));
+        url.set_query(Some(&format!("db={}", msg.schema_id)));
 
-            let resolution = process_message(url, client, msg).await;
+        let resolution = process_message(url, client, msg).await;
 
-            if status_sender.send(resolution).is_err() {
-                error!("Failed to send status to report service");
-                status_endpoints::mark_as_unhealthy();
-            }
-        });
-
-        Ok(())
+        Ok(resolution)
     }
 
     fn name(&self) -> &'static str {

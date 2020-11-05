@@ -1,22 +1,20 @@
 use std::time;
 
-use async_trait::async_trait;
 use bb8::Pool;
 use bb8_postgres::tokio_postgres::types::Json;
 use bb8_postgres::tokio_postgres::NoTls;
 use bb8_postgres::PostgresConnectionManager;
-use log::{error, trace};
+use log::trace;
 use serde_json::Value;
 
 pub use config::PostgresOutputConfig;
 pub use error::Error;
 
 use crate::communication::resolution::Resolution;
-use crate::communication::{GenericMessage, ReceivedMessageBundle};
+use crate::communication::GenericMessage;
 use crate::output::error::OutputError;
 use crate::output::OutputPlugin;
 use utils::metrics::counter;
-use utils::status_endpoints;
 
 pub mod config;
 pub mod error;
@@ -84,28 +82,15 @@ impl PostgresOutputPlugin {
     }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl OutputPlugin for PostgresOutputPlugin {
-    async fn handle_message(
-        &self,
-        recv_msg_bundle: ReceivedMessageBundle,
-    ) -> Result<(), OutputError> {
-        // Assumption is that db is provisioned
+    async fn handle_message(&self, msg: GenericMessage) -> Result<Resolution, OutputError> {
         let pool = self.pool.clone();
 
-        tokio::spawn(async move {
-            let msg = recv_msg_bundle.msg;
+        trace!("Storing message {:?}", msg);
+        let resolution = PostgresOutputPlugin::store_message(pool, msg).await;
 
-            trace!("Storing message {:?}", msg);
-            let resolution = PostgresOutputPlugin::store_message(pool, msg).await;
-
-            if recv_msg_bundle.status_sender.send(resolution).is_err() {
-                error!("Failed to send status to report service");
-                status_endpoints::mark_as_unhealthy();
-            }
-        });
-
-        Ok(())
+        Ok(resolution)
     }
 
     fn name(&self) -> &'static str {
