@@ -100,7 +100,7 @@ fn build_line_protocol(
     }
 }
 
-async fn send_data(url: Url, client: Client, object_id: Uuid, line_protocol: String) -> Resolution {
+async fn send_data(url: Url, client: Client, line_protocol: String) -> Resolution {
     match client.post(url).body(line_protocol).send().await {
         Ok(response) => {
             if matches!(response.status(), StatusCode::OK | StatusCode::NO_CONTENT) {
@@ -113,13 +113,12 @@ async fn send_data(url: Url, client: Client, object_id: Uuid, line_protocol: Str
                         .text()
                         .await
                         .unwrap_or_else(|err| format!("No description. Error `{}`", err)),
-                    object_id,
                 }
             }
         }
         Err(err) => {
             error!("Failed to send data to vm `{}`", err);
-            Resolution::CommandServiceFailure { object_id }
+            Resolution::CommandServiceFailure
         }
     }
 }
@@ -133,7 +132,7 @@ async fn process_message(url: Url, client: Client, msg: GenericMessage) -> Resol
     } = msg;
 
     match build_line_protocol(schema_id, object_id, timestamp, &payload) {
-        Ok(line_protocol) => send_data(url, client, object_id, line_protocol).await,
+        Ok(line_protocol) => send_data(url, client, line_protocol).await,
         Err(err) => {
             let context = String::from_utf8_lossy(&payload).to_string();
 
@@ -142,7 +141,6 @@ async fn process_message(url: Url, client: Client, msg: GenericMessage) -> Resol
                 err, context
             );
             Resolution::UserFailure {
-                object_id,
                 description: err.to_string(),
                 context,
             }

@@ -51,7 +51,6 @@ impl SleighOutputPlugin {
             }
             Err(err) => Resolution::StorageLayerFailure {
                 description: err.to_string(),
-                object_id: msg.object_id,
             },
         }
     }
@@ -66,9 +65,7 @@ impl OutputPlugin for SleighOutputPlugin {
             Ok(client) => SleighOutputPlugin::store_message(msg, client).await,
             Err(err) => {
                 error!("Failed to get connection from pool {:?}", err);
-                Resolution::CommandServiceFailure {
-                    object_id: msg.object_id,
-                }
+                Resolution::CommandServiceFailure
             }
         };
 

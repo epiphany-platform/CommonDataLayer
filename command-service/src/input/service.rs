@@ -120,12 +120,14 @@ impl<P: OutputPlugin> KafkaInput<P> {
                 }
             }
 
-            self.task_limiter.run(async move || {
-                if let Err(error) = Self::handle_message(router, message).await {
-                    error!("Failed to handle message '{}'", error);
-                    process::abort();
-                }
-            }).await;
+            self.task_limiter
+                .run(async move || {
+                    if let Err(error) = Self::handle_message(router, message).await {
+                        error!("Failed to handle message '{}'", error);
+                        process::abort();
+                    }
+                })
+                .await;
         }
 
         Ok(())

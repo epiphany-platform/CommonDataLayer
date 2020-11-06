@@ -1,60 +1,39 @@
+use crate::communication::GenericMessage;
 pub use config::ReportServiceConfig;
 pub use error::Error;
-use rdkafka::producer::{FutureProducer, FutureRecord};
-use rdkafka::ClientConfig;
-use std::time::Duration;
-use uuid::Uuid;
-
-const APPLICATION_NAME: &str = "Command Service";
+pub use verbose_report_service::{VerboseReportServiceConfig, VerboseReportServiceInstance};
 
 mod config;
 mod error;
+mod verbose_report_service;
 
-pub struct ReportService {
-    producer: FutureProducer,
-    topic: String,
+pub enum ReportService {
+    Verbose(VerboseReportServiceConfig),
+    Disabled,
+}
+
+#[async_trait::async_trait]
+pub trait ReportServiceInstance: Send + Sync + 'static {
+    async fn report(&self, description: &str) -> Result<(), Error>;
+}
+
+#[async_trait::async_trait]
+impl ReportServiceInstance for () {
+    async fn report(&self, _: &str) -> Result<(), Error> {
+        Ok(())
+    }
 }
 
 impl ReportService {
-    pub fn new(args: ReportServiceConfig) -> Result<Self, Error> {
-        Ok(Self {
-            producer: ClientConfig::new()
-                .set("bootstrap.servers", &args.broker)
-                .set("message.timeout.ms", "5000")
-                .create()
-                .map_err(Error::ProducerCreation)?,
-            topic: args.topic,
-        })
-    }
-
-    pub async fn report_failure(
-        &self,
-        output_plugin: &str,
-        description: &str,
-        object_id: Uuid,
-    ) -> Result<(), Error> {
-        let payload = format!(
-            r#"{{"application": "{}", "output_plugin": "{}", "description": "{}", "object_id": "{}" }}"#,
-            APPLICATION_NAME,
-            output_plugin,
-            description.replace('"', r#"\""#),
-            object_id,
-        );
-
-        let record = FutureRecord {
-            topic: &self.topic,
-            partition: None,
-            payload: Some(&payload),
-            key: Some("command_service.status"),
-            timestamp: None,
-            headers: None,
-        };
-
-        self.producer
-            .send(record, Duration::from_secs(0))
-            .await
-            .map_err(|err| Error::FailedToReport(err.0))?;
-
-        Ok(())
+    pub fn instantiate(&self, msg: &GenericMessage) -> Box<dyn ReportServiceInstance> {
+        match self {
+            ReportService::Verbose(config) => Box::new(VerboseReportServiceInstance {
+                producer: config.producer.clone(),
+                topic: config.topic.clone(),
+                output_plugin: config.output_plugin.clone(),
+                msg: msg.clone(),
+            }),
+            ReportService::Disabled => Box::new(()),
+        }
     }
 }

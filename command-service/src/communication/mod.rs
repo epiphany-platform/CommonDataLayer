@@ -33,44 +33,28 @@ impl<P: OutputPlugin> MessageRouter<P> {
     }
 
     pub async fn handle_message(&self, msg: GenericMessage) -> Result<(), Error> {
+        let instance = self.report_service.instantiate(&msg);
+
         let status = self
             .output_plugin
             .handle_message(msg)
             .await
             .map_err(Error::FailedToInsertData)?;
 
-        match status {
-            Resolution::StorageLayerFailure {
-                ref description,
-                ref object_id,
-            } => {
-                self.report_service
-                    .report_failure("TODO", &description, *object_id)
-                    .await
-                    .map_err(Error::ReportingError)?;
-            }
+        let description = match status {
+            Resolution::StorageLayerFailure { description } => description,
+            Resolution::CommandServiceFailure => "Internal service error".to_string(),
             Resolution::UserFailure {
-                ref description,
-                ref object_id,
-                ref context,
-            } => {
-                self.report_service
-                    .report_failure(
-                        "TODO",
-                        &format!("{}; caused by `{}`", description, context),
-                        *object_id,
-                    )
-                    .await
-                    .map_err(Error::ReportingError)?;
-            }
-            Resolution::CommandServiceFailure { ref object_id } => {
-                self.report_service
-                    .report_failure("TODO", "Internal server error", *object_id)
-                    .await
-                    .map_err(Error::ReportingError)?;
-            }
-            Resolution::Success => {}
-        }
+                description,
+                context,
+            } => format!("{}; caused by `{}`", description, context),
+            Resolution::Success => "Success".to_string(),
+        };
+
+        instance
+            .report(&description)
+            .await
+            .map_err(Error::ReportingError)?;
 
         Ok(())
     }

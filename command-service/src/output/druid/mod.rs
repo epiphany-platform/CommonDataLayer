@@ -47,7 +47,6 @@ impl DruidOutputPlugin {
         match producer.send(record, Duration::from_secs(0)).await {
             Err((err, _)) => Resolution::StorageLayerFailure {
                 description: err.to_string(),
-                object_id: msg.object_id,
             },
             Ok(_) => {
                 counter!("cdl.command-service.store.druid", 1);

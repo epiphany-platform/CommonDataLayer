@@ -44,11 +44,7 @@ impl PostgresOutputPlugin {
         let connection = pool.get().await.unwrap();
         let payload: Value = match serde_json::from_slice(&msg.payload) {
             Ok(json) => json,
-            Err(_err) => {
-                return Resolution::CommandServiceFailure {
-                    object_id: msg.object_id,
-                }
-            }
+            Err(_err) => return Resolution::CommandServiceFailure,
         };
 
         let store_result = connection
@@ -74,7 +70,6 @@ impl PostgresOutputPlugin {
             }
             Err(err) => Resolution::StorageLayerFailure {
                 description: err.to_string(),
-                object_id: msg.object_id,
             },
         }
     }
