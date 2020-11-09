@@ -5,7 +5,7 @@ use command_service::output::{
     DruidOutputPlugin, OutputArgs, OutputPlugin, PostgresOutputPlugin, SleighOutputPlugin,
     VictoriaMetricsOutputPlugin,
 };
-use command_service::report::{ReportService, ReportServiceConfig, VerboseReportServiceConfig};
+use command_service::report::{FullReportServiceConfig, ReportService, ReportServiceConfig};
 use log::trace;
 use structopt::StructOpt;
 use utils::metrics;
@@ -68,8 +68,8 @@ async fn start_services(
     output: impl OutputPlugin,
 ) -> Result<(), Error> {
     let report_service = match (report_config.topic, report_config.broker) {
-        (Some(topic), Some(broker)) => ReportService::Verbose(
-            VerboseReportServiceConfig::new(broker, topic, output.name().to_string())
+        (Some(topic), Some(broker)) => ReportService::Full(
+            FullReportServiceConfig::new(broker, topic, output.name().to_string())
                 .map_err(Error::FailedToInitializeReporting)?,
         ),
         (None, None) => ReportService::Disabled,

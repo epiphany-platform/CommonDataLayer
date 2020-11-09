@@ -1,14 +1,14 @@
 use crate::communication::GenericMessage;
 pub use config::ReportServiceConfig;
 pub use error::Error;
-pub use verbose_report_service::{VerboseReportServiceConfig, VerboseReportServiceInstance};
+pub use full_report_service::{FullReportServiceConfig, FullReportServiceInstance};
 
 mod config;
 mod error;
-mod verbose_report_service;
+mod full_report_service;
 
 pub enum ReportService {
-    Verbose(VerboseReportServiceConfig),
+    Full(FullReportServiceConfig),
     Disabled,
 }
 
@@ -27,7 +27,7 @@ impl ReportServiceInstance for () {
 impl ReportService {
     pub fn instantiate(&self, msg: &GenericMessage) -> Box<dyn ReportServiceInstance> {
         match self {
-            ReportService::Verbose(config) => Box::new(VerboseReportServiceInstance {
+            ReportService::Full(config) => Box::new(FullReportServiceInstance {
                 producer: config.producer.clone(),
                 topic: config.topic.clone(),
                 output_plugin: config.output_plugin.clone(),

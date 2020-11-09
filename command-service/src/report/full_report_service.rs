@@ -8,20 +8,20 @@ use std::time::Duration;
 
 const APPLICATION_NAME: &str = "Command Service";
 
-pub struct VerboseReportServiceConfig {
+pub struct FullReportServiceConfig {
     pub producer: FutureProducer,
     pub topic: Arc<String>,
     pub output_plugin: Arc<String>,
 }
 
-pub struct VerboseReportServiceInstance {
+pub struct FullReportServiceInstance {
     pub producer: FutureProducer,
     pub topic: Arc<String>,
     pub output_plugin: Arc<String>,
     pub msg: GenericMessage,
 }
 
-impl VerboseReportServiceConfig {
+impl FullReportServiceConfig {
     pub fn new(brokers: String, topic: String, output_plugin: String) -> Result<Self, Error> {
         Ok(Self {
             producer: ClientConfig::new()
@@ -36,7 +36,7 @@ impl VerboseReportServiceConfig {
 }
 
 #[async_trait::async_trait]
-impl ReportServiceInstance for VerboseReportServiceInstance {
+impl ReportServiceInstance for FullReportServiceInstance {
     async fn report(&self, description: &str) -> Result<(), Error> {
         let payload = json!({
             "application": APPLICATION_NAME,
