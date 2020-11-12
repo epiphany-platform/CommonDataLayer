@@ -45,7 +45,7 @@ impl<P: OutputPlugin> KafkaInput<P> {
         let generic_message = Self::build_message(message.as_ref())?;
 
         trace!("Received message {:?}", generic_message);
-        
+
         router
             .handle_message(generic_message)
             .await

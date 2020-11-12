@@ -44,7 +44,11 @@ impl ReportServiceInstance for FullReportServiceInstance {
         .to_string();
 
         self.producer
-            .publish_message(self.topic.as_str(), "command_service.status", payload.into_bytes())
+            .publish_message(
+                self.topic.as_str(),
+                "command_service.status",
+                payload.into_bytes(),
+            )
             .await
             .map_err(Error::FailedToReport)?;
 
