@@ -33,7 +33,7 @@ impl<P: OutputPlugin> MessageRouter<P> {
     }
 
     pub async fn handle_message(&self, msg: GenericMessage) -> Result<(), Error> {
-        let instance = self.report_service.instantiate(&msg);
+        let mut instance = self.report_service.instantiate(&msg);
 
         let status = self
             .output_plugin

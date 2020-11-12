@@ -91,5 +91,5 @@ jobs:
       - name: Run python acceptance tests
         run: python3 -m unittest discover tests "*_test.py"
         env:
-          DB_SHRINKER_POSTGRES_EXE: ${{ github.workspace }}/target/debug/db_shrinker_postgres
+          DB_SHRINKER_POSTGRES_EXE: ${{ github.workspace }}/target/debug/db-shrinker-postgres
           POSTGRES_CONNECTION_URL: "postgresql://postgres:1234qwer@localhost:5432/postgres"

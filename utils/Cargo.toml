@@ -13,11 +13,21 @@ path = "src/lib.rs"
 
 [dependencies]
 anyhow      = "1.0"
+async-trait = "0.1"
 hyper       = "0.13"
+lapin       = "1.4"
 lazy_static = "1.4"
 log         = "0.4"
 metrics     = { version = "0.12", features = ["std"] }
+rdkafka     = { version = "0.24", features = ["cmake-build"] }
+serde       = { version = "1.0", features = ["derive"] }
+serde_json  = { version = "1.0", features = ["raw_value"] }
+thiserror   = "1.0"
 tokio       = { version = "0.2", features = ["rt-core"] }
+tokio-amqp  = "0.1"
+uuid        = { version = "0.8", features = ["v1", "serde"] }
+async-stream            = "0.3"
+futures-util            = "0.3"
 metrics-exporter-http   = "0.3"
 metrics-runtime         = "0.13"
 metrics-observer-prometheus         = "0.1"

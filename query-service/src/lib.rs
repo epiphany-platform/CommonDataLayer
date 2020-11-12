@@ -1,5 +1,3 @@
-#![feature(async_closure)]
-
 use error::ClientError;
 use schema::{query_client::QueryClient, ObjectIds, SchemaId};
 use std::collections::HashMap;

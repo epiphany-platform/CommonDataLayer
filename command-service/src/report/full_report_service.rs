@@ -1,33 +1,29 @@
 use crate::communication::GenericMessage;
 use crate::report::{Error, ReportServiceInstance};
-use rdkafka::producer::{FutureProducer, FutureRecord};
-use rdkafka::ClientConfig;
 use serde_json::json;
 use std::sync::Arc;
-use std::time::Duration;
+use utils::messaging_system::publisher::CommonPublisher;
 
 const APPLICATION_NAME: &str = "Command Service";
 
 pub struct FullReportServiceConfig {
-    pub producer: FutureProducer,
+    pub producer: CommonPublisher,
     pub topic: Arc<String>,
     pub output_plugin: Arc<String>,
 }
 
 pub struct FullReportServiceInstance {
-    pub producer: FutureProducer,
+    pub producer: CommonPublisher,
     pub topic: Arc<String>,
     pub output_plugin: Arc<String>,
     pub msg: GenericMessage,
 }
 
 impl FullReportServiceConfig {
-    pub fn new(brokers: String, topic: String, output_plugin: String) -> Result<Self, Error> {
+    pub async fn new(brokers: String, topic: String, output_plugin: String) -> Result<Self, Error> {
         Ok(Self {
-            producer: ClientConfig::new()
-                .set("bootstrap.servers", &brokers)
-                .set("message.timeout.ms", "5000")
-                .create()
+            producer: CommonPublisher::new_kafka(&brokers)
+                .await
                 .map_err(Error::ProducerCreation)?,
             topic: Arc::new(topic),
             output_plugin: Arc::new(output_plugin),
@@ -37,29 +33,20 @@ impl FullReportServiceConfig {
 
 #[async_trait::async_trait]
 impl ReportServiceInstance for FullReportServiceInstance {
-    async fn report(&self, description: &str) -> Result<(), Error> {
+    async fn report(&mut self, description: &str) -> Result<(), Error> {
         let payload = json!({
             "application": APPLICATION_NAME,
-            "output_plugin": self.output_plugin,
+            "output_plugin": self.output_plugin.as_str(),
             "description": description,
             "object_id": self.msg.object_id,
             "payload": String::from_utf8_lossy(&self.msg.payload)
         })
         .to_string();
 
-        let record = FutureRecord {
-            topic: &self.topic,
-            partition: None,
-            payload: Some(&payload),
-            key: Some("command_service.status"),
-            timestamp: None,
-            headers: None,
-        };
-
         self.producer
-            .send(record, Duration::from_secs(0))
+            .publish_message(self.topic.as_str(), "command_service.status", payload.into_bytes())
             .await
-            .map_err(|err| Error::FailedToReport(err.0))?;
+            .map_err(Error::FailedToReport)?;
 
         Ok(())
     }

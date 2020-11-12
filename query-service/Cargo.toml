@@ -13,7 +13,7 @@ name = "query_service"
 path = "src/lib.rs"
 
 [[bin]]
-name = "query_service"
+name = "query-service"
 path = "src/main.rs"
 
 [dependencies]

@@ -138,7 +138,17 @@ version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "22068c0c19514942eefcfd4daf8976ef1aad84e61539f95cd200c35202f80af5"
 dependencies = [
- "async-stream-impl",
+ "async-stream-impl 0.2.1",
+ "futures-core",
+]
+
+[[package]]
+name = "async-stream"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3670df70cbc01729f901f94c887814b3c68db038aad1329a418bae178bc5295c"
+dependencies = [
+ "async-stream-impl 0.3.0",
  "futures-core",
 ]
 
@@ -147,6 +157,17 @@ name = "async-stream-impl"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "25f9db3b38af870bf7e5cc649167533b493928e50744e2c30ae350230b414670"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "async-stream-impl"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a3548b8efc9f8e8a5a0a2808c5bd8451a9031b9e5b879a79590304ae928b0a70"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -493,6 +514,7 @@ dependencies = [
 name = "command-service"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "async-trait",
  "bb8",
  "bb8-postgres",
@@ -514,7 +536,6 @@ dependencies = [
  "url",
  "utils",
  "uuid",
- "warp",
 ]
 
 [[package]]
@@ -713,15 +734,12 @@ dependencies = [
  "env_logger 0.8.1",
  "envy",
  "futures-util",
- "lapin",
  "log",
  "lru-cache",
- "rdkafka",
  "schema-registry",
  "serde",
  "serde_json",
  "tokio 0.2.22",
- "tokio-amqp",
  "utils",
  "uuid",
 ]
@@ -2860,7 +2878,6 @@ dependencies = [
  "lazy_static",
  "log",
  "prost",
- "rdkafka",
  "semver 0.11.0",
  "serde",
  "serde_json",
@@ -3592,7 +3609,7 @@ version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74a5d6e7439ecf910463667080de772a9c7ddf26bc9fb4f3252ac3862e43337d"
 dependencies = [
- "async-stream",
+ "async-stream 0.2.1",
  "async-trait",
  "base64 0.12.3",
  "bytes 0.5.6",
@@ -3969,14 +3986,24 @@ name = "utils"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-stream 0.3.0",
+ "async-trait",
+ "futures-util",
  "hyper",
+ "lapin",
  "lazy_static",
  "log",
  "metrics",
  "metrics-exporter-http",
  "metrics-observer-prometheus",
  "metrics-runtime",
+ "rdkafka",
+ "serde",
+ "serde_json",
+ "thiserror",
  "tokio 0.2.22",
+ "tokio-amqp",
+ "uuid",
 ]
 
 [[package]]

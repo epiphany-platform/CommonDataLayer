@@ -13,7 +13,7 @@ def load_case(case_name) -> tuple:
 class DbShrinkerPostgresTests(unittest.TestCase):
     def setUp(self):
         self.psql_url = os.getenv("POSTGRES_CONNECTION_URL") or "postgresql://postgres:1234@localhost:5432/postgres"
-        self.shrinker = os.getenv("DB_SHRINKER_POSTGRES_EXE") or "db_shrinker_postgres"
+        self.shrinker = os.getenv("DB_SHRINKER_POSTGRES_EXE") or "db-shrinker-postgres"
         self.db = psycopg2.connect(self.psql_url)
 
     def tearDown(self):

@@ -146,7 +146,7 @@ spec:
         - name: KAFKA_GROUP_ID
           value: "data-router"
         - name: KAFKA_ERROR_CHANNEL
-          value: {{ .Values.reportTopic }}
+          value: {{ .Values.global.reportTopic }}
         - name: SCHEMA_REGISTRY_ADDR
           value: "http://{{ .Release.Name }}-schema-registry:6400"
         - name: CACHE_CAPACITY

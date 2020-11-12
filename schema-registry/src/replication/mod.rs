@@ -2,14 +2,9 @@ use crate::{
     db::SchemaDb,
     types::{NewSchema, NewSchemaVersion, View},
 };
-use log::{error, info};
-use rdkafka::{
-    consumer::{ConsumerContext, StreamConsumer},
-    ClientContext,
-};
+use log::info;
 use serde::{Deserialize, Serialize};
 use std::{
-    process,
     sync::{mpsc, Arc},
     thread,
 };
@@ -18,12 +13,6 @@ use uuid::Uuid;
 
 mod master;
 mod slave;
-
-pub struct CustomContext;
-
-impl ClientContext for CustomContext {}
-impl ConsumerContext for CustomContext {}
-pub type LoggingConsumer = StreamConsumer<CustomContext>;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub enum ReplicationEvent {
@@ -98,7 +87,7 @@ impl ReplicationState {
                 info!("Replicating as master");
                 let (sender, receiver) = oneshot::channel::<()>();
                 self.stop_channel = Some(sender);
-                self.start_replication_master(receiver)
+                self.start_replication_master(receiver);
             }
             ReplicationRole::Slave => {
                 info!("Replicating as slave");
@@ -146,13 +135,6 @@ fn start_replication_slave(
     config: &KafkaConfig,
     kill_signal: oneshot::Receiver<()>,
 ) {
-    let consumer = slave::build_kafka_consumer(&config).unwrap_or_else(|err| {
-        error!(
-            "Fatal error. Encountered some problems connecting to kafka service. {:?}",
-            err
-        );
-        process::abort();
-    });
-    tokio::spawn(slave::consume_kafka_topic(consumer, db, kill_signal));
+    tokio::spawn(slave::consume_kafka_topic(config.clone(), db, kill_signal));
     info!("Replication started as slave node.");
 }

@@ -8,21 +8,18 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "data_router"
+name = "data-router"
 path = "src/main.rs"
 
 [dependencies]
 anyhow      = "1.0"
 env_logger  = "0.8"
 envy        = "0.4"
-lapin       = "1.5"
 log         = "0.4"
 lru-cache   = "0.1"
-rdkafka     = { version = "0.24", features = ["cmake-build"] }
 serde       = { version = "1.0", features = ["derive"] }
 serde_json  = "1.0"
 tokio       = { version = "0.2", features = ["macros"] }
-tokio-amqp  = "0.1"
 utils       = { path = "../utils" }
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 futures-util            = "0.3"

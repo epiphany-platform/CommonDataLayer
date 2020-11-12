@@ -14,12 +14,12 @@ pub enum ReportService {
 
 #[async_trait::async_trait]
 pub trait ReportServiceInstance: Send + Sync + 'static {
-    async fn report(&self, description: &str) -> Result<(), Error>;
+    async fn report(&mut self, description: &str) -> Result<(), Error>;
 }
 
 #[async_trait::async_trait]
 impl ReportServiceInstance for () {
-    async fn report(&self, _: &str) -> Result<(), Error> {
+    async fn report(&mut self, _: &str) -> Result<(), Error> {
         Ok(())
     }
 }

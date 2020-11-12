@@ -1,23 +1,25 @@
 use super::{KafkaConfig, ReplicationEvent};
 use log::{error, info};
-use rdkafka::{
-    producer::{FutureProducer, FutureRecord},
-    ClientConfig,
-};
 use std::{
     process,
     sync::{mpsc, Arc},
-    time::Duration,
 };
 use tokio::{runtime::Handle, sync::oneshot};
+use utils::messaging_system::publisher::CommonPublisher;
 
-pub fn replicate_db_events(
+pub async fn replicate_db_events(
     config: KafkaConfig,
     recv: mpsc::Receiver<ReplicationEvent>,
     tokio_runtime: Handle,
     mut kill_signal: oneshot::Receiver<()>,
 ) {
-    let producer = Arc::new(build_kafka_producer(&config));
+    let producer = CommonPublisher::new_kafka(&config.brokers)
+        .await
+        .unwrap_or_else(|_e| {
+            error!("Fatal error, synchronization channel cannot be created.");
+            process::abort();
+        });
+    let producer = Arc::new(producer);
     loop {
         let event = recv.recv().unwrap_or_else(|_e| {
             error!("Fatal error, synchronization channel closed.");
@@ -34,7 +36,7 @@ pub fn replicate_db_events(
 }
 
 fn send_messages_to_kafka(
-    producer: Arc<FutureProducer>,
+    producer: Arc<CommonPublisher>,
     topic_name: String,
     event: ReplicationEvent,
 ) {
@@ -50,29 +52,11 @@ fn send_messages_to_kafka(
     let serialized = serde_json::to_string(&event).unwrap();
     let serialized_key = key.to_string();
     tokio::spawn(async move {
-        let delivery_status = producer.send(
-            FutureRecord::to(&topic_name)
-                .payload(&serialized)
-                .key(&serialized_key),
-            Duration::from_secs(1),
-        );
+        let delivery_status =
+            producer.publish_message(&topic_name, &serialized_key, serialized.as_bytes().to_vec());
         if delivery_status.await.is_err() {
             error!("Fatal error, delivery status for message not received.");
             process::abort();
         }
     });
-}
-
-pub fn build_kafka_producer(config: &KafkaConfig) -> FutureProducer {
-    // https://kafka.apache.org/documentation/#producerconfigs
-    // TODO: should connect to kafka and check if connection was successful before reporting service as started
-    //       (otherwise there is no way of knowing that kafka broker is unreachable)
-    ClientConfig::new()
-        .set("bootstrap.servers", &config.brokers)
-        .set("message.timeout.ms", "5000")
-        .set("acks", "all")
-        .set("compression.type", "none")
-        .set("max.in.flight.requests.per.connection", "1")
-        .create()
-        .expect("Producer creation error")
 }

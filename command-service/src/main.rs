@@ -70,6 +70,7 @@ async fn start_services(
     let report_service = match (report_config.topic, report_config.broker) {
         (Some(topic), Some(broker)) => ReportService::Full(
             FullReportServiceConfig::new(broker, topic, output.name().to_string())
+                .await
                 .map_err(Error::FailedToInitializeReporting)?,
         ),
         (None, None) => ReportService::Disabled,
@@ -78,7 +79,7 @@ async fn start_services(
 
     let message_router = MessageRouter::new(report_service, output);
 
-    let input_service = KafkaInput::new(input_config, message_router)?;
+    let input_service = KafkaInput::new(input_config, message_router).await?;
 
     input_service.listen().await
 }

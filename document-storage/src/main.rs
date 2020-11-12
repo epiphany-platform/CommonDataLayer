@@ -1,5 +1,3 @@
-#![feature(proc_macro_hygiene)]
-
 pub mod args;
 
 use crate::args::Args;

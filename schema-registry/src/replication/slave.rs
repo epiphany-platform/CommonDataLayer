@@ -1,23 +1,30 @@
-use super::{CustomContext, KafkaConfig, LoggingConsumer, ReplicationEvent};
+use super::{KafkaConfig, ReplicationEvent};
 use crate::db::SchemaDb;
 use anyhow::Context;
 use futures_util::stream::StreamExt;
 use log::{error, info, trace};
-use rdkafka::{
-    consumer::{CommitMode, Consumer, StreamConsumer},
-    message::BorrowedMessage,
-    ClientConfig, Message,
-};
-use std::sync::Arc;
-use tokio::sync::oneshot::Receiver;
+use std::{process, sync::Arc};
+use tokio::{pin, sync::oneshot::Receiver};
+use utils::messaging_system::{consumer::CommonConsumer, message::CommunicationMessage};
 
 pub async fn consume_kafka_topic(
-    consumer: StreamConsumer<CustomContext>,
+    config: KafkaConfig,
     db: Arc<SchemaDb>,
     mut kill_signal: Receiver<()>,
 ) -> anyhow::Result<()> {
-    let mut message_stream = consumer.start();
-
+    let topics: Vec<_> = config.topics.iter().map(String::as_str).collect();
+    let mut consumer =
+        CommonConsumer::new_kafka(&config.group_id, &config.brokers, topics.as_slice())
+            .await
+            .unwrap_or_else(|err| {
+                error!(
+                    "Fatal error. Encountered some problems connecting to kafka service. {:?}",
+                    err
+                );
+                process::abort();
+            });
+    let message_stream = consumer.consume().await;
+    pin!(message_stream);
     while let Some(message) = message_stream.next().await {
         if kill_signal.try_recv().is_ok() {
             info!("Slave replication disabled");
@@ -27,7 +34,7 @@ pub async fn consume_kafka_topic(
         match message {
             Err(error) => error!("Received malformed message: {}", error),
             Ok(message) => {
-                if let Err(error) = consume_message(&consumer, message, &db).await {
+                if let Err(error) = consume_message(message.as_ref(), &db).await {
                     error!("Error while processing message: {}", error);
                 }
             }
@@ -38,16 +45,12 @@ pub async fn consume_kafka_topic(
 }
 
 async fn consume_message(
-    consumer: &LoggingConsumer,
-    message: BorrowedMessage<'_>,
+    message: &'_ dyn CommunicationMessage,
     db: &SchemaDb,
 ) -> anyhow::Result<()> {
-    let payload = message
-        .payload()
-        .ok_or_else(|| anyhow::anyhow!("Message had no payload"))?;
-    let json = std::str::from_utf8(payload).context("Payload is not valid UTF-8")?;
+    let payload = message.payload()?;
     let event: ReplicationEvent =
-        serde_json::from_str(json).context("Payload deserialization failed")?;
+        serde_json::from_str(payload).context("Payload deserialization failed")?;
     trace!("Consuming message: {:?}", event);
     match event {
         ReplicationEvent::AddSchema { id, schema } => {
@@ -80,37 +83,6 @@ async fn consume_message(
         }
     };
 
-    consumer
-        .commit_message(&message, CommitMode::Async)
-        .context("Failed to commit message")
-}
-
-pub fn build_kafka_consumer(config: &KafkaConfig) -> anyhow::Result<LoggingConsumer> {
-    // https://kafka.apache.org/documentation/#consumerconfigs
-    // https://docs.confluent.io/3.2.1/clients/librdkafka/CONFIGURATION_8md.html
-    // TODO: should connect to kafka and check if connection was successful before reporting service as started
-    //       (otherwise there is no way of knowing that kafka broker is unreachable)
-    let consumer: LoggingConsumer = ClientConfig::new()
-        .set("group.id", &config.group_id)
-        .set("bootstrap.servers", &config.brokers)
-        .set("enable.partition.eof", "false")
-        // for synchronizing new storage instance should be true, after initial synchronization change to false - and 'enable' reads
-        .set("session.timeout.ms", "6000")
-        .set("enable.auto.commit", "true")
-        .set("auto.offset.reset", "earliest")
-        //       If we're not storing full transaction log value should be none/error and initial stored should be given with initial db state(snapshot from another instance)
-        .create_with_context(CustomContext)
-        .context("Consumer creation failed")?;
-
-    let topics = config
-        .topics
-        .iter()
-        .map(|topic| topic.as_ref())
-        .collect::<Vec<_>>();
-
-    consumer
-        .subscribe(topics.as_slice())
-        .context("Can't subscribe to specified topics")?;
-
-    Ok(consumer)
+    message.ack().await?;
+    Ok(())
 }

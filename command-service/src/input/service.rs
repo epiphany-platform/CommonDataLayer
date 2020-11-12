@@ -2,42 +2,34 @@ use crate::communication::{GenericMessage, MessageRouter};
 use crate::input::{Error, KafkaInputConfig};
 use crate::output::OutputPlugin;
 use futures_util::stream::StreamExt;
-use log::{error, log_enabled, trace, Level};
-use rdkafka::config::RDKafkaLogLevel;
-use rdkafka::consumer::{Consumer, DefaultConsumerContext, StreamConsumer};
-use rdkafka::error::KafkaError;
-use rdkafka::message::{Headers, OwnedMessage};
-use rdkafka::{ClientConfig, Message};
+use log::{error, trace};
 use std::process;
-use std::sync::Arc;
+use tokio::pin;
+use utils::message_types::CommandServiceInsertMessage;
+use utils::messaging_system::consumer::CommonConsumer;
+use utils::messaging_system::message::CommunicationMessage;
+use utils::messaging_system::CommunicationResult;
 use utils::metrics::counter;
 use utils::task_limiter::TaskLimiter;
-use uuid::Uuid;
 
 pub struct KafkaInput<P: OutputPlugin> {
-    consumer: Arc<StreamConsumer<DefaultConsumerContext>>,
+    consumer: CommonConsumer,
     message_router: MessageRouter<P>,
     task_limiter: TaskLimiter,
 }
 
 impl<P: OutputPlugin> KafkaInput<P> {
-    pub fn new(config: KafkaInputConfig, message_router: MessageRouter<P>) -> Result<Self, Error> {
-        let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::default()
-            .set("group.id", &config.group_id)
-            .set("bootstrap.servers", &config.brokers)
-            .set("enable.partition.eof", "false")
-            .set("session.timeout.ms", "6000")
-            .set("enable.auto.commit", "true")
-            .set_log_level(RDKafkaLogLevel::Debug)
-            .create_with_context(DefaultConsumerContext)
-            .map_err(Error::ConsumerCreationFailed)?;
-
-        consumer
-            .subscribe(&[&config.topic])
-            .map_err(Error::FailedToSubscribe)?;
+    pub async fn new(
+        config: KafkaInputConfig,
+        message_router: MessageRouter<P>,
+    ) -> Result<Self, Error> {
+        let consumer =
+            CommonConsumer::new_kafka(&config.group_id, &config.brokers, &[&config.topic])
+                .await
+                .map_err(Error::ConsumerCreationFailed)?;
 
         Ok(Self {
-            consumer: Arc::new(consumer),
+            consumer,
             message_router,
             task_limiter: TaskLimiter::new(config.task_limit),
         })
@@ -45,13 +37,15 @@ impl<P: OutputPlugin> KafkaInput<P> {
 
     async fn handle_message(
         router: MessageRouter<P>,
-        message: Result<OwnedMessage, KafkaError>,
+        message: CommunicationResult<Box<dyn CommunicationMessage>>,
     ) -> Result<(), Error> {
         counter!("cdl.command-service.input-request", 1);
         let message = message.map_err(Error::FailedReadingMessage)?;
 
-        let generic_message = Self::build_message(&message)?;
+        let generic_message = Self::build_message(message.as_ref())?;
 
+        trace!("Received message {:?}", generic_message);
+        
         router
             .handle_message(generic_message)
             .await
@@ -60,70 +54,31 @@ impl<P: OutputPlugin> KafkaInput<P> {
         Ok(())
     }
 
-    fn build_message(message: &OwnedMessage) -> Result<GenericMessage, Error> {
-        let key = std::str::from_utf8(message.key().ok_or(Error::MissingKey)?)
-            .map_err(Error::UnableToParseUTF8)?;
-        let object_id = Uuid::parse_str(key).map_err(Error::KeyNotValidUuid)?;
-        let schema_id = Self::get_schema_id(message)?;
-        let payload = message.payload().ok_or(Error::MissingPayload)?.to_vec();
-        let ts = message.timestamp();
+    fn build_message(message: &'_ dyn CommunicationMessage) -> Result<GenericMessage, Error> {
+        let json = message.payload().map_err(Error::MissingPayload)?;
+        let event: CommandServiceInsertMessage =
+            serde_json::from_str(json).map_err(Error::PayloadDeserializationFailed)?;
 
         Ok(GenericMessage {
-            object_id,
-            schema_id,
-            timestamp: ts.to_millis().ok_or(Error::TimestampUnavailable)?,
-            payload,
+            object_id: event.object_id,
+            schema_id: event.schema_id,
+            timestamp: event.timestamp,
+            payload: event.payload.to_string().as_bytes().to_vec(),
         })
     }
 
-    fn get_schema_id(message: &OwnedMessage) -> Result<Uuid, Error> {
-        let schema_id_header = message.headers().and_then(|headers| {
-            for index in 0..headers.count() {
-                let (name, value) = headers.get(index).unwrap();
-                if name == "SCHEMA_ID" {
-                    return Some(value);
-                }
-            }
-
-            None
-        });
-
-        if let Some(header) = schema_id_header {
-            Uuid::parse_str(&String::from_utf8_lossy(header).to_string())
-                .map_err(|_err| Error::InvalidSchemaIdHeader)
-        } else {
-            Err(Error::MissingSchemaIdHeader)
-        }
-    }
-
-    pub async fn listen(&self) -> Result<(), Error> {
-        let mut message_stream = self.consumer.start();
+    pub async fn listen(self) -> Result<(), Error> {
+        let consumer = self.consumer.leak();
+        let message_stream = consumer.consume().await;
+        pin!(message_stream);
 
         while let Some(message) = message_stream.next().await {
             let router = self.message_router.clone();
-            let message = message.map(|msg| msg.detach());
-
-            if log_enabled!(Level::Trace) {
-                if let Ok(ref message) = message {
-                    let payload = message.payload().map(String::from_utf8_lossy);
-                    let key = message.key().map(String::from_utf8_lossy);
-                    trace!(
-                        r#"Received Message {{ payload: {:?}, key: {:?}, topic: "{}", timestamp: {:?}, partition: {}, offset: {}, headers: {:?} }}"#,
-                        payload,
-                        key,
-                        message.topic(),
-                        message.timestamp(),
-                        message.partition(),
-                        message.offset(),
-                        message.headers()
-                    );
-                }
-            }
 
             self.task_limiter
                 .run(async move || {
-                    if let Err(error) = Self::handle_message(router, message).await {
-                        error!("Failed to handle message '{}'", error);
+                    if let Err(err) = Self::handle_message(router, message).await {
+                        error!("Failed to handle message: {}", err);
                         process::abort();
                     }
                 })

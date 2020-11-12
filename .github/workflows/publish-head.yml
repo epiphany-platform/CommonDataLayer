@@ -1,0 +1,44 @@
+name: Publish to docker.io on HEAD changes
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - ".github/"
+      - "benchmarking/"
+      - "docs/"
+      - "examples/"
+      - "helm/"
+      - "tests/"
+      - "**.md"
+      - ".gitignore"
+      - "**.sh"
+      - "**.yml"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        crate:
+          - command-service
+          - data-router
+          - leader-elector
+          - query-service
+          - schema-registry
+    steps:
+    - name: Checkout the repo
+      uses: actions/checkout@v2
+
+    - name: Login to registry
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_LOGIN }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+    - name: Build and push
+      run: |
+        docker build . --build-arg BIN=${{ matrix.crate }} -t epiphanyplatform/cdl-${{ matrix.crate }}:master
+        docker push epiphanyplatform/cdl-${{ matrix.crate }}:master
+      env:
+        DOCKER_BUILDKIT: 1

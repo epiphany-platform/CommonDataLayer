@@ -13,8 +13,6 @@ pub enum OutputError {
     DruidError(druid::Error),
     #[error("Victoria Metrics plugin failed `{0}`")]
     VictoriaMetricsError(victoria_metrics::Error),
-    #[error("Unable to serve metrics API `{0}`")]
-    UnableToServeMetrics(warp::Error),
 }
 
 impl From<sleigh::Error> for OutputError {

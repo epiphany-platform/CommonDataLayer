@@ -13,7 +13,7 @@ name = "schema_registry"
 path = "src/lib.rs"
 
 [[bin]]
-name = "schema_registry"
+name = "schema-registry"
 path = "src/main.rs"
 
 [dependencies]
@@ -23,7 +23,6 @@ envy        = "0.4"
 futures     = "0.3"
 log         = "0.4"
 prost       = "0.6"
-rdkafka     = { version = "0.24", features = ["cmake-build"] }
 indradb-lib = { git = "https://github.com/jespersm/indradb", branch = "sled", features = ["sled-datastore"] } # We use fork due to reported incompatibility of sled 0.34 with azure k8s. More testing needed before switching to official build.
 jmespatch   = "0.3"
 jsonschema  = "0.3"
