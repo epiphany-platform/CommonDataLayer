@@ -9,17 +9,30 @@ global:
 
 dataRouter:
   inputQueue: cdl.data.input
+  image: cdl-data-router
+  bin: data-router
 
 schemaRegistry:
   replicationTopics: cdl.schema.replication
   storageClass: standard
   storageSize: 3Gi
   port: 30150
+  image: cdl-schema-registry
+  bin: schema-registry
 
 leaderElector:
   heartbeatTime: 2
+  image: cdl-leader-elector
+  bin: leader-elector
 
 
+commandService:
+  image: cld-command-service
+  bin: command-service
+
+documentStorage:
+  image: cdl-document-storage
+  bin: document-storage
 
 postgres-document:
   commandServiceReplicaCount: 1
