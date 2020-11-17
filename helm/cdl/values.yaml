@@ -25,7 +25,7 @@ leaderElector:
   bin: leader-elector
 
 commandService:
-  image: cld-command-service
+  image: cdl-command-service
   bin: command-service
 
 documentStorage:
@@ -38,7 +38,7 @@ postgres-document:
   postgresConnectionString: "postgres://postgres:postgres@10.1.1.5/cdldb"
   inputTopic: cdl.document.data
   commandService:
-    image: cld-command-service
+    image: cdl-command-service
     bin: command-service
 
 sled-document:
@@ -54,7 +54,7 @@ sled-document:
     image: cdl-data-router
     bin: data-router
   commandService:
-    image: cld-command-service
+    image: cdl-command-service
     bin: command-service
 
 druid-timeseries:
@@ -62,5 +62,5 @@ druid-timeseries:
   inputTopic: cdl.timeseries.data
   outputTopic: cdl.timeseries.generic-druid
   commandService:
-    image: cld-command-service
+    image: cdl-command-service
     bin: command-service
