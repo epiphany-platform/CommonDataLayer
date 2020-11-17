@@ -37,6 +37,9 @@ postgres-document:
   postgresDbReplicaCount: 0
   postgresConnectionString: "postgres://postgres:postgres@10.1.1.5/cdldb"
   inputTopic: cdl.document.data
+  commandService:
+    image: cld-command-service
+    bin: command-service
 
 sled-document:
   replicaCommandCount: 0
@@ -44,8 +47,20 @@ sled-document:
   maxDbSize: 3Gi
   storageClass: azurefile
   inputTopic: cdl.document2.data
+  documentStorage:
+    image: cdl-document-storage
+    bin: document-storage
+  dataRouter:
+    image: cdl-data-router
+    bin: data-router
+  commandService:
+    image: cld-command-service
+    bin: command-service
 
 druid-timeseries:
   replicaCommandCount: 1
   inputTopic: cdl.timeseries.data
   outputTopic: cdl.timeseries.generic-druid
+  commandService:
+    image: cld-command-service
+    bin: command-service
