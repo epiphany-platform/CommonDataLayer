@@ -14,7 +14,6 @@ on:
       - "**.md"
       - ".gitignore"
       - "**.sh"
-      - "**.yml"
 
 jobs:
   build-and-deploy:
@@ -27,6 +26,7 @@ jobs:
           - leader-elector
           - query-service
           - schema-registry
+          - query-router
     steps:
     - name: Checkout the repo
       uses: actions/checkout@v2
