@@ -5,13 +5,13 @@ use command_service::output::{
     DruidOutputPlugin, OutputArgs, OutputPlugin, PostgresOutputPlugin, SleighOutputPlugin,
     VictoriaMetricsOutputPlugin,
 };
-use command_service::report::{FullReportServiceConfig, ReportService, ReportServiceConfig};
+use command_service::report::{FullReportSenderBase, ReportSender, ReportServiceConfig};
 use log::trace;
 use structopt::StructOpt;
 use utils::metrics;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let args: Args = Args::from_args();
 
@@ -23,9 +23,7 @@ async fn main() {
             start_services(
                 args.input_config,
                 args.report_config,
-                SleighOutputPlugin::new(sleigh_config)
-                    .await
-                    .expect("Initializing Sleigh output interface"),
+                SleighOutputPlugin::new(sleigh_config).await?,
             )
             .await
         }
@@ -33,9 +31,7 @@ async fn main() {
             start_services(
                 args.input_config,
                 args.report_config,
-                PostgresOutputPlugin::new(postgres_config)
-                    .await
-                    .expect("Initializing Postgres output interface"),
+                PostgresOutputPlugin::new(postgres_config).await?,
             )
             .await
         }
@@ -43,9 +39,7 @@ async fn main() {
             start_services(
                 args.input_config,
                 args.report_config,
-                DruidOutputPlugin::new(druid_config)
-                    .await
-                    .expect("Initializing Druid output interface"),
+                DruidOutputPlugin::new(druid_config).await?,
             )
             .await
         }
@@ -53,13 +47,13 @@ async fn main() {
             start_services(
                 args.input_config,
                 args.report_config,
-                VictoriaMetricsOutputPlugin::new(victoria_metrics_config)
-                    .expect("Initializing Victoria Metrics output interface"),
+                VictoriaMetricsOutputPlugin::new(victoria_metrics_config)?,
             )
             .await
         }
-    }
-    .expect("Running services")
+    }?;
+
+    Ok(())
 }
 
 async fn start_services(
@@ -68,12 +62,12 @@ async fn start_services(
     output: impl OutputPlugin,
 ) -> Result<(), Error> {
     let report_service = match (report_config.topic, report_config.broker) {
-        (Some(topic), Some(broker)) => ReportService::Full(
-            FullReportServiceConfig::new(broker, topic, output.name().to_string())
+        (Some(topic), Some(broker)) => ReportSender::Full(
+            FullReportSenderBase::new(broker, topic, output.name().to_string())
                 .await
                 .map_err(Error::FailedToInitializeReporting)?,
         ),
-        (None, None) => ReportService::Disabled,
+        (None, None) => ReportSender::Disabled,
         _ => panic!("Must provide both topic and brokers for reporting service to enable it"),
     };
 

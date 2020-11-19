@@ -2,7 +2,6 @@ use std::time;
 
 use crate::communication::resolution::Resolution;
 use crate::communication::GenericMessage;
-use crate::output::error::OutputError;
 use crate::output::OutputPlugin;
 use bb8::Pool;
 use bb8_postgres::tokio_postgres::types::Json;
@@ -38,7 +37,7 @@ impl PostgresOutputPlugin {
     }
 
     async fn store_message(
-        pool: Pool<PostgresConnectionManager<NoTls>>,
+        pool: &Pool<PostgresConnectionManager<NoTls>>,
         msg: GenericMessage,
     ) -> Resolution {
         let connection = pool.get().await.unwrap();
@@ -77,13 +76,9 @@ impl PostgresOutputPlugin {
 
 #[async_trait::async_trait]
 impl OutputPlugin for PostgresOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Result<Resolution, OutputError> {
-        let pool = self.pool.clone();
-
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
         trace!("Storing message {:?}", msg);
-        let resolution = PostgresOutputPlugin::store_message(pool, msg).await;
-
-        Ok(resolution)
+        PostgresOutputPlugin::store_message(&self.pool, msg).await
     }
 
     fn name(&self) -> &'static str {

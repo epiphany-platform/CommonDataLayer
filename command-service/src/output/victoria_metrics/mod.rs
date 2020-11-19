@@ -1,6 +1,5 @@
 use crate::communication::resolution::Resolution;
 use crate::communication::GenericMessage;
-use crate::output::error::OutputError;
 use crate::output::victoria_metrics::config::VictoriaMetricsConfig;
 use crate::output::OutputPlugin;
 use itertools::Itertools;
@@ -48,15 +47,12 @@ impl VictoriaMetricsOutputPlugin {
 
 #[async_trait::async_trait]
 impl OutputPlugin for VictoriaMetricsOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Result<Resolution, OutputError> {
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
         let mut url = self.url.clone();
-        let client = self.client.clone();
 
         url.set_query(Some(&format!("db={}", msg.schema_id)));
 
-        let resolution = process_message(url, client, msg).await;
-
-        Ok(resolution)
+        process_message(url, &self.client, msg).await
     }
 
     fn name(&self) -> &'static str {
@@ -100,7 +96,7 @@ fn build_line_protocol(
     }
 }
 
-async fn send_data(url: Url, client: Client, line_protocol: String) -> Resolution {
+async fn send_data(url: Url, client: &Client, line_protocol: String) -> Resolution {
     match client.post(url).body(line_protocol).send().await {
         Ok(response) => {
             if matches!(response.status(), StatusCode::OK | StatusCode::NO_CONTENT) {
@@ -123,7 +119,7 @@ async fn send_data(url: Url, client: Client, line_protocol: String) -> Resolutio
     }
 }
 
-async fn process_message(url: Url, client: Client, msg: GenericMessage) -> Resolution {
+async fn process_message(url: Url, client: &Client, msg: GenericMessage) -> Resolution {
     let GenericMessage {
         object_id,
         schema_id,

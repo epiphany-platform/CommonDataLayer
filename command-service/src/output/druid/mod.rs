@@ -2,11 +2,10 @@ use crate::communication::resolution::Resolution;
 use crate::communication::GenericMessage;
 pub use crate::output::druid::config::DruidOutputConfig;
 pub use crate::output::druid::error::Error;
-use crate::output::error::OutputError;
 use crate::output::OutputPlugin;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::ClientConfig;
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 use utils::metrics::counter;
 
 mod config;
@@ -14,7 +13,7 @@ mod error;
 
 pub struct DruidOutputPlugin {
     producer: FutureProducer,
-    topic: Arc<String>,
+    topic: String,
 }
 
 impl DruidOutputPlugin {
@@ -25,12 +24,12 @@ impl DruidOutputPlugin {
                 .set("message.timeout.ms", "5000")
                 .create()
                 .map_err(Error::ProducerCreation)?,
-            topic: Arc::new(args.topic),
+            topic: args.topic,
         })
     }
 
     async fn store_message(
-        producer: FutureProducer,
+        producer: &FutureProducer,
         msg: GenericMessage,
         topic: &str,
     ) -> Resolution {
@@ -59,13 +58,8 @@ impl DruidOutputPlugin {
 
 #[async_trait::async_trait]
 impl OutputPlugin for DruidOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Result<Resolution, OutputError> {
-        let producer = self.producer.clone();
-        let topic = Arc::clone(&self.topic);
-
-        let resolution = DruidOutputPlugin::store_message(producer, msg, topic.as_str()).await;
-
-        Ok(resolution)
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
+        DruidOutputPlugin::store_message(&self.producer, msg, self.topic.as_str()).await
     }
 
     fn name(&self) -> &'static str {

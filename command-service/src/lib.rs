@@ -1,4 +1,5 @@
 #![feature(async_closure)]
+#![feature(try_trait)]
 
 pub mod args;
 pub mod communication;

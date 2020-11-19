@@ -24,6 +24,6 @@ pub enum OutputArgs {
 
 #[async_trait::async_trait]
 pub trait OutputPlugin: Send + Sync + 'static {
-    async fn handle_message(&self, msg: GenericMessage) -> Result<Resolution, OutputError>;
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution;
     fn name(&self) -> &'static str;
 }

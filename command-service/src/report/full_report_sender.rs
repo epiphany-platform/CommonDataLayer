@@ -1,25 +1,38 @@
 use crate::communication::GenericMessage;
-use crate::report::{Error, ReportServiceInstance};
-use serde_json::json;
+use crate::report::{Error, Reporter};
+use serde::Serialize;
+use std::borrow::Cow;
 use std::sync::Arc;
 use utils::messaging_system::publisher::CommonPublisher;
+use uuid::Uuid;
 
 const APPLICATION_NAME: &str = "Command Service";
 
-pub struct FullReportServiceConfig {
+#[derive(Clone)]
+pub struct FullReportSenderBase {
     pub producer: CommonPublisher,
     pub topic: Arc<String>,
     pub output_plugin: Arc<String>,
 }
 
-pub struct FullReportServiceInstance {
+#[derive(Clone)]
+pub struct FullReportSender {
     pub producer: CommonPublisher,
     pub topic: Arc<String>,
     pub output_plugin: Arc<String>,
     pub msg: GenericMessage,
 }
 
-impl FullReportServiceConfig {
+#[derive(Serialize)]
+struct ReportBody<'a> {
+    application: &'static str,
+    output_plugin: &'a str,
+    description: &'a str,
+    object_id: Uuid,
+    payload: Cow<'a, str>,
+}
+
+impl FullReportSenderBase {
     pub async fn new(brokers: String, topic: String, output_plugin: String) -> Result<Self, Error> {
         Ok(Self {
             producer: CommonPublisher::new_kafka(&brokers)
@@ -32,26 +45,23 @@ impl FullReportServiceConfig {
 }
 
 #[async_trait::async_trait]
-impl ReportServiceInstance for FullReportServiceInstance {
+impl Reporter for FullReportSender {
     async fn report(&mut self, description: &str) -> Result<(), Error> {
-        let payload = json!({
-            "application": APPLICATION_NAME,
-            "output_plugin": self.output_plugin.as_str(),
-            "description": description,
-            "object_id": self.msg.object_id,
-            "payload": String::from_utf8_lossy(&self.msg.payload)
-        })
-        .to_string();
+        let payload = ReportBody {
+            application: APPLICATION_NAME,
+            output_plugin: self.output_plugin.as_str(),
+            description,
+            object_id: self.msg.object_id,
+            payload: String::from_utf8_lossy(&self.msg.payload),
+        };
 
         self.producer
             .publish_message(
                 self.topic.as_str(),
                 "command_service.status",
-                payload.into_bytes(),
+                serde_json::to_vec(&payload).map_err(Error::FailedToProduceErrorMessage)?,
             )
             .await
-            .map_err(Error::FailedToReport)?;
-
-        Ok(())
+            .map_err(Error::FailedToReport)
     }
 }

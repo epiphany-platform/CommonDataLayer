@@ -9,4 +9,6 @@ pub enum Error {
     SenderDropped,
     #[error("Failed to deliver Kafka report")]
     FailedToReport(CommunicationError),
+    #[error("Failed to produce error message `{0}`")]
+    FailedToProduceErrorMessage(serde_json::Error),
 }

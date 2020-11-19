@@ -1,6 +1,5 @@
 use crate::communication::resolution::Resolution;
 use crate::communication::GenericMessage;
-use crate::output::error::OutputError;
 use crate::output::sleigh::connection_pool::SleighConnectionManager;
 use crate::output::OutputPlugin;
 use bb8::{Pool, PooledConnection};
@@ -58,10 +57,8 @@ impl SleighOutputPlugin {
 
 #[async_trait::async_trait]
 impl OutputPlugin for SleighOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Result<Resolution, OutputError> {
-        let pool = self.pool.clone();
-
-        let resolution = match pool.get().await {
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
+        let resolution = match self.pool.get().await {
             Ok(client) => SleighOutputPlugin::store_message(msg, client).await,
             Err(err) => {
                 error!("Failed to get connection from pool {:?}", err);
@@ -69,7 +66,7 @@ impl OutputPlugin for SleighOutputPlugin {
             }
         };
 
-        Ok(resolution)
+        resolution
     }
 
     fn name(&self) -> &'static str {

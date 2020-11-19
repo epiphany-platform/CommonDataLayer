@@ -1,39 +1,39 @@
 use crate::communication::GenericMessage;
 pub use config::ReportServiceConfig;
 pub use error::Error;
-pub use full_report_service::{FullReportServiceConfig, FullReportServiceInstance};
+pub use full_report_sender::{FullReportSender, FullReportSenderBase};
 
 mod config;
 mod error;
-mod full_report_service;
+mod full_report_sender;
 
-pub enum ReportService {
-    Full(FullReportServiceConfig),
+pub enum ReportSender {
+    Full(FullReportSenderBase),
     Disabled,
 }
 
 #[async_trait::async_trait]
-pub trait ReportServiceInstance: Send + Sync + 'static {
+pub trait Reporter: Send + Sync + 'static {
     async fn report(&mut self, description: &str) -> Result<(), Error>;
 }
 
 #[async_trait::async_trait]
-impl ReportServiceInstance for () {
+impl Reporter for () {
     async fn report(&mut self, _: &str) -> Result<(), Error> {
         Ok(())
     }
 }
 
-impl ReportService {
-    pub fn instantiate(&self, msg: &GenericMessage) -> Box<dyn ReportServiceInstance> {
+impl ReportSender {
+    pub fn with_message_body(&self, msg: &GenericMessage) -> Box<dyn Reporter> {
         match self {
-            ReportService::Full(config) => Box::new(FullReportServiceInstance {
+            ReportSender::Full(config) => Box::new(FullReportSender {
                 producer: config.producer.clone(),
                 topic: config.topic.clone(),
                 output_plugin: config.output_plugin.clone(),
                 msg: msg.clone(),
             }),
-            ReportService::Disabled => Box::new(()),
+            ReportSender::Disabled => Box::new(()),
         }
     }
 }
