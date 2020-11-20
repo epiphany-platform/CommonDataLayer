@@ -1,11 +1,9 @@
-pub use crate::communication::error::Error;
 pub use crate::communication::message::GenericMessage;
 use crate::communication::resolution::Resolution;
 use crate::output::OutputPlugin;
-use crate::report::ReportSender;
+use crate::report::{Error, ReportSender};
 use std::sync::Arc;
 
-mod error;
 mod message;
 
 pub mod resolution;
@@ -47,10 +45,7 @@ impl<P: OutputPlugin> MessageRouter<P> {
             Resolution::Success => "Success".to_string(),
         };
 
-        instance
-            .report(&description)
-            .await
-            .map_err(Error::ReportingError)?;
+        instance.report(&description).await?;
 
         Ok(())
     }

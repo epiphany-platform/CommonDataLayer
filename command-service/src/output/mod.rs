@@ -3,13 +3,11 @@ use crate::communication::GenericMessage;
 pub use crate::output::druid::{DruidOutputConfig, DruidOutputPlugin};
 pub use crate::output::victoria_metrics::config::VictoriaMetricsConfig;
 pub use crate::output::victoria_metrics::VictoriaMetricsOutputPlugin;
-pub use error::OutputError;
 pub use psql::{PostgresOutputConfig, PostgresOutputPlugin};
 pub use sleigh::{SleighOutputConfig, SleighOutputPlugin};
 use structopt::StructOpt;
 
 mod druid;
-mod error;
 mod psql;
 mod sleigh;
 mod victoria_metrics;

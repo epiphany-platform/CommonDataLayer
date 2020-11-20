@@ -5,8 +5,6 @@ use utils::messaging_system::CommunicationError;
 pub enum Error {
     #[error("Failed to create producer `{0}`")]
     ProducerCreation(CommunicationError),
-    #[error("Channel was closed on sender side.")]
-    SenderDropped,
     #[error("Failed to deliver Kafka report")]
     FailedToReport(CommunicationError),
     #[error("Failed to produce error message `{0}`")]
