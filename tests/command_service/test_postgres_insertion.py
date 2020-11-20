@@ -17,9 +17,7 @@ KAFKA_BROKERS = os.getenv("KAFKA_BROKERS") or "localhost:9092"
 
 
 def push_to_kafka(producer, data):
-    producer\
-        .send(TOPIC, json.dumps(data).encode(), key=data['object_id'].encode(), timestamp_ms=data['timestamp'])\
-        .get(3)
+    producer.send(TOPIC, json.dumps(data).encode(), key=data['object_id'].encode(), timestamp_ms=data['timestamp']).get(3)
 
 
 @pytest.fixture(params=['single_insert', 'multiple_inserts'])

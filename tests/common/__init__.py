@@ -9,11 +9,8 @@ def load_case(case_name, app):
         return json_document['data'], json_document['expected']
 
 
-def retry_retrieve(fetch, expected_rows, **kwrags):
-    retries = kwrags.get('retries', 10)
-    delay = kwrags.get('delay', 6)
-
-    for i in range(1, retries):
+def retry_retrieve(fetch, expected_rows, retries=10, delay=6):
+    for _ in range(1, retries):
         data = fetch()
 
         if len(data) == expected_rows:

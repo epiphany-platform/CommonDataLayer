@@ -15,6 +15,7 @@ def clear_data_table(db):
     curr.execute("DELETE FROM data WHERE true")
     db.commit()
     curr.close()
+    curr.close()
 
 
 def insert_test_data(db, data):
