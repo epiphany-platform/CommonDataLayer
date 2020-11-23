@@ -51,7 +51,7 @@ pub struct StoredDefinition {
 }
 
 #[derive(Default, Clone, Debug, Serialize, Deserialize)]
-pub struct DbDump {
+pub struct DbExport {
     pub schemas: HashMap<Uuid, StoredSchema>,
     pub definitions: HashMap<Uuid, StoredDefinition>,
     pub views: HashMap<Uuid, View>,

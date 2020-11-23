@@ -7,7 +7,10 @@ use schema_registry::{
     rpc::SchemaRegistryImpl,
 };
 use serde::Deserialize;
+use std::fs::File;
+use std::io::Write;
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::path::PathBuf;
 use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
 
@@ -20,6 +23,7 @@ struct Config {
     pub kafka_group_id: String,
     pub kafka_topics: Vec<String>,
     pub pod_name: Option<String>,
+    pub export: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -42,6 +46,14 @@ pub async fn main() -> anyhow::Result<()> {
         replication_config,
         config.pod_name,
     );
+
+    if let Some(export_path) = config.export {
+        let exported = registry.export_all()?;
+        let exported = serde_json::to_string(&exported)?;
+        let mut file = File::open(export_path)?;
+        write!(file, "{}", exported)?;
+        return Ok(());
+    }
 
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.input_port);
     status_endpoints::mark_as_started();

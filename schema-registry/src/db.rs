@@ -4,7 +4,7 @@ use super::{
 };
 use crate::{
     error::{MalformedError, RegistryError, RegistryResult},
-    types::DbDump,
+    types::DbExport,
     types::SchemaDefinition,
     types::StoredDefinition,
     types::StoredSchema,
@@ -425,7 +425,7 @@ impl<D: Datastore> SchemaDb<D> {
             .map_err(|err| RegistryError::InvalidView(err.to_string()))
     }
 
-    pub fn dump_all(&self) -> RegistryResult<DbDump> {
+    pub fn export_all(&self) -> RegistryResult<DbExport> {
         let conn = self.connect()?;
 
         let all_definitions = conn.get_all_vertex_properties(
@@ -497,7 +497,7 @@ impl<D: Datastore> SchemaDb<D> {
             })
             .collect::<HashMap<Uuid, Uuid>>();
 
-        Ok(DbDump {
+        Ok(DbExport {
             schemas,
             definitions,
             views,
@@ -515,7 +515,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn dump_all() -> Result<()> {
+    fn export_all() -> Result<()> {
         let db = MemoryDatastore::default();
         let db = SchemaDb { db };
 
@@ -538,7 +538,7 @@ mod tests {
             None,
         )?;
 
-        let result = db.dump_all()?;
+        let result = db.export_all()?;
 
         let (schema_id, schema) = result.schemas.iter().next().unwrap();
         let (def_id, definition) = result.definitions.iter().next().unwrap();

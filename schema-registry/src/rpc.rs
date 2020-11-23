@@ -2,6 +2,7 @@ use crate::{
     db::SchemaDb,
     error::RegistryError,
     replication::{KafkaConfig, ReplicationEvent, ReplicationRole, ReplicationState},
+    types::DbExport,
     types::{NewSchema, NewSchemaVersion, VersionedUuid},
     View,
 };
@@ -58,6 +59,11 @@ impl SchemaRegistryImpl {
             .lock()
             .unwrap_or_else(abort_on_poison)
             .replicate_message(event)
+    }
+
+    pub fn export_all(&self) -> anyhow::Result<DbExport> {
+        let result = self.db.export_all()?;
+        Ok(result)
     }
 }
 
