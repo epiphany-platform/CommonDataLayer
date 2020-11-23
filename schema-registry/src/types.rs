@@ -3,6 +3,7 @@ use indradb::VertexProperties;
 use semver::{Version, VersionReq};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -37,6 +38,27 @@ pub struct VersionedUuid {
     pub version_req: VersionReq,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StoredSchema {
+    pub name: String,
+    pub kafka_topic: String,
+    pub query_address: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct StoredDefinition {
+    pub definition: Value,
+}
+
+#[derive(Default, Clone, Debug, Serialize, Deserialize)]
+pub struct DbDump {
+    pub schemas: HashMap<Uuid, StoredSchema>,
+    pub definitions: HashMap<Uuid, StoredDefinition>,
+    pub views: HashMap<Uuid, View>,
+    pub def_edges: HashMap<Uuid, Uuid>,
+    pub view_edges: HashMap<Uuid, Uuid>,
+}
+
 fn get_vertex_property_or<T: DeserializeOwned>(
     properties: &mut VertexProperties,
     name: &'static str,
@@ -55,6 +77,33 @@ impl View {
             View {
                 name: get_vertex_property_or(&mut properties, property::VIEW_NAME)?,
                 jmespath: get_vertex_property_or(&mut properties, property::VIEW_EXPRESSION)?,
+            },
+        ))
+    }
+}
+
+impl StoredDefinition {
+    pub fn from_properties(mut properties: VertexProperties) -> Option<(Uuid, Self)> {
+        Some((
+            properties.vertex.id,
+            Self {
+                definition: get_vertex_property_or(&mut properties, property::DEFINITION_VALUE)?,
+            },
+        ))
+    }
+}
+
+impl StoredSchema {
+    pub fn from_properties(mut properties: VertexProperties) -> Option<(Uuid, Self)> {
+        Some((
+            properties.vertex.id,
+            Self {
+                name: get_vertex_property_or(&mut properties, property::SCHEMA_NAME)?,
+                kafka_topic: get_vertex_property_or(&mut properties, property::SCHEMA_TOPIC_NAME)?,
+                query_address: get_vertex_property_or(
+                    &mut properties,
+                    property::SCHEMA_QUERY_ADDRESS,
+                )?,
             },
         ))
     }

@@ -1,9 +1,13 @@
 use crate::{db::SchemaDb, error::RegistryResult, types::VersionedUuid};
+use indradb::Datastore;
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use uuid::Uuid;
 
-pub fn build_full_schema(mut schema: Value, db: &SchemaDb) -> RegistryResult<Value> {
+pub fn build_full_schema<D: Datastore>(
+    mut schema: Value,
+    db: &SchemaDb<D>,
+) -> RegistryResult<Value> {
     if let Some(defs) = schema
         .get_mut("definitions")
         .and_then(|val| val.as_object_mut())

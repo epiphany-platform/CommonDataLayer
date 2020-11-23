@@ -4,11 +4,14 @@ use super::{
 };
 use crate::{
     error::{MalformedError, RegistryError, RegistryResult},
+    types::DbDump,
     types::SchemaDefinition,
+    types::StoredDefinition,
+    types::StoredSchema,
 };
 use indradb::{
-    Datastore, EdgeKey, EdgeQueryExt, RangeVertexQuery, SledDatastore, SledTransaction,
-    SpecificEdgeQuery, SpecificVertexQuery, Transaction, Type, Vertex, VertexQueryExt,
+    Datastore, EdgeKey, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
+    SpecificVertexQuery, Transaction, Type, Vertex, VertexQueryExt,
 };
 use lazy_static::lazy_static;
 use log::trace;
@@ -39,12 +42,12 @@ pub mod property {
     pub const VIEW_EXPRESSION: &str = "JMESPATH";
 }
 
-pub struct SchemaDb {
-    pub db: SledDatastore,
+pub struct SchemaDb<D: Datastore = SledDatastore> {
+    pub db: D,
 }
 
-impl SchemaDb {
-    fn connect(&self) -> RegistryResult<SledTransaction> {
+impl<D: Datastore> SchemaDb<D> {
+    fn connect(&self) -> RegistryResult<D::Trans> {
         self.db
             .transaction()
             .map_err(RegistryError::ConnectionError)
@@ -420,5 +423,136 @@ impl SchemaDb {
         jmespatch::parse(view)
             .map(|_| ())
             .map_err(|err| RegistryError::InvalidView(err.to_string()))
+    }
+
+    pub fn dump_all(&self) -> RegistryResult<DbDump> {
+        let conn = self.connect()?;
+
+        let all_definitions = conn.get_all_vertex_properties(
+            RangeVertexQuery::new(std::u32::MAX).t(SCHEMA_DEFINITION_VERTEX_TYPE.clone()),
+        )?;
+
+        let all_schemas = conn.get_all_vertex_properties(
+            RangeVertexQuery::new(std::u32::MAX).t(SCHEMA_VERTEX_TYPE.clone()),
+        )?;
+
+        let all_views = conn.get_all_vertex_properties(
+            RangeVertexQuery::new(std::u32::MAX).t(VIEW_VERTEX_TYPE.clone()),
+        )?;
+
+        let all_def_edges = conn.get_all_edge_properties(
+            RangeVertexQuery::new(std::u32::MAX)
+                .outbound(std::u32::MAX)
+                .t(SCHEMA_DEFINITION_EDGE_TYPE.clone()),
+        )?;
+
+        let all_view_edges = conn.get_all_edge_properties(
+            RangeVertexQuery::new(std::u32::MAX)
+                .outbound(std::u32::MAX)
+                .t(SCHEMA_VIEW_EDGE_TYPE.clone()),
+        )?;
+
+        let definitions = all_definitions
+            .into_iter()
+            .map(|props| {
+                let def_id = props.vertex.id;
+                StoredDefinition::from_properties(props)
+                    .ok_or_else(|| MalformedError::MalformedDefinition(def_id).into())
+            })
+            .collect::<RegistryResult<HashMap<Uuid, StoredDefinition>>>()?;
+
+        let schemas = all_schemas
+            .into_iter()
+            .map(|props| {
+                let schema_id = props.vertex.id;
+                StoredSchema::from_properties(props)
+                    .ok_or_else(|| MalformedError::MalformedSchema(schema_id).into())
+            })
+            .collect::<RegistryResult<HashMap<Uuid, StoredSchema>>>()?;
+
+        let views = all_views
+            .into_iter()
+            .map(|props| {
+                let view_id = props.vertex.id;
+                View::from_properties(props)
+                    .ok_or_else(|| MalformedError::MalformedView(view_id).into())
+            })
+            .collect::<RegistryResult<HashMap<Uuid, View>>>()?;
+
+        let def_edges = all_def_edges
+            .into_iter()
+            .map(|props| {
+                let inbound_id = props.edge.key.inbound_id;
+                let outbound_id = props.edge.key.outbound_id;
+                (outbound_id, inbound_id)
+            })
+            .collect::<HashMap<Uuid, Uuid>>();
+
+        let view_edges = all_view_edges
+            .into_iter()
+            .map(|props| {
+                let inbound_id = props.edge.key.inbound_id;
+                let outbound_id = props.edge.key.outbound_id;
+                (outbound_id, inbound_id)
+            })
+            .collect::<HashMap<Uuid, Uuid>>();
+
+        Ok(DbDump {
+            schemas,
+            definitions,
+            views,
+            def_edges,
+            view_edges,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::Result;
+    use indradb::MemoryDatastore;
+    use serde_json::json;
+
+    #[test]
+    fn dump_all() -> Result<()> {
+        let db = MemoryDatastore::default();
+        let db = SchemaDb { db };
+
+        db.add_schema(
+            NewSchema {
+                name: "test".into(),
+                definition: json! ({
+                    "definitions": {
+                        "def1": {
+                            "a": "number"
+                        },
+                        "def2": {
+                            "b": "string"
+                        }
+                    }
+                }),
+                kafka_topic: "topic1".into(),
+                query_address: "query1".into(),
+            },
+            None,
+        )?;
+
+        let result = db.dump_all()?;
+
+        let (schema_id, schema) = result.schemas.iter().next().unwrap();
+        let (def_id, definition) = result.definitions.iter().next().unwrap();
+
+        let (edge_in, edge_out) = result.def_edges.iter().next().unwrap();
+        assert_eq!("test", schema.name);
+        assert!(definition.definition.is_object());
+        assert_eq!(
+            r#"{"definitions":{"def1":{"a":"number"},"def2":{"b":"string"}}}"#,
+            serde_json::to_string(&definition.definition).unwrap()
+        );
+        assert_eq!(schema_id, edge_in);
+        assert_eq!(def_id, edge_out);
+
+        Ok(())
     }
 }

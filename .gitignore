@@ -4,3 +4,5 @@ target/
 .vscode/
 .idea
 venv
+.envrc
+shell.nix
