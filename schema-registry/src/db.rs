@@ -60,7 +60,7 @@ impl<D: Datastore> SchemaDb<D> {
             conn.create_vertex_from_type(vertex_type)?
         };
 
-        for (name, value) in properties.into_iter() {
+        for (name, value) in properties {
             conn.set_vertex_properties(SpecificVertexQuery::single(new_id).property(name), &value)?;
         }
 
