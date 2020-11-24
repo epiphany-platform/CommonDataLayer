@@ -1,14 +1,8 @@
 use super::{
     schema::build_full_schema,
     types::{
-        storage::edges::{
-            Edge as EdgeStruct, SchemaDefinition as SchemaDefEdge, SchemaView as SchemaViewEdge,
-            SCHEMA_DEFINITION_EDGE_TYPE, SCHEMA_VIEW_EDGE_TYPE,
-        },
-        storage::vertices::{
-            Definition, Schema, Vertex as VertexStruct, View, SCHEMA_DEFINITION_VERTEX_TYPE,
-            SCHEMA_VERTEX_TYPE, VIEW_VERTEX_TYPE,
-        },
+        storage::edges::{Edge, SchemaDefinition as SchemaDefEdge, SchemaView as SchemaViewEdge},
+        storage::vertices::{Definition, Schema, Vertex, View},
         NewSchema, NewSchemaVersion, VersionedUuid,
     },
 };
@@ -18,8 +12,8 @@ use crate::{
     types::SchemaDefinition,
 };
 use indradb::{
-    Datastore, EdgeKey, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
-    SpecificVertexQuery, Transaction, Vertex, VertexQueryExt,
+    Datastore, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
+    SpecificVertexQuery, Transaction, VertexQueryExt,
 };
 use log::trace;
 use semver::Version;
@@ -38,17 +32,17 @@ impl<D: Datastore> SchemaDb<D> {
             .map_err(RegistryError::ConnectionError)
     }
 
-    fn create_vertex_with_properties(
+    fn create_vertex_with_properties<V: Vertex>(
         &self,
-        vertex: impl VertexStruct,
+        vertex: V,
         uuid: Option<Uuid>,
     ) -> RegistryResult<Uuid> {
         let conn = self.connect()?;
-        let (vertex_type, properties) = vertex.vertex_info();
+        let properties = vertex.to_properties();
         let new_id = if let Some(uuid) = uuid {
-            let vertex = Vertex {
+            let vertex = indradb::Vertex {
                 id: uuid,
-                t: vertex_type,
+                t: V::db_type(),
             };
             let inserted = conn.create_vertex(&vertex)?;
             if !inserted {
@@ -56,7 +50,7 @@ impl<D: Datastore> SchemaDb<D> {
             }
             uuid
         } else {
-            conn.create_vertex_from_type(vertex_type)?
+            conn.create_vertex_from_type(V::db_type())?
         };
 
         for (name, value) in properties {
@@ -79,7 +73,7 @@ impl<D: Datastore> SchemaDb<D> {
         Ok(())
     }
 
-    fn set_edge_properties(&self, edge: impl EdgeStruct) -> RegistryResult<()> {
+    fn set_edge_properties(&self, edge: impl Edge) -> RegistryResult<()> {
         let conn = self.connect()?;
         let (key, properties) = edge.edge_info();
         conn.create_edge(&key)?;
@@ -95,11 +89,8 @@ impl<D: Datastore> SchemaDb<D> {
 
     pub fn ensure_schema_exists(&self, id: Uuid) -> RegistryResult<()> {
         let conn = self.connect()?;
-        let vertices = conn.get_vertices(
-            RangeVertexQuery::new(1)
-                .t(SCHEMA_VERTEX_TYPE.clone())
-                .start_id(id),
-        )?;
+        let vertices =
+            conn.get_vertices(RangeVertexQuery::new(1).t(Schema::db_type()).start_id(id))?;
 
         if vertices.is_empty() {
             Err(RegistryError::NoSchemaWithId(id))
@@ -131,7 +122,7 @@ impl<D: Datastore> SchemaDb<D> {
         conn.get_edge_properties(
             SpecificVertexQuery::single(id)
                 .outbound(std::u32::MAX)
-                .t(SCHEMA_DEFINITION_EDGE_TYPE.clone())
+                .t(SchemaDefEdge::db_type())
                 .property(SchemaDefEdge::VERSION),
         )?
         .into_iter()
@@ -181,11 +172,12 @@ impl<D: Datastore> SchemaDb<D> {
 
     pub fn get_view(&self, id: Uuid) -> RegistryResult<View> {
         let conn = self.connect()?;
+        let db_type = View::db_type();
         let properties = conn
             .get_all_vertex_properties(SpecificVertexQuery::single(id))?
             .into_iter()
             .next()
-            .filter(|props| props.vertex.t == *VIEW_VERTEX_TYPE)
+            .filter(|props| props.vertex.t == db_type)
             .ok_or(RegistryError::NoViewWithId(id))?;
 
         View::from_properties(properties)
@@ -278,17 +270,12 @@ impl<D: Datastore> SchemaDb<D> {
         view: View,
         view_id: Option<Uuid>,
     ) -> RegistryResult<Uuid> {
-        let conn = self.connect()?;
         self.ensure_schema_exists(schema_id)?;
         self.validate_view(&view.jmespath)?;
 
         let view_id = self.create_vertex_with_properties(view, view_id)?;
 
-        conn.create_edge(&EdgeKey::new(
-            schema_id,
-            SCHEMA_VIEW_EDGE_TYPE.clone(),
-            view_id,
-        ))?;
+        self.set_edge_properties(SchemaViewEdge { schema_id, view_id })?;
 
         Ok(view_id)
     }
@@ -297,7 +284,7 @@ impl<D: Datastore> SchemaDb<D> {
         let old_view = self.get_view(id)?;
         self.validate_view(&view.jmespath)?;
 
-        self.set_vertex_properties(id, &view.vertex_info().1)?;
+        self.set_vertex_properties(id, &view.to_properties())?;
 
         Ok(old_view)
     }
@@ -306,7 +293,7 @@ impl<D: Datastore> SchemaDb<D> {
         let conn = self.connect()?;
         let all_names = conn.get_vertex_properties(
             RangeVertexQuery::new(std::u32::MAX)
-                .t(SCHEMA_VERTEX_TYPE.clone())
+                .t(Schema::db_type())
                 .property(Schema::NAME),
         )?;
 
@@ -329,7 +316,7 @@ impl<D: Datastore> SchemaDb<D> {
         let all_views = conn.get_all_vertex_properties(
             SpecificVertexQuery::single(schema_id)
                 .outbound(std::u32::MAX)
-                .t(SCHEMA_VIEW_EDGE_TYPE.clone())
+                .t(SchemaViewEdge::db_type())
                 .inbound(std::u32::MAX),
         )?;
 
@@ -378,27 +365,25 @@ impl<D: Datastore> SchemaDb<D> {
         let conn = self.connect()?;
 
         let all_definitions = conn.get_all_vertex_properties(
-            RangeVertexQuery::new(std::u32::MAX).t(SCHEMA_DEFINITION_VERTEX_TYPE.clone()),
+            RangeVertexQuery::new(std::u32::MAX).t(Definition::db_type()),
         )?;
 
-        let all_schemas = conn.get_all_vertex_properties(
-            RangeVertexQuery::new(std::u32::MAX).t(SCHEMA_VERTEX_TYPE.clone()),
-        )?;
+        let all_schemas = conn
+            .get_all_vertex_properties(RangeVertexQuery::new(std::u32::MAX).t(Schema::db_type()))?;
 
-        let all_views = conn.get_all_vertex_properties(
-            RangeVertexQuery::new(std::u32::MAX).t(VIEW_VERTEX_TYPE.clone()),
-        )?;
+        let all_views = conn
+            .get_all_vertex_properties(RangeVertexQuery::new(std::u32::MAX).t(View::db_type()))?;
 
         let all_def_edges = conn.get_all_edge_properties(
             RangeVertexQuery::new(std::u32::MAX)
                 .outbound(std::u32::MAX)
-                .t(SCHEMA_DEFINITION_EDGE_TYPE.clone()),
+                .t(SchemaDefEdge::db_type()),
         )?;
 
         let all_view_edges = conn.get_all_edge_properties(
             RangeVertexQuery::new(std::u32::MAX)
                 .outbound(std::u32::MAX)
-                .t(SCHEMA_VIEW_EDGE_TYPE.clone()),
+                .t(SchemaViewEdge::db_type()),
         )?;
 
         let definitions = all_definitions

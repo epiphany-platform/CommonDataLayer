@@ -1,15 +1,16 @@
 use super::*;
 
 pub trait Vertex: Sized {
-    fn vertex_info<'a>(self) -> (Type, Vec<(&'a str, Value)>);
+    fn to_properties<'a>(self) -> Vec<(&'a str, Value)>;
     fn from_properties(properties: VertexProperties) -> Option<(Uuid, Self)>;
+    fn db_type() -> Type;
 }
 
 lazy_static! {
     // Vertex Types
-    pub static ref SCHEMA_VERTEX_TYPE: Type = Type::new("SCHEMA").unwrap();
-    pub static ref SCHEMA_DEFINITION_VERTEX_TYPE: Type = Type::new("DEFINITION").unwrap();
-    pub static ref VIEW_VERTEX_TYPE: Type = Type::new("VIEW").unwrap();
+    static ref SCHEMA_VERTEX_TYPE: Type = Type::new("SCHEMA").unwrap();
+    static ref SCHEMA_DEFINITION_VERTEX_TYPE: Type = Type::new("DEFINITION").unwrap();
+    static ref VIEW_VERTEX_TYPE: Type = Type::new("VIEW").unwrap();
 }
 
 // Stored vertices
@@ -27,17 +28,6 @@ impl Schema {
 }
 
 impl Vertex for Schema {
-    fn vertex_info<'a>(self) -> (Type, Vec<(&'a str, Value)>) {
-        (
-            SCHEMA_VERTEX_TYPE.clone(),
-            vec![
-                (Self::NAME, Value::String(self.name)),
-                (Self::TOPIC_NAME, Value::String(self.kafka_topic)),
-                (Self::QUERY_ADDRESS, Value::String(self.query_address)),
-            ],
-        )
-    }
-
     fn from_properties(mut properties: VertexProperties) -> Option<(Uuid, Self)> {
         Some((
             properties.vertex.id,
@@ -47,6 +37,18 @@ impl Vertex for Schema {
                 query_address: get_vertex_property_or(&mut properties, Self::QUERY_ADDRESS)?,
             },
         ))
+    }
+
+    fn to_properties<'a>(self) -> Vec<(&'a str, Value)> {
+        vec![
+            (Self::NAME, Value::String(self.name)),
+            (Self::TOPIC_NAME, Value::String(self.kafka_topic)),
+            (Self::QUERY_ADDRESS, Value::String(self.query_address)),
+        ]
+    }
+
+    fn db_type() -> Type {
+        SCHEMA_VERTEX_TYPE.clone()
     }
 }
 
@@ -60,13 +62,6 @@ impl Definition {
 }
 
 impl Vertex for Definition {
-    fn vertex_info<'a>(self) -> (Type, Vec<(&'a str, Value)>) {
-        (
-            SCHEMA_DEFINITION_VERTEX_TYPE.clone(),
-            vec![(Definition::VALUE, self.definition)],
-        )
-    }
-
     fn from_properties(mut properties: VertexProperties) -> Option<(Uuid, Self)> {
         Some((
             properties.vertex.id,
@@ -74,6 +69,14 @@ impl Vertex for Definition {
                 definition: get_vertex_property_or(&mut properties, Definition::VALUE)?,
             },
         ))
+    }
+
+    fn to_properties<'a>(self) -> Vec<(&'a str, Value)> {
+        vec![(Definition::VALUE, self.definition)]
+    }
+
+    fn db_type() -> Type {
+        SCHEMA_DEFINITION_VERTEX_TYPE.clone()
     }
 }
 
@@ -89,16 +92,6 @@ impl View {
 }
 
 impl Vertex for View {
-    fn vertex_info<'a>(self) -> (Type, Vec<(&'a str, Value)>) {
-        (
-            VIEW_VERTEX_TYPE.clone(),
-            vec![
-                (View::NAME, Value::String(self.name)),
-                (View::EXPRESSION, Value::String(self.jmespath)),
-            ],
-        )
-    }
-
     fn from_properties(mut properties: VertexProperties) -> Option<(Uuid, View)> {
         Some((
             properties.vertex.id,
@@ -107,5 +100,16 @@ impl Vertex for View {
                 jmespath: get_vertex_property_or(&mut properties, View::EXPRESSION)?,
             },
         ))
+    }
+
+    fn to_properties<'a>(self) -> Vec<(&'a str, Value)> {
+        vec![
+            (View::NAME, Value::String(self.name)),
+            (View::EXPRESSION, Value::String(self.jmespath)),
+        ]
+    }
+
+    fn db_type() -> Type {
+        VIEW_VERTEX_TYPE.clone()
     }
 }
