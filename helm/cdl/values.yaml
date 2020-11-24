@@ -3,7 +3,10 @@ global:
   imageVersion: master
   imagePullPolicy: Always
   kafkaBrokers: 10.1.5.4:9092
-  rabbitMqConnectionString: "amqp://rabbitmq:rabbitmq@10.1.1.4:5672/%2f"
+  rabbitMqUsername: rabbitmq
+  rabbitMqPassword: rabbitmq
+  rabbitMqHost: 10.1.1.4
+  rabbitMqPort: 5672
   cdlImagePullSecrets: services
   reportTopic: cdl.errors
 
