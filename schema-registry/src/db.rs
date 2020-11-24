@@ -204,7 +204,7 @@ impl<D: Datastore> SchemaDb<D> {
     }
 
     pub fn add_schema(&self, schema: NewSchema, new_id: Option<Uuid>) -> RegistryResult<Uuid> {
-        let (schema, definition) = schema.to_vertex();
+        let (schema, definition) = schema.vertex();
         let full_schema = build_full_schema(definition, &self)?;
 
         let new_id = self.create_vertex_with_properties(schema, new_id)?;
@@ -398,7 +398,7 @@ impl<D: Datastore> SchemaDb<D> {
         for (schema_id, view_id) in imported.view_edges {
             conn.create_edge(&EdgeKey::new(
                 schema_id,
-                SCHEMA_DEFINITION_EDGE_TYPE.clone(),
+                SCHEMA_VIEW_EDGE_TYPE.clone(),
                 view_id,
             ))?;
         }
@@ -496,11 +496,12 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn export_all() -> Result<()> {
-        let db = MemoryDatastore::default();
-        let db = SchemaDb { db };
+    fn import_export_all() -> Result<()> {
+        let db = SchemaDb {
+            db: MemoryDatastore::default(),
+        };
 
-        db.add_schema(
+        let added_schema_id = db.add_schema(
             NewSchema {
                 name: "test".into(),
                 definition: json! ({
@@ -518,21 +519,85 @@ mod tests {
             },
             None,
         )?;
+        db.add_view_to_schema(
+            added_schema_id,
+            View {
+                name: "view1".into(),
+                jmespath: "{ a: a }".into(),
+            },
+            None,
+        )?;
+
+        let original_result = db.export_all()?;
+
+        let new_db = SchemaDb {
+            db: MemoryDatastore::default(),
+        };
+        new_db.import_all(original_result.clone())?;
+
+        let new_result = new_db.export_all()?;
+
+        assert_eq!(original_result, new_result);
+
+        Ok(())
+    }
+
+    #[test]
+    fn export_all() -> Result<()> {
+        let db = SchemaDb {
+            db: MemoryDatastore::default(),
+        };
+
+        let added_schema_id = db.add_schema(
+            NewSchema {
+                name: "test".into(),
+                definition: json! ({
+                    "definitions": {
+                        "def1": {
+                            "a": "number"
+                        },
+                        "def2": {
+                            "b": "string"
+                        }
+                    }
+                }),
+                kafka_topic: "topic1".into(),
+                query_address: "query1".into(),
+            },
+            None,
+        )?;
+        db.add_view_to_schema(
+            added_schema_id,
+            View {
+                name: "view1".into(),
+                jmespath: "{ a: a }".into(),
+            },
+            None,
+        )?;
 
         let result = db.export_all()?;
 
         let (schema_id, schema) = result.schemas.iter().next().unwrap();
-        let (def_id, definition) = result.definitions.iter().next().unwrap();
-
-        let (edge_in, edge_out) = result.def_edges.iter().next().unwrap();
+        assert_eq!(added_schema_id, *schema_id);
         assert_eq!("test", schema.name);
+
+        let (def_id, definition) = result.definitions.iter().next().unwrap();
         assert!(definition.definition.is_object());
         assert_eq!(
             r#"{"definitions":{"def1":{"a":"number"},"def2":{"b":"string"}}}"#,
             serde_json::to_string(&definition.definition).unwrap()
         );
+
+        let (view_id, view) = result.views.iter().next().unwrap();
+        assert_eq!(r#"{ a: a }"#, view.jmespath);
+
+        let (edge_in, edge_out) = result.def_edges.iter().next().unwrap();
         assert_eq!(schema_id, edge_in);
         assert_eq!(def_id, edge_out);
+
+        let (edge_in, edge_out) = result.view_edges.iter().next().unwrap();
+        assert_eq!(schema_id, edge_in);
+        assert_eq!(view_id, edge_out);
 
         Ok(())
     }

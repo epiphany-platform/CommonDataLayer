@@ -126,7 +126,7 @@ pub struct NewSchema {
 }
 
 impl NewSchema {
-    pub fn to_vertex(self) -> (Schema, Value) {
+    pub fn vertex(self) -> (Schema, Value) {
         let Self {
             name,
             definition,
