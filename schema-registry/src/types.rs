@@ -1,4 +1,4 @@
-use indradb::{Type, VertexProperties};
+use indradb::{EdgeKey, EdgeProperties, Type, VertexProperties};
 use lazy_static::lazy_static;
 use semver::{Version, VersionReq};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -11,11 +11,20 @@ lazy_static! {
     pub static ref SCHEMA_VERTEX_TYPE: Type = Type::new("SCHEMA").unwrap();
     pub static ref SCHEMA_DEFINITION_VERTEX_TYPE: Type = Type::new("DEFINITION").unwrap();
     pub static ref VIEW_VERTEX_TYPE: Type = Type::new("VIEW").unwrap();
+
+    // Edge Types
+    pub static ref SCHEMA_DEFINITION_EDGE_TYPE: Type = Type::new("SCHEMA_DEFINITION").unwrap();
+    pub static ref SCHEMA_VIEW_EDGE_TYPE: Type = Type::new("SCHEMA_VIEW").unwrap();
 }
 
 pub trait Vertex: Sized {
     fn vertex_info<'a>(self) -> (Type, Vec<(&'a str, Value)>);
     fn from_properties(properties: VertexProperties) -> Option<(Uuid, Self)>;
+}
+
+pub trait Edge: Sized {
+    fn edge_info<'a>(self) -> (EdgeKey, Vec<(&'a str, Value)>);
+    fn from_properties(properties: EdgeProperties) -> Option<Self>;
 }
 
 // Stored vertices
@@ -116,6 +125,62 @@ impl Vertex for View {
     }
 }
 
+// Stored edges
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct ViewEdge {
+    pub schema_id: Uuid,
+    pub view_id: Uuid,
+}
+
+impl Edge for ViewEdge {
+    fn edge_info<'a>(self) -> (EdgeKey, Vec<(&'a str, Value)>) {
+        (
+            EdgeKey::new(self.schema_id, SCHEMA_VIEW_EDGE_TYPE.clone(), self.view_id),
+            vec![],
+        )
+    }
+
+    fn from_properties(properties: EdgeProperties) -> Option<Self> {
+        let schema_id = properties.edge.key.outbound_id;
+        let view_id = properties.edge.key.inbound_id;
+        Some(Self { schema_id, view_id })
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct DefinitionEdge {
+    pub schema_id: Uuid,
+    pub def_id: Uuid,
+    pub version: Version,
+}
+
+impl DefinitionEdge {
+    pub const VERSION: &'static str = "VERSION";
+}
+
+impl Edge for DefinitionEdge {
+    fn edge_info<'a>(self) -> (EdgeKey, Vec<(&'a str, Value)>) {
+        (
+            EdgeKey::new(
+                self.schema_id,
+                SCHEMA_DEFINITION_EDGE_TYPE.clone(),
+                self.def_id,
+            ),
+            vec![(Self::VERSION, serde_json::json!(self.version))],
+        )
+    }
+
+    fn from_properties(mut properties: EdgeProperties) -> Option<Self> {
+        let schema_id = properties.edge.key.outbound_id;
+        let def_id = properties.edge.key.inbound_id;
+        Some(Self {
+            schema_id,
+            def_id,
+            version: get_edge_property_or(&mut properties, Self::VERSION)?,
+        })
+    }
+}
+
 // Helper structures
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewSchema {
@@ -188,12 +253,23 @@ pub struct DbExport {
     pub schemas: HashMap<Uuid, Schema>,
     pub definitions: HashMap<Uuid, Definition>,
     pub views: HashMap<Uuid, View>,
-    pub def_edges: HashMap<Uuid, Uuid>,
-    pub view_edges: HashMap<Uuid, Uuid>,
+    pub def_edges: Vec<DefinitionEdge>,
+    pub view_edges: Vec<ViewEdge>,
 }
 
 fn get_vertex_property_or<T: DeserializeOwned>(
     properties: &mut VertexProperties,
+    name: &'static str,
+) -> Option<T> {
+    properties
+        .props
+        .drain_filter(|prop| prop.name == name)
+        .next()
+        .and_then(|prop| serde_json::from_value(prop.value).ok())
+}
+
+fn get_edge_property_or<T: DeserializeOwned>(
+    properties: &mut EdgeProperties,
     name: &'static str,
 ) -> Option<T> {
     properties

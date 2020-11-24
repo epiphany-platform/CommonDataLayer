@@ -6,33 +6,27 @@ use crate::{
     error::{MalformedError, RegistryError, RegistryResult},
     types::DbExport,
     types::Definition,
+    types::DefinitionEdge,
+    types::Edge as EdgeStruct,
     types::Schema,
     types::SchemaDefinition,
     types::Vertex as VertexStruct,
+    types::ViewEdge,
+    types::SCHEMA_DEFINITION_EDGE_TYPE,
     types::SCHEMA_DEFINITION_VERTEX_TYPE,
     types::SCHEMA_VERTEX_TYPE,
+    types::SCHEMA_VIEW_EDGE_TYPE,
     types::VIEW_VERTEX_TYPE,
 };
 use indradb::{
     Datastore, EdgeKey, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
-    SpecificVertexQuery, Transaction, Type, Vertex, VertexQueryExt,
+    SpecificVertexQuery, Transaction, Vertex, VertexQueryExt,
 };
-use lazy_static::lazy_static;
 use log::trace;
 use semver::Version;
 use serde_json::Value;
 use std::collections::HashMap;
 use uuid::Uuid;
-
-lazy_static! {
-    // Edge Types
-    static ref SCHEMA_VIEW_EDGE_TYPE: Type = Type::new("SCHEMA_VIEW").unwrap();
-    static ref SCHEMA_DEFINITION_EDGE_TYPE: Type = Type::new("SCHEMA_DEFINITION").unwrap();
-}
-
-mod property {
-    pub const DEFINITION_VERSION: &str = "VERSION";
-}
 
 pub struct SchemaDb<D: Datastore = SledDatastore> {
     pub db: D,
@@ -86,16 +80,13 @@ impl<D: Datastore> SchemaDb<D> {
         Ok(())
     }
 
-    fn set_edge_properties<'a>(
-        &self,
-        key: EdgeKey,
-        properties: impl IntoIterator<Item = &'a (&'a str, Value)>,
-    ) -> RegistryResult<()> {
+    fn set_edge_properties<'a>(&self, edge: impl EdgeStruct) -> RegistryResult<()> {
         let conn = self.connect()?;
+        let (key, properties) = edge.edge_info();
         conn.create_edge(&key)?;
         for (name, value) in properties {
             conn.set_edge_properties(
-                SpecificEdgeQuery::single(key.clone()).property(*name),
+                SpecificEdgeQuery::single(key.clone()).property(name),
                 &value,
             )?;
         }
@@ -142,7 +133,7 @@ impl<D: Datastore> SchemaDb<D> {
             SpecificVertexQuery::single(id)
                 .outbound(std::u32::MAX)
                 .t(SCHEMA_DEFINITION_EDGE_TYPE.clone())
-                .property(property::DEFINITION_VERSION),
+                .property(DefinitionEdge::VERSION),
         )?
         .into_iter()
         .map(|prop| {
@@ -210,17 +201,11 @@ impl<D: Datastore> SchemaDb<D> {
         let new_id = self.create_vertex_with_properties(schema, new_id)?;
         let new_definition_vertex_id = self.create_vertex_with_properties(full_schema, None)?;
 
-        self.set_edge_properties(
-            EdgeKey::new(
-                new_id,
-                SCHEMA_DEFINITION_EDGE_TYPE.clone(),
-                new_definition_vertex_id,
-            ),
-            &[(
-                property::DEFINITION_VERSION,
-                serde_json::json!(Version::new(1, 0, 0)),
-            )],
-        )?;
+        self.set_edge_properties(DefinitionEdge {
+            schema_id: new_id,
+            def_id: new_definition_vertex_id,
+            version: Version::new(1, 0, 0),
+        })?;
         trace!("Add schema {}", new_id);
         Ok(new_id)
     }
@@ -279,17 +264,11 @@ impl<D: Datastore> SchemaDb<D> {
         let full_schema = build_full_schema(schema.definition, &self)?;
         let new_definition_vertex_id = self.create_vertex_with_properties(full_schema, None)?;
 
-        self.set_edge_properties(
-            EdgeKey::new(
-                id,
-                SCHEMA_DEFINITION_EDGE_TYPE.clone(),
-                new_definition_vertex_id,
-            ),
-            &[(
-                property::DEFINITION_VERSION,
-                serde_json::json!(schema.version),
-            )],
-        )?;
+        self.set_edge_properties(DefinitionEdge {
+            version: schema.version,
+            schema_id: id,
+            def_id: new_definition_vertex_id,
+        })?;
 
         Ok(())
     }
@@ -385,22 +364,12 @@ impl<D: Datastore> SchemaDb<D> {
             self.create_vertex_with_properties(view, Some(view_id))?;
         }
 
-        let conn = self.connect()?;
-
-        for (schema_id, def_id) in imported.def_edges {
-            conn.create_edge(&EdgeKey::new(
-                schema_id,
-                SCHEMA_DEFINITION_EDGE_TYPE.clone(),
-                def_id,
-            ))?;
+        for def_edge in imported.def_edges {
+            self.set_edge_properties(def_edge)?;
         }
 
-        for (schema_id, view_id) in imported.view_edges {
-            conn.create_edge(&EdgeKey::new(
-                schema_id,
-                SCHEMA_VIEW_EDGE_TYPE.clone(),
-                view_id,
-            ))?;
+        for view_edge in imported.view_edges {
+            self.set_edge_properties(view_edge)?;
         }
 
         Ok(())
@@ -463,20 +432,18 @@ impl<D: Datastore> SchemaDb<D> {
         let def_edges = all_def_edges
             .into_iter()
             .map(|props| {
-                let inbound_id = props.edge.key.inbound_id;
-                let outbound_id = props.edge.key.outbound_id;
-                (outbound_id, inbound_id)
+                let schema_id = props.edge.key.outbound_id;
+                DefinitionEdge::from_properties(props)
+                    .ok_or_else(|| MalformedError::MalformedSchemaVersion(schema_id).into())
             })
-            .collect::<HashMap<Uuid, Uuid>>();
+            .collect::<RegistryResult<Vec<DefinitionEdge>>>()?;
 
         let view_edges = all_view_edges
             .into_iter()
             .map(|props| {
-                let inbound_id = props.edge.key.inbound_id;
-                let outbound_id = props.edge.key.outbound_id;
-                (outbound_id, inbound_id)
+                ViewEdge::from_properties(props).unwrap() // View edge has no params, always passes
             })
-            .collect::<HashMap<Uuid, Uuid>>();
+            .collect::<Vec<ViewEdge>>();
 
         Ok(DbExport {
             schemas,
@@ -496,12 +463,12 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn import_export_all() -> Result<()> {
+    fn import_all() -> Result<()> {
         let db = SchemaDb {
             db: MemoryDatastore::default(),
         };
 
-        let added_schema_id = db.add_schema(
+        let original_schema_id = db.add_schema(
             NewSchema {
                 name: "test".into(),
                 definition: json! ({
@@ -519,8 +486,75 @@ mod tests {
             },
             None,
         )?;
+
+        let original_view_id = db.add_view_to_schema(
+            original_schema_id,
+            View {
+                name: "view1".into(),
+                jmespath: "{ a: a }".into(),
+            },
+            None,
+        )?;
+
+        let original_result = db.export_all()?;
+
+        let new_db = SchemaDb {
+            db: MemoryDatastore::default(),
+        };
+
+        new_db.import_all(original_result)?;
+
+        new_db.ensure_schema_exists(original_schema_id)?;
+
+        let (schema_id, schema_name) = new_db.get_all_schema_names()?.into_iter().next().unwrap();
+        assert_eq!(original_schema_id, schema_id);
+        assert_eq!("test", schema_name);
+
+        let defs = new_db.get_schema_definition(&VersionedUuid::any(original_schema_id))?;
+        assert_eq!(Version::new(1, 0, 0), defs.version);
+        assert_eq!(
+            r#"{"definitions":{"def1":{"a":"number"},"def2":{"b":"string"}}}"#,
+            serde_json::to_string(&defs.definition).unwrap()
+        );
+
+        let (view_id, view) = new_db
+            .get_all_views_of_schema(original_schema_id)?
+            .into_iter()
+            .next()
+            .unwrap();
+        assert_eq!(original_view_id, view_id);
+        assert_eq!(r#"{ a: a }"#, view.jmespath);
+
+        Ok(())
+    }
+
+    #[test]
+    fn import_export_all() -> Result<()> {
+        let db = SchemaDb {
+            db: MemoryDatastore::default(),
+        };
+
+        let original_schema_id = db.add_schema(
+            NewSchema {
+                name: "test".into(),
+                definition: json! ({
+                    "definitions": {
+                        "def1": {
+                            "a": "number"
+                        },
+                        "def2": {
+                            "b": "string"
+                        }
+                    }
+                }),
+                kafka_topic: "topic1".into(),
+                query_address: "query1".into(),
+            },
+            None,
+        )?;
+
         db.add_view_to_schema(
-            added_schema_id,
+            original_schema_id,
             View {
                 name: "view1".into(),
                 jmespath: "{ a: a }".into(),
@@ -548,7 +582,7 @@ mod tests {
             db: MemoryDatastore::default(),
         };
 
-        let added_schema_id = db.add_schema(
+        let original_schema_id = db.add_schema(
             NewSchema {
                 name: "test".into(),
                 definition: json! ({
@@ -566,8 +600,9 @@ mod tests {
             },
             None,
         )?;
-        db.add_view_to_schema(
-            added_schema_id,
+
+        let original_view_id = db.add_view_to_schema(
+            original_schema_id,
             View {
                 name: "view1".into(),
                 jmespath: "{ a: a }".into(),
@@ -577,27 +612,29 @@ mod tests {
 
         let result = db.export_all()?;
 
-        let (schema_id, schema) = result.schemas.iter().next().unwrap();
-        assert_eq!(added_schema_id, *schema_id);
+        let (schema_id, schema) = result.schemas.into_iter().next().unwrap();
+        assert_eq!(original_schema_id, schema_id);
         assert_eq!("test", schema.name);
 
-        let (def_id, definition) = result.definitions.iter().next().unwrap();
+        let (def_id, definition) = result.definitions.into_iter().next().unwrap();
         assert!(definition.definition.is_object());
         assert_eq!(
             r#"{"definitions":{"def1":{"a":"number"},"def2":{"b":"string"}}}"#,
             serde_json::to_string(&definition.definition).unwrap()
         );
 
-        let (view_id, view) = result.views.iter().next().unwrap();
+        let (view_id, view) = result.views.into_iter().next().unwrap();
+        assert_eq!(original_view_id, view_id);
         assert_eq!(r#"{ a: a }"#, view.jmespath);
 
-        let (edge_in, edge_out) = result.def_edges.iter().next().unwrap();
-        assert_eq!(schema_id, edge_in);
-        assert_eq!(def_id, edge_out);
+        let def_edge = result.def_edges.into_iter().next().unwrap();
+        assert_eq!(schema_id, def_edge.schema_id);
+        assert_eq!(def_id, def_edge.def_id);
+        assert_eq!(Version::new(1, 0, 0), def_edge.version);
 
-        let (edge_in, edge_out) = result.view_edges.iter().next().unwrap();
-        assert_eq!(schema_id, edge_in);
-        assert_eq!(view_id, edge_out);
+        let view_edge = result.view_edges.into_iter().next().unwrap();
+        assert_eq!(schema_id, view_edge.schema_id);
+        assert_eq!(view_id, view_edge.view_id);
 
         Ok(())
     }
