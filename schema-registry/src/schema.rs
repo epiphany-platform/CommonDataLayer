@@ -1,4 +1,6 @@
-use crate::{db::SchemaDb, error::RegistryResult, types::Definition, types::VersionedUuid};
+use crate::{
+    db::SchemaDb, error::RegistryResult, types::storage::vertices::Definition, types::VersionedUuid,
+};
 use indradb::Datastore;
 use jsonschema::JSONSchema;
 use serde_json::Value;

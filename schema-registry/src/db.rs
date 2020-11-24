@@ -1,22 +1,21 @@
 use super::{
     schema::build_full_schema,
-    types::{NewSchema, NewSchemaVersion, VersionedUuid, View},
+    types::{
+        storage::edges::{
+            DefinitionEdge, Edge as EdgeStruct, ViewEdge, SCHEMA_DEFINITION_EDGE_TYPE,
+            SCHEMA_VIEW_EDGE_TYPE,
+        },
+        storage::vertices::{
+            Definition, Schema, Vertex as VertexStruct, View, SCHEMA_DEFINITION_VERTEX_TYPE,
+            SCHEMA_VERTEX_TYPE, VIEW_VERTEX_TYPE,
+        },
+        NewSchema, NewSchemaVersion, VersionedUuid,
+    },
 };
 use crate::{
     error::{MalformedError, RegistryError, RegistryResult},
     types::DbExport,
-    types::Definition,
-    types::DefinitionEdge,
-    types::Edge as EdgeStruct,
-    types::Schema,
     types::SchemaDefinition,
-    types::Vertex as VertexStruct,
-    types::ViewEdge,
-    types::SCHEMA_DEFINITION_EDGE_TYPE,
-    types::SCHEMA_DEFINITION_VERTEX_TYPE,
-    types::SCHEMA_VERTEX_TYPE,
-    types::SCHEMA_VIEW_EDGE_TYPE,
-    types::VIEW_VERTEX_TYPE,
 };
 use indradb::{
     Datastore, EdgeKey, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
@@ -80,7 +79,7 @@ impl<D: Datastore> SchemaDb<D> {
         Ok(())
     }
 
-    fn set_edge_properties<'a>(&self, edge: impl EdgeStruct) -> RegistryResult<()> {
+    fn set_edge_properties(&self, edge: impl EdgeStruct) -> RegistryResult<()> {
         let conn = self.connect()?;
         let (key, properties) = edge.edge_info();
         conn.create_edge(&key)?;

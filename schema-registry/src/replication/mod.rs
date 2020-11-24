@@ -1,6 +1,7 @@
 use crate::{
     db::SchemaDb,
-    types::{NewSchema, NewSchemaVersion, View},
+    types::storage::vertices::View,
+    types::{NewSchema, NewSchemaVersion},
 };
 use log::info;
 use serde::{Deserialize, Serialize};
