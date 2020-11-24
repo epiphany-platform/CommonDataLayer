@@ -9,7 +9,7 @@ use bb8_postgres::tokio_postgres::NoTls;
 use bb8_postgres::PostgresConnectionManager;
 pub use config::PostgresOutputConfig;
 pub use error::Error;
-use log::trace;
+use log::{error, trace};
 use serde_json::Value;
 use utils::metrics::counter;
 
@@ -35,12 +35,21 @@ impl PostgresOutputPlugin {
 
         Ok(Self { pool })
     }
+}
 
-    async fn store_message(
-        pool: &Pool<PostgresConnectionManager<NoTls>>,
-        msg: GenericMessage,
-    ) -> Resolution {
-        let connection = pool.get().await.unwrap();
+#[async_trait::async_trait]
+impl OutputPlugin for PostgresOutputPlugin {
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
+        let connection = match self.pool.get().await {
+            Ok(conn) => conn,
+            Err(err) => {
+                error!("Failed to get connection from pool {:?}", err);
+                return Resolution::CommandServiceFailure;
+            }
+        };
+
+        trace!("Storing message {:?}", msg);
+
         let payload: Value = match serde_json::from_slice(&msg.payload) {
             Ok(json) => json,
             Err(_err) => return Resolution::CommandServiceFailure,
@@ -71,14 +80,6 @@ impl PostgresOutputPlugin {
                 description: err.to_string(),
             },
         }
-    }
-}
-
-#[async_trait::async_trait]
-impl OutputPlugin for PostgresOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
-        trace!("Storing message {:?}", msg);
-        PostgresOutputPlugin::store_message(&self.pool, msg).await
     }
 
     fn name(&self) -> &'static str {

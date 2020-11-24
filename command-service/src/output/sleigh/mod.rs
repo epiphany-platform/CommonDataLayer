@@ -2,7 +2,7 @@ use crate::communication::resolution::Resolution;
 use crate::communication::GenericMessage;
 use crate::output::sleigh::connection_pool::SleighConnectionManager;
 use crate::output::OutputPlugin;
-use bb8::{Pool, PooledConnection};
+use bb8::Pool;
 pub use config::SleighOutputConfig;
 use document_storage::grpc::schema::StoreRequest;
 pub use error::Error;
@@ -28,14 +28,22 @@ impl SleighOutputPlugin {
                 .map_err(Error::FailedToConnect)?,
         })
     }
+}
 
-    async fn store_message(
-        msg: GenericMessage,
-        mut client: PooledConnection<'_, SleighConnectionManager>,
-    ) -> Resolution {
+#[async_trait::async_trait]
+impl OutputPlugin for SleighOutputPlugin {
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
+        let mut connection = match self.pool.get().await {
+            Ok(conn) => conn,
+            Err(err) => {
+                error!("Failed to get connection from pool {:?}", err);
+                return Resolution::CommandServiceFailure;
+            }
+        };
+
         trace!("Storing message {:?}", msg);
 
-        match client
+        match connection
             .store(StoreRequest {
                 object_id: msg.object_id.to_string(),
                 schema_id: msg.schema_id.to_string(),
@@ -52,21 +60,6 @@ impl SleighOutputPlugin {
                 description: err.to_string(),
             },
         }
-    }
-}
-
-#[async_trait::async_trait]
-impl OutputPlugin for SleighOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
-        let resolution = match self.pool.get().await {
-            Ok(client) => SleighOutputPlugin::store_message(msg, client).await,
-            Err(err) => {
-                error!("Failed to get connection from pool {:?}", err);
-                Resolution::CommandServiceFailure
-            }
-        };
-
-        resolution
     }
 
     fn name(&self) -> &'static str {

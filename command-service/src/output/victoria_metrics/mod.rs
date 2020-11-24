@@ -52,7 +52,28 @@ impl OutputPlugin for VictoriaMetricsOutputPlugin {
 
         url.set_query(Some(&format!("db={}", msg.schema_id)));
 
-        process_message(url, &self.client, msg).await
+        let GenericMessage {
+            object_id,
+            schema_id,
+            timestamp,
+            payload,
+        } = msg;
+
+        match build_line_protocol(schema_id, object_id, timestamp, &payload) {
+            Ok(line_protocol) => send_data(url, &self.client, line_protocol).await,
+            Err(err) => {
+                let context = String::from_utf8_lossy(&payload).to_string();
+
+                error!(
+                    "Failed to convert payload to line_protocol, cause `{}`, context `{}`",
+                    err, context
+                );
+                Resolution::UserFailure {
+                    description: err.to_string(),
+                    context,
+                }
+            }
+        }
     }
 
     fn name(&self) -> &'static str {
@@ -115,31 +136,6 @@ async fn send_data(url: Url, client: &Client, line_protocol: String) -> Resoluti
         Err(err) => {
             error!("Failed to send data to vm `{}`", err);
             Resolution::CommandServiceFailure
-        }
-    }
-}
-
-async fn process_message(url: Url, client: &Client, msg: GenericMessage) -> Resolution {
-    let GenericMessage {
-        object_id,
-        schema_id,
-        timestamp,
-        payload,
-    } = msg;
-
-    match build_line_protocol(schema_id, object_id, timestamp, &payload) {
-        Ok(line_protocol) => send_data(url, client, line_protocol).await,
-        Err(err) => {
-            let context = String::from_utf8_lossy(&payload).to_string();
-
-            error!(
-                "Failed to convert payload to line_protocol, cause `{}`, context `{}`",
-                err, context
-            );
-            Resolution::UserFailure {
-                description: err.to_string(),
-                context,
-            }
         }
     }
 }

@@ -27,15 +27,14 @@ impl DruidOutputPlugin {
             topic: args.topic,
         })
     }
+}
 
-    async fn store_message(
-        producer: &FutureProducer,
-        msg: GenericMessage,
-        topic: &str,
-    ) -> Resolution {
+#[async_trait::async_trait]
+impl OutputPlugin for DruidOutputPlugin {
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
         let key = msg.object_id.to_string();
         let record = FutureRecord {
-            topic: &topic,
+            topic: &self.topic,
             partition: None,
             payload: Some(&msg.payload),
             key: Some(&key),
@@ -43,7 +42,7 @@ impl DruidOutputPlugin {
             headers: None,
         };
 
-        match producer.send(record, Duration::from_secs(0)).await {
+        match self.producer.send(record, Duration::from_secs(0)).await {
             Err((err, _)) => Resolution::StorageLayerFailure {
                 description: err.to_string(),
             },
@@ -53,13 +52,6 @@ impl DruidOutputPlugin {
                 Resolution::Success
             }
         }
-    }
-}
-
-#[async_trait::async_trait]
-impl OutputPlugin for DruidOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
-        DruidOutputPlugin::store_message(&self.producer, msg, self.topic.as_str()).await
     }
 
     fn name(&self) -> &'static str {
