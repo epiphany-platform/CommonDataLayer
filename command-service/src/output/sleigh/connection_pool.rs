@@ -1,6 +1,5 @@
-use tonic::transport::Channel;
-
 use document_storage::grpc::schema::storage_client::StorageClient;
+use tonic::transport::Channel;
 
 pub struct SleighConnectionManager {
     pub addr: String,

@@ -1,22 +1,17 @@
 use std::time;
 
-use async_trait::async_trait;
+use crate::communication::resolution::Resolution;
+use crate::communication::GenericMessage;
+use crate::output::OutputPlugin;
 use bb8::Pool;
 use bb8_postgres::tokio_postgres::types::Json;
 use bb8_postgres::tokio_postgres::NoTls;
 use bb8_postgres::PostgresConnectionManager;
-use log::{error, trace};
-use serde_json::Value;
-
 pub use config::PostgresOutputConfig;
 pub use error::Error;
-
-use crate::communication::resolution::Resolution;
-use crate::communication::{GenericMessage, ReceivedMessageBundle};
-use crate::output::error::OutputError;
-use crate::output::OutputPlugin;
+use log::{error, trace};
+use serde_json::Value;
 use utils::metrics::counter;
-use utils::status_endpoints;
 
 pub mod config;
 pub mod error;
@@ -40,19 +35,24 @@ impl PostgresOutputPlugin {
 
         Ok(Self { pool })
     }
+}
 
-    async fn store_message(
-        pool: Pool<PostgresConnectionManager<NoTls>>,
-        msg: GenericMessage,
-    ) -> Resolution {
-        let connection = pool.get().await.unwrap();
+#[async_trait::async_trait]
+impl OutputPlugin for PostgresOutputPlugin {
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
+        let connection = match self.pool.get().await {
+            Ok(conn) => conn,
+            Err(err) => {
+                error!("Failed to get connection from pool {:?}", err);
+                return Resolution::CommandServiceFailure;
+            }
+        };
+
+        trace!("Storing message {:?}", msg);
+
         let payload: Value = match serde_json::from_slice(&msg.payload) {
             Ok(json) => json,
-            Err(_err) => {
-                return Resolution::CommandServiceFailure {
-                    object_id: msg.object_id,
-                }
-            }
+            Err(_err) => return Resolution::CommandServiceFailure,
         };
 
         let store_result = connection
@@ -78,34 +78,8 @@ impl PostgresOutputPlugin {
             }
             Err(err) => Resolution::StorageLayerFailure {
                 description: err.to_string(),
-                object_id: msg.object_id,
             },
         }
-    }
-}
-
-#[async_trait]
-impl OutputPlugin for PostgresOutputPlugin {
-    async fn handle_message(
-        &self,
-        recv_msg_bundle: ReceivedMessageBundle,
-    ) -> Result<(), OutputError> {
-        // Assumption is that db is provisioned
-        let pool = self.pool.clone();
-
-        tokio::spawn(async move {
-            let msg = recv_msg_bundle.msg;
-
-            trace!("Storing message {:?}", msg);
-            let resolution = PostgresOutputPlugin::store_message(pool, msg).await;
-
-            if recv_msg_bundle.status_sender.send(resolution).is_err() {
-                error!("Failed to send status to report service");
-                status_endpoints::mark_as_unhealthy();
-            }
-        });
-
-        Ok(())
     }
 
     fn name(&self) -> &'static str {

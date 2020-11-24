@@ -9,23 +9,39 @@ global:
 
 dataRouter:
   inputQueue: cdl.data.input
+  image: cdl-data-router
+  bin: data-router
 
 schemaRegistry:
   replicationTopics: cdl.schema.replication
   storageClass: standard
   storageSize: 3Gi
   port: 30150
+  image: cdl-schema-registry
+  bin: schema-registry
 
 leaderElector:
   heartbeatTime: 2
+  image: cdl-leader-elector
+  bin: leader-elector
 
 
+commandService:
+  image: cdl-command-service
+  bin: command-service
+
+documentStorage:
+  image: cdl-document-storage
+  bin: document-storage
 
 postgres-document:
   commandServiceReplicaCount: 1
   postgresDbReplicaCount: 1
   postgresConnectionString: "postgres://postgres:CHANGEME@infrastructure-postgresql/CDL"
   inputTopic: cdl.document.data
+  commandService:
+    image: cdl-command-service
+    bin: command-service
 
 sled-document:
   replicaCommandCount: 1
@@ -33,8 +49,20 @@ sled-document:
   maxDbSize: 3Gi
   storageClass: standard
   inputTopic: cdl.document2.data
+  documentStorage:
+    image: cdl-document-storage
+    bin: document-storage
+  dataRouter:
+    image: cdl-data-router
+    bin: data-router
+  commandService:
+    image: cdl-command-service
+    bin: command-service
 
 druid-timeseries:
   replicaCommandCount: 1
   inputTopic: cdl.timeseries.data
   outputTopic: cdl.timeseries.generic-druid
+  commandService:
+    image: cdl-command-service
+    bin: command-service
