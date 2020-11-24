@@ -5,6 +5,7 @@ service Storage {
   rpc Store(StoreRequest) returns (Empty);
   rpc RetrieveMultiple(RetrieveMultipleRequest) returns (DataMap);
   rpc RetrieveBySchema(RetrieveBySchemaRequest) returns (DataMap);
+  rpc RetrieveRaw(RetrieveRawRequest) returns (DataMap);
 }
 
 message StoreRequest {
@@ -19,6 +20,10 @@ message RetrieveMultipleRequest {
 
 message RetrieveBySchemaRequest {
   string schema_id = 1;
+}
+
+message RetrieveRawRequest {
+  string raw_request = 1;
 }
 
 message Empty {}

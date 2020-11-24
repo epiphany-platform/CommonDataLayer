@@ -1,4 +1,4 @@
-use crate::schema::{query_server::Query, ObjectIds, SchemaId, ValueMap};
+use crate::schema::{query_server::Query, ObjectIds, SchemaId, RawMsg, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use reqwest::Client;
@@ -143,6 +143,19 @@ impl Query for DruidQuery {
             ],
             "intervals": [ "2000-01-01T00:00:00.000/3000-01-01T00:00:00.000" ]
         });
+
+        let response: Vec<DruidValue> = self.query_db(&query).await?;
+        let values = response
+            .into_iter()
+            .map(|val| (val.result.object_id, val.result.data.into_bytes()))
+            .collect();
+
+        Ok(tonic::Response::new(ValueMap { values }))
+    }
+
+    async fn query_raw(&self, request: Request<RawMsg>) ->Result<Response<ValueMap>, Status>  {
+        counter!("cdl.query-service.query-raw.druid", 1);
+        let query = json!(request.into_inner().raw_msg);
 
         let response: Vec<DruidValue> = self.query_db(&query).await?;
         let values = response

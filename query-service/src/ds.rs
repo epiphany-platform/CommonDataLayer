@@ -1,8 +1,8 @@
-use crate::schema::{query_server::Query, ObjectIds, SchemaId, ValueMap};
+use crate::schema::{query_server::Query, ObjectIds, RawMsg, SchemaId, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use document_storage::grpc::schema::storage_client::StorageClient;
-use document_storage::grpc::schema::{RetrieveBySchemaRequest, RetrieveMultipleRequest};
+use document_storage::grpc::schema::{RetrieveBySchemaRequest, RetrieveMultipleRequest, RetrieveRawRequest};
 use structopt::StructOpt;
 use tonic::transport::Channel;
 use tonic::{Request, Response, Status};
@@ -92,6 +92,23 @@ impl Query for DsQuery {
             })
             .await?;
 
+        Ok(tonic::Response::new(ValueMap {
+            values: response.into_inner().values,
+        }))
+    }
+
+    async fn query_raw(
+        &self,
+        request: Request<RawMsg>
+    ) -> Result<Response<ValueMap>, Status> {
+        counter!("cdl.query-service.query_raw.sled", 1);
+        let mut conn = self.connect().await?;
+        let response = conn
+            .retrieve_raw(RetrieveRawRequest {
+                raw_request: request.into_inner().raw_msg,
+            })
+            .await?;
+            
         Ok(tonic::Response::new(ValueMap {
             values: response.into_inner().values,
         }))
