@@ -24,6 +24,7 @@ struct Config {
     pub kafka_topics: Vec<String>,
     pub pod_name: Option<String>,
     pub export: Option<PathBuf>,
+    pub import: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -53,6 +54,12 @@ pub async fn main() -> anyhow::Result<()> {
         let mut file = File::open(export_path)?;
         write!(file, "{}", exported)?;
         return Ok(());
+    }
+
+    if let Some(import_path) = config.import {
+        let imported = File::open(import_path)?;
+        let imported = serde_json::from_reader(imported)?;
+        registry.import_all(imported)?;
     }
 
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.input_port);

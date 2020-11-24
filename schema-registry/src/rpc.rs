@@ -65,6 +65,11 @@ impl SchemaRegistryImpl {
         let result = self.db.export_all()?;
         Ok(result)
     }
+
+    pub fn import_all(&self, imported: DbExport) -> anyhow::Result<()> {
+        self.db.import_all(imported)?;
+        Ok(())
+    }
 }
 
 #[tonic::async_trait]
