@@ -1,4 +1,4 @@
-use crate::{db::SchemaDb, error::RegistryResult, types::VersionedUuid};
+use crate::{db::SchemaDb, error::RegistryResult, types::Definition, types::VersionedUuid};
 use indradb::Datastore;
 use jsonschema::JSONSchema;
 use serde_json::Value;
@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub fn build_full_schema<D: Datastore>(
     mut schema: Value,
     db: &SchemaDb<D>,
-) -> RegistryResult<Value> {
+) -> RegistryResult<Definition> {
     if let Some(defs) = schema
         .get_mut("definitions")
         .and_then(|val| val.as_object_mut())
@@ -30,5 +30,5 @@ pub fn build_full_schema<D: Datastore>(
 
     JSONSchema::compile(&schema, None)?;
 
-    Ok(schema)
+    Ok(Definition { definition: schema })
 }

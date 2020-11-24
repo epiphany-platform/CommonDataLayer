@@ -5,9 +5,13 @@ use super::{
 use crate::{
     error::{MalformedError, RegistryError, RegistryResult},
     types::DbExport,
+    types::Definition,
+    types::Schema,
     types::SchemaDefinition,
-    types::StoredDefinition,
-    types::StoredSchema,
+    types::Vertex as VertexStruct,
+    types::SCHEMA_DEFINITION_VERTEX_TYPE,
+    types::SCHEMA_VERTEX_TYPE,
+    types::VIEW_VERTEX_TYPE,
 };
 use indradb::{
     Datastore, EdgeKey, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
@@ -21,25 +25,13 @@ use std::collections::HashMap;
 use uuid::Uuid;
 
 lazy_static! {
-    // Vertex Types
-    static ref SCHEMA_VERTEX_TYPE: Type = Type::new("SCHEMA").unwrap();
-    static ref SCHEMA_DEFINITION_VERTEX_TYPE: Type = Type::new("DEFINITION").unwrap();
-    static ref VIEW_VERTEX_TYPE: Type = Type::new("VIEW").unwrap();
     // Edge Types
     static ref SCHEMA_VIEW_EDGE_TYPE: Type = Type::new("SCHEMA_VIEW").unwrap();
     static ref SCHEMA_DEFINITION_EDGE_TYPE: Type = Type::new("SCHEMA_DEFINITION").unwrap();
 }
 
-pub mod property {
-    pub const SCHEMA_NAME: &str = "SCHEMA_NAME";
-    pub const SCHEMA_TOPIC_NAME: &str = "SCHEMA_TOPIC_NAME";
-    pub const SCHEMA_QUERY_ADDRESS: &str = "SCHEMA_QUERY_ADDRESS";
-
+mod property {
     pub const DEFINITION_VERSION: &str = "VERSION";
-    pub const DEFINITION_VALUE: &str = "DEFINITION";
-
-    pub const VIEW_NAME: &str = "VIEW_NAME";
-    pub const VIEW_EXPRESSION: &str = "JMESPATH";
 }
 
 pub struct SchemaDb<D: Datastore = SledDatastore> {
@@ -53,13 +45,13 @@ impl<D: Datastore> SchemaDb<D> {
             .map_err(RegistryError::ConnectionError)
     }
 
-    fn create_vertex_with_properties<'a>(
+    fn create_vertex_with_properties(
         &self,
-        vertex_type: Type,
-        properties: impl IntoIterator<Item = &'a (&'a str, &'a Value)>,
+        vertex: impl VertexStruct,
         uuid: Option<Uuid>,
     ) -> RegistryResult<Uuid> {
         let conn = self.connect()?;
+        let (vertex_type, properties) = vertex.vertex_info();
         let new_id = if let Some(uuid) = uuid {
             let vertex = Vertex {
                 id: uuid,
@@ -74,8 +66,8 @@ impl<D: Datastore> SchemaDb<D> {
             conn.create_vertex_from_type(vertex_type)?
         };
 
-        for (name, value) in properties {
-            conn.set_vertex_properties(SpecificVertexQuery::single(new_id).property(*name), value)?;
+        for (name, value) in properties.into_iter() {
+            conn.set_vertex_properties(SpecificVertexQuery::single(new_id).property(name), &value)?;
         }
 
         Ok(new_id)
@@ -84,11 +76,11 @@ impl<D: Datastore> SchemaDb<D> {
     fn set_vertex_properties<'a>(
         &self,
         id: Uuid,
-        properties: impl IntoIterator<Item = &'a (&'a str, &'a Value)>,
+        properties: impl IntoIterator<Item = &'a (&'a str, Value)>,
     ) -> RegistryResult<()> {
         let conn = self.connect()?;
         for (name, value) in properties {
-            conn.set_vertex_properties(SpecificVertexQuery::single(id).property(*name), value)?;
+            conn.set_vertex_properties(SpecificVertexQuery::single(id).property(*name), &value)?;
         }
 
         Ok(())
@@ -97,14 +89,14 @@ impl<D: Datastore> SchemaDb<D> {
     fn set_edge_properties<'a>(
         &self,
         key: EdgeKey,
-        properties: impl IntoIterator<Item = &'a (&'a str, &'a Value)>,
+        properties: impl IntoIterator<Item = &'a (&'a str, Value)>,
     ) -> RegistryResult<()> {
         let conn = self.connect()?;
         conn.create_edge(&key)?;
         for (name, value) in properties {
             conn.set_edge_properties(
                 SpecificEdgeQuery::single(key.clone()).property(*name),
-                value,
+                &value,
             )?;
         }
 
@@ -129,8 +121,7 @@ impl<D: Datastore> SchemaDb<D> {
     pub fn get_schema_definition(&self, id: &VersionedUuid) -> RegistryResult<SchemaDefinition> {
         let conn = self.connect()?;
         let (version, version_vertex_id) = self.get_latest_valid_schema_version(id)?;
-        let query =
-            SpecificVertexQuery::single(version_vertex_id).property(property::DEFINITION_VALUE);
+        let query = SpecificVertexQuery::single(version_vertex_id).property(Definition::VALUE);
 
         let prop = conn
             .get_vertex_properties(query)?
@@ -166,9 +157,7 @@ impl<D: Datastore> SchemaDb<D> {
     pub fn get_schema_topic(&self, id: Uuid) -> RegistryResult<String> {
         let conn = self.connect()?;
         let topic_property = conn
-            .get_vertex_properties(
-                SpecificVertexQuery::single(id).property(property::SCHEMA_TOPIC_NAME),
-            )?
+            .get_vertex_properties(SpecificVertexQuery::single(id).property(Schema::TOPIC_NAME))?
             .into_iter()
             .next()
             .ok_or(RegistryError::NoSchemaWithId(id))?;
@@ -180,9 +169,7 @@ impl<D: Datastore> SchemaDb<D> {
     pub fn get_schema_query_address(&self, id: Uuid) -> RegistryResult<String> {
         let conn = self.connect()?;
         let query_address_property = conn
-            .get_vertex_properties(
-                SpecificVertexQuery::single(id).property(property::SCHEMA_QUERY_ADDRESS),
-            )?
+            .get_vertex_properties(SpecificVertexQuery::single(id).property(Schema::QUERY_ADDRESS))?
             .into_iter()
             .next()
             .ok_or(RegistryError::NoSchemaWithId(id))?;
@@ -217,28 +204,11 @@ impl<D: Datastore> SchemaDb<D> {
     }
 
     pub fn add_schema(&self, schema: NewSchema, new_id: Option<Uuid>) -> RegistryResult<Uuid> {
-        let full_schema = build_full_schema(schema.definition, &self)?;
+        let (schema, definition) = schema.to_vertex();
+        let full_schema = build_full_schema(definition, &self)?;
 
-        let new_id = self.create_vertex_with_properties(
-            SCHEMA_VERTEX_TYPE.clone(),
-            &[
-                (property::SCHEMA_NAME, &Value::String(schema.name)),
-                (
-                    property::SCHEMA_TOPIC_NAME,
-                    &Value::String(schema.kafka_topic),
-                ),
-                (
-                    property::SCHEMA_QUERY_ADDRESS,
-                    &Value::String(schema.query_address),
-                ),
-            ],
-            new_id,
-        )?;
-        let new_definition_vertex_id = self.create_vertex_with_properties(
-            SCHEMA_DEFINITION_VERTEX_TYPE.clone(),
-            &[(property::DEFINITION_VALUE, &full_schema)],
-            None,
-        )?;
+        let new_id = self.create_vertex_with_properties(schema, new_id)?;
+        let new_definition_vertex_id = self.create_vertex_with_properties(full_schema, None)?;
 
         self.set_edge_properties(
             EdgeKey::new(
@@ -248,7 +218,7 @@ impl<D: Datastore> SchemaDb<D> {
             ),
             &[(
                 property::DEFINITION_VERSION,
-                &serde_json::json!(Version::new(1, 0, 0)),
+                serde_json::json!(Version::new(1, 0, 0)),
             )],
         )?;
         trace!("Add schema {}", new_id);
@@ -258,7 +228,7 @@ impl<D: Datastore> SchemaDb<D> {
     pub fn update_schema_name(&self, id: Uuid, new_name: String) -> RegistryResult<()> {
         self.ensure_schema_exists(id)?;
 
-        self.set_vertex_properties(id, &[(property::SCHEMA_NAME, &Value::String(new_name))])?;
+        self.set_vertex_properties(id, &[(Schema::NAME, Value::String(new_name))])?;
 
         Ok(())
     }
@@ -266,10 +236,7 @@ impl<D: Datastore> SchemaDb<D> {
     pub fn update_schema_topic(&self, id: Uuid, new_topic: String) -> RegistryResult<()> {
         self.ensure_schema_exists(id)?;
 
-        self.set_vertex_properties(
-            id,
-            &[(property::SCHEMA_TOPIC_NAME, &Value::String(new_topic))],
-        )?;
+        self.set_vertex_properties(id, &[(Schema::TOPIC_NAME, Value::String(new_topic))])?;
 
         Ok(())
     }
@@ -283,10 +250,7 @@ impl<D: Datastore> SchemaDb<D> {
 
         self.set_vertex_properties(
             id,
-            &[(
-                property::SCHEMA_QUERY_ADDRESS,
-                &Value::String(new_query_address),
-            )],
+            &[(Schema::QUERY_ADDRESS, Value::String(new_query_address))],
         )?;
 
         Ok(())
@@ -313,11 +277,7 @@ impl<D: Datastore> SchemaDb<D> {
         }
 
         let full_schema = build_full_schema(schema.definition, &self)?;
-        let new_definition_vertex_id = self.create_vertex_with_properties(
-            SCHEMA_DEFINITION_VERTEX_TYPE.clone(),
-            &[(property::DEFINITION_VALUE, &full_schema)],
-            None,
-        )?;
+        let new_definition_vertex_id = self.create_vertex_with_properties(full_schema, None)?;
 
         self.set_edge_properties(
             EdgeKey::new(
@@ -327,7 +287,7 @@ impl<D: Datastore> SchemaDb<D> {
             ),
             &[(
                 property::DEFINITION_VERSION,
-                &serde_json::json!(schema.version),
+                serde_json::json!(schema.version),
             )],
         )?;
 
@@ -344,14 +304,7 @@ impl<D: Datastore> SchemaDb<D> {
         self.ensure_schema_exists(schema_id)?;
         self.validate_view(&view.jmespath)?;
 
-        let view_id = self.create_vertex_with_properties(
-            VIEW_VERTEX_TYPE.clone(),
-            &[
-                (property::VIEW_NAME, &Value::String(view.name)),
-                (property::VIEW_EXPRESSION, &Value::String(view.jmespath)),
-            ],
-            view_id,
-        )?;
+        let view_id = self.create_vertex_with_properties(view, view_id)?;
 
         conn.create_edge(&EdgeKey::new(
             schema_id,
@@ -366,13 +319,7 @@ impl<D: Datastore> SchemaDb<D> {
         let old_view = self.get_view(id)?;
         self.validate_view(&view.jmespath)?;
 
-        self.set_vertex_properties(
-            id,
-            &[
-                (property::VIEW_NAME, &Value::String(view.name)),
-                (property::VIEW_EXPRESSION, &Value::String(view.jmespath)),
-            ],
-        )?;
+        self.set_vertex_properties(id, &view.vertex_info().1)?;
 
         Ok(old_view)
     }
@@ -382,7 +329,7 @@ impl<D: Datastore> SchemaDb<D> {
         let all_names = conn.get_vertex_properties(
             RangeVertexQuery::new(std::u32::MAX)
                 .t(SCHEMA_VERTEX_TYPE.clone())
-                .property(property::SCHEMA_NAME),
+                .property(Schema::NAME),
         )?;
 
         all_names
@@ -425,6 +372,40 @@ impl<D: Datastore> SchemaDb<D> {
             .map_err(|err| RegistryError::InvalidView(err.to_string()))
     }
 
+    pub fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
+        for (schema_id, schema) in imported.schemas {
+            self.create_vertex_with_properties(schema, Some(schema_id))?;
+        }
+
+        for (def_id, def) in imported.definitions {
+            self.create_vertex_with_properties(def, Some(def_id))?;
+        }
+
+        for (view_id, view) in imported.views {
+            self.create_vertex_with_properties(view, Some(view_id))?;
+        }
+
+        let conn = self.connect()?;
+
+        for (schema_id, def_id) in imported.def_edges {
+            conn.create_edge(&EdgeKey::new(
+                schema_id,
+                SCHEMA_DEFINITION_EDGE_TYPE.clone(),
+                def_id,
+            ))?;
+        }
+
+        for (schema_id, view_id) in imported.view_edges {
+            conn.create_edge(&EdgeKey::new(
+                schema_id,
+                SCHEMA_DEFINITION_EDGE_TYPE.clone(),
+                view_id,
+            ))?;
+        }
+
+        Ok(())
+    }
+
     pub fn export_all(&self) -> RegistryResult<DbExport> {
         let conn = self.connect()?;
 
@@ -456,19 +437,19 @@ impl<D: Datastore> SchemaDb<D> {
             .into_iter()
             .map(|props| {
                 let def_id = props.vertex.id;
-                StoredDefinition::from_properties(props)
+                Definition::from_properties(props)
                     .ok_or_else(|| MalformedError::MalformedDefinition(def_id).into())
             })
-            .collect::<RegistryResult<HashMap<Uuid, StoredDefinition>>>()?;
+            .collect::<RegistryResult<HashMap<Uuid, Definition>>>()?;
 
         let schemas = all_schemas
             .into_iter()
             .map(|props| {
                 let schema_id = props.vertex.id;
-                StoredSchema::from_properties(props)
+                Schema::from_properties(props)
                     .ok_or_else(|| MalformedError::MalformedSchema(schema_id).into())
             })
-            .collect::<RegistryResult<HashMap<Uuid, StoredSchema>>>()?;
+            .collect::<RegistryResult<HashMap<Uuid, Schema>>>()?;
 
         let views = all_views
             .into_iter()
