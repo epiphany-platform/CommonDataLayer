@@ -87,8 +87,8 @@ pub struct DbExport {
     pub schemas: HashMap<Uuid, vertices::Schema>,
     pub definitions: HashMap<Uuid, vertices::Definition>,
     pub views: HashMap<Uuid, vertices::View>,
-    pub def_edges: Vec<edges::DefinitionEdge>,
-    pub view_edges: Vec<edges::ViewEdge>,
+    pub def_edges: Vec<edges::SchemaDefinition>,
+    pub view_edges: Vec<edges::SchemaView>,
 }
 
 fn get_vertex_property_or<T: DeserializeOwned>(

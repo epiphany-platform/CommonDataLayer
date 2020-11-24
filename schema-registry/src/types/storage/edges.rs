@@ -12,12 +12,12 @@ lazy_static! {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct ViewEdge {
+pub struct SchemaView {
     pub schema_id: Uuid,
     pub view_id: Uuid,
 }
 
-impl Edge for ViewEdge {
+impl Edge for SchemaView {
     fn edge_info<'a>(self) -> (EdgeKey, Vec<(&'a str, Value)>) {
         (
             EdgeKey::new(self.schema_id, SCHEMA_VIEW_EDGE_TYPE.clone(), self.view_id),
@@ -33,17 +33,17 @@ impl Edge for ViewEdge {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct DefinitionEdge {
+pub struct SchemaDefinition {
     pub schema_id: Uuid,
     pub def_id: Uuid,
     pub version: Version,
 }
 
-impl DefinitionEdge {
+impl SchemaDefinition {
     pub const VERSION: &'static str = "VERSION";
 }
 
-impl Edge for DefinitionEdge {
+impl Edge for SchemaDefinition {
     fn edge_info<'a>(self) -> (EdgeKey, Vec<(&'a str, Value)>) {
         (
             EdgeKey::new(

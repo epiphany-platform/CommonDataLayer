@@ -2,8 +2,8 @@ use super::{
     schema::build_full_schema,
     types::{
         storage::edges::{
-            DefinitionEdge, Edge as EdgeStruct, ViewEdge, SCHEMA_DEFINITION_EDGE_TYPE,
-            SCHEMA_VIEW_EDGE_TYPE,
+            Edge as EdgeStruct, SchemaDefinition as SchemaDefEdge, SchemaView as SchemaViewEdge,
+            SCHEMA_DEFINITION_EDGE_TYPE, SCHEMA_VIEW_EDGE_TYPE,
         },
         storage::vertices::{
             Definition, Schema, Vertex as VertexStruct, View, SCHEMA_DEFINITION_VERTEX_TYPE,
@@ -132,7 +132,7 @@ impl<D: Datastore> SchemaDb<D> {
             SpecificVertexQuery::single(id)
                 .outbound(std::u32::MAX)
                 .t(SCHEMA_DEFINITION_EDGE_TYPE.clone())
-                .property(DefinitionEdge::VERSION),
+                .property(SchemaDefEdge::VERSION),
         )?
         .into_iter()
         .map(|prop| {
@@ -200,7 +200,7 @@ impl<D: Datastore> SchemaDb<D> {
         let new_id = self.create_vertex_with_properties(schema, new_id)?;
         let new_definition_vertex_id = self.create_vertex_with_properties(full_schema, None)?;
 
-        self.set_edge_properties(DefinitionEdge {
+        self.set_edge_properties(SchemaDefEdge {
             schema_id: new_id,
             def_id: new_definition_vertex_id,
             version: Version::new(1, 0, 0),
@@ -263,7 +263,7 @@ impl<D: Datastore> SchemaDb<D> {
         let full_schema = build_full_schema(schema.definition, &self)?;
         let new_definition_vertex_id = self.create_vertex_with_properties(full_schema, None)?;
 
-        self.set_edge_properties(DefinitionEdge {
+        self.set_edge_properties(SchemaDefEdge {
             version: schema.version,
             schema_id: id,
             def_id: new_definition_vertex_id,
@@ -432,17 +432,17 @@ impl<D: Datastore> SchemaDb<D> {
             .into_iter()
             .map(|props| {
                 let schema_id = props.edge.key.outbound_id;
-                DefinitionEdge::from_properties(props)
+                SchemaDefEdge::from_properties(props)
                     .ok_or_else(|| MalformedError::MalformedSchemaVersion(schema_id).into())
             })
-            .collect::<RegistryResult<Vec<DefinitionEdge>>>()?;
+            .collect::<RegistryResult<Vec<SchemaDefEdge>>>()?;
 
         let view_edges = all_view_edges
             .into_iter()
             .map(|props| {
-                ViewEdge::from_properties(props).unwrap() // View edge has no params, always passes
+                SchemaViewEdge::from_properties(props).unwrap() // View edge has no params, always passes
             })
-            .collect::<Vec<ViewEdge>>();
+            .collect::<Vec<SchemaViewEdge>>();
 
         Ok(DbExport {
             schemas,
