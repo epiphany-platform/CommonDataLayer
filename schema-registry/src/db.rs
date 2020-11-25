@@ -91,8 +91,7 @@ impl<D: Datastore> SchemaDb<D> {
 
     pub fn ensure_schema_exists(&self, id: Uuid) -> RegistryResult<()> {
         let conn = self.connect()?;
-        let vertices =
-            conn.get_vertices(RangeVertexQuery::new(1).t(Schema::db_type()).start_id(id))?;
+        let vertices = conn.get_vertices(SpecificVertexQuery::single(id))?;
 
         if vertices.is_empty() {
             Err(RegistryError::NoSchemaWithId(id))
