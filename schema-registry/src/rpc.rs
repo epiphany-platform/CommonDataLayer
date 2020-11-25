@@ -62,13 +62,11 @@ impl SchemaRegistryImpl {
     }
 
     pub fn export_all(&self) -> anyhow::Result<DbExport> {
-        let result = self.db.export_all()?;
-        Ok(result)
+        self.db.export_all().context("Failed to export the entire database")
     }
 
     pub fn import_all(&self, imported: DbExport) -> anyhow::Result<()> {
-        self.db.import_all(imported)?;
-        Ok(())
+        self.db.import_all(imported).context("failed to import database")
     }
 }
 
