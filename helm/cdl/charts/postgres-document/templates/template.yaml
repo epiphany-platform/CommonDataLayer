@@ -31,13 +31,21 @@ spec:
         - name: KAFKA_INPUT_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
         - name: KAFKA_INPUT_GROUP_ID
-          value: "cdl-postgres-command-service"   
+          value: "cdl-postgres-command-service"
         - name: KAFKA_INPUT_TOPIC
           value: {{ .Values.inputTopic }}
-        - name: POSTGRES_OUTPUT_URL
-          value: {{ .Values.postgresConnectionString }}    
+        - name: POSTGRES_USERNAME
+          value: {{ .Values.postgresUsername }}
+        - name: POSTGRES_PASSWORD
+          value: {{ .Values.postgresPassword }}
+        - name: POSTGRES_HOST
+          value: {{ .Values.postgresHost }}
+        - name: POSTGRES_PORT
+          value: {{ .Values.postgresPort }}
+        - name: POSTGRES_DBNAME
+          value: {{ .Values.postgresDbname }}
         - name: RUST_LOG
-          value: "info,{{ .Values.commandService.bin }}=debug" 
+          value: "info,{{ .Values.commandService.bin }}=debug"
         - name: REPORT_BROKER
           value: {{ .Values.global.kafkaBrokers }}
         - name: REPORT_TOPIC
@@ -45,6 +53,6 @@ spec:
         ports:
         - containerPort: 51805
       imagePullSecrets:
-      - name: {{ .Values.global.cdlImagePullSecrets }} 
+      - name: {{ .Values.global.cdlImagePullSecrets }}
 
 

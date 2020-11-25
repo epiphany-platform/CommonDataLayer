@@ -12,8 +12,16 @@ use utils::metrics::counter;
 
 #[derive(Debug, StructOpt)]
 pub struct PsqlConfig {
-    #[structopt(long = "postgres-query-url", env = "POSTGRES_QUERY_URL")]
-    psql_url: String,
+    #[structopt(long, env = "POSTGRES_USERNAME")]
+    username: String,
+    #[structopt(long, env = "POSTGRES_PASSWORD")]
+    password: String,
+    #[structopt(long, env = "POSTGRES_HOST")]
+    host: String,
+    #[structopt(long, env = "POSTGRES_PORT", default_value = "5432")]
+    port: u16,
+    #[structopt(long, env = "POSTGRES_DBNAME")]
+    dbname: String,
 }
 
 pub struct PsqlQuery {
@@ -22,7 +30,13 @@ pub struct PsqlQuery {
 
 impl PsqlQuery {
     pub async fn load(config: PsqlConfig) -> anyhow::Result<Self> {
-        let pg_config: PgConfig = config.psql_url.parse().context("Invalid psql config")?;
+        let mut pg_config = PgConfig::new();
+        pg_config
+            .user(&config.username)
+            .password(&config.password)
+            .host(&config.host)
+            .port(config.port)
+            .dbname(&config.dbname);
         let manager = PostgresConnectionManager::new(pg_config, NoTls);
         let pool = Pool::builder()
             .build(manager)

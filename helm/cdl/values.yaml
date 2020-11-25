@@ -35,7 +35,11 @@ documentStorage:
 postgres-document:
   commandServiceReplicaCount: 1
   postgresDbReplicaCount: 0
-  postgresConnectionString: "postgres://postgres:postgres@10.1.1.5/cdldb"
+  postgresUsername: postgres
+  postgresPassword: postgres
+  postgresHost: 10.1.1.5
+  postgresPort: 5432
+  postgresDbname: cdldb
   inputTopic: cdl.document.data
   commandService:
     image: cdl-command-service
