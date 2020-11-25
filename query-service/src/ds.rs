@@ -105,7 +105,7 @@ impl Query for DsQuery {
         let mut conn = self.connect().await?;
         let response = conn
             .retrieve_raw(RetrieveRawRequest {
-                raw_request: request.into_inner().raw_msg,
+                raw_msg: request.into_inner().raw_msg,
             })
             .await?;
             
