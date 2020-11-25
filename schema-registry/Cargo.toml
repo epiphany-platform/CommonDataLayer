@@ -37,6 +37,7 @@ url         = "2.1"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 utils       = { path = "../utils" }
 futures-util            = "0.3"
+chrono      = "0.4.19"
 
 [build-dependencies]
 tonic-build = { version = "0.3", default-features = false, features = ["prost", "transport"] }

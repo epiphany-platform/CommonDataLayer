@@ -1,4 +1,5 @@
 use anyhow::Context;
+use chrono::{DateTime, Utc};
 use indradb::SledDatastore;
 use schema_registry::{
     error::RegistryError,
@@ -7,7 +8,10 @@ use schema_registry::{
     rpc::SchemaRegistryImpl,
 };
 use serde::Deserialize;
+use std::fs::File;
+use std::io::Write;
 use std::net::{Ipv4Addr, SocketAddrV4};
+use std::path::PathBuf;
 use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
 
@@ -20,6 +24,8 @@ struct Config {
     pub kafka_group_id: String,
     pub kafka_topics: Vec<String>,
     pub pod_name: Option<String>,
+    pub export_dir: Option<PathBuf>,
+    pub import_file: Option<PathBuf>,
 }
 
 #[tokio::main]
@@ -43,6 +49,20 @@ pub async fn main() -> anyhow::Result<()> {
         config.pod_name,
     );
 
+    if let Some(export_dir_path) = config.export_dir {
+        let exported = registry.export_all()?;
+        let exported = serde_json::to_string(&exported)?;
+        let export_path = export_path(export_dir_path);
+        let mut file = File::open(export_path)?;
+        write!(file, "{}", exported)?;
+    }
+
+    if let Some(import_path) = config.import_file {
+        let imported = File::open(import_path)?;
+        let imported = serde_json::from_reader(imported)?;
+        registry.import_all(imported)?;
+    }
+
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.input_port);
     status_endpoints::mark_as_started();
     Server::builder()
@@ -51,4 +71,9 @@ pub async fn main() -> anyhow::Result<()> {
         .await?;
 
     Ok(())
+}
+
+fn export_path(export_dir_path: PathBuf) -> PathBuf {
+    let timestamp: DateTime<Utc> = Utc::now();
+    export_dir_path.join(format!("export_{:?}.json", timestamp))
 }

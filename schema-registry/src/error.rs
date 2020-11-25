@@ -54,6 +54,8 @@ impl From<jsonschema::CompilationError> for RegistryError {
 pub enum MalformedError {
     #[error("Schema in database was malformed with id {0}")]
     MalformedSchema(Uuid),
+    #[error("Schema definition in database was malformed with id {0}")]
+    MalformedDefinition(Uuid),
     #[error("Schema version in database was malformed under schema with id {0}")]
     MalformedSchemaVersion(Uuid),
     #[error("View in database was malformed for view with id {0}")]

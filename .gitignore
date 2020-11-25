@@ -1,6 +1,4 @@
 registry_db/
 storage_db/
 target/
-.vscode/
-.idea
 venv
