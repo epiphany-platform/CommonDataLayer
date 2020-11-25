@@ -10,7 +10,7 @@ use utils::metrics::counter;
 
 #[derive(Debug, StructOpt)]
 pub struct DsConfig {
-    #[structopt(long = "ds-query-url", env = "DS_QUERY_URL")]
+    #[structopt(long = "query-url", env = "DS_QUERY_URL")]
     ds_url: String,
 }
 

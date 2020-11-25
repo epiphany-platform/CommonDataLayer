@@ -5,7 +5,7 @@ use crate::communication::GenericMessage;
 use crate::output::OutputPlugin;
 use bb8::Pool;
 use bb8_postgres::tokio_postgres::types::Json;
-use bb8_postgres::tokio_postgres::NoTls;
+use bb8_postgres::tokio_postgres::{Config, NoTls};
 use bb8_postgres::PostgresConnectionManager;
 pub use config::PostgresOutputConfig;
 pub use error::Error;
@@ -22,10 +22,14 @@ pub struct PostgresOutputPlugin {
 
 impl PostgresOutputPlugin {
     pub async fn new(config: PostgresOutputConfig) -> Result<Self, Error> {
-        let manager = bb8_postgres::PostgresConnectionManager::new(
-            config.url.parse().map_err(Error::FailedToParseUrl)?,
-            NoTls,
-        );
+        let mut pg_config = Config::new();
+        pg_config
+            .user(&config.username)
+            .password(&config.password)
+            .host(&config.host)
+            .port(config.port)
+            .dbname(&config.dbname);
+        let manager = bb8_postgres::PostgresConnectionManager::new(pg_config, NoTls);
         let pool = bb8::Pool::builder()
             .max_size(20)
             .connection_timeout(time::Duration::from_secs(120))

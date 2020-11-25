@@ -116,7 +116,11 @@ services:
       KAFKA_INPUT_GROUP_ID: "postgres_command"
       KAFKA_INPUT_BROKERS: "kafka1:9093"
       KAFKA_INPUT_TOPIC: "cdl.document.input"
-      POSTGRES_OUTPUT_URL: "postgresql://postgres:1234@postgres1:5432/postgres"
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_HOST: postgres1
+      POSTGRES_PORT: 5432
+      POSTGRES_DBNAME: postgres
       REPORT_BROKER: "kafka1:9093"
       REPORT_TOPIC: "cdl.reports"
       RUST_LOG: info,command_service=trace
