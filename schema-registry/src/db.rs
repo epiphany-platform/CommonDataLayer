@@ -613,13 +613,14 @@ mod tests {
         assert_eq!(original_view_id, view_id);
         assert_eq!(r#"{ a: a }"#, view.jmespath);
 
-        assert_eq!(schema_id, def_edge.schema_id);
-        assert_eq!(definition_id, def_edge.definition_id);
-        assert_eq!(Version::new(1, 0, 0), def_edge.version);
+        let schema_definition = result.schema_definitions.into_iter().next().unwrap();
+        assert_eq!(schema_id, schema_definition.schema_id);
+        assert_eq!(definition_id, schema_definition.definition_id);
+        assert_eq!(Version::new(1, 0, 0), schema_definition.version);
 
-        let view_edge = result.view_edges.into_iter().next().unwrap();
-        assert_eq!(schema_id, view_edge.schema_id);
-        assert_eq!(view_id, view_edge.view_id);
+        let schema_view = result.schema_views.into_iter().next().unwrap();
+        assert_eq!(schema_id, schema_view.schema_id);
+        assert_eq!(view_id, schema_view.view_id);
 
         Ok(())
     }
