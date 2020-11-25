@@ -1,7 +1,7 @@
 use crate::{
     db::SchemaDb,
     types::storage::vertices::View,
-    types::{NewSchema, NewSchemaVersion},
+    types::{NewSchema, NewSchemaVersion, SchemaType},
 };
 use log::info;
 use serde::{Deserialize, Serialize};
@@ -36,6 +36,10 @@ pub enum ReplicationEvent {
     UpdateSchemaQueryAddress {
         id: Uuid,
         new_query_address: String,
+    },
+    UpdateSchemaType {
+        id: Uuid,
+        new_schema_type: SchemaType,
     },
     AddViewToSchema {
         schema_id: Uuid,

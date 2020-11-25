@@ -46,6 +46,7 @@ fn send_messages_to_kafka(
         ReplicationEvent::AddViewToSchema { schema_id, .. } => schema_id,
         ReplicationEvent::UpdateSchemaName { id, .. } => id,
         ReplicationEvent::UpdateSchemaTopic { id, .. } => id,
+        ReplicationEvent::UpdateSchemaType { id, .. } => id,
         ReplicationEvent::UpdateSchemaQueryAddress { id, .. } => id,
         ReplicationEvent::UpdateView { id, .. } => id,
     };

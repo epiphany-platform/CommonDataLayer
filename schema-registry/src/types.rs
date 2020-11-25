@@ -1,3 +1,4 @@
+use crate::rpc::schema::schema_type;
 use indradb::{EdgeProperties, VertexProperties};
 use semver::{Version, VersionReq};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -19,6 +20,31 @@ pub struct NewSchema {
     pub definition: Value,
     pub kafka_topic: String,
     pub query_address: String,
+    pub schema_type: SchemaType,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub enum SchemaType {
+    DocumentStorage,
+    Timeseries,
+}
+
+impl From<schema_type::Type> for SchemaType {
+    fn from(st: schema_type::Type) -> Self {
+        match st {
+            schema_type::Type::DocumentStorage => SchemaType::DocumentStorage,
+            schema_type::Type::Timeseries => SchemaType::Timeseries,
+        }
+    }
+}
+
+impl std::fmt::Display for SchemaType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            SchemaType::DocumentStorage => "DocumentStorage",
+            SchemaType::Timeseries => "Timeseries",
+        })
+    }
 }
 
 impl NewSchema {
@@ -28,12 +54,14 @@ impl NewSchema {
             definition,
             kafka_topic,
             query_address,
+            schema_type,
         } = self;
         (
             vertices::Schema {
                 name,
                 kafka_topic,
                 query_address,
+                schema_type,
             },
             definition,
         )

@@ -46,6 +46,7 @@ pub async fn add_schema(
             definition: serde_json::to_string(&definition)?,
             query_address,
             topic_name: topic,
+            schema_type: 0,
         })
         .await?;
 

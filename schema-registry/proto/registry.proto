@@ -7,12 +7,14 @@ service SchemaRegistry {
     rpc UpdateSchemaName (SchemaNameUpdate) returns (Empty);
     rpc UpdateSchemaTopic (SchemaTopicUpdate) returns (Empty);
     rpc UpdateSchemaQueryAddress (SchemaQueryAddressUpdate) returns (Empty);
+    rpc UpdateSchemaType (SchemaTypeUpdate) returns (Empty);
     rpc AddViewToSchema (NewSchemaView) returns (Id);
     rpc UpdateView (UpdatedView) returns (View);
     rpc GetSchema (VersionedId) returns (SchemaDefinition);
     rpc GetSchemaTopic (Id) returns (SchemaTopic);
     rpc GetSchemaQueryAddress (Id) returns (SchemaQueryAddress);
     rpc GetSchemaVersions (Id) returns (SchemaVersions);
+    rpc GetSchemaType(Id) returns (SchemaType);
     rpc GetView (Id) returns (View);
     rpc GetAllSchemaNames (Empty) returns (SchemaNames);
     rpc GetAllViewsOfSchema (Id) returns (SchemaViews);
@@ -28,6 +30,7 @@ message NewSchema {
     string query_address = 3;
     string topic_name = 4;
     string definition = 5;
+    SchemaType.Type schema_type = 6;
 }
 
 message NewSchemaVersion {
@@ -44,6 +47,11 @@ message SchemaNameUpdate {
 message SchemaTopicUpdate {
     string id = 1;
     string topic = 2;
+}
+
+message SchemaTypeUpdate {
+    string id = 1;
+    SchemaType.Type schema_type = 2;
 }
 
 message SchemaQueryAddressUpdate {
@@ -115,6 +123,14 @@ message Errors {
 
 message PodName {
     string name = 1;
+}
+
+message SchemaType {
+    enum Type {
+        DocumentStorage = 0;
+        Timeseries = 1;
+    }
+    Type schema_type = 1;
 }
 
 message Empty {}
