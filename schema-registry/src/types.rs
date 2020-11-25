@@ -1,16 +1,43 @@
-use crate::db::property;
-use indradb::VertexProperties;
+use indradb::{EdgeProperties, VertexProperties};
 use semver::{Version, VersionReq};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashMap;
 use uuid::Uuid;
 
+use storage::*;
+
+pub mod storage {
+    pub mod edges;
+    pub mod vertices;
+}
+
+// Helper structures
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewSchema {
     pub name: String,
     pub definition: Value,
     pub kafka_topic: String,
     pub query_address: String,
+}
+
+impl NewSchema {
+    pub fn vertex(self) -> (vertices::Schema, Value) {
+        let Self {
+            name,
+            definition,
+            kafka_topic,
+            query_address,
+        } = self;
+        (
+            vertices::Schema {
+                name,
+                kafka_topic,
+                query_address,
+            },
+            definition,
+        )
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -26,38 +53,9 @@ pub struct SchemaDefinition {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct View {
-    pub name: String,
-    pub jmespath: String,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct VersionedUuid {
     pub id: Uuid,
     pub version_req: VersionReq,
-}
-
-fn get_vertex_property_or<T: DeserializeOwned>(
-    properties: &mut VertexProperties,
-    name: &'static str,
-) -> Option<T> {
-    properties
-        .props
-        .drain_filter(|prop| prop.name == name)
-        .next()
-        .and_then(|prop| serde_json::from_value(prop.value).ok())
-}
-
-impl View {
-    pub fn from_properties(mut properties: VertexProperties) -> Option<(Uuid, View)> {
-        Some((
-            properties.vertex.id,
-            View {
-                name: get_vertex_property_or(&mut properties, property::VIEW_NAME)?,
-                jmespath: get_vertex_property_or(&mut properties, property::VIEW_EXPRESSION)?,
-            },
-        ))
-    }
 }
 
 impl VersionedUuid {
@@ -78,4 +76,36 @@ impl VersionedUuid {
             version_req: VersionReq::any(),
         }
     }
+}
+
+// Import export
+#[derive(Default, Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct DbExport {
+    pub schemas: HashMap<Uuid, vertices::Schema>,
+    pub definitions: HashMap<Uuid, vertices::Definition>,
+    pub views: HashMap<Uuid, vertices::View>,
+    pub schema_definitions: Vec<edges::SchemaDefinition>,
+    pub schema_views: Vec<edges::SchemaView>,
+}
+
+fn extract_vertex_property<T: DeserializeOwned>(
+    properties: &mut VertexProperties,
+    name: &'static str,
+) -> Option<T> {
+    properties
+        .props
+        .drain_filter(|prop| prop.name == name)
+        .next()
+        .and_then(|prop| serde_json::from_value(prop.value).ok())
+}
+
+fn extract_edge_property<T: DeserializeOwned>(
+    properties: &mut EdgeProperties,
+    name: &'static str,
+) -> Option<T> {
+    properties
+        .props
+        .drain_filter(|prop| prop.name == name)
+        .next()
+        .and_then(|prop| serde_json::from_value(prop.value).ok())
 }

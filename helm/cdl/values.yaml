@@ -3,7 +3,10 @@ global:
   imageVersion: master
   imagePullPolicy: Always
   kafkaBrokers: 10.1.5.4:9092
-  rabbitMqConnectionString: "amqp://rabbitmq:rabbitmq@10.1.1.4:5672/%2f"
+  rabbitMqUsername: rabbitmq
+  rabbitMqPassword: rabbitmq
+  rabbitMqHost: 10.1.1.4
+  rabbitMqPort: 5672
   cdlImagePullSecrets: services
   reportTopic: cdl.errors
 
@@ -35,7 +38,11 @@ documentStorage:
 postgres-document:
   commandServiceReplicaCount: 1
   postgresDbReplicaCount: 0
-  postgresConnectionString: "postgres://postgres:postgres@10.1.1.5/cdldb"
+  postgresUsername: postgres
+  postgresPassword: postgres
+  postgresHost: 10.1.1.5
+  postgresPort: 5432
+  postgresDbname: cdldb
   inputTopic: cdl.document.data
   commandService:
     image: cdl-command-service

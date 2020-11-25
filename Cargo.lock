@@ -741,15 +741,15 @@ name = "data-router"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "env_logger 0.8.2",
- "envy",
+ "env_logger 0.8.1",
  "futures-util",
  "log",
  "lru-cache",
  "schema-registry",
  "serde",
  "serde_json",
- "tokio 0.2.23",
+ "structopt",
+ "tokio 0.2.22",
  "utils",
  "uuid",
 ]
@@ -2886,7 +2886,8 @@ name = "schema-registry"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "env_logger 0.8.2",
+ "chrono",
+ "env_logger 0.8.1",
  "envy",
  "futures",
  "futures-util",

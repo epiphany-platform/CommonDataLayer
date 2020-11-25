@@ -1,8 +1,6 @@
 registry_db/
 storage_db/
 target/
-.vscode/
-.idea
 venv
 __pycache__
 .pytest_cache
