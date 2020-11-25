@@ -1,4 +1,11 @@
-use super::*;
+use indradb::{EdgeKey, EdgeProperties, Type};
+use lazy_static::lazy_static;
+use semver::Version;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use uuid::Uuid;
+
+use crate::types::extract_edge_property;
 
 pub trait Edge: Sized {
     fn db_type() -> Type;
@@ -40,7 +47,7 @@ impl Edge for SchemaView {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct SchemaDefinition {
     pub schema_id: Uuid,
-    pub def_id: Uuid,
+    pub definition_id: Uuid,
     pub version: Version,
 }
 
@@ -51,18 +58,18 @@ impl SchemaDefinition {
 impl Edge for SchemaDefinition {
     fn edge_info<'a>(self) -> (EdgeKey, Vec<(&'a str, Value)>) {
         (
-            EdgeKey::new(self.schema_id, Self::db_type(), self.def_id),
+            EdgeKey::new(self.schema_id, Self::db_type(), self.definition_id),
             vec![(Self::VERSION, serde_json::json!(self.version))],
         )
     }
 
     fn from_properties(mut properties: EdgeProperties) -> Option<Self> {
         let schema_id = properties.edge.key.outbound_id;
-        let def_id = properties.edge.key.inbound_id;
+        let definition_id = properties.edge.key.inbound_id;
         Some(Self {
             schema_id,
-            def_id,
-            version: get_edge_property_or(&mut properties, Self::VERSION)?,
+            definition_id,
+            version: extract_edge_property(&mut properties, Self::VERSION)?,
         })
     }
 

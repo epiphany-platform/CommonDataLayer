@@ -6,6 +6,7 @@ use crate::{
     types::{NewSchema, NewSchemaVersion, VersionedUuid},
     View,
 };
+use anyhow::Context;
 use indradb::SledDatastore;
 use schema::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, NewSchemaView, PodName,
@@ -62,11 +63,15 @@ impl SchemaRegistryImpl {
     }
 
     pub fn export_all(&self) -> anyhow::Result<DbExport> {
-        self.db.export_all().context("Failed to export the entire database")
+        self.db
+            .export_all()
+            .context("Failed to export the entire database")
     }
 
     pub fn import_all(&self, imported: DbExport) -> anyhow::Result<()> {
-        self.db.import_all(imported).context("failed to import database")
+        self.db
+            .import_all(imported)
+            .context("failed to import database")
     }
 }
 

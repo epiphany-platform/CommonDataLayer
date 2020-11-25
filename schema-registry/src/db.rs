@@ -1,7 +1,9 @@
 use super::{
     schema::build_full_schema,
     types::{
-        storage::edges::{Edge, SchemaDefinition as SchemaDefEdge, SchemaView as SchemaViewEdge},
+        storage::edges::{
+            Edge, SchemaDefinition as SchemaDefinitionEdge, SchemaView as SchemaViewEdge,
+        },
         storage::vertices::{Definition, Schema, Vertex, View},
         NewSchema, NewSchemaVersion, VersionedUuid,
     },
@@ -122,8 +124,8 @@ impl<D: Datastore> SchemaDb<D> {
         conn.get_edge_properties(
             SpecificVertexQuery::single(id)
                 .outbound(std::u32::MAX)
-                .t(SchemaDefEdge::db_type())
-                .property(SchemaDefEdge::VERSION),
+                .t(SchemaDefinitionEdge::db_type())
+                .property(SchemaDefinitionEdge::VERSION),
         )?
         .into_iter()
         .map(|prop| {
@@ -192,9 +194,9 @@ impl<D: Datastore> SchemaDb<D> {
         let new_id = self.create_vertex_with_properties(schema, new_id)?;
         let new_definition_vertex_id = self.create_vertex_with_properties(full_schema, None)?;
 
-        self.set_edge_properties(SchemaDefEdge {
+        self.set_edge_properties(SchemaDefinitionEdge {
             schema_id: new_id,
-            def_id: new_definition_vertex_id,
+            definition_id: new_definition_vertex_id,
             version: Version::new(1, 0, 0),
         })?;
         trace!("Add schema {}", new_id);
@@ -255,10 +257,10 @@ impl<D: Datastore> SchemaDb<D> {
         let full_schema = build_full_schema(schema.definition, &self)?;
         let new_definition_vertex_id = self.create_vertex_with_properties(full_schema, None)?;
 
-        self.set_edge_properties(SchemaDefEdge {
+        self.set_edge_properties(SchemaDefinitionEdge {
             version: schema.version,
             schema_id: id,
-            def_id: new_definition_vertex_id,
+            definition_id: new_definition_vertex_id,
         })?;
 
         Ok(())
@@ -342,20 +344,20 @@ impl<D: Datastore> SchemaDb<D> {
             self.create_vertex_with_properties(schema, Some(schema_id))?;
         }
 
-        for (def_id, def) in imported.definitions {
-            self.create_vertex_with_properties(def, Some(def_id))?;
+        for (definition_id, def) in imported.definitions {
+            self.create_vertex_with_properties(def, Some(definition_id))?;
         }
 
         for (view_id, view) in imported.views {
             self.create_vertex_with_properties(view, Some(view_id))?;
         }
 
-        for def_edge in imported.def_edges {
-            self.set_edge_properties(def_edge)?;
+        for schema_definition in imported.schema_definitions {
+            self.set_edge_properties(schema_definition)?;
         }
 
-        for view_edge in imported.view_edges {
-            self.set_edge_properties(view_edge)?;
+        for schema_view in imported.schema_views {
+            self.set_edge_properties(schema_view)?;
         }
 
         Ok(())
@@ -374,13 +376,13 @@ impl<D: Datastore> SchemaDb<D> {
         let all_views = conn
             .get_all_vertex_properties(RangeVertexQuery::new(std::u32::MAX).t(View::db_type()))?;
 
-        let all_def_edges = conn.get_all_edge_properties(
+        let all_schema_definitions = conn.get_all_edge_properties(
             RangeVertexQuery::new(std::u32::MAX)
                 .outbound(std::u32::MAX)
-                .t(SchemaDefEdge::db_type()),
+                .t(SchemaDefinitionEdge::db_type()),
         )?;
 
-        let all_view_edges = conn.get_all_edge_properties(
+        let all_schema_views = conn.get_all_edge_properties(
             RangeVertexQuery::new(std::u32::MAX)
                 .outbound(std::u32::MAX)
                 .t(SchemaViewEdge::db_type()),
@@ -389,9 +391,9 @@ impl<D: Datastore> SchemaDb<D> {
         let definitions = all_definitions
             .into_iter()
             .map(|props| {
-                let def_id = props.vertex.id;
+                let definition_id = props.vertex.id;
                 Definition::from_properties(props)
-                    .ok_or_else(|| MalformedError::MalformedDefinition(def_id).into())
+                    .ok_or_else(|| MalformedError::MalformedDefinition(definition_id).into())
             })
             .collect::<RegistryResult<HashMap<Uuid, Definition>>>()?;
 
@@ -413,16 +415,16 @@ impl<D: Datastore> SchemaDb<D> {
             })
             .collect::<RegistryResult<HashMap<Uuid, View>>>()?;
 
-        let def_edges = all_def_edges
+        let schema_definitions = all_schema_definitions
             .into_iter()
             .map(|props| {
                 let schema_id = props.edge.key.outbound_id;
-                SchemaDefEdge::from_properties(props)
+                SchemaDefinitionEdge::from_properties(props)
                     .ok_or_else(|| MalformedError::MalformedSchemaVersion(schema_id).into())
             })
-            .collect::<RegistryResult<Vec<SchemaDefEdge>>>()?;
+            .collect::<RegistryResult<Vec<SchemaDefinitionEdge>>>()?;
 
-        let view_edges = all_view_edges
+        let schema_views = all_schema_views
             .into_iter()
             .map(|props| {
                 SchemaViewEdge::from_properties(props).unwrap() // View edge has no params, always passes
@@ -433,8 +435,8 @@ impl<D: Datastore> SchemaDb<D> {
             schemas,
             definitions,
             views,
-            def_edges,
-            view_edges,
+            schema_definitions,
+            schema_views,
         })
     }
 }
@@ -600,7 +602,7 @@ mod tests {
         assert_eq!(original_schema_id, schema_id);
         assert_eq!("test", schema.name);
 
-        let (def_id, definition) = result.definitions.into_iter().next().unwrap();
+        let (definition_id, definition) = result.definitions.into_iter().next().unwrap();
         assert!(definition.definition.is_object());
         assert_eq!(
             r#"{"definitions":{"def1":{"a":"number"},"def2":{"b":"string"}}}"#,
@@ -611,9 +613,8 @@ mod tests {
         assert_eq!(original_view_id, view_id);
         assert_eq!(r#"{ a: a }"#, view.jmespath);
 
-        let def_edge = result.def_edges.into_iter().next().unwrap();
         assert_eq!(schema_id, def_edge.schema_id);
-        assert_eq!(def_id, def_edge.def_id);
+        assert_eq!(definition_id, def_edge.definition_id);
         assert_eq!(Version::new(1, 0, 0), def_edge.version);
 
         let view_edge = result.view_edges.into_iter().next().unwrap();

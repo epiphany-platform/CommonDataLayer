@@ -1,4 +1,10 @@
-use super::*;
+use indradb::{Type, VertexProperties};
+use lazy_static::lazy_static;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use uuid::Uuid;
+
+use crate::types::extract_vertex_property;
 
 pub trait Vertex: Sized {
     fn to_properties<'a>(self) -> Vec<(&'a str, Value)>;
@@ -32,9 +38,9 @@ impl Vertex for Schema {
         Some((
             properties.vertex.id,
             Self {
-                name: get_vertex_property_or(&mut properties, Self::NAME)?,
-                kafka_topic: get_vertex_property_or(&mut properties, Self::TOPIC_NAME)?,
-                query_address: get_vertex_property_or(&mut properties, Self::QUERY_ADDRESS)?,
+                name: extract_vertex_property(&mut properties, Self::NAME)?,
+                kafka_topic: extract_vertex_property(&mut properties, Self::TOPIC_NAME)?,
+                query_address: extract_vertex_property(&mut properties, Self::QUERY_ADDRESS)?,
             },
         ))
     }
@@ -66,7 +72,7 @@ impl Vertex for Definition {
         Some((
             properties.vertex.id,
             Self {
-                definition: get_vertex_property_or(&mut properties, Definition::VALUE)?,
+                definition: extract_vertex_property(&mut properties, Definition::VALUE)?,
             },
         ))
     }
@@ -96,8 +102,8 @@ impl Vertex for View {
         Some((
             properties.vertex.id,
             View {
-                name: get_vertex_property_or(&mut properties, View::NAME)?,
-                jmespath: get_vertex_property_or(&mut properties, View::EXPRESSION)?,
+                name: extract_vertex_property(&mut properties, View::NAME)?,
+                jmespath: extract_vertex_property(&mut properties, View::EXPRESSION)?,
             },
         ))
     }

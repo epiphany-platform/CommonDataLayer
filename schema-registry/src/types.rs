@@ -1,5 +1,4 @@
-use indradb::{EdgeKey, EdgeProperties, Type, VertexProperties};
-use lazy_static::lazy_static;
+use indradb::{EdgeProperties, VertexProperties};
 use semver::{Version, VersionReq};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
@@ -9,8 +8,6 @@ use uuid::Uuid;
 use storage::*;
 
 pub mod storage {
-    use super::*;
-
     pub mod edges;
     pub mod vertices;
 }
@@ -87,11 +84,11 @@ pub struct DbExport {
     pub schemas: HashMap<Uuid, vertices::Schema>,
     pub definitions: HashMap<Uuid, vertices::Definition>,
     pub views: HashMap<Uuid, vertices::View>,
-    pub def_edges: Vec<edges::SchemaDefinition>,
-    pub view_edges: Vec<edges::SchemaView>,
+    pub schema_definitions: Vec<edges::SchemaDefinition>,
+    pub schema_views: Vec<edges::SchemaView>,
 }
 
-fn get_vertex_property_or<T: DeserializeOwned>(
+fn extract_vertex_property<T: DeserializeOwned>(
     properties: &mut VertexProperties,
     name: &'static str,
 ) -> Option<T> {
@@ -102,7 +99,7 @@ fn get_vertex_property_or<T: DeserializeOwned>(
         .and_then(|prop| serde_json::from_value(prop.value).ok())
 }
 
-fn get_edge_property_or<T: DeserializeOwned>(
+fn extract_edge_property<T: DeserializeOwned>(
     properties: &mut EdgeProperties,
     name: &'static str,
 ) -> Option<T> {
