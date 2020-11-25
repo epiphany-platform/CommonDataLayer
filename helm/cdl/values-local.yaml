@@ -3,7 +3,10 @@ global:
   imageVersion: latest
   imagePullPolicy: IfNotPresent
   kafkaBrokers:  infrastructure-kafka-headless
-  rabbitMqConnectionString: "amqp://user:CHANGEME@infrastructure-rabbitmq:5672/%2f"
+  rabbitMqUsername: user
+  rabbitMqPassword: CHANGEME
+  rabbitMqHost: infrastructure-rabbitmq
+  rabbitMqPort: 5672
   cdlImagePullSecrets: services
   reportTopic: cdl.errors
 

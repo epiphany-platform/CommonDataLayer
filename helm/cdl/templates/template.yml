@@ -137,8 +137,14 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/{{ .Values.dataRouter.bin }}"]
         env:
-        - name: INPUT_ADDR
-          value: {{ .Values.global.rabbitMqConnectionString }}
+        - name: RABBITMQ_USERNAME
+          value: {{ .Values.global.rabbitMqUsername }}
+        - name: RABBITMQ_PASSWORD
+          value: {{ .Values.global.rabbitMqPassword }}
+        - name: RABBITMQ_HOST
+          value: {{ .Values.global.rabbitMqHost }}
+        - name: RABBITMQ_PORT
+          value: {{ .Values.global.rabbitMqPort }}
         - name: INPUT_QUEUE
           value: {{ .Values.dataRouter.inputQueue }}
         - name: KAFKA_BROKERS
