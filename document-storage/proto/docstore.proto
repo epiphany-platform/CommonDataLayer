@@ -23,7 +23,7 @@ message RetrieveBySchemaRequest {
 }
 
 message RetrieveRawRequest {
-  string raw_request = 1;
+  string raw_msg = 1;
 }
 
 message Empty {}

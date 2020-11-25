@@ -153,10 +153,12 @@ impl Query for DruidQuery {
         Ok(tonic::Response::new(ValueMap { values }))
     }
 
-    async fn query_raw(&self, request: Request<RawMsg>) ->Result<Response<ValueMap>, Status>  {
+    async fn query_raw(
+        &self,
+        request: Request<RawMsg>
+    ) -> Result<Response<ValueMap>, Status>  {
         counter!("cdl.query-service.query-raw.druid", 1);
         let query = json!(request.into_inner().raw_msg);
-
         let response: Vec<DruidValue> = self.query_db(&query).await?;
         let values = response
             .into_iter()
