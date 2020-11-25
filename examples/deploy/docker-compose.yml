@@ -63,8 +63,8 @@ services:
       context: ../..
       dockerfile: Dockerfile
       args:
-        - BIN=schema_registry
-    command: /bin/schema_registry
+        - BIN=schema-registry
+    command: /bin/schema-registry
     ports:
       - "50101:50101"
     environment:
@@ -86,10 +86,13 @@ services:
       context: ../..
       dockerfile: Dockerfile
       args:
-        - BIN=data_router
-    command: /bin/data_router
+        - BIN=data-router
+    command: /bin/data-router
     environment:
-      INPUT_ADDR: "amqp://guest:guest@rabbit1:5672/%2f"
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_HOST: rabbit1
+      RABBITMQ_PORT: 5672
       INPUT_QUEUE: "cdl.data.input"
       KAFKA_BROKERS: "kafka1:9093"
       KAFKA_ERROR_CHANNEL: "cdl.reports"
@@ -107,8 +110,8 @@ services:
       context: ../..
       dockerfile: Dockerfile
       args:
-        - BIN=command_service
-    command: "/bin/command_service postgres"
+        - BIN=command-service
+    command: "/bin/command-service postgres"
     environment:
       KAFKA_INPUT_GROUP_ID: "postgres_command"
       KAFKA_INPUT_BROKERS: "kafka1:9093"
