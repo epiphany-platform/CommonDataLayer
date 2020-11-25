@@ -17,7 +17,7 @@ use indradb::{
     Datastore, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
     SpecificVertexQuery, Transaction, VertexQueryExt,
 };
-use log::trace;
+use log::{trace, warn};
 use semver::Version;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -339,6 +339,11 @@ impl<D: Datastore> SchemaDb<D> {
     }
 
     pub fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
+        if !self.get_all_schema_names()?.is_empty() {
+            warn!("[IMPORT] Database is not empty, skipping importing");
+            return Ok(());
+        }
+
         for (schema_id, schema) in imported.schemas {
             self.create_vertex_with_properties(schema, Some(schema_id))?;
         }
@@ -448,61 +453,55 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    fn import_non_empty() -> Result<()> {
+        let (to_import, schema1_id, view1_id) = prepare_db_export()?;
+
+        let db = SchemaDb {
+            db: MemoryDatastore::default(),
+        };
+        let schema2_id = db.add_schema(schema2(), None)?;
+        let view2_id = db.add_view_to_schema(schema2_id, view2(), None)?;
+
+        db.ensure_schema_exists(schema2_id)?;
+        assert!(db.ensure_schema_exists(schema1_id).is_err());
+        db.get_view(view2_id)?;
+        assert!(db.get_view(view1_id).is_err());
+
+        db.import_all(to_import)?;
+
+        // Ensure nothing changed
+        db.ensure_schema_exists(schema2_id)?;
+        assert!(db.ensure_schema_exists(schema1_id).is_err());
+        db.get_view(view2_id)?;
+        assert!(db.get_view(view1_id).is_err());
+
+        Ok(())
+    }
+
+    #[test]
     fn import_all() -> Result<()> {
+        let (original_result, original_schema_id, original_view_id) = prepare_db_export()?;
+
         let db = SchemaDb {
             db: MemoryDatastore::default(),
         };
 
-        let original_schema_id = db.add_schema(
-            NewSchema {
-                name: "test".into(),
-                definition: json! ({
-                    "definitions": {
-                        "def1": {
-                            "a": "number"
-                        },
-                        "def2": {
-                            "b": "string"
-                        }
-                    }
-                }),
-                kafka_topic: "topic1".into(),
-                query_address: "query1".into(),
-            },
-            None,
-        )?;
+        db.import_all(original_result)?;
 
-        let original_view_id = db.add_view_to_schema(
-            original_schema_id,
-            View {
-                name: "view1".into(),
-                jmespath: "{ a: a }".into(),
-            },
-            None,
-        )?;
+        db.ensure_schema_exists(original_schema_id)?;
 
-        let original_result = db.export_all()?;
-
-        let new_db = SchemaDb {
-            db: MemoryDatastore::default(),
-        };
-
-        new_db.import_all(original_result)?;
-
-        new_db.ensure_schema_exists(original_schema_id)?;
-
-        let (schema_id, schema_name) = new_db.get_all_schema_names()?.into_iter().next().unwrap();
+        let (schema_id, schema_name) = db.get_all_schema_names()?.into_iter().next().unwrap();
         assert_eq!(original_schema_id, schema_id);
         assert_eq!("test", schema_name);
 
-        let defs = new_db.get_schema_definition(&VersionedUuid::any(original_schema_id))?;
+        let defs = db.get_schema_definition(&VersionedUuid::any(original_schema_id))?;
         assert_eq!(Version::new(1, 0, 0), defs.version);
         assert_eq!(
             r#"{"definitions":{"def1":{"a":"number"},"def2":{"b":"string"}}}"#,
             serde_json::to_string(&defs.definition).unwrap()
         );
 
-        let (view_id, view) = new_db
+        let (view_id, view) = db
             .get_all_views_of_schema(original_schema_id)?
             .into_iter()
             .next()
@@ -515,46 +514,14 @@ mod tests {
 
     #[test]
     fn import_export_all() -> Result<()> {
+        let original_result = prepare_db_export()?.0;
+
         let db = SchemaDb {
             db: MemoryDatastore::default(),
         };
+        db.import_all(original_result.clone())?;
 
-        let original_schema_id = db.add_schema(
-            NewSchema {
-                name: "test".into(),
-                definition: json! ({
-                    "definitions": {
-                        "def1": {
-                            "a": "number"
-                        },
-                        "def2": {
-                            "b": "string"
-                        }
-                    }
-                }),
-                kafka_topic: "topic1".into(),
-                query_address: "query1".into(),
-            },
-            None,
-        )?;
-
-        db.add_view_to_schema(
-            original_schema_id,
-            View {
-                name: "view1".into(),
-                jmespath: "{ a: a }".into(),
-            },
-            None,
-        )?;
-
-        let original_result = db.export_all()?;
-
-        let new_db = SchemaDb {
-            db: MemoryDatastore::default(),
-        };
-        new_db.import_all(original_result.clone())?;
-
-        let new_result = new_db.export_all()?;
+        let new_result = db.export_all()?;
 
         assert_eq!(original_result, new_result);
 
@@ -563,39 +530,7 @@ mod tests {
 
     #[test]
     fn export_all() -> Result<()> {
-        let db = SchemaDb {
-            db: MemoryDatastore::default(),
-        };
-
-        let original_schema_id = db.add_schema(
-            NewSchema {
-                name: "test".into(),
-                definition: json! ({
-                    "definitions": {
-                        "def1": {
-                            "a": "number"
-                        },
-                        "def2": {
-                            "b": "string"
-                        }
-                    }
-                }),
-                kafka_topic: "topic1".into(),
-                query_address: "query1".into(),
-            },
-            None,
-        )?;
-
-        let original_view_id = db.add_view_to_schema(
-            original_schema_id,
-            View {
-                name: "view1".into(),
-                jmespath: "{ a: a }".into(),
-            },
-            None,
-        )?;
-
-        let result = db.export_all()?;
+        let (result, original_schema_id, original_view_id) = prepare_db_export()?;
 
         let (schema_id, schema) = result.schemas.into_iter().next().unwrap();
         assert_eq!(original_schema_id, schema_id);
@@ -622,5 +557,70 @@ mod tests {
         assert_eq!(view_id, schema_view.view_id);
 
         Ok(())
+    }
+
+    fn schema1() -> NewSchema {
+        NewSchema {
+            name: "test".into(),
+            definition: json! ({
+                "definitions": {
+                    "def1": {
+                        "a": "number"
+                    },
+                    "def2": {
+                        "b": "string"
+                    }
+                }
+            }),
+            kafka_topic: "topic1".into(),
+            query_address: "query1".into(),
+        }
+    }
+
+    fn view1() -> View {
+        View {
+            name: "view1".into(),
+            jmespath: "{ a: a }".into(),
+        }
+    }
+
+    fn schema2() -> NewSchema {
+        NewSchema {
+            name: "test2".into(),
+            definition: json! ({
+                "definitions": {
+                    "def3": {
+                        "a": "number"
+                    },
+                    "def4": {
+                        "b": "string"
+                    }
+                }
+            }),
+            kafka_topic: "topic2".into(),
+            query_address: "query2".into(),
+        }
+    }
+
+    fn view2() -> View {
+        View {
+            name: "view2".into(),
+            jmespath: "{ a: a }".into(),
+        }
+    }
+
+    fn prepare_db_export() -> Result<(DbExport, Uuid, Uuid)> {
+        // SchemaId, ViewId
+        let db = SchemaDb {
+            db: MemoryDatastore::default(),
+        };
+
+        let schema_id = db.add_schema(schema1(), None)?;
+
+        let view_id = db.add_view_to_schema(schema_id, view1(), None)?;
+
+        let exported = db.export_all()?;
+
+        Ok((exported, schema_id, view_id))
     }
 }
