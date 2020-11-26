@@ -26,11 +26,9 @@ const SERVICE_NAME: &str = "data-router";
 #[derive(StructOpt, Deserialize, Debug, Serialize)]
 struct Config {
     #[structopt(long, env)]
-    pub input_group_id: String,
+    pub kafka_group_id: String,
     #[structopt(long, env)]
-    pub input_brokers: String,
-    #[structopt(long, env)]
-    pub input_topic: String,
+    pub kafka_topic: String,
     #[structopt(long, env)]
     pub kafka_brokers: String,
     #[structopt(long, env)]
@@ -48,9 +46,9 @@ async fn main() -> anyhow::Result<()> {
     metrics::serve();
 
     let consumer = CommonConsumer::new_kafka(
-        &config.input_group_id,
-        &config.input_brokers,
-        &[&config.input_topic],
+        &config.kafka_group_id,
+        &config.kafka_brokers,
+        &[&config.kafka_topic],
     )
     .await?;
     let producer = Arc::new(

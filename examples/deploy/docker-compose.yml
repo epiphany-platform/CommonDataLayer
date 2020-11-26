@@ -36,17 +36,6 @@ services:
     depends_on:
       - zoo1
 
-  rabbit1:
-    image: rabbitmq:3-management
-    ports:
-      - "15672:15672"
-      - "5672:5672"
-    environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
-    volumes:
-      - ./docker-volume/rabbit1:/etc/rabbitmq
-
   postgres1:
     image: postgres:latest
     ports:
@@ -89,19 +78,15 @@ services:
         - BIN=data-router
     command: /bin/data-router
     environment:
-      RABBITMQ_USERNAME: guest
-      RABBITMQ_PASSWORD: guest
-      RABBITMQ_HOST: rabbit1
-      RABBITMQ_PORT: 5672
-      INPUT_QUEUE: "cdl.data.input"
       KAFKA_BROKERS: "kafka1:9093"
+      KAFKA_TOPIC: "cdl.data.input"
+      KAFKA_GROUP_ID: "data_router"
       KAFKA_ERROR_CHANNEL: "cdl.reports"
       SCHEMA_REGISTRY_ADDR: "http://schema_registry1:50101"
       CACHE_CAPACITY: "1000"
       RUST_LOG: info,data_router=trace
     depends_on:
       - kafka1
-      - rabbit1
       - schema_registry1
 
   postgres_command1:

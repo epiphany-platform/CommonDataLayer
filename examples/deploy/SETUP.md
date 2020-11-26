@@ -26,24 +26,13 @@ You must first add environment variables:
 
 Due to services needing additional startup time, we advise to let docker setup infrastructure first, and deploy CDL after. So...
 
-`docker-compose up -d kafka1 zoo1 postgres1 rabbit1`
+`docker-compose up -d kafka1 zoo1 postgres1`
 
 After it had some time to setup, you can proceed with rest of the environment:
 
 `docker-compose up -d`
 
 ## Entry points in system
-### RabbitMQ
-
-RabbitMQ should be accessible from `localhost:5672` for ingesting data.
-
-It is setup with default account,
-> login:password = guest:guest
-
-Default exchange is `cdl`, default queue and routing key are `cdl.data.input`, default vhost is `/`.
-
-You can access RabbitMQ web admin on `localhost:15672`.
-
 ### Kafka
 
 You can write to kafka on `localhost:9092`.
