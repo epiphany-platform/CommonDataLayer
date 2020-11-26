@@ -3,15 +3,11 @@ global:
   imageVersion: latest
   imagePullPolicy: IfNotPresent
   kafkaBrokers:  infrastructure-kafka-headless
-  rabbitMqUsername: user
-  rabbitMqPassword: CHANGEME
-  rabbitMqHost: infrastructure-rabbitmq
-  rabbitMqPort: 5672
   cdlImagePullSecrets: services
   reportTopic: cdl.errors
 
 dataRouter:
-  inputQueue: cdl.data.input
+  inputTopic: cdl.data.input
   image: cdl-data-router
   bin: data-router
 
