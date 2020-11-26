@@ -1,6 +1,5 @@
+use crate::report;
 use std::str::Utf8Error;
-
-use crate::communication;
 use thiserror::Error as DeriveError;
 use utils::messaging_system::CommunicationError;
 
@@ -29,7 +28,9 @@ pub enum Error {
     #[error("Metric is missing timestamp")]
     TimestampUnavailable,
     #[error("Failed to communicate with handler `{0}`")]
-    CommunicationError(communication::Error),
+    CommunicationError(report::Error),
     #[error("Channel was closed on sender side")]
     SenderDropped,
+    #[error("Failed to initialize reporting module")]
+    FailedToInitializeReporting(report::Error),
 }

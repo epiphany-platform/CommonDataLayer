@@ -50,9 +50,9 @@ spec:
     spec:
       containers:
       - name: cdl-schema-registry
-        image: "{{ .Values.global.imageRepositoryPath }}cdl_schema_registry:{{ .Values.global.imageVersion }}"
+        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.schemaRegistry.image }}:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/schema_registry"]
+        command: ["/bin/{{ .Values.schemaRegistry.bin }}"]
         env:
         - name: INPUT_PORT
           value: "6400"
@@ -73,7 +73,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: RUST_LOG
-          value: "info,schema_registry=debug"
+          value: "info,{{ .Values.schemaRegistry.bin }}=debug"
         ports:
         - containerPort: 51805
         volumeMounts:
@@ -133,26 +133,24 @@ spec:
     spec:
       containers:
       - name: cdl-data-router
-        image: "{{ .Values.global.imageRepositoryPath }}cdl_data_router:{{ .Values.global.imageVersion }}"
+        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.dataRouter.image }}:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/data_router"]
+        command: ["/bin/{{ .Values.dataRouter.bin }}"]
         env:
-        - name: INPUT_ADDR
-          value: {{ .Values.global.rabbitMqConnectionString }}
-        - name: INPUT_QUEUE
-          value: {{ .Values.dataRouter.inputQueue }}
+        - name: KAFKA_TOPIC
+          value: "{{ .Values.dataRouter.inputTopic }}"
         - name: KAFKA_BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
         - name: KAFKA_GROUP_ID
           value: "data-router"
         - name: KAFKA_ERROR_CHANNEL
-          value: {{ .Values.global.reportTopic }}
+          value: "{{ .Values.global.reportTopic }}"
         - name: SCHEMA_REGISTRY_ADDR
           value: "http://{{ .Release.Name }}-schema-registry:6400"
         - name: CACHE_CAPACITY
           value: "500"
         - name: RUST_LOG
-          value: "info,data_router=debug"
+          value: "info,{{ .Values.dataRouter.bin }}=debug"
         ports:
         - containerPort: 51805
       imagePullSecrets:
@@ -178,9 +176,9 @@ spec:
       serviceAccountName: {{ .Release.Name }}-leader-elector-sa
       containers:
       - name: cdl-leader-elector
-        image: "{{ .Values.global.imageRepositoryPath }}cdl_leader_elector:{{ .Values.global.imageVersion }}"
+        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.leaderElector.image }}:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/leader_elector"]
+        command: ["/bin/{{ .Values.leaderElector.bin }}"]
         env:
         - name: HEARTBEAT_SECS
           value: "{{ .Values.leaderElector.heartbeatTime }}"
@@ -191,7 +189,7 @@ spec:
         - name: SCHEMA_PORT
           value: "6400"
         - name: RUST_LOG
-          value: "info,leader_elector=debug"
+          value: "info,{{ .Values.leaderElector.bin }}=debug"
       imagePullSecrets:
         - name: {{ .Values.global.cdlImagePullSecrets }}
 

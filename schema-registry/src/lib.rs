@@ -5,7 +5,7 @@ use crate::rpc::schema::{Empty, Id, ValueToValidate};
 use error::RegistryClientError;
 use serde_json::Value;
 use tonic::{transport::Channel, Request};
-use types::View;
+use types::storage::vertices::View;
 use uuid::Uuid;
 
 pub mod db;

@@ -22,12 +22,12 @@ spec:
     spec:
       containers:
       - name: cdl-sled-db
-        image: "{{ .Values.global.imageRepositoryPath }}cdl_document_storage:{{ .Values.global.imageVersion }}"
+        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.documentStorage.image }}:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/document_storage"]
+        command: ["/bin/{{ .Values.documentStorage.bin }}"]
         env:
         - name: RUST_LOG
-          value: "info,document_storage=debug" 
+          value: "info,{{ .Values.documentStorage.bin }}=debug" 
         ports:
         - containerPort: 51805
         volumeMounts:
@@ -74,9 +74,9 @@ spec:
     spec:
       containers:
       - name: cdl-sled-command-service
-        image: "{{ .Values.global.imageRepositoryPath }}cdl_command_service:{{ .Values.global.imageVersion }}"
+        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.commandService.image }}:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/command_service","sleigh"]
+        command: ["/bin/{{ .Values.commandService.bin }}","sleigh"]
         env:
         - name: KAFKA_INPUT_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
@@ -87,7 +87,7 @@ spec:
         - name: SLEIGH_OUTPUT_ADDR
           value: "http://{{ .Release.Name }}-sled-db:58102"    
         - name: RUST_LOG
-          value: "info,command_service=debug" 
+          value: "info,{{ .Values.commandService.bin }}=debug" 
         - name: REPORT_BROKER
           value: {{ .Values.global.kafkaBrokers }}
         - name: REPORT_TOPIC

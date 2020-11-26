@@ -1,33 +1,33 @@
-use futures_util::stream::StreamExt;
-use log::error;
-use tokio::pin;
-
 use crate::communication::{GenericMessage, MessageRouter};
 use crate::input::{Error, KafkaInputConfig};
-use utils::{
-    message_types::CommandServiceInsertMessage,
-    messaging_system::{
-        consumer::CommonConsumer, message::CommunicationMessage, CommunicationResult,
-    },
-    metrics::counter,
-    task_limiter::TaskLimiter,
-};
+use crate::output::OutputPlugin;
+use futures_util::stream::StreamExt;
+use log::{error, trace};
+use std::process;
+use tokio::pin;
+use utils::message_types::CommandServiceInsertMessage;
+use utils::messaging_system::consumer::CommonConsumer;
+use utils::messaging_system::message::CommunicationMessage;
+use utils::messaging_system::CommunicationResult;
+use utils::metrics::counter;
+use utils::task_limiter::TaskLimiter;
 
-pub struct KafkaInput {
+pub struct KafkaInput<P: OutputPlugin> {
     consumer: CommonConsumer,
-    message_router: MessageRouter,
+    message_router: MessageRouter<P>,
     task_limiter: TaskLimiter,
 }
 
-impl KafkaInput {
+impl<P: OutputPlugin> KafkaInput<P> {
     pub async fn new(
         config: KafkaInputConfig,
-        message_router: MessageRouter,
+        message_router: MessageRouter<P>,
     ) -> Result<Self, Error> {
         let consumer =
             CommonConsumer::new_kafka(&config.group_id, &config.brokers, &[&config.topic])
                 .await
                 .map_err(Error::ConsumerCreationFailed)?;
+
         Ok(Self {
             consumer,
             message_router,
@@ -36,13 +36,15 @@ impl KafkaInput {
     }
 
     async fn handle_message(
-        router: MessageRouter,
+        router: MessageRouter<P>,
         message: CommunicationResult<Box<dyn CommunicationMessage>>,
     ) -> Result<(), Error> {
         counter!("cdl.command-service.input-request", 1);
         let message = message.map_err(Error::FailedReadingMessage)?;
 
         let generic_message = Self::build_message(message.as_ref())?;
+
+        trace!("Received message {:?}", generic_message);
 
         router
             .handle_message(generic_message)
@@ -77,6 +79,7 @@ impl KafkaInput {
                 .run(async move || {
                     if let Err(err) = Self::handle_message(router, message).await {
                         error!("Failed to handle message: {}", err);
+                        process::abort();
                     }
                 })
                 .await;

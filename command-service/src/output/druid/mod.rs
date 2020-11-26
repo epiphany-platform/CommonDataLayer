@@ -1,53 +1,19 @@
-use std::{sync::Arc, time::Duration};
-
-use async_trait::async_trait;
-use log::error;
-use rdkafka::producer::{FutureProducer, FutureRecord};
-use rdkafka::ClientConfig;
-
-use utils::metrics::counter;
-
 use crate::communication::resolution::Resolution;
-use crate::communication::{GenericMessage, ReceivedMessageBundle};
+use crate::communication::GenericMessage;
 pub use crate::output::druid::config::DruidOutputConfig;
 pub use crate::output::druid::error::Error;
-use crate::output::error::OutputError;
 use crate::output::OutputPlugin;
-use utils::status_endpoints;
+use rdkafka::producer::{FutureProducer, FutureRecord};
+use rdkafka::ClientConfig;
+use std::time::Duration;
+use utils::metrics::counter;
 
 mod config;
 mod error;
 
 pub struct DruidOutputPlugin {
     producer: FutureProducer,
-    topic: Arc<String>,
-}
-
-#[async_trait]
-impl OutputPlugin for DruidOutputPlugin {
-    async fn handle_message(
-        &self,
-        recv_msg_bundle: ReceivedMessageBundle,
-    ) -> Result<(), OutputError> {
-        let producer = self.producer.clone();
-        let topic = Arc::clone(&self.topic);
-
-        tokio::spawn(async move {
-            let msg = recv_msg_bundle.msg;
-            let resolution = DruidOutputPlugin::store_message(producer, msg, topic.as_str()).await;
-
-            if recv_msg_bundle.status_sender.send(resolution).is_err() {
-                error!("Failed to send status to report service");
-                status_endpoints::mark_as_unhealthy();
-            }
-        });
-
-        Ok(())
-    }
-
-    fn name(&self) -> &'static str {
-        "Druid timeseries"
-    }
+    topic: String,
 }
 
 impl DruidOutputPlugin {
@@ -58,18 +24,17 @@ impl DruidOutputPlugin {
                 .set("message.timeout.ms", "5000")
                 .create()
                 .map_err(Error::ProducerCreation)?,
-            topic: Arc::new(args.topic),
+            topic: args.topic,
         })
     }
+}
 
-    async fn store_message(
-        producer: FutureProducer,
-        msg: GenericMessage,
-        topic: &str,
-    ) -> Resolution {
+#[async_trait::async_trait]
+impl OutputPlugin for DruidOutputPlugin {
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
         let key = msg.object_id.to_string();
         let record = FutureRecord {
-            topic: &topic,
+            topic: &self.topic,
             partition: None,
             payload: Some(&msg.payload),
             key: Some(&key),
@@ -77,10 +42,9 @@ impl DruidOutputPlugin {
             headers: None,
         };
 
-        match producer.send(record, Duration::from_secs(0)).await {
+        match self.producer.send(record, Duration::from_secs(0)).await {
             Err((err, _)) => Resolution::StorageLayerFailure {
                 description: err.to_string(),
-                object_id: msg.object_id,
             },
             Ok(_) => {
                 counter!("cdl.command-service.store.druid", 1);
@@ -88,5 +52,9 @@ impl DruidOutputPlugin {
                 Resolution::Success
             }
         }
+    }
+
+    fn name(&self) -> &'static str {
+        "Druid timeseries"
     }
 }

@@ -8,6 +8,7 @@ use tokio_amqp::LapinTokioExt;
 
 use super::CommunicationResult;
 
+#[derive(Clone)]
 pub enum CommonPublisher {
     Kafka { producer: FutureProducer },
     RabbitMq { channel: Channel },

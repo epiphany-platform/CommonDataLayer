@@ -2,9 +2,11 @@ use crate::{
     db::SchemaDb,
     error::RegistryError,
     replication::{KafkaConfig, ReplicationEvent, ReplicationRole, ReplicationState},
+    types::DbExport,
     types::{NewSchema, NewSchemaVersion, VersionedUuid},
     View,
 };
+use anyhow::Context;
 use indradb::SledDatastore;
 use schema::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, NewSchemaView, PodName,
@@ -58,6 +60,18 @@ impl SchemaRegistryImpl {
             .lock()
             .unwrap_or_else(abort_on_poison)
             .replicate_message(event)
+    }
+
+    pub fn export_all(&self) -> anyhow::Result<DbExport> {
+        self.db
+            .export_all()
+            .context("Failed to export the entire database")
+    }
+
+    pub fn import_all(&self, imported: DbExport) -> anyhow::Result<()> {
+        self.db
+            .import_all(imported)
+            .context("failed to import database")
     }
 }
 

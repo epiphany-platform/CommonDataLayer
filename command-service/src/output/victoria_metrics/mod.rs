@@ -1,21 +1,16 @@
-use async_trait::async_trait;
-use log::error;
-use reqwest::Url;
-use reqwest::{Client, StatusCode};
-use thiserror::Error as DeriveError;
-
-use utils::metrics::counter;
-
 use crate::communication::resolution::Resolution;
-use crate::communication::{GenericMessage, ReceivedMessageBundle};
-use crate::output::error::OutputError;
+use crate::communication::GenericMessage;
 use crate::output::victoria_metrics::config::VictoriaMetricsConfig;
 use crate::output::OutputPlugin;
 use itertools::Itertools;
+use log::error;
+use reqwest::Url;
+use reqwest::{Client, StatusCode};
 use serde_json::Value;
 use std::iter;
+use thiserror::Error as DeriveError;
 use url::ParseError;
-use utils::status_endpoints;
+use utils::metrics::counter;
 use uuid::Uuid;
 
 pub mod config;
@@ -50,29 +45,35 @@ impl VictoriaMetricsOutputPlugin {
     }
 }
 
-#[async_trait]
+#[async_trait::async_trait]
 impl OutputPlugin for VictoriaMetricsOutputPlugin {
-    async fn handle_message(
-        &self,
-        recv_msg_bundle: ReceivedMessageBundle,
-    ) -> Result<(), OutputError> {
+    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
         let mut url = self.url.clone();
-        let client = self.client.clone();
-        let msg = recv_msg_bundle.msg;
-        let status_sender = recv_msg_bundle.status_sender;
 
-        tokio::spawn(async move {
-            url.set_query(Some(&format!("db={}", msg.schema_id)));
+        url.set_query(Some(&format!("db={}", msg.schema_id)));
 
-            let resolution = process_message(url, client, msg).await;
+        let GenericMessage {
+            object_id,
+            schema_id,
+            timestamp,
+            payload,
+        } = msg;
 
-            if status_sender.send(resolution).is_err() {
-                error!("Failed to send status to report service");
-                status_endpoints::mark_as_unhealthy();
+        match build_line_protocol(schema_id, object_id, timestamp, &payload) {
+            Ok(line_protocol) => send_data(url, &self.client, line_protocol).await,
+            Err(err) => {
+                let context = String::from_utf8_lossy(&payload).to_string();
+
+                error!(
+                    "Failed to convert payload to line_protocol, cause `{}`, context `{}`",
+                    err, context
+                );
+                Resolution::UserFailure {
+                    description: err.to_string(),
+                    context,
+                }
             }
-        });
-
-        Ok(())
+        }
     }
 
     fn name(&self) -> &'static str {
@@ -116,7 +117,7 @@ fn build_line_protocol(
     }
 }
 
-async fn send_data(url: Url, client: Client, object_id: Uuid, line_protocol: String) -> Resolution {
+async fn send_data(url: Url, client: &Client, line_protocol: String) -> Resolution {
     match client.post(url).body(line_protocol).send().await {
         Ok(response) => {
             if matches!(response.status(), StatusCode::OK | StatusCode::NO_CONTENT) {
@@ -129,39 +130,12 @@ async fn send_data(url: Url, client: Client, object_id: Uuid, line_protocol: Str
                         .text()
                         .await
                         .unwrap_or_else(|err| format!("No description. Error `{}`", err)),
-                    object_id,
                 }
             }
         }
         Err(err) => {
             error!("Failed to send data to vm `{}`", err);
-            Resolution::CommandServiceFailure { object_id }
-        }
-    }
-}
-
-async fn process_message(url: Url, client: Client, msg: GenericMessage) -> Resolution {
-    let GenericMessage {
-        object_id,
-        schema_id,
-        timestamp,
-        payload,
-    } = msg;
-
-    match build_line_protocol(schema_id, object_id, timestamp, &payload) {
-        Ok(line_protocol) => send_data(url, client, object_id, line_protocol).await,
-        Err(err) => {
-            let context = String::from_utf8_lossy(&payload).to_string();
-
-            error!(
-                "Failed to convert payload to line_protocol, cause `{}`, context `{}`",
-                err, context
-            );
-            Resolution::UserFailure {
-                object_id,
-                description: err.to_string(),
-                context,
-            }
+            Resolution::CommandServiceFailure
         }
     }
 }
