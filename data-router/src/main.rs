@@ -22,20 +22,15 @@ use utils::{
 use uuid::Uuid;
 
 const SERVICE_NAME: &str = "data-router";
-const RABBIT_CONSUMER_TAG: &str = "CDL_DATA_ROUTER";
 
 #[derive(StructOpt, Deserialize, Debug, Serialize)]
 struct Config {
     #[structopt(long, env)]
-    pub rabbitmq_username: String,
+    pub input_group_id: String,
     #[structopt(long, env)]
-    pub rabbitmq_password: String,
+    pub input_brokers: String,
     #[structopt(long, env)]
-    pub rabbitmq_host: String,
-    #[structopt(long, env)]
-    pub rabbitmq_port: String,
-    #[structopt(long, env)]
-    pub input_queue: String,
+    pub input_topic: String,
     #[structopt(long, env)]
     pub kafka_brokers: String,
     #[structopt(long, env)]
@@ -52,16 +47,10 @@ async fn main() -> anyhow::Result<()> {
     let config: Config = Config::from_args();
     metrics::serve();
 
-    let consumer = CommonConsumer::new_rabbit(
-        &format!(
-            "amqp://{}:{}@{}:{}/%2f",
-            config.rabbitmq_username,
-            config.rabbitmq_password,
-            config.rabbitmq_host,
-            config.rabbitmq_port
-        ),
-        RABBIT_CONSUMER_TAG,
-        &config.input_queue,
+    let consumer = CommonConsumer::new_kafka(
+        &config.input_group_id,
+        &config.input_brokers,
+        &[&config.input_topic],
     )
     .await?;
     let producer = Arc::new(
