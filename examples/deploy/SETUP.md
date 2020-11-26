@@ -14,6 +14,10 @@ For k8s deployment, please refer to our [documentation](../../docs/K8s-Local-Dep
 * docker-compose
 * rust (optionally)
 
+## Volume
+
+The directory `./docker-volume` is used as a volume. Please note it is not fully `.gitignore`d because we rely on `init.sql` for postgres, both in docker-compose and in Github Actions. DO NOT REMOVE IT UNDER ANY CIRCUMSTANCES.
+
 ## Deployment
 You must first add environment variables:
 
