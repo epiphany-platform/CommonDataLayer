@@ -164,12 +164,17 @@ async fn get_schema_topic(
 }
 
 async fn send_message(producer: &CommonPublisher, topic_name: &str, key: &str, payload: Vec<u8>) {
+    let payload_len = payload.len();
     let delivery_status = producer.publish_message(&topic_name, key, payload).await;
 
     if delivery_status.is_err() {
         error!(
-            "Fatal error, delivery status for message not received. {:?}",
-            delivery_status
+            r#"Fatal error, delivery status for message not received. 
+            Topic: {},
+            Key: {},
+            Payload len: {},
+            {:?}"#,
+            topic_name, key, payload_len, delivery_status
         );
         process::abort();
     };
