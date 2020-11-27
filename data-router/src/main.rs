@@ -169,11 +169,7 @@ async fn send_message(producer: &CommonPublisher, topic_name: &str, key: &str, p
 
     if delivery_status.is_err() {
         error!(
-            r#"Fatal error, delivery status for message not received. 
-            Topic: {},
-            Key: {},
-            Payload len: {},
-            {:?}"#,
+            "Fatal error, delivery status for message not received.  Topic: `{}`, Key: `{}`, Payload len: `{}`, {:?}",
             topic_name, key, payload_len, delivery_status
         );
         process::abort();
