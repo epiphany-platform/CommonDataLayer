@@ -5,10 +5,13 @@ use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::config::Config as PgConfig;
 use bb8_postgres::tokio_postgres::{types::ToSql, NoTls, Row};
 use bb8_postgres::PostgresConnectionManager;
+use log::trace;
+use serde_json::Value;
 use std::collections::HashMap;
 use structopt::StructOpt;
 use tonic::{Request, Response, Status};
 use utils::metrics::counter;
+use uuid::Uuid;
 
 #[derive(Debug, StructOpt)]
 pub struct PsqlConfig {
@@ -74,8 +77,8 @@ impl PsqlQuery {
     fn collect_id_payload_rows(rows: Vec<Row>) -> HashMap<String, Vec<u8>> {
         rows.into_iter()
             .map(|row| {
-                let object_id = row.get::<usize, String>(0);
-                let value = row.get::<usize, String>(1).into_bytes();
+                let object_id = row.get::<usize, Uuid>(0).to_string();
+                let value = row.get::<usize, Value>(1).to_string().into_bytes();
                 (object_id, value)
             })
             .collect()
@@ -88,14 +91,31 @@ impl Query for PsqlQuery {
         &self,
         request: Request<ObjectIds>,
     ) -> Result<Response<ValueMap>, Status> {
+        let request = request.into_inner();
+
+        trace!("QueryMultiple: {:?}", request);
+
         counter!("cdl.query-service.query-multiple.psql", 1);
+
+        let object_ids: Vec<Uuid> = request
+            .object_ids
+            .into_iter()
+            .map(|id| id.parse::<Uuid>())
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|err| Status::invalid_argument(err.to_string()))?;
+
         let rows = self
             .make_query(
-                "SELECT object_id, payload FROM data d1 \
-                WHERE object_id in $1 AND d1.version = \
-                    (SELECT MAX(version) FROM data d2 \
-                     WHERE d2.object_id = d1.object_id)",
-                &[&request.into_inner().object_ids],
+                "SELECT d.object_id, d.payload \
+                 FROM (\
+                     SELECT object_id, max(version) as max \
+                     FROM data \
+                     WHERE object_id = ANY($1) \
+                     GROUP BY object_id\
+                 ) maxes \
+                 JOIN data d \
+                 ON d.object_id = maxes.object_id AND d.version = maxes.max",
+                &[&object_ids.as_slice()],
             )
             .await?;
 
@@ -108,14 +128,27 @@ impl Query for PsqlQuery {
         &self,
         request: Request<SchemaId>,
     ) -> Result<Response<ValueMap>, Status> {
+        let request = request.into_inner();
+
+        trace!("QueryBySchema: {:?}", request);
+
         counter!("cdl.query-service.query-by-schema.psql", 1);
+
+        let schema_id = request
+            .schema_id
+            .parse::<Uuid>()
+            .map_err(|err| Status::invalid_argument(err.to_string()))?;
+
         let rows = self
             .make_query(
-                "SELECT object_id, payload FROM data d1 \
-                WHERE schema_id = $1 AND d1.version = \
-                    (SELECT MAX(version) FROM data d2 \
-                     WHERE d2.object_id = d1.object_id)",
-                &[&request.into_inner().schema_id],
+                "SELECT object_id, payload \
+                 FROM data d1 \
+                 WHERE schema_id = $1 AND d1.version = (\
+                     SELECT MAX(version) \
+                     FROM data d2 \
+                     WHERE d2.object_id = d1.object_id\
+                 )",
+                &[&schema_id],
             )
             .await?;
 

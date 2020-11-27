@@ -17,6 +17,8 @@ name = "query-service"
 path = "src/main.rs"
 
 [dependencies]
+log         = "0.4"
+env_logger  = "0.8"
 bb8         = "0.4"
 anyhow      = "1.0"
 thiserror   = "1.0"
