@@ -11,7 +11,11 @@ from tests.common.postgres import fetch_data_table, clear_data_table
 
 TOPIC = "cdl.document.input"
 
-PSQL_URL = os.getenv("POSTGRES_CONNECTION_URL") or "postgresql://postgres:1234@localhost:5432/postgres"
+POSTGRES_USERNAME = os.getenv("POSTGRES_USERNAME") or "postgres"
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD") or "1234"
+POSTGRES_HOST = os.getenv("POSTGRES_HOST") or "localhost"
+POSTGRES_PORT = os.getenv("POSTGRES_PORT") or "5432"
+POSTGRES_DBNAME = os.getenv("POSTGRES_DBNAME") or "postgres"
 EXECUTABLE = os.getenv("COMMAND_SERVICE_EXE") or "command-service"
 KAFKA_BROKERS = os.getenv("KAFKA_BROKERS") or "localhost:9092"
 
@@ -22,15 +26,18 @@ def push_to_kafka(producer, data):
 
 @pytest.fixture(params=['single_insert', 'multiple_inserts'])
 def prepare(request):
+    psql_url = f"postgresql://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DBNAME}"
+
     svc = subprocess.Popen([EXECUTABLE, "postgres"],
-                           env={"POSTGRES_OUTPUT_URL": PSQL_URL, "KAFKA_INPUT_BROKERS": KAFKA_BROKERS,
-                                "KAFKA_INPUT_TOPIC": TOPIC,
-                                "KAFKA_INPUT_GROUP_ID": "cdl.command-service.psql",
+                           env={"POSTGRES_USERNAME": POSTGRES_USERNAME, "POSTGRES_PASSWORD": POSTGRES_PASSWORD,
+                                "POSTGRES_HOST": POSTGRES_HOST, "POSTGRES_PORT": POSTGRES_PORT,
+                                "POSTGRES_DBNAME": POSTGRES_DBNAME, "KAFKA_INPUT_BROKERS": KAFKA_BROKERS,
+                                "KAFKA_INPUT_TOPIC": TOPIC, "KAFKA_INPUT_GROUP_ID": "cdl.command-service.psql",
                                 "REPORT_BROKER": KAFKA_BROKERS, "REPORT_TOPIC": "cdl.notify"})
 
     data, expected = load_case(request.param, "command_service")
 
-    db = psycopg2.connect(PSQL_URL)
+    db = psycopg2.connect(psql_url)
 
     yield db, data, expected
 

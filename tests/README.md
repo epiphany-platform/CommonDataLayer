@@ -31,9 +31,20 @@ In order to setup infrastructure stack locally via docker-compose, please refer 
 
 Access to such set up services is managed via env variables:
 
+#### db-shrinker-postgres
 | service | env | example |
 |---|---|---|
 |PostgreSQL database | POSTGRES_CONNECTION_URL | postgresql://postgres:1234@localhost:5432/postgres |
+
+#### command-service
+
+| service | env | example |
+|---|---|---|
+| PostgreSQL user login | POSTGRES_USERNAME | postgres |
+| ... password | POSTGRES_PASSWORD | 1234 |
+| ... host | POSTGRES_HOST | localhost |
+| ... port | POSTGRES_PORT | 5432 |
+| CDL database name | POSTGRES_DBNAME | postgres |
 | Kafka broker | KAFKA_BROKERS | localhost:9092 |
 
 ## Running
