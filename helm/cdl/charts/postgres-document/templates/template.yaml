@@ -41,7 +41,7 @@ spec:
         - name: POSTGRES_HOST
           value: {{ .Values.postgresHost }}
         - name: POSTGRES_PORT
-          value: {{ .Values.postgresPort }}
+          value: "{{ .Values.postgresPort }}"
         - name: POSTGRES_DBNAME
           value: {{ .Values.postgresDbname }}
         - name: RUST_LOG

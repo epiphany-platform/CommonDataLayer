@@ -2,8 +2,8 @@ name: Publish to docker.io on HEAD changes
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "*"
     paths-ignore:
       - ".github/"
       - "benchmarking/"
@@ -36,9 +36,16 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_LOGIN }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+    - name: Get the version
+      id: get_version
+      run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
+
     - name: Build and push
       run: |
-        docker build . --build-arg BIN=${{ matrix.crate }} -t epiphanyplatform/cdl-${{ matrix.crate }}:master
-        docker push epiphanyplatform/cdl-${{ matrix.crate }}:master
+        docker build . --build-arg BIN=${{ matrix.crate }} -t epiphanyplatform/cdl-${{ matrix.crate }}:${{ steps.get_version.outputs.VERSION }}
+        docker tag epiphanyplatform/cdl-${{ matrix.crate }}:${{ steps.get_version.outputs.VERSION }} epiphanyplatform/cdl-${{ matrix.crate }}:latest
+        docker push epiphanyplatform/cdl-${{ matrix.crate }}:${{ steps.get_version.outputs.VERSION }}
+        docker push epiphanyplatform/cdl-${{ matrix.crate}}:latest
       env:
         DOCKER_BUILDKIT: 1
