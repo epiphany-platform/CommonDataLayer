@@ -18,6 +18,7 @@ pub mod error;
 
 pub struct PostgresOutputPlugin {
     pool: Pool<PostgresConnectionManager<NoTls>>,
+    schema: String,
 }
 
 impl PostgresOutputPlugin {
@@ -36,8 +37,9 @@ impl PostgresOutputPlugin {
             .build(manager)
             .await
             .map_err(Error::FailedToConnect)?;
+        let schema = config.schema;
 
-        Ok(Self { pool })
+        Ok(Self { pool, schema })
     }
 }
 
@@ -61,9 +63,10 @@ impl OutputPlugin for PostgresOutputPlugin {
 
         let store_result = connection
             .query(
-                "INSERT INTO data (object_id, version, schema_id, payload)
-                 VALUES ($1, $2, $3, $4)",
+                "INSERT INTO $1.data (object_id, version, schema_id, payload)
+                 VALUES ($2, $3, $4, $5)",
                 &[
+                    &self.schema,
                     &msg.object_id,
                     &msg.timestamp,
                     &msg.schema_id,
