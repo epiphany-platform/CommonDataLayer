@@ -63,6 +63,13 @@ pub enum SchemaAction {
         schema_id: Uuid,
     },
 
+    /// Get a schema's type from the registry.
+    GetSchemaType {
+        /// The id of the schema.
+        #[structopt(short, long)]
+        schema_id: Uuid,
+    },
+
     /// List all semantic versions of a schema in the registry.
     Versions {
         /// The id of the schema.
@@ -85,6 +92,9 @@ pub enum SchemaAction {
         /// the schema will be read from stdin.
         #[structopt(short, long, parse(from_os_str))]
         file: Option<PathBuf>,
+        /// The type of schema. Possible values: 0 (DocumentStorage), 1 (Timeseries).
+        #[structopt(short, long, default_value = "0")]
+        schema_type: i32,
     },
 
     /// Add a new version of an existing schema in the registry.
@@ -129,6 +139,16 @@ pub enum SchemaAction {
         /// The new query address of the schema.
         #[structopt(short, long)]
         query_address: String,
+    },
+
+    /// Update a schema's type in the registry.
+    SetSchemaType {
+        /// The id of the schema.
+        #[structopt(short, long)]
+        id: Uuid,
+        /// The new type of the schema. Possible values: 0 (DocumentStorage), 1 (Timeseries).
+        #[structopt(short, long)]
+        schema_type: i32,
     },
 
     /// Validate that a JSON value is valid under the format of the
