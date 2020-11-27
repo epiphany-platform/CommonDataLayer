@@ -6,109 +6,149 @@
 version: '3'
 
 services:
-  zoo1:
+  zoo:
     image: zookeeper:3.4.9
     ports:
       - "2181:2181"
     environment:
       ZOO_MY_ID: 1
       ZOO_PORT: 2181
-      ZOO_SERVERS: server.1=zoo1:2888:3888
+      ZOO_SERVERS: server.1=zoo:2888:3888
     volumes:
-      - ./docker-volume/zoo1/data:/data
-      - ./docker-volume/zoo1/datalog:/datalog
+      - ./docker-volume/zoo/data:/data
+      - ./docker-volume/zoo/datalog:/datalog
 
-  kafka1:
-    image: confluentinc/cp-kafka:5.5.1
+  kafka:
+    image: wurstmeister/kafka:2.13-2.6.0
     ports:
       - "9092:9092"
       - "9093:9093"
     environment:
-      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka1:9093,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: LISTENER_DOCKER_INTERNAL:PLAINTEXT,LISTENER_DOCKER_EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: LISTENER_DOCKER_INTERNAL
-      KAFKA_ZOOKEEPER_CONNECT: "zoo1:2181"
+      KAFKA_LISTENERS: LISTENER_DOCKER_INTERNAL://:9093,LISTENER_DOCKER_EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka:9093,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
+      KAFKA_ZOOKEEPER_CONNECT: "zoo:2181"
       KAFKA_BROKER_ID: 1
-      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CREATE_TOPICS: "cdl.data.input:1:1,cdl.document.input:1:1,cdl.reports:1:1"
     volumes:
-      - ./docker-volume/kafka1/data:/var/lib/kafka/data
+      - ./docker-volume/kafka/data:/var/lib/kafka/data
     depends_on:
-      - zoo1
+      - zoo
 
-  postgres1:
+  postgres:
     image: postgres:latest
     ports:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: "1234"
     volumes:
-      - ./docker-volume/postgres1/db:/var/lib/postgresql/data
-      - ./docker-volume/postgres1/init:/docker-entrypoint-initdb.d
+      - ./docker-volume/postgres/db:/var/lib/postgresql/data
+      - ./docker-volume/postgres/init:/docker-entrypoint-initdb.d
 
-  schema_registry1:
-    image: schema_registry:latest
+  schema_registry:
+    image: cdl-schema-registry:latest
     build:
       context: ../..
       dockerfile: Dockerfile
       args:
         - BIN=schema-registry
+        - ENV=DEV
     command: /bin/schema-registry
     ports:
       - "50101:50101"
     environment:
       DB_NAME: "/var/data/schema"
       REPLICATION_ROLE: "master"
-      KAFKA_BROKERS: "kafka1:9093"
+      KAFKA_BROKERS: "kafka:9093"
       KAFKA_GROUP_ID: "schema_registry"
       KAFKA_TOPICS: "cdl.schema_registry.internal"
       INPUT_PORT: "50101"
       RUST_LOG: info,schema_registry=trace
     volumes:
-    - ./docker-volume/schema_registry1/db:/var/data/schema
+    - ./docker-volume/schema_registry/db:/var/data/schema
     depends_on:
-      - kafka1
+      - kafka
 
-  data_router1:
-    image: data_router:latest
+  data_router:
+    image: cdl-data-router:latest
     build:
       context: ../..
       dockerfile: Dockerfile
       args:
         - BIN=data-router
+        - ENV=DEV
     command: /bin/data-router
     environment:
-      KAFKA_BROKERS: "kafka1:9093"
+      KAFKA_BROKERS: "kafka:9093"
       KAFKA_TOPIC: "cdl.data.input"
       KAFKA_GROUP_ID: "data_router"
       KAFKA_ERROR_CHANNEL: "cdl.reports"
-      SCHEMA_REGISTRY_ADDR: "http://schema_registry1:50101"
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       CACHE_CAPACITY: "1000"
       RUST_LOG: info,data_router=trace
     depends_on:
-      - kafka1
-      - schema_registry1
+      - kafka
+      - schema_registry
 
-  postgres_command1:
-    image: command_service:latest
+  postgres_command:
+    image: cdl-command-service:latest
     build:
       context: ../..
       dockerfile: Dockerfile
       args:
         - BIN=command-service
+        - ENV=DEV
     command: "/bin/command-service postgres"
     environment:
       KAFKA_INPUT_GROUP_ID: "postgres_command"
-      KAFKA_INPUT_BROKERS: "kafka1:9093"
+      KAFKA_INPUT_BROKERS: "kafka:9093"
       KAFKA_INPUT_TOPIC: "cdl.document.input"
       POSTGRES_USERNAME: postgres
       POSTGRES_PASSWORD: 1234
-      POSTGRES_HOST: postgres1
+      POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DBNAME: postgres
-      REPORT_BROKER: "kafka1:9093"
+      REPORT_BROKER: "kafka:9093"
       REPORT_TOPIC: "cdl.reports"
       RUST_LOG: info,command_service=trace
     depends_on:
-      - postgres1
-      - data_router1
+      - postgres
+      - data_router
+
+  postgres_query:
+    image: cdl-query-service:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-service
+        - ENV=DEV
+    command: "/bin/query-service postgres"
+    ports:
+      - "50102:50102"
+    environment:
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DBNAME: postgres
+      INPUT_PORT: 50102
+      RUST_LOG: info,query_service=trace
+
+  query_router:
+    image: cdl-query-router:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-router
+        - ENV=DEV
+    command: "/bin/query-router"
+    ports:
+      - "50103:50103"
+    environment:
+      CACHE_CAPACITY: 1024
+      INPUT_PORT: 50103
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      RUST_LOG: info,query_router=trace
