@@ -124,9 +124,9 @@ impl Query for PsqlQuery {
                      WHERE object_id = ANY($1) \
                      GROUP BY object_id\
                  ) maxes \
-                 JOIN data d \
+                 JOIN {}.data d \
                  ON d.object_id = maxes.object_id AND d.version = maxes.max",
-            self.schema
+            self.schema, self.schema
         );
 
         let rows = self
