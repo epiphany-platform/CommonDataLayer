@@ -39,7 +39,20 @@ impl PostgresOutputPlugin {
             .map_err(Error::FailedToConnect)?;
         let schema = config.schema;
 
+        Self::validate_schema(&schema)?;
+
         Ok(Self { pool, schema })
+    }
+
+    fn validate_schema(schema: &str) -> Result<(), Error> {
+        if schema
+            .chars()
+            .all(|c| c == '_' || c.is_ascii_alphanumeric())
+        {
+            Ok(())
+        } else {
+            Err(Error::InvalidSchemaName(schema.to_string()))
+        }
     }
 }
 
@@ -61,12 +74,15 @@ impl OutputPlugin for PostgresOutputPlugin {
             Err(_err) => return Resolution::CommandServiceFailure,
         };
 
+        let store_query = format!(
+            "INSERT INTO {}.data (object_id, version, schema_id, payload) VALUES ($1, $2, $3, $4)",
+            &self.schema
+        );
+
         let store_result = connection
             .query(
-                "INSERT INTO $1.data (object_id, version, schema_id, payload)
-                 VALUES ($2, $3, $4, $5)",
+                store_query.as_str(),
                 &[
-                    &self.schema,
                     &msg.object_id,
                     &msg.timestamp,
                     &msg.schema_id,
@@ -91,5 +107,23 @@ impl OutputPlugin for PostgresOutputPlugin {
 
     fn name(&self) -> &'static str {
         "PostgreSQL"
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use test_case::test_case;
+
+    #[test_case("test" => true)]
+    #[test_case("test;" => false)]
+    #[test_case("test4" => true)]
+    #[test_case("te_st4" => true)]
+    #[test_case("te st4" => false)]
+    #[test_case("test4`" => false)]
+    #[test_case("test4\n" => false)]
+    #[test_case("test4$1" => false)]
+    fn validate_schema(schema: &str) -> bool {
+        PostgresOutputPlugin::validate_schema(schema).is_ok()
     }
 }
