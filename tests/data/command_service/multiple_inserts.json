@@ -1,0 +1,78 @@
+{
+  "data": [
+    {
+      "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
+      "timestamp": 1603285776,
+      "schema_id": "a46a7fc0-0ca3-4852-affc-d589355524c5",
+      "payload": {
+        "name": "John",
+        "surname": "Doe",
+        "address": {
+          "city": "Benton (IL)",
+          "line1": "1205 E Bond St",
+          "line2": "",
+          "postal_code": "62812"
+        },
+        "department": "ACC",
+        "start_of_employment": "2020-01-01",
+        "end_of_employment": "2020-04-23"
+      }
+    },
+    {
+      "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
+      "timestamp": 1603285780,
+      "schema_id": "a46a7fc0-0ca3-4852-affc-d589355524c5",
+      "payload": {
+        "name": "John",
+        "surname": "Doe",
+        "address": {
+          "city": "Benton (IL)",
+          "line1": "1205 E Bond St",
+          "line2": "",
+          "postal_code": "62812"
+        },
+        "department": "ACC",
+        "start_of_employment": "2020-01-01",
+        "end_of_employment": "2020-04-23"
+      }
+    }
+  ],
+  "expected": [
+    {
+      "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
+      "version": 1603285776,
+      "schema_id": "a46a7fc0-0ca3-4852-affc-d589355524c5",
+      "payload": {
+        "name": "John",
+        "surname": "Doe",
+        "address": {
+          "city": "Benton (IL)",
+          "line1": "1205 E Bond St",
+          "line2": "",
+          "postal_code": "62812"
+        },
+        "department": "ACC",
+        "start_of_employment": "2020-01-01",
+        "end_of_employment": "2020-04-23"
+      }
+    },
+    {
+      "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
+      "version": 1603285780,
+      "schema_id": "a46a7fc0-0ca3-4852-affc-d589355524c5",
+      "payload": {
+        "name": "John",
+        "surname": "Doe",
+        "address": {
+          "city": "Benton (IL)",
+          "line1": "1205 E Bond St",
+          "line2": "",
+          "postal_code": "62812"
+        },
+        "department": "ACC",
+        "start_of_employment": "2020-01-01",
+        "end_of_employment": "2020-04-23"
+      }
+    }
+  ]
+}
