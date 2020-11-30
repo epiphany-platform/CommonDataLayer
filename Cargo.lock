@@ -2468,6 +2468,8 @@ name = "query-router"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "env_logger 0.8.2",
+ "log",
  "lru-cache",
  "query-service",
  "query-service-ts",
@@ -2488,6 +2490,8 @@ dependencies = [
  "bb8",
  "bb8-postgres",
  "document-storage",
+ "env_logger 0.8.2",
+ "log",
  "prost",
  "reqwest",
  "serde",

@@ -1,4 +1,5 @@
 use crate::{cache::AddressCache, error::Error};
+use log::trace;
 use query_service_ts::helper_types::make_serializable_timeseries;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, sync::Arc};
@@ -9,6 +10,8 @@ pub async fn query_single(
     schema_id: Uuid,
     cache: Arc<AddressCache>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
+    trace!("Received /single/{} (SCHEMA_ID={})", object_id, schema_id);
+
     let address = cache.get_address(schema_id).await?;
     let mut values = query_service::query_multiple(vec![object_id.to_string()], address)
         .await
@@ -28,6 +31,12 @@ pub async fn query_multiple(
     schema_id: Uuid,
     cache: Arc<AddressCache>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
+    trace!(
+        "Received /multiple/{:?} (SCHEMA_ID={})",
+        object_ids,
+        schema_id
+    );
+
     let address = cache.get_address(schema_id).await?;
     let object_ids = object_ids.split(',').map(str::to_owned).collect();
     let values = query_service::query_multiple(object_ids, address)
@@ -41,17 +50,18 @@ pub async fn query_by_schema(
     schema_id: Uuid,
     cache: Arc<AddressCache>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
+    trace!("Received /schema (SCHEMA_ID={})", schema_id);
+
     let address = cache.get_address(schema_id).await?;
     let values = query_service::query_by_schema(schema_id.to_string(), address)
         .await
         .map_err(Error::QueryError)?;
-     // TODO: switch between correct QS
-     //let timeseries = query_service_ts::query_by_schema(schema_id.to_string(), address)
-     //    .await
-     //    .map_err(Error::QueryError)?;
- 
-     //Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
- 
+    // TODO: switch between correct QS
+    //let timeseries = query_service_ts::query_by_schema(schema_id.to_string(), address)
+    //    .await
+    //    .map_err(Error::QueryError)?;
+
+    //Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
     Ok(warp::reply::json(&byte_map_to_json_map(values)?))
 }
 
@@ -67,16 +77,16 @@ fn byte_map_to_json_map(map: HashMap<String, Vec<u8>>) -> Result<Map<String, Val
 }
 
 pub async fn query_by_range(
-        start: String,
-        end: String,
-        step: f32,
-        object_id: Uuid,
-        cache: Arc<AddressCache>,
-    ) -> Result<impl warp::Reply, warp::Rejection> {
-        let address = cache.get_address(object_id).await?;
-        let timeseries =
-            query_service_ts::query_by_range(object_id.to_string(), start, end, step, address)
-                .await
-                .map_err(Error::QueryError)?;
-        Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
-    }
+    start: String,
+    end: String,
+    step: f32,
+    object_id: Uuid,
+    cache: Arc<AddressCache>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let address = cache.get_address(object_id).await?;
+    let timeseries =
+        query_service_ts::query_by_range(object_id.to_string(), start, end, step, address)
+            .await
+            .map_err(Error::QueryError)?;
+    Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
+}
