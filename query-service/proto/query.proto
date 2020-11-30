@@ -4,7 +4,7 @@ package query;
 service Query {
     rpc QueryMultiple (ObjectIds) returns (ValueMap);
     rpc QueryBySchema (SchemaId) returns (ValueMap);
-    rpc QueryRaw (RawMsg) returns (ValueMap);
+    rpc QueryRaw (RawStatement) returns (ValueMap);
 }
 
 message ObjectIds {
@@ -19,6 +19,6 @@ message ValueMap {
     map<string, bytes> values = 1;
 }
 
-message RawMsg {
-    string raw_msg = 1;
+message RawStatement {
+    string raw_statement = 1;
 }

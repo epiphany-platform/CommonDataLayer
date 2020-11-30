@@ -1,5 +1,5 @@
 use error::ClientError;
-use schema::{query_client::QueryClient, ObjectIds, RawMsg, SchemaId};
+use schema::{query_client::QueryClient, ObjectIds, RawStatement, SchemaId};
 use std::collections::HashMap;
 use tonic::transport::Channel;
 
@@ -45,12 +45,12 @@ pub async fn query_by_schema(
 }
 
 pub async fn query_raw(
-    raw_msg: String,
+    raw_statement: String,
     addr: String,
 ) -> Result<HashMap<String, Vec<u8>>, ClientError> {
     let mut conn = connect(addr).await?;
     let response = conn
-        .query_raw(RawMsg { raw_msg })
+        .query_raw(RawStatement { raw_statement })
         .await
         .map_err(ClientError::QueryError)?;
 

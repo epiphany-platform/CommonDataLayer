@@ -1,5 +1,5 @@
 use crate::schema::query_server::Query;
-use crate::schema::{ObjectIds, RawMsg, SchemaId, ValueMap};
+use crate::schema::{ObjectIds, RawStatement, SchemaId, ValueMap};
 use anyhow::Context;
 use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::config::Config as PgConfig;
@@ -124,9 +124,14 @@ impl Query for PsqlQuery {
         }))
     }
 
-    async fn query_raw(&self, request: Request<RawMsg>) -> Result<Response<ValueMap>, Status> {
+    async fn query_raw(
+        &self,
+        request: Request<RawStatement>,
+    ) -> Result<Response<ValueMap>, Status> {
         counter!("cdl.query-service.query_raw.psql", 1);
-        let rows = self.make_query(&request.into_inner().raw_msg, &[]).await?;
+        let rows = self
+            .make_query(&request.into_inner().raw_statement, &[])
+            .await?;
 
         Ok(tonic::Response::new(ValueMap {
             values: Self::collect_id_payload_rows(rows),
