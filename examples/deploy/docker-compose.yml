@@ -127,3 +127,10 @@ services:
       VICTORIA_QUERY_URL: "http://127.0.0.1:8428"
       INPUT_PORT: 50104
       RUST_LOG: debug
+
+  victoria_metrics1:
+    image: victoriametrics/victoria-metrics:latest
+    ports:
+      - "8428:8428"
+    volumes:
+    - ./docker-volume/victoria_metrics1/db:/victoria-metrics-data
