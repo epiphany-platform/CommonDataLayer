@@ -2,10 +2,10 @@ use crate::schema::{query_server::Query, ObjectIds, RawMsg, SchemaId, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use document_storage::grpc::schema::storage_client::StorageClient;
-use document_storage::grpc::schema::{RetrieveBySchemaRequest, RetrieveMultipleRequest, RetrieveRawRequest};
+use document_storage::grpc::schema::{RetrieveBySchemaRequest, RetrieveMultipleRequest};
 use structopt::StructOpt;
 use tonic::transport::Channel;
-use tonic::{Request, Response, Status};
+use tonic::{Request, Response, Status, Code};
 use utils::metrics::counter;
 
 #[derive(Debug, StructOpt)]
@@ -99,18 +99,10 @@ impl Query for DsQuery {
 
     async fn query_raw(
         &self,
-        request: Request<RawMsg>
+        _request: Request<RawMsg>
     ) -> Result<Response<ValueMap>, Status> {
         counter!("cdl.query-service.query_raw.sled", 1);
-        let mut conn = self.connect().await?;
-        let response = conn
-            .retrieve_raw(RetrieveRawRequest {
-                raw_msg: request.into_inner().raw_msg,
-            })
-            .await?;
-            
-        Ok(tonic::Response::new(ValueMap {
-            values: response.into_inner().values,
-        }))
+
+        Err(Status::new(Code::Unimplemented, "query-service-druid does not support RAW requests yet"))
     }
 }

@@ -6,7 +6,7 @@ use log::trace;
 use sled::{Db, IVec};
 use std::collections::HashMap;
 use tonic::transport::Server;
-use tonic::{Request, Response, Status, Code};
+use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
 use crate::GRPC_PORT;
@@ -158,15 +158,6 @@ impl Storage for Connector {
         let values = self.retrieve_by_schema(schema_id)?;
 
         Ok(Response::new(schema::DataMap { values }))
-    }
-
-    async fn retrieve_raw(
-        &self,
-        _request: Request<schema::RetrieveRawRequest>,
-    ) -> Result<Response<schema::DataMap>, Status> {
-        counter!("cdl.document-storage.retrieve_raw", 1);
-
-        Err(Status::new(Code::Unimplemented, "Document storage does not support RAW requests yet"))
     }
 }
 

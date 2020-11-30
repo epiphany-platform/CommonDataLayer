@@ -5,7 +5,7 @@ use reqwest::Client;
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::{json, Value};
 use structopt::StructOpt;
-use tonic::{Request, Response, Status};
+use tonic::{Request, Response, Status, Code};
 use utils::metrics::counter;
 
 #[derive(Debug, StructOpt)]
@@ -155,16 +155,10 @@ impl Query for DruidQuery {
 
     async fn query_raw(
         &self,
-        request: Request<RawMsg>
+        _request: Request<RawMsg>
     ) -> Result<Response<ValueMap>, Status>  {
         counter!("cdl.query-service.query-raw.druid", 1);
-        let query = json!(request.into_inner().raw_msg);
-        let response: Vec<DruidValue> = self.query_db(&query).await?;
-        let values = response
-            .into_iter()
-            .map(|val| (val.result.object_id, val.result.data.into_bytes()))
-            .collect();
 
-        Ok(tonic::Response::new(ValueMap { values }))
+        Err(Status::new(Code::Unimplemented, "query-service-druid does not support RAW requests yet"))
     }
 }
