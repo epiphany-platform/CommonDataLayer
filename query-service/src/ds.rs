@@ -103,6 +103,6 @@ impl Query for DsQuery {
     ) -> Result<Response<ValueMap>, Status> {
         counter!("cdl.query-service.query_raw.sled", 1);
 
-        Err(Status::new(Code::Unimplemented, "query-service-druid does not support RAW requests yet"))
+        Err(Status::new(Code::Unimplemented, "query-service-sled does not support RAW requests yet"))
     }
 }
