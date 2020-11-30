@@ -5,7 +5,7 @@ use document_storage::grpc::schema::storage_client::StorageClient;
 use document_storage::grpc::schema::{RetrieveBySchemaRequest, RetrieveMultipleRequest};
 use structopt::StructOpt;
 use tonic::transport::Channel;
-use tonic::{Request, Response, Status, Code};
+use tonic::{Code, Request, Response, Status};
 use utils::metrics::counter;
 
 #[derive(Debug, StructOpt)]
@@ -97,12 +97,12 @@ impl Query for DsQuery {
         }))
     }
 
-    async fn query_raw(
-        &self,
-        _request: Request<RawMsg>
-    ) -> Result<Response<ValueMap>, Status> {
+    async fn query_raw(&self, _request: Request<RawMsg>) -> Result<Response<ValueMap>, Status> {
         counter!("cdl.query-service.query_raw.sled", 1);
 
-        Err(Status::new(Code::Unimplemented, "query-service-sled does not support RAW requests yet"))
+        Err(Status::new(
+            Code::Unimplemented,
+            "query-service-sled does not support RAW requests yet",
+        ))
     }
 }

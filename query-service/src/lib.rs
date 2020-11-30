@@ -1,5 +1,5 @@
 use error::ClientError;
-use schema::{query_client::QueryClient, ObjectIds, SchemaId, RawMsg};
+use schema::{query_client::QueryClient, ObjectIds, RawMsg, SchemaId};
 use std::collections::HashMap;
 use tonic::transport::Channel;
 
