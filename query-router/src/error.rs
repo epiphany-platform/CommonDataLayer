@@ -1,4 +1,4 @@
-use query_service::error::Status;
+use utils::query_utils::error::{ClientError, Status};
 use schema_registry::error::RegistryClientError;
 use warp::{hyper::StatusCode, reject::Reject, Rejection};
 
@@ -6,7 +6,7 @@ use warp::{hyper::StatusCode, reject::Reject, Rejection};
 pub enum Error {
     RegistryConnectionError(RegistryClientError),
     RegistryError(Status),
-    QueryError(query_service::error::ClientError),
+    QueryError(ClientError),
     JsonError(serde_json::Error),
     SingleQueryMissingValue,
 }

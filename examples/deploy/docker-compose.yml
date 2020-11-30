@@ -112,3 +112,18 @@ services:
     depends_on:
       - postgres1
       - data_router1
+
+  victoria_query1:
+    image: cdl-query-service-ts:latest
+    command: "/bin/query-service-ts victoria"
+    ports:
+      - "50104:50104"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-service-ts
+    environment:
+      VICTORIA_QUERY_URL: "http://127.0.0.1:8428"
+      INPUT_PORT: 50104
+      RUST_LOG: debug

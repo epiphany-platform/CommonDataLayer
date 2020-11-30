@@ -2470,6 +2470,7 @@ dependencies = [
  "anyhow",
  "lru-cache",
  "query-service",
+ "query-service-ts",
  "schema-registry",
  "serde_json",
  "structopt",
@@ -2498,6 +2499,25 @@ dependencies = [
  "tonic-build",
  "utils",
  "uuid",
+]
+
+[[package]]
+name = "query-service-ts"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bb8",
+ "env_logger 0.8.2",
+ "log",
+ "prost",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "structopt",
+ "tokio 0.2.23",
+ "tonic",
+ "tonic-build",
+ "utils",
 ]
 
 [[package]]
@@ -4043,6 +4063,7 @@ dependencies = [
  "thiserror",
  "tokio 0.2.23",
  "tokio-amqp",
+ "tonic",
  "uuid",
 ]
 

@@ -1,11 +1,9 @@
-use utils::query_utils::error::ClientError;
-use schema::{query_client::QueryClient, ObjectIds, SchemaId};
-use std::collections::HashMap;
+use schema::{query_client::QueryClient, DataPoint, Range, SchemaId};
 use tonic::transport::Channel;
+use utils::query_utils::error::ClientError;
 
-pub mod druid;
-pub mod ds;
-pub mod psql;
+pub mod helper_types;
+pub mod victoria;
 
 pub mod schema {
     tonic::include_proto!("query");
@@ -17,28 +15,36 @@ pub async fn connect(addr: String) -> Result<QueryClient<Channel>, ClientError> 
         .map_err(ClientError::ConnectionError)
 }
 
-pub async fn query_multiple(
-    object_ids: Vec<String>,
+pub async fn query_by_range(
+    object_id: String,
+    start: String,
+    end: String,
+    step: f32,
     addr: String,
-) -> Result<HashMap<String, Vec<u8>>, ClientError> {
+) -> Result<Vec<DataPoint>, ClientError> {
     let mut conn = connect(addr).await?;
     let response = conn
-        .query_multiple(ObjectIds { object_ids })
+        .query_by_range(Range {
+            object_id,
+            start,
+            end,
+            step,
+        })
         .await
         .map_err(ClientError::QueryError)?;
 
-    Ok(response.into_inner().values)
+    Ok(response.into_inner().datapoints)
 }
 
 pub async fn query_by_schema(
     schema_id: String,
     addr: String,
-) -> Result<HashMap<String, Vec<u8>>, ClientError> {
+) -> Result<Vec<DataPoint>, ClientError> {
     let mut conn = connect(addr).await?;
     let response = conn
         .query_by_schema(SchemaId { schema_id })
         .await
         .map_err(ClientError::QueryError)?;
 
-    Ok(response.into_inner().values)
+    Ok(response.into_inner().datapoints)
 }

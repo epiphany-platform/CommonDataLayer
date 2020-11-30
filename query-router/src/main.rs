@@ -42,9 +42,18 @@ async fn main() {
         .and_then(handler::query_multiple);
     let schema_route = warp::path!("schema")
         .and(schema_id_filter)
-        .and(address_filter)
+        .and(address_filter.clone())
         .and_then(handler::query_by_schema);
-    let routes = warp::get().and(single_route.or(multiple_route).or(schema_route));
+    let range_route = warp::path!("range" / String / String / f32)
+        .and(schema_id_filter)
+        .and(address_filter)
+        .and_then(handler::query_by_range);
+    let routes = warp::get().and(
+        single_route
+            .or(multiple_route)
+            .or(schema_route)
+            .or(range_route),
+    );
 
     warp::serve(routes)
         .run(([0, 0, 0, 0], config.input_port))
