@@ -8,4 +8,8 @@ pub enum Error {
     RecvDropped,
     #[error("Failed to parse url into postgres connection string `{0}`")]
     FailedToParseUrl(bb8_postgres::tokio_postgres::Error),
+    #[error(
+        "Schema `{0}` has invalid name. It can contain only ascii letters, numbers and underscores"
+    )]
+    InvalidSchemaName(String),
 }
