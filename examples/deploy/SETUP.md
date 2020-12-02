@@ -26,7 +26,7 @@ You must first add environment variables:
 
 Due to services needing additional startup time, we advise to let docker setup infrastructure first, and deploy CDL after. So...
 
-`docker-compose up -d kafka1 zoo1 postgres1`
+`docker-compose up -d kafka zoo postgres`
 
 After it had some time to setup, you can proceed with rest of the environment:
 
