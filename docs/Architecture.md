@@ -4,7 +4,7 @@ CommonDataLayer is cloud targeted system, oriented into allowing **user** to ing
 
 CDL consists of four layers, each horizontally scalable and replaceable.
 
-![./graphs/QueryRouter-DataRetrieval.puml](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/lb_documentation_uml/docs/graphs/CDL.puml)
+![./graphs/QueryRouter-DataRetrieval.puml](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/develop/docs/graphs/CDL.puml)
 
 ## Configuration layer
 Consists of services responsible for holding state and configuration of CDL.  

@@ -21,7 +21,7 @@ REST API specification is available in [OpenAPI 3.0 spec][api-spec].
 Currently **query-router** can handle querying data by id from document repositories.
 
 Rough sketch of working process:  
-![../docs/graphs/QueryRouter-DataRetrieval.puml](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/lb_documentation_uml/docs/graphs/QueryRouter-DataRetrieval.puml)
+![../docs/graphs/QueryRouter-DataRetrieval.puml](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/develop/docs/graphs/QueryRouter-DataRetrieval.puml)
 
 
 [schema-registry]: ../schema-registry/README.md
