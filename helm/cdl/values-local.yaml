@@ -42,6 +42,7 @@ postgres-document:
   postgresHost: infrastructure-postgresql
   postgresPort: 5432
   postgresDbname: CDL
+  postgresSchema: public
   inputTopic: cdl.document.data
   commandService:
     image: cdl-command-service

@@ -21,6 +21,8 @@ struct Config {
 
 #[tokio::main]
 async fn main() {
+    env_logger::init();
+
     let config = Config::from_args();
 
     metrics::serve();
