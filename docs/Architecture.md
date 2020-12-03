@@ -1,6 +1,6 @@
 # Architecture of CDL
 
-The Common Data Layer (CDL) is a cloud-targeted system, aimed at allowing **users** to ingest *any* data, sort it, and retrieve it (*raw* or *mapped*).
+The Common Data Layer (CDL) is a cloud-targeted system, aimed at allowing **users** to store *any* data and retrieve it (*raw* or *mapped*).
 
 The CDL consists of four layers, each horizontally scalable and replaceable.
 
