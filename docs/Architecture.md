@@ -1,18 +1,18 @@
 # Architecture of CDL
 
-CommonDataLayer is cloud targeted system, oriented into allowing **user** to ingest *any* data, sort it and retrieve, *raw* or *mapped*.
+The Common Data Layer (CDL) is a cloud-targeted system, aimed at allowing **users** to ingest *any* data, sort it, and retrieve it (*raw* or *mapped*).
 
-CDL consists of four layers, each horizontally scalable and replaceable.
+The CDL consists of four layers, each horizontally scalable and replaceable.
 
 ![./graphs/QueryRouter-DataRetrieval.puml](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/develop/docs/graphs/CDL.puml)
 
-## Configuration layer
+## Configuration Layer
 Consists of services responsible for holding state and configuration of CDL.  
-Currently only Schema Registry resides here. It keeps information about schemas and views. For more details please see [it's readme][schema-registry].
+Currently only the Schema Registry resides here, which keeps information about schemas and views. For more details please see [its readme][schema-registry].
 
-## Ingestion layer
+## Ingestion Layer
 Services in this layer are responsible for accepting generic messages from external systems via `Kafka`, validating them and sorting to correct repository.  
-Currently consists only of [Data Router][data-router]. [Data Router][data-router] accepts messages in format:
+Currently consists only of the [Data Router][data-router]. The [Data Router][data-router] accepts messages in the following format:
 
 ```json
 {
@@ -22,30 +22,29 @@ Currently consists only of [Data Router][data-router]. [Data Router][data-router
 }
 ```
 
-for more details see [documentation][data-router]
+For more details, see the Data Router's [readme][data-router].
 
-## Storage layer
+## Storage Layer
 Consists of repositories for storing data.
 
 We can distinguish 3 types of supported repositories:
-- document
+- Document
     - PostgreSQL
-- blob
+- Blob
     - Internal solution using [Sled][sled] database
-- timeseries
+- Timeseries
     - Victoria Metrics
 
-### Command services
-Service that translates messages received from [Data Router][data-router] into respective database format. Currently only one [Command Service][command-service] exists,
-and is built in such way that it can support either one of databases.
+### Command Services
+Services that translate messages received from the [Data Router][data-router] into their respective database's format. Currently only one [Command Service][command-service] exists,
+and is built in such way that it can support multiple databases (one at a time).
 
-### Query service
-gRPC frontend of each database. Handles generic query format and translates it into DB query language.
-Two query-services are present. One for timeseries databases, one for documents.
+### Query Service
+The gRPC frontend of each database. Each Query Service serves a common set of queries, and translates those into their respective database's query language. Two query-services are present: one for timeseries databases, and one for documents.
 
-## Retrieval layer
+## Retrieval Layer
 Contains services responsible for materializing views and routing queries.
-Query router is capable of retrieving data from various sources. More at [documentation][query-router].
+The Query Router is capable of retrieving data from various sources. More at [documentation][query-router].
 
 
 [schema-registry]: ../schema-registry/README.md

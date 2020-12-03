@@ -6,7 +6,7 @@ paths:
   /single/{object_id}:
     get:
       summary: Retrieve single object
-      operationId: getSingeObject
+      operationId: getSingleObject
       parameters:
         - name: object_id
           in: path
@@ -25,14 +25,14 @@ paths:
       responses:
         '200':
           description: >-
-            JSON containing document retrieved from repositories.
+            JSON containing document retrieved from repositories
           content:
             application/json:
               schema:
                 type: object
         '404':
           description: >-
-            Given object_id is missing.
+            Given `object_id` is missing
   /multiple/{object_ids}:
     get:
       summary: Retrieve several objects
@@ -55,14 +55,14 @@ paths:
       responses:
         '200':
           description: >-
-            JSON containing documents retrieved from repository.
+            JSON containing documents retrieved from repository
           content:
             application/json:
               schema:
                 type: object
         '404':
           description: >-
-            At least one object is missing.
+            At least one object is missing
   /schema:
     get:
       summary: Retrieve all objects associated with schema
@@ -78,7 +78,7 @@ paths:
       responses:
         '200':
           description: >-
-            JSON containing documents retrieved from repository.
+            JSON containing documents retrieved from repository
           content:
             application/json:
               schema:

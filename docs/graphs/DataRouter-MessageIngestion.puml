@@ -7,5 +7,5 @@ MQ -> DR: Message from external system
 DR -> DR: Attach timestamp to message
 DR -> SR: Query for schema_id
 SR -> DR: Retrieve associated MQ topic
-DR -> MQ: Reroute message to coresponding topic
+DR -> MQ: Re-route message to corresponding topic
 @enduml

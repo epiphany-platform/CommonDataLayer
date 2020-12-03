@@ -1,24 +1,24 @@
 # Query Router
 
-REST interface over CDL. Used to retrieve data from repositories.
+The REST interface over the CDL, used for retrieving data from any repository.
 
 ## Running
-To run **query-router** requires [schema-registry][schema-registry] and [query-services][query-service] connected to repositories.
+To run the **query-router** requires the [Schema Registry][schema-registry] to be running and the [Query Services][query-service] connected to their respective repositories.
 
-Environment required is provided via variables:
+Configuration is expected through the following environment variables:
 
-| name | short description | example |
+| Name | Short Description | Example |
 |---|---|---|
 | SCHEMA_REGISTRY_ADDR | Address of setup schema registry | http://schema_registry:50101 |
 | INPUT_PORT | Port to listen on | 50103 |
-| CACHE_CAPACITY | How many entries can cache hold | 1024 |
+| CACHE_CAPACITY | How many entries the cache can hold | 1024 |
 
-Please note that currently cache is valid forever - changes to schema **query-service** address will not be updated in **query-router**.
+_Note: Currently, the cache is valid forever: changing a schema's **query-service** address will not update in the **query-router**._
 
 ## Functionality
 REST API specification is available in [OpenAPI 3.0 spec][api-spec].
 
-Currently **query-router** can handle querying data by id from document repositories.
+Currently, the **query-router** can handle querying data by ID from document repositories.
 
 Rough sketch of working process:  
 ![../docs/graphs/QueryRouter-DataRetrieval.puml](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/develop/docs/graphs/QueryRouter-DataRetrieval.puml)
