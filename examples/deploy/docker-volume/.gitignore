@@ -1,4 +1,4 @@
-zoo1/
-kafka1/
-postgres1/db
-schema_registry1/
+zoo/
+kafka/
+postgres/db
+schema_registry/

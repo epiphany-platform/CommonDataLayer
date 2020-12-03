@@ -1,4 +1,5 @@
 use crate::{cache::AddressCache, error::Error};
+use log::trace;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
@@ -8,6 +9,8 @@ pub async fn query_single(
     schema_id: Uuid,
     cache: Arc<AddressCache>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
+    trace!("Received /single/{} (SCHEMA_ID={})", object_id, schema_id);
+
     let address = cache.get_address(schema_id).await?;
     let mut values = query_service::query_multiple(vec![object_id.to_string()], address)
         .await
@@ -27,6 +30,12 @@ pub async fn query_multiple(
     schema_id: Uuid,
     cache: Arc<AddressCache>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
+    trace!(
+        "Received /multiple/{:?} (SCHEMA_ID={})",
+        object_ids,
+        schema_id
+    );
+
     let address = cache.get_address(schema_id).await?;
     let object_ids = object_ids.split(',').map(str::to_owned).collect();
     let values = query_service::query_multiple(object_ids, address)
@@ -40,6 +49,8 @@ pub async fn query_by_schema(
     schema_id: Uuid,
     cache: Arc<AddressCache>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
+    trace!("Received /schema (SCHEMA_ID={})", schema_id);
+
     let address = cache.get_address(schema_id).await?;
     let values = query_service::query_by_schema(schema_id.to_string(), address)
         .await

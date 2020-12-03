@@ -31,6 +31,8 @@ async fn spawn_server<Q: Query>(service: Q, port: u16) -> anyhow::Result<()> {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    env_logger::init();
+
     let config: Config = Config::from_args();
 
     metrics::serve();

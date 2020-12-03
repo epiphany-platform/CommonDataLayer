@@ -44,6 +44,8 @@ spec:
           value: "{{ .Values.postgresPort }}"
         - name: POSTGRES_DBNAME
           value: {{ .Values.postgresDbname }}
+        - name: POSTGRES_SCHEMA
+          value: {{ .Values.postgresSchema }}
         - name: RUST_LOG
           value: "info,{{ .Values.commandService.bin }}=debug"
         - name: REPORT_BROKER
