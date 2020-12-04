@@ -116,7 +116,7 @@ services:
       - postgres
       - data_router
 
-  postgres-query:
+  postgres_query:
     image: cdl-query-service:latest
     command: "/bin/query-service postgres"
     build:
