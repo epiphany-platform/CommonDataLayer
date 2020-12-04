@@ -1,7 +1,6 @@
 use crate::schema::{query_server::Query, Range, SchemaId, TimeSeries};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
-use log::debug;
 use reqwest::Client;
 use structopt::StructOpt;
 use tonic::{Request, Response, Status};
@@ -62,25 +61,21 @@ impl VictoriaQuery {
         query: &T,
     ) -> Result<String, Status> {
         let conn = self.connect().await?;
-        debug!("query_db query: {:?}", query);
         let request = conn.get(&self.addr).query(query);
-        let response = request.send().await;
-        debug!("query_db resp: {:?}", response);
-        let result = response.map_err(|err| {
+        let response = request.send().await.map_err(|err| {
             Status::internal(format!(
                 "Error requesting value from VictoriaMetrics: {}",
                 err
             ))
         })?;
 
-        let result_payload = result.text().await.map_err(|err| {
+        let response_payload = response.text().await.map_err(|err| {
             Status::internal(format!(
                 "Failed to deserialize response from VictoriaMetrics: {}",
                 err
             ))
         })?;
-        debug!("query_db result_payload: {:?}", result_payload);
-        Ok(result_payload)
+        Ok(response_payload)
     }
 }
 
@@ -92,7 +87,6 @@ impl Query for VictoriaQuery {
     ) -> Result<Response<TimeSeries>, Status> {
         let request_payload = request.into_inner();
         let mut queries = Vec::new();
-        dbg!(&request_payload);
         queries.push((
             "query",
             format!("{{object_id=\"{}\"}}", request_payload.object_id),
@@ -107,10 +101,9 @@ impl Query for VictoriaQuery {
             queries.push(("step", request_payload.step));
         }
 
-        let response: String = self.query_db(dbg!(&queries)).await?;
-        dbg!(&response);
+        let response: String = self.query_db(&queries).await?;
         Ok(tonic::Response::new(TimeSeries {
-            timeseries: dbg!(response),
+            timeseries: response,
         }))
     }
 
@@ -118,7 +111,6 @@ impl Query for VictoriaQuery {
         &self,
         request: Request<SchemaId>,
     ) -> Result<Response<TimeSeries>, Status> {
-        debug!("Victoria query_by_schema: {:?}", request.get_ref());
         let query = ([("query", request.into_inner().schema_id)]);
 
         let response: String = self.query_db(&query).await?;

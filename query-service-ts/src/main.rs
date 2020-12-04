@@ -21,7 +21,7 @@ pub enum ConfigType {
     Victoria(query_service_ts::victoria::VictoriaConfig),
 }
 
-//Could be extracted to utils, dunno how atm
+//Could be extracted to utils, dunno how without schema
 async fn spawn_server<Q: Query>(service: Q, port: u16) -> anyhow::Result<()> {
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
 
