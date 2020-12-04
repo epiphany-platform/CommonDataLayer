@@ -1,6 +1,5 @@
 use crate::{cache::AddressCache, error::Error};
 use log::trace;
-use query_service_ts::helper_types::make_serializable_timeseries;
 use serde_json::{Map, Value};
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
@@ -79,14 +78,14 @@ fn byte_map_to_json_map(map: HashMap<String, Vec<u8>>) -> Result<Map<String, Val
 pub async fn query_by_range(
     start: String,
     end: String,
-    step: f32,
+    step: String,
     object_id: Uuid,
     cache: Arc<AddressCache>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let address = cache.get_address(object_id).await?;
-    let timeseries =
+    let response =
         query_service_ts::query_by_range(object_id.to_string(), start, end, step, address)
             .await
             .map_err(Error::QueryError)?;
-    Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
+    Ok(warp::reply::json(&response))
 }

@@ -1,5 +1,8 @@
 use anyhow::Context;
-use query_service_ts::schema::query_server::{Query, QueryServer};
+use query_service_ts::{
+    schema::query_server::{Query, QueryServer},
+    victoria::VictoriaQuery,
+};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use structopt::StructOpt;
 use tonic::transport::Server;
@@ -30,7 +33,7 @@ async fn spawn_server<Q: Query>(service: Q, port: u16) -> anyhow::Result<()> {
 }
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()>  {
+async fn main() -> anyhow::Result<()> {
     let config: Config = Config::from_args();
     env_logger::init();
     metrics::serve();
@@ -38,7 +41,7 @@ async fn main() -> anyhow::Result<()>  {
     match config.inner {
         ConfigType::Victoria(victoria_config) => {
             spawn_server(
-                query_service_ts::victoria::VictoriaQuery::load(victoria_config).await?,
+                VictoriaQuery::load(victoria_config).await?,
                 config.input_port,
             )
             .await

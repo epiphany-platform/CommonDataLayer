@@ -46,7 +46,7 @@ async fn main() {
         .and(schema_id_filter)
         .and(address_filter.clone())
         .and_then(handler::query_by_schema);
-    let range_route = warp::path!("range" / String / String / f32)
+    let range_route = warp::path!("range" / String / String / String)
         .and(schema_id_filter)
         .and(address_filter)
         .and_then(handler::query_by_range);

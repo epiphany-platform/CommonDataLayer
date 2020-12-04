@@ -1,8 +1,8 @@
-use schema::{query_client::QueryClient, DataPoint, Range, SchemaId};
+use crate::schema::{Range, SchemaId};
+use schema::query_client::QueryClient;
 use tonic::transport::Channel;
 use utils::query_utils::error::ClientError;
 
-pub mod helper_types;
 pub mod victoria;
 
 pub mod schema {
@@ -19,9 +19,9 @@ pub async fn query_by_range(
     object_id: String,
     start: String,
     end: String,
-    step: f32,
+    step: String,
     addr: String,
-) -> Result<Vec<DataPoint>, ClientError> {
+) -> Result<String, ClientError> {
     let mut conn = connect(addr).await?;
     let response = conn
         .query_by_range(Range {
@@ -33,18 +33,18 @@ pub async fn query_by_range(
         .await
         .map_err(ClientError::QueryError)?;
 
-    Ok(response.into_inner().datapoints)
+    Ok(response.into_inner().timeseries)
 }
 
 pub async fn query_by_schema(
     schema_id: String,
     addr: String,
-) -> Result<Vec<DataPoint>, ClientError> {
+) -> Result<String, ClientError> {
     let mut conn = connect(addr).await?;
     let response = conn
         .query_by_schema(SchemaId { schema_id })
         .await
         .map_err(ClientError::QueryError)?;
 
-    Ok(response.into_inner().datapoints)
+    Ok(response.into_inner().timeseries)
 }

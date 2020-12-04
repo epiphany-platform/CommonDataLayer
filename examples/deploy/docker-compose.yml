@@ -137,15 +137,6 @@ services:
       INPUT_PORT: 50102
       RUST_LOG: info,query_service=trace
 
-  victoria_metrics:
-    image: victoriametrics/victoria-metrics:latest
-    ports:
-      - "8428:8428"
-    volumes:
-      - ./docker-volume/victoria_metrics1/db:/victoria-metrics-data
-        - BIN=query-service
-        - ENV=DEV
-
   query_router:
     image: cdl-query-router:latest
     build:
@@ -174,6 +165,17 @@ services:
       args:
         - BIN=query-service-ts
     environment:
-      VICTORIA_QUERY_URL: "http://127.0.0.1:8428"
+      VICTORIA_QUERY_URL: "http://victoriadb:8428/api/v1/query_range"
       INPUT_PORT: 50104
       RUST_LOG: debug
+    links:
+      - "victoria_metrics:victoriadb"
+
+  victoria_metrics:
+    image: victoriametrics/victoria-metrics:latest
+    ports:
+      - "50105:50105"
+      - "8428:8428"
+    command: -opentsdbHTTPListenAddr :50105 -retentionPeriod 0
+    volumes:
+      - ./docker-volume/victoria_metrics/db:/victoria-metrics-data

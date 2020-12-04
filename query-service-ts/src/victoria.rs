@@ -1,10 +1,8 @@
-use crate::schema::{query_server::Query, DataPoint, Range, SchemaId, TimeSeries};
+use crate::schema::{query_server::Query, Range, SchemaId, TimeSeries};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
-use log::info;
+use log::debug;
 use reqwest::Client;
-use serde::de::DeserializeOwned;
-use serde_json::Value;
 use structopt::StructOpt;
 use tonic::{Request, Response, Status};
 
@@ -12,8 +10,6 @@ use tonic::{Request, Response, Status};
 pub struct VictoriaConfig {
     #[structopt(long = "victoria-query-url", env = "VICTORIA_QUERY_URL")]
     victoria_url: String,
-    //#[structopt(long = "victoria-table-name", env = "VICTORIA_TABLE_NAME")]
-    //victoria_table_name: String,
 }
 
 pub struct VictoriaConnectionManager;
@@ -51,7 +47,6 @@ impl VictoriaQuery {
         Ok(Self {
             pool,
             addr: config.victoria_url,
-            //table_name: config.victoria_table_name,
         })
     }
 
@@ -62,49 +57,73 @@ impl VictoriaQuery {
             .map_err(|err| Status::internal(format!("Unable to connect to database: {}", err)))
     }
 
-    async fn query_db<T: DeserializeOwned>(&self, query: &Value) -> Result<T, Status> {
+    async fn query_db<T: serde::ser::Serialize + std::fmt::Debug>(
+        &self,
+        query: &T,
+    ) -> Result<String, Status> {
         let conn = self.connect().await?;
-        let request = conn.post(&self.addr).json(query);
-        let response = request.send().await.map_err(|err| {
+        debug!("query_db query: {:?}", query);
+        let request = conn.get(&self.addr).query(query);
+        let response = request.send().await;
+        debug!("query_db resp: {:?}", response);
+        let result = response.map_err(|err| {
             Status::internal(format!(
                 "Error requesting value from VictoriaMetrics: {}",
                 err
             ))
         })?;
 
-        response.json().await.map_err(|err| {
+        let result_payload = result.text().await.map_err(|err| {
             Status::internal(format!(
                 "Failed to deserialize response from VictoriaMetrics: {}",
                 err
             ))
-        })
+        })?;
+        debug!("query_db result_payload: {:?}", result_payload);
+        Ok(result_payload)
     }
 }
 
 #[tonic::async_trait]
 impl Query for VictoriaQuery {
-    //TODO: IMPLEMENT ME!
     async fn query_by_range(
         &self,
         request: Request<Range>,
     ) -> Result<Response<TimeSeries>, Status> {
-        info!("Victoria query_by_range: {:?}", request.get_ref());
+        let request_payload = request.into_inner();
+        let mut queries = Vec::new();
+        dbg!(&request_payload);
+        queries.push((
+            "query",
+            format!("{{object_id=\"{}\"}}", request_payload.object_id),
+        ));
+        if !request_payload.start.is_empty() {
+            queries.push(("start", request_payload.start));
+        }
+        if !request_payload.end.is_empty() {
+            queries.push(("end", request_payload.end));
+        }
+        if !request_payload.step.is_empty() {
+            queries.push(("step", request_payload.step));
+        }
+
+        let response: String = self.query_db(dbg!(&queries)).await?;
+        dbg!(&response);
         Ok(tonic::Response::new(TimeSeries {
-            datapoints: vec![DataPoint {
-                timestamp: "10:10:10".to_string(),
-                value: 12.0,
-            }],
+            timeseries: dbg!(response),
         }))
     }
 
-    //TODO: IMPLEMENT ME!
-    async fn query_by_schema(&self, request: Request<SchemaId>) -> Result<Response<TimeSeries>, Status> {
-        info!("Victoria query_by_schema: {:?}", request.get_ref());
+    async fn query_by_schema(
+        &self,
+        request: Request<SchemaId>,
+    ) -> Result<Response<TimeSeries>, Status> {
+        debug!("Victoria query_by_schema: {:?}", request.get_ref());
+        let query = ([("query", request.into_inner().schema_id)]);
+
+        let response: String = self.query_db(&query).await?;
         Ok(tonic::Response::new(TimeSeries {
-            datapoints: vec![DataPoint {
-                timestamp: "12:12:12".to_string(),
-                value: 17.0,
-            }],
+            timeseries: response,
         }))
     }
 }
