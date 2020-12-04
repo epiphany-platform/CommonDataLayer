@@ -47,6 +47,18 @@ impl std::fmt::Display for SchemaType {
     }
 }
 
+impl std::str::FromStr for SchemaType {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "DocumentStorage" => Ok(SchemaType::DocumentStorage),
+            "Timeseries" => Ok(SchemaType::Timeseries),
+            invalid => Err(anyhow::anyhow!("Invalid schema type: {}", invalid)),
+        }
+    }
+}
+
 impl NewSchema {
     pub fn vertex(self) -> (vertices::Schema, Value) {
         let Self {

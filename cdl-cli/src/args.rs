@@ -1,3 +1,4 @@
+use schema_registry::types::SchemaType;
 use semver::{Version, VersionReq};
 use std::path::PathBuf;
 use structopt::StructOpt;
@@ -92,9 +93,9 @@ pub enum SchemaAction {
         /// the schema will be read from stdin.
         #[structopt(short, long, parse(from_os_str))]
         file: Option<PathBuf>,
-        /// The type of schema. Possible values: 0 (DocumentStorage), 1 (Timeseries).
-        #[structopt(short, long, default_value = "0")]
-        schema_type: i32,
+        /// The type of schema. Possible values: DocumentStorage, Timeseries.
+        #[structopt(short, long, default_value = "DocumentStorage")]
+        schema_type: SchemaType,
     },
 
     /// Add a new version of an existing schema in the registry.
@@ -146,9 +147,9 @@ pub enum SchemaAction {
         /// The id of the schema.
         #[structopt(short, long)]
         id: Uuid,
-        /// The new type of the schema. Possible values: 0 (DocumentStorage), 1 (Timeseries).
+        /// The new type of the schema. Possible values: DocumentStorage, Timeseries.
         #[structopt(short, long)]
-        schema_type: i32,
+        schema_type: SchemaType,
     },
 
     /// Validate that a JSON value is valid under the format of the

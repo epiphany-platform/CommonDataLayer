@@ -1,7 +1,10 @@
 use crate::utils::*;
-use schema_registry::rpc::schema::{
-    Empty, Id, NewSchema, NewSchemaVersion, SchemaNameUpdate, SchemaQueryAddressUpdate,
-    SchemaTopicUpdate, SchemaTypeUpdate, ValueToValidate, VersionedId,
+use schema_registry::{
+    rpc::schema::{
+        Empty, Id, NewSchema, NewSchemaVersion, SchemaNameUpdate, SchemaQueryAddressUpdate,
+        SchemaTopicUpdate, SchemaTypeUpdate, ValueToValidate, VersionedId,
+    },
+    types::SchemaType,
 };
 use semver::{Version, VersionReq};
 use serde_json::Value;
@@ -35,7 +38,7 @@ pub async fn add_schema(
     query_address: String,
     file: Option<PathBuf>,
     registry_addr: String,
-    schema_type: i32,
+    schema_type: SchemaType,
 ) -> anyhow::Result<()> {
     let definition = read_json(file)?;
 
@@ -47,7 +50,7 @@ pub async fn add_schema(
             definition: serde_json::to_string(&definition)?,
             query_address,
             topic_name: topic,
-            schema_type,
+            schema_type: schema_type as i32,
         })
         .await?;
 
@@ -134,14 +137,14 @@ pub async fn set_schema_query_address(
 
 pub async fn set_schema_type(
     schema_id: Uuid,
-    schema_type: i32,
+    schema_type: SchemaType,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = connect_to_registry(registry_addr).await?;
     client
         .update_schema_type(SchemaTypeUpdate {
             id: schema_id.to_string(),
-            schema_type,
+            schema_type: schema_type as i32,
         })
         .await?;
 
@@ -223,7 +226,7 @@ pub async fn get_schema_type(schema_id: Uuid, registry_addr: String) -> anyhow::
         })
         .await?;
 
-    println!("{}", response.into_inner().schema_type);
+    println!("{}", SchemaType::from(response.into_inner().schema_type()));
 
     Ok(())
 }
