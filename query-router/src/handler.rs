@@ -56,11 +56,6 @@ pub async fn query_by_schema(
         .await
         .map_err(Error::QueryError)?;
     // TODO: switch between correct QS, this is being worked on by Issue #18
-    //let timeseries = query_service_ts::query_by_schema(schema_id.to_string(), address)
-    //    .await
-    //    .map_err(Error::QueryError)?;
-
-    //Ok(warp::reply::json(&make_serializable_timeseries(timeseries)))
     Ok(warp::reply::json(&byte_map_to_json_map(values)?))
 }
 
