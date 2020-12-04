@@ -55,7 +55,7 @@ pub async fn query_by_schema(
     let values = query_service::query_by_schema(schema_id.to_string(), address)
         .await
         .map_err(Error::QueryError)?;
-    // TODO: switch between correct QS
+    // TODO: switch between correct QS, this is being worked on by Issue #18
     //let timeseries = query_service_ts::query_by_schema(schema_id.to_string(), address)
     //    .await
     //    .map_err(Error::QueryError)?;
