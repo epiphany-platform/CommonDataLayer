@@ -11,7 +11,7 @@ pub use config::PostgresOutputConfig;
 pub use error::Error;
 use log::{error, trace};
 use serde_json::Value;
-use utils::metrics::counter;
+use utils::{metrics::counter, psql::validate_schema};
 
 pub mod config;
 pub mod error;
@@ -39,6 +39,10 @@ impl PostgresOutputPlugin {
             .map_err(Error::FailedToConnect)?;
         let schema = config.schema;
 
+        if !validate_schema(&schema) {
+            return Err(Error::InvalidSchemaName(schema));
+        }
+
         Ok(Self { pool, schema })
     }
 }
@@ -61,12 +65,15 @@ impl OutputPlugin for PostgresOutputPlugin {
             Err(_err) => return Resolution::CommandServiceFailure,
         };
 
+        let store_query = format!(
+            "INSERT INTO {}.data (object_id, version, schema_id, payload) VALUES ($1, $2, $3, $4)",
+            &self.schema
+        );
+
         let store_result = connection
             .query(
-                "INSERT INTO $1.data (object_id, version, schema_id, payload)
-                 VALUES ($2, $3, $4, $5)",
+                store_query.as_str(),
                 &[
-                    &self.schema,
                     &msg.object_id,
                     &msg.timestamp,
                     &msg.schema_id,

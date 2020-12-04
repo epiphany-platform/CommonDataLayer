@@ -4,6 +4,7 @@ use std::{process, sync::PoisonError};
 pub mod message_types;
 pub mod messaging_system;
 pub mod metrics;
+pub mod psql;
 pub mod status_endpoints;
 pub mod task_limiter;
 
