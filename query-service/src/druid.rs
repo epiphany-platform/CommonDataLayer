@@ -1,4 +1,4 @@
-use crate::schema::{query_server::Query, ObjectIds, RawStatement, SchemaId, ValueMap};
+use crate::schema::{query_server::Query, ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use reqwest::Client;
@@ -156,7 +156,7 @@ impl Query for DruidQuery {
     async fn query_raw(
         &self,
         _request: Request<RawStatement>,
-    ) -> Result<Response<ValueMap>, Status> {
+    ) -> Result<Response<ValueBytes>, Status> {
         counter!("cdl.query-service.query-raw.druid", 1);
 
         Err(Status::new(

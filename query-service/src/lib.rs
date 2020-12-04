@@ -44,15 +44,12 @@ pub async fn query_by_schema(
     Ok(response.into_inner().values)
 }
 
-pub async fn query_raw(
-    raw_statement: String,
-    addr: String,
-) -> Result<HashMap<String, Vec<u8>>, ClientError> {
+pub async fn query_raw(raw_statement: String, addr: String) -> Result<Vec<u8>, ClientError> {
     let mut conn = connect(addr).await?;
     let response = conn
         .query_raw(RawStatement { raw_statement })
         .await
         .map_err(ClientError::QueryError)?;
 
-    Ok(response.into_inner().values)
+    Ok(response.into_inner().value_bytes)
 }

@@ -1,4 +1,4 @@
-use crate::schema::{query_server::Query, ObjectIds, RawStatement, SchemaId, ValueMap};
+use crate::schema::{query_server::Query, ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use document_storage::grpc::schema::storage_client::StorageClient;
@@ -100,7 +100,7 @@ impl Query for DsQuery {
     async fn query_raw(
         &self,
         _request: Request<RawStatement>,
-    ) -> Result<Response<ValueMap>, Status> {
+    ) -> Result<Response<ValueBytes>, Status> {
         counter!("cdl.query-service.query_raw.sled", 1);
 
         Err(Status::new(
