@@ -36,10 +36,7 @@ pub async fn query_by_range(
     Ok(response.into_inner().timeseries)
 }
 
-pub async fn query_by_schema(
-    schema_id: String,
-    addr: String,
-) -> Result<String, ClientError> {
+pub async fn query_by_schema(schema_id: String, addr: String) -> Result<String, ClientError> {
     let mut conn = connect(addr).await?;
     let response = conn
         .query_by_schema(SchemaId { schema_id })

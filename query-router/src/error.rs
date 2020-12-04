@@ -1,5 +1,5 @@
-use utils::query_utils::error::{ClientError, Status};
 use schema_registry::error::RegistryClientError;
+use utils::query_utils::error::{ClientError, Status};
 use warp::{hyper::StatusCode, reject::Reject, Rejection};
 
 #[derive(Debug)]
