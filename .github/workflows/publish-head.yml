@@ -27,6 +27,7 @@ jobs:
           - data-router
           - leader-elector
           - query-service
+          - query-service-ts
           - schema-registry
           - query-router
     steps:
