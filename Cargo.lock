@@ -4064,6 +4064,7 @@ dependencies = [
  "rdkafka",
  "serde",
  "serde_json",
+ "test-case",
  "thiserror",
  "tokio 0.2.23",
  "tokio-amqp",
