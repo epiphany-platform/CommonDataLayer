@@ -30,7 +30,7 @@ struct Config {
     #[structopt(long, env)]
     pub kafka_topic: String,
     #[structopt(long, env)]
-    pub kafka_brokers: String,
+    pub KafkaBrokers: String,
     #[structopt(long, env)]
     pub kafka_error_channel: String,
     #[structopt(long, env)]
@@ -47,12 +47,12 @@ async fn main() -> anyhow::Result<()> {
 
     let consumer = CommonConsumer::new_kafka(
         &config.kafka_group_id,
-        &config.kafka_brokers,
+        &config.KafkaBrokers,
         &[&config.kafka_topic],
     )
     .await?;
     let producer = Arc::new(
-        CommonPublisher::new_kafka(&config.kafka_brokers)
+        CommonPublisher::new_kafka(&config.KafkaBrokers)
             .await
             .unwrap(),
     );
