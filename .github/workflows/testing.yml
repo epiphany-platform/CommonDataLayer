@@ -48,7 +48,7 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }} 
 
       - name: Clippy
-        run: find . | grep "\.rs$" | xargs touch ; cargo clippy --all-features -- -D warnings
+        run: find . | grep "\.rs$" | grep -v "\./target/" | xargs touch ; cargo clippy --all-features -- -D warnings
 
       - name: Fmt
         uses: actions-rs/cargo@v1
