@@ -2,11 +2,17 @@ name: Test
 
 on:
   push:
-    branches: [ develop ]
+    branches:
+      - "develop"
+      - "ci-speedup"
   pull_request:
 
 env:
   CARGO_TERM_COLOR: always
+  # CARGO_INCREMENTAL: 0
+  # CARGO_NET_RETRY: 10
+  # RUST_BACKTRACE: short
+  # RUSTUP_MAX_RETRIES: 10
 
 jobs:
   cilppy:
@@ -23,6 +29,23 @@ jobs:
           profile: minimal
           override: true
           components: clippy, rustfmt
+      
+      # - name: Compile
+      #   run: cargo fetch
+
+      # - name: Cache cargo directories
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: |
+      #       ~/.cargo/registry
+      #       ~/.cargo/git
+      #     key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      # - name: Cache cargo target dir
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: target
+      #     key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }} 
 
       - name: Clippy
         uses: actions-rs/cargo@v1
