@@ -29,9 +29,6 @@ jobs:
           profile: minimal
           override: true
           components: clippy, rustfmt
-      
-      - name: Fetch dependencies
-        run: cargo fetch
 
       - name: Cache cargo directories
         uses: actions/cache@v2
