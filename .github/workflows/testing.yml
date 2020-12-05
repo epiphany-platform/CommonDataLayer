@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - "develop"
-      - "ci-speedup"
   pull_request:
 
 env:
