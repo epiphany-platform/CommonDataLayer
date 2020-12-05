@@ -30,7 +30,7 @@ jobs:
           override: true
           components: clippy, rustfmt
       
-      - name: Compile
+      - name: Fetch dependencies
         run: cargo fetch
 
       - name: Cache cargo directories
@@ -48,10 +48,7 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }} 
 
       - name: Clippy
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: --all-features -- -D warnings
+        run: find . | grep "\.rs$" | xargs touch ; cargo clippy --all-features -- -D warnings
 
       - name: Fmt
         uses: actions-rs/cargo@v1
