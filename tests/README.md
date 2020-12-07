@@ -24,28 +24,9 @@ Supported env variables are:
 | db-shrinker-postgres | DB_SHRINKER_POSTGRES_EXE |
 | command-service | COMMAND_SERVICE_EXE |
 
-### Accompanying services
-In some cases our applications require database, message queue or some other service in order to function. These can be started in two ways.
-In order to setup infrastructure stack on kubernetes, please refer to [helm deploy](../docs/K8s-Local-Deployment.md).
-In order to setup infrastructure stack locally via docker-compose, please refer to [docker-compose examples](../examples/deploy/SETUP.md).
-
-Access to such set up services is managed via env variables:
-
-#### db-shrinker-postgres
-| service | env | example |
-|---|---|---|
-|PostgreSQL database | POSTGRES_CONNECTION_URL | postgresql://postgres:1234@localhost:5432/postgres |
-
-#### command-service
-
-| service | env | example |
-|---|---|---|
-| PostgreSQL user login | POSTGRES_USERNAME | postgres |
-| ... password | POSTGRES_PASSWORD | 1234 |
-| ... host | POSTGRES_HOST | localhost |
-| ... port | POSTGRES_PORT | 5432 |
-| CDL database name | POSTGRES_DBNAME | postgres |
-| Kafka broker | KAFKA_BROKERS | localhost:9092 |
+### Docker and docker-compose
+We test using testcontainers python library, which spins up new docker environment for every test.
+For this reason, docker and docker-compose must be present on the machine in order to run these tests.
 
 ## Running
 First we need to initialize environment from `requirements.txt` located at the top of project directory.
