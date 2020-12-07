@@ -759,9 +759,12 @@ name = "db-shrinker-postgres"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "env_logger 0.8.2",
+ "log",
  "postgres",
  "serde_json",
  "structopt",
+ "test-case",
  "uuid",
 ]
 
