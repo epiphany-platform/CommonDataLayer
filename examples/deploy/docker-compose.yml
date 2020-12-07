@@ -166,11 +166,9 @@ services:
       args:
         - BIN=query-service-ts
     environment:
-      VICTORIA_QUERY_URL: "http://victoriadb:8428/api/v1/query_range"
+      VICTORIA_QUERY_URL: "http://victoria_metrics:8428/api/v1/query_range"
       INPUT_PORT: 50104
       RUST_LOG: debug
-    links:
-      - "victoria_metrics:victoriadb"
 
   victoria_metrics:
     image: victoriametrics/victoria-metrics:latest
