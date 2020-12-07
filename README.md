@@ -50,7 +50,7 @@ examples/deploy | sample deployment guide for docker
 
 ## Getting Started
 
-See the [Getting-Started.md][Getting Started] to see how to use this service.
+See the [getting_started.md][Getting Started] to see how to use this service.
 
 
 [rust]: https://www.rust-lang.org
@@ -58,4 +58,4 @@ See the [Getting-Started.md][Getting Started] to see how to use this service.
 [kafka]: https://kafka.apache.org/
 [rmq]: https://www.rabbitmq.com/
 [schema registry]: ./schema-registry/
-[Getting Started]: ./docs/Getting-Started.md
+[Getting Started]: docs/getting_started.md

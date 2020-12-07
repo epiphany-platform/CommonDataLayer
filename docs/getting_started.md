@@ -8,8 +8,8 @@ CDL is a written in Rust. See Rust's [installation][installation] guide to insta
 
 # Deployment
 
-See [Kubernetes-Local-Deployment]
+See [kubernetes_local_deployment]
 
 
 [installation]: https://www.rust-lang.org/tools/install
-[Kubernetes-Local-Deployment]: ./K8s-Local-Deployment.md
+[Kubernetes-Local-Deployment]: k8s_local_deployment.md

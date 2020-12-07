@@ -7,7 +7,7 @@ Sole purpose of this directory is to prepare exemplary development environment, 
 `common data layer` without Kubernetes knowledge. Contents of docker-compose may not contain all applications, so be aware of that. You may alter it
 on your local machine to your needs.
 
-For k8s deployment, please refer to our [documentation](../../docs/K8s-Local-Deployment.md). 
+For k8s deployment, please refer to our [documentation](../../docs/k8s_local_deployment.md). 
 
 ## Requirements
 * docker

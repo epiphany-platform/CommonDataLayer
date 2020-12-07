@@ -1,10 +1,10 @@
 # Architecture of CDL
 
-The Common Data Layer (CDL) is a cloud-targeted system, aimed at allowing **users** to store *any* data and retrieve it (*raw* or *mapped*).
+The Common Data Layer (CDL) is a cloud-native system, aimed at allowing **users** to store *any* data and retrieve it (*raw* or *mapped*).
 
 The CDL consists of four layers, each horizontally scalable and replaceable.
 
-![./graphs/QueryRouter-DataRetrieval.puml](http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/develop/docs/graphs/CDL.puml)
+![./graphs/QueryRouter-DataRetrieval.puml][architecture-puml]
 
 ## Configuration Layer
 Consists of services responsible for holding state and configuration of CDL.  
@@ -36,17 +36,19 @@ We can distinguish 3 types of supported repositories:
     - Victoria Metrics
 
 ### Command Services
-Services that translate messages received from the [Data Router][data-router] into their respective database's format. Currently only one [Command Service][command-service] exists,
+Services that translate messages received from the [Data Router][data-router] into their respective database's format. Currently only one [Command Service][command-service] exists
 and is built in such way that it can support multiple databases (one at a time).
 
 ### Query Service
-The gRPC frontend of each database. Each Query Service serves a common set of queries, and translates those into their respective database's query language. Two query-services are present: one for timeseries databases, and one for documents.
+Each Query Service serves a common set of queries, and translates those into their respective database's query language.
+Two query-services are present: one for timeseries databases, and one for documents.
 
 ## Retrieval Layer
 Contains services responsible for materializing views and routing queries.
-The Query Router is capable of retrieving data from various sources. More at [documentation][query-router].
+The Query Router is capable of retrieving data from various repositories. More at [documentation][query-router].
 
 
+[architecture-puml]: http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/lb_documentation_uml/docs/graphs/cdl.puml
 [schema-registry]: ../schema-registry/README.md
 [data-router]: ../data-router
 [sled]: https://github.com/spacejam/sled

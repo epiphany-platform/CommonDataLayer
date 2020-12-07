@@ -26,7 +26,7 @@ Supported env variables are:
 
 ### Accompanying services
 In some cases our applications require database, message queue or some other service in order to function. These can be started in two ways.
-In order to setup infrastructure stack on kubernetes, please refer to [helm deploy](../docs/K8s-Local-Deployment.md).
+In order to setup infrastructure stack on kubernetes, please refer to [helm deploy](../docs/k8s_local_deployment.md).
 In order to setup infrastructure stack locally via docker-compose, please refer to [docker-compose examples](../examples/deploy/SETUP.md).
 
 Access to such set up services is managed via env variables:
