@@ -48,7 +48,7 @@ Contains services responsible for materializing views and routing queries.
 The Query Router is capable of retrieving data from various repositories. More at [documentation][query-router].
 
 
-[architecture-puml]: http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/lb_documentation_uml/docs/graphs/cdl.puml
+[architecture-puml]: http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/develop/docs/graphs/cdl.puml
 [schema-registry]: ../schema-registry/README.md
 [data-router]: ../data-router
 [sled]: https://github.com/spacejam/sled
