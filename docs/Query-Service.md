@@ -32,6 +32,7 @@ POSTGRES_PASSWORD
 POSTGRES_HOST
 POSTGRES_PORT
 POSTGRES_DBNAME
+POSTGRES_SCHEMA
 `
 
 See an example [configuration][configuration] of deployment of data router and other services. 

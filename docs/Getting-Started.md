@@ -19,7 +19,7 @@ You can download [docker desktop][docker-desktop] for both Windows and MacOS to 
 
 ## Working with CDL Locally
 
-Below is a following simple amount of steps to getting started working with the services in the CDL locally on your machine. To build and install container images of services within the cd, run `build.sh` in root directory of this project.
+Below is a following simple amount of steps to getting started working with the services in the CDL locally on your machine. To build and install container images of services within the CDL, run `build.sh` in root directory of this project.
 
 Please review how to set up CDL locally on your machine but viewing [local setup][local-setup] documentations for a sample deployment. 
 
@@ -37,7 +37,7 @@ A schema can be added through the CLI tool localed in the `cdl-cli` directory. T
 cargo run --bin cdl -- --registry-addr <registry_address> schema add --name <schema_name> --topic "cdl.document.input" --file <file_path_to_json>
 ```
 
-Here is the typical sample JSON schema format that the CDL anticipates and ultimatley will validate data by. Please review [README][schema-registry] in `schema-registry` directory for more information.
+Here is the sample JSON schema format that the CDL anticipates and ultimatley will validate data by. Please review [README][schema-registry] in `schema-registry` directory for more information.
 
 ```
 {
