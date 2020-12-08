@@ -18,7 +18,8 @@ use semver::VersionReq;
 use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Status};
-use utils::abort_on_poison;
+use utils::messaging_system::metadata_fetcher::MetadataFetcher;
+use utils::{abort_on_poison, messaging_system::CommunicationResult};
 use uuid::Uuid;
 
 pub mod schema {
@@ -27,25 +28,28 @@ pub mod schema {
 
 pub struct SchemaRegistryImpl {
     pub db: Arc<SchemaDb>,
+    pub mq_metadata: Arc<MetadataFetcher>,
     pub replication: Arc<Mutex<ReplicationState>>,
     pub pod_name: Option<String>,
 }
 
 impl SchemaRegistryImpl {
-    pub fn new(
+    pub async fn new(
         db: SledDatastore,
         replication_role: ReplicationRole,
         kafka_config: KafkaConfig,
         pod_name: Option<String>,
-    ) -> SchemaRegistryImpl {
+    ) -> CommunicationResult<Self> {
         let child_db = Arc::new(SchemaDb { db });
-        let schema_registry = SchemaRegistryImpl {
+        let mq_metadata = Arc::new(MetadataFetcher::new_kafka(&kafka_config.brokers).await?);
+        let schema_registry = Self {
             db: child_db.clone(),
+            mq_metadata,
             replication: Arc::new(Mutex::new(ReplicationState::new(kafka_config, child_db))),
             pod_name,
         };
         schema_registry.set_replication_role(replication_role);
-        schema_registry
+        Ok(schema_registry)
     }
 
     pub fn set_replication_role(&self, role: ReplicationRole) {
@@ -89,6 +93,15 @@ impl SchemaRegistry for SchemaRegistryImpl {
             query_address: request.query_address,
             kafka_topic: request.topic_name,
         };
+
+        if !self
+            .mq_metadata
+            .topic_exists(&new_schema.kafka_topic)
+            .await
+            .map_err(RegistryError::from)?
+        {
+            return Err(RegistryError::NoTopic(new_schema.kafka_topic).into());
+        }
 
         let new_id = self.db.add_schema(new_schema.clone(), schema_id)?;
         self.replicate_message(ReplicationEvent::AddSchema {

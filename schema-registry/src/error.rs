@@ -16,6 +16,10 @@ pub enum RegistryError {
     DbError(indradb::Error),
     #[error("Unable to connect to sled database: {0}")]
     ConnectionError(indradb::Error),
+    #[error("No topic found named \"{0}\"")]
+    NoTopic(String),
+    #[error("{0}")]
+    MQError(String),
     #[error("Given schema was invalid")]
     InvalidSchema,
     #[error("Given view was invalid: {0}")]
@@ -47,6 +51,32 @@ impl From<indradb::Error> for RegistryError {
 impl From<jsonschema::CompilationError> for RegistryError {
     fn from(_error: jsonschema::CompilationError) -> RegistryError {
         RegistryError::InvalidSchema
+    }
+}
+
+impl From<utils::messaging_system::CommunicationError> for RegistryError {
+    fn from(error: utils::messaging_system::CommunicationError) -> Self {
+        Self::MQError(error.to_string())
+    }
+}
+
+impl From<RegistryError> for Status {
+    fn from(error: RegistryError) -> Status {
+        match error {
+            RegistryError::NoTopic(_)
+            | RegistryError::NoSchemaWithId(_)
+            | RegistryError::NoViewWithId(_) => Status::not_found(error.to_string()),
+            RegistryError::NewVersionMustBeGreatest { .. }
+            | RegistryError::InvalidSchema
+            | RegistryError::DuplicatedUuid(_)
+            | RegistryError::DbError(_)
+            | RegistryError::ConnectionError(_)
+            | RegistryError::MQError(_)
+            | RegistryError::InvalidView(_)
+            | RegistryError::NoVersionMatchesRequirement(_)
+            | RegistryError::CacheError(_)
+            | RegistryError::MalformedError(_) => Status::internal(error.to_string()),
+        }
     }
 }
 
@@ -105,12 +135,6 @@ impl From<tonic::transport::Error> for RegistryClientError {
 impl From<Status> for RegistryClientError {
     fn from(error: Status) -> Self {
         RegistryClientError::RequestFailure(error)
-    }
-}
-
-impl From<RegistryError> for Status {
-    fn from(error: RegistryError) -> Status {
-        Status::internal(error.to_string())
     }
 }
 
