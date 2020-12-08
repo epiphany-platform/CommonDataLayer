@@ -24,6 +24,7 @@ pub struct NewSchema {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[repr(i32)]
 pub enum SchemaType {
     DocumentStorage,
     Timeseries,
