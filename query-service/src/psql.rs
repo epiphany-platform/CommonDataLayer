@@ -1,9 +1,9 @@
 use crate::schema::query_server::Query;
-use crate::schema::{ObjectIds, SchemaId, ValueMap};
+use crate::schema::{ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use anyhow::Context;
 use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::config::Config as PgConfig;
-use bb8_postgres::tokio_postgres::{types::ToSql, NoTls, Row};
+use bb8_postgres::tokio_postgres::{types::ToSql, NoTls, Row, SimpleQueryMessage};
 use bb8_postgres::PostgresConnectionManager;
 use log::trace;
 use serde_json::Value;
@@ -95,6 +95,33 @@ impl PsqlQuery {
             })
             .collect()
     }
+
+    fn collect_simple_query_messages(messages: Vec<SimpleQueryMessage>) -> Result<Vec<u8>, String> {
+        let data: Vec<Vec<String>> = messages
+            .into_iter()
+            .map(|msg| match msg {
+                SimpleQueryMessage::Row(row) => {
+                    let mut fields: Vec<String> = Vec::new();
+                    for i in 0..row.len() {
+                        fields.push(
+                            row.try_get(i)
+                                .map_err(|e| {
+                                    format!("Error getting data from row at column {}: {}", i, e)
+                                })?
+                                .unwrap_or("")
+                                .to_string(),
+                        );
+                    }
+                    Ok(fields)
+                }
+                SimpleQueryMessage::CommandComplete(command) => Ok(vec![command.to_string()]),
+                _ => Err("Could not match SimpleQueryMessage".to_string()),
+            })
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(serde_json::to_vec(&data)
+            .map_err(|e| format!("Error serializing data to json: {}", e))?)
+    }
 }
 
 #[tonic::async_trait]
@@ -168,6 +195,27 @@ impl Query for PsqlQuery {
 
         Ok(tonic::Response::new(ValueMap {
             values: Self::collect_id_payload_rows(rows),
+        }))
+    }
+
+    async fn query_raw(
+        &self,
+        request: Request<RawStatement>,
+    ) -> Result<Response<ValueBytes>, Status> {
+        counter!("cdl.query-service.query_raw.psql", 1);
+        let connection = self.connect().await?;
+        let messages = connection
+            .simple_query(request.into_inner().raw_statement.as_str())
+            .await
+            .map_err(|err| Status::internal(format!("Unable to query_raw data: {}", err)))?;
+
+        Ok(tonic::Response::new(ValueBytes {
+            value_bytes: Self::collect_simple_query_messages(messages).map_err(|err| {
+                Status::internal(format!(
+                    "Unable to collect simple query messages data: {}",
+                    err
+                ))
+            })?,
         }))
     }
 }

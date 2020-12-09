@@ -1,11 +1,11 @@
-use crate::schema::{query_server::Query, ObjectIds, SchemaId, ValueMap};
+use crate::schema::{query_server::Query, ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use document_storage::grpc::schema::storage_client::StorageClient;
 use document_storage::grpc::schema::{RetrieveBySchemaRequest, RetrieveMultipleRequest};
 use structopt::StructOpt;
 use tonic::transport::Channel;
-use tonic::{Request, Response, Status};
+use tonic::{Code, Request, Response, Status};
 use utils::metrics::counter;
 
 #[derive(Debug, StructOpt)]
@@ -95,5 +95,17 @@ impl Query for DsQuery {
         Ok(tonic::Response::new(ValueMap {
             values: response.into_inner().values,
         }))
+    }
+
+    async fn query_raw(
+        &self,
+        _request: Request<RawStatement>,
+    ) -> Result<Response<ValueBytes>, Status> {
+        counter!("cdl.query-service.query_raw.sled", 1);
+
+        Err(Status::new(
+            Code::Unimplemented,
+            "query-service-sled does not support RAW requests yet",
+        ))
     }
 }
