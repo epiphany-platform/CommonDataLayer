@@ -31,3 +31,6 @@ futures-util            = "0.3"
 metrics-exporter-http   = "0.3"
 metrics-runtime         = "0.13"
 metrics-observer-prometheus         = "0.1"
+
+[dev-dependencies]
+test-case = "1.0"

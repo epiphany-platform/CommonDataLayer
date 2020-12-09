@@ -11,7 +11,8 @@ use indradb::SledDatastore;
 use schema::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, NewSchemaView, PodName,
     SchemaNameUpdate, SchemaNames, SchemaQueryAddress, SchemaQueryAddressUpdate, SchemaTopic,
-    SchemaTopicUpdate, SchemaVersions, SchemaViews, UpdatedView, ValueToValidate, VersionedId,
+    SchemaTopicUpdate, SchemaTypeUpdate, SchemaVersions, SchemaViews, UpdatedView, ValueToValidate,
+    VersionedId,
 };
 use semver::Version;
 use semver::VersionReq;
@@ -83,11 +84,14 @@ impl SchemaRegistry for SchemaRegistryImpl {
     ) -> Result<Response<Id>, Status> {
         let request = request.into_inner();
         let schema_id = parse_optional_uuid(&request.id)?;
+        let schema_type = request.schema_type().into();
+
         let new_schema = NewSchema {
             name: request.name,
             definition: parse_json(&request.definition)?,
             query_address: request.query_address,
             kafka_topic: request.topic_name,
+            schema_type,
         };
 
         let new_id = self.db.add_schema(new_schema.clone(), schema_id)?;
@@ -168,6 +172,23 @@ impl SchemaRegistry for SchemaRegistryImpl {
         self.replicate_message(ReplicationEvent::UpdateSchemaQueryAddress {
             id: schema_id,
             new_query_address: request.query_address,
+        });
+
+        Ok(Response::new(Empty {}))
+    }
+
+    async fn update_schema_type(
+        &self,
+        request: Request<SchemaTypeUpdate>,
+    ) -> Result<Response<Empty>, Status> {
+        let request = request.into_inner();
+        let schema_id = parse_uuid(&request.id)?;
+        let schema_type = request.schema_type();
+
+        self.db.update_schema_type(schema_id, schema_type.into())?;
+        self.replicate_message(ReplicationEvent::UpdateSchemaType {
+            id: schema_id,
+            new_schema_type: schema_type.into(),
         });
 
         Ok(Response::new(Empty {}))
@@ -270,6 +291,17 @@ impl SchemaRegistry for SchemaRegistryImpl {
             .collect();
 
         Ok(Response::new(SchemaVersions { versions }))
+    }
+
+    async fn get_schema_type(
+        &self,
+        request: Request<Id>,
+    ) -> Result<Response<schema::SchemaType>, Status> {
+        let request = request.into_inner();
+        let schema_id = parse_uuid(&request.id)?;
+        let schema_type = self.db.get_schema_type(schema_id)? as i32;
+
+        Ok(Response::new(schema::SchemaType { schema_type }))
     }
 
     async fn get_view(&self, request: Request<Id>) -> Result<Response<schema::View>, Status> {

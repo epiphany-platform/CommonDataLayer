@@ -10,7 +10,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use structopt::StructOpt;
 use tonic::{Request, Response, Status};
-use utils::metrics::counter;
+use utils::{metrics::counter, psql::validate_schema};
 use uuid::Uuid;
 
 #[derive(Debug, StructOpt)]
@@ -25,10 +25,13 @@ pub struct PsqlConfig {
     port: u16,
     #[structopt(long, env = "POSTGRES_DBNAME")]
     dbname: String,
+    #[structopt(long, env = "POSTGRES_SCHEMA", default_value = "public")]
+    schema: String,
 }
 
 pub struct PsqlQuery {
     pool: Pool<PostgresConnectionManager<NoTls>>,
+    schema: String,
 }
 
 impl PsqlQuery {
@@ -46,7 +49,16 @@ impl PsqlQuery {
             .await
             .context("Failed to build connection pool")?;
 
-        Ok(Self { pool })
+        let schema = config.schema;
+
+        if !validate_schema(&schema) {
+            anyhow::bail!(
+                "Schema `{}` has invalid name. It can contain only ascii letters, numbers and underscores",
+                schema
+            );
+        }
+
+        Ok(Self { pool, schema })
     }
 
     async fn connect(
@@ -104,19 +116,21 @@ impl Query for PsqlQuery {
             .collect::<Result<Vec<_>, _>>()
             .map_err(|err| Status::invalid_argument(err.to_string()))?;
 
-        let rows = self
-            .make_query(
-                "SELECT d.object_id, d.payload \
+        let query_str = format!(
+            "SELECT d.object_id, d.payload \
                  FROM (\
                      SELECT object_id, max(version) as max \
-                     FROM data \
+                     FROM {}.data \
                      WHERE object_id = ANY($1) \
                      GROUP BY object_id\
                  ) maxes \
-                 JOIN data d \
+                 JOIN {}.data d \
                  ON d.object_id = maxes.object_id AND d.version = maxes.max",
-                &[&object_ids.as_slice()],
-            )
+            self.schema, self.schema
+        );
+
+        let rows = self
+            .make_query(query_str.as_str(), &[&object_ids.as_slice()])
             .await?;
 
         Ok(tonic::Response::new(ValueMap {
@@ -139,18 +153,18 @@ impl Query for PsqlQuery {
             .parse::<Uuid>()
             .map_err(|err| Status::invalid_argument(err.to_string()))?;
 
-        let rows = self
-            .make_query(
-                "SELECT object_id, payload \
-                 FROM data d1 \
+        let query_str = format!(
+            "SELECT object_id, payload \
+                 FROM {}.data d1 \
                  WHERE schema_id = $1 AND d1.version = (\
                      SELECT MAX(version) \
-                     FROM data d2 \
+                     FROM {}.data d2 \
                      WHERE d2.object_id = d1.object_id\
                  )",
-                &[&schema_id],
-            )
-            .await?;
+            self.schema, self.schema
+        );
+
+        let rows = self.make_query(query_str.as_str(), &[&schema_id]).await?;
 
         Ok(tonic::Response::new(ValueMap {
             values: Self::collect_id_payload_rows(rows),
