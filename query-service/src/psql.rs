@@ -85,37 +85,30 @@ impl PsqlQuery {
     }
 
     fn collect_simple_query_messages(messages: Vec<SimpleQueryMessage>) -> Result<Vec<u8>, String> {
-        Ok(messages
+        let data: Vec<Vec<String>> = messages
             .into_iter()
             .map(|msg| match msg {
                 SimpleQueryMessage::Row(row) => {
-                    let column_delimeter = '\t';
-                    let row_delimeter = '\n';
-                    let null_value = "\0";
-                    let mut buffer = String::new();
-
+                    let mut fields: Vec<String> = Vec::new();
                     for i in 0..row.len() {
-                        buffer.push_str(
+                        fields.push(
                             row.try_get(i)
                                 .map_err(|e| {
                                     format!("Error getting data from row at column {}: {}", i, e)
                                 })?
-                                .unwrap_or(null_value),
+                                .unwrap_or("")
+                                .to_string(),
                         );
-                        buffer.push(column_delimeter);
                     }
-                    buffer.push(row_delimeter);
-                    Ok(buffer.into_bytes())
+                    Ok(fields)
                 }
-                SimpleQueryMessage::CommandComplete(command) => {
-                    Ok(command.to_string().into_bytes())
-                }
+                SimpleQueryMessage::CommandComplete(command) => Ok(vec![command.to_string()]),
                 _ => Err("Could not match SimpleQueryMessage".to_string()),
             })
-            .collect::<Result<Vec<Vec<u8>>, String>>()?
-            .into_iter()
-            .flatten()
-            .collect())
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(serde_json::to_vec(&data)
+            .map_err(|e| format!("Error serializing data to json: {}", e))?)
     }
 }
 
