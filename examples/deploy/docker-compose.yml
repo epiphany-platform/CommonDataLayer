@@ -3,7 +3,7 @@
 # Please refer to SETUP.md for instructions on how to run it.
 ###
 
-version: '3'
+version: "3"
 
 services:
   zoo:
@@ -66,7 +66,7 @@ services:
       INPUT_PORT: "50101"
       RUST_LOG: info,schema_registry=trace
     volumes:
-    - ./docker-volume/schema_registry/db:/var/data/schema
+      - ./docker-volume/schema_registry/db:/var/data/schema
     depends_on:
       - kafka
 
@@ -118,13 +118,14 @@ services:
 
   postgres_query:
     image: cdl-query-service:latest
+    command: "/bin/query-service postgres"
     build:
       context: ../..
       dockerfile: Dockerfile
       args:
         - BIN=query-service
         - ENV=DEV
-    command: "/bin/query-service postgres"
+
     ports:
       - "50102:50102"
     environment:
@@ -153,3 +154,27 @@ services:
       INPUT_PORT: 50103
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       RUST_LOG: info,query_router=trace
+
+  victoria_query:
+    image: cdl-query-service-ts:latest
+    command: "/bin/query-service-ts victoria"
+    ports:
+      - "50104:50104"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-service-ts
+    environment:
+      VICTORIA_QUERY_URL: "http://victoria_metrics:8428/api/v1/query_range"
+      INPUT_PORT: 50104
+      RUST_LOG: debug
+
+  victoria_metrics:
+    image: victoriametrics/victoria-metrics:latest
+    ports:
+      - "50105:50105"
+      - "8428:8428"
+    command: -opentsdbHTTPListenAddr :50105 -retentionPeriod 0
+    volumes:
+      - ./docker-volume/victoria_metrics/db:/victoria-metrics-data

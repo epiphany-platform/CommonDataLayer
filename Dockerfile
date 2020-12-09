@@ -24,6 +24,7 @@ COPY document-storage/Cargo.toml document-storage/Cargo.toml
 COPY leader-elector/Cargo.toml leader-elector/Cargo.toml
 COPY query-router/Cargo.toml query-router/Cargo.toml
 COPY query-service/Cargo.toml query-service/Cargo.toml
+COPY query-service-ts/Cargo.toml query-service-ts/Cargo.toml
 COPY schema-registry/Cargo.toml schema-registry/Cargo.toml
 COPY utils/Cargo.toml utils/Cargo.toml
 
@@ -40,6 +41,7 @@ COPY document-storage/ document-storage/
 COPY leader-elector/ leader-elector/
 COPY query-router/ query-router/
 COPY query-service/ query-service/
+COPY query-service-ts/ query-service-ts/
 COPY schema-registry/ schema-registry/
 COPY utils/ utils/
 

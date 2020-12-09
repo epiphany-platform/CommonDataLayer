@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::types::extract_vertex_property;
+use crate::types::{extract_vertex_property, SchemaType};
 
 pub trait Vertex: Sized {
     fn to_properties<'a>(self) -> Vec<(&'a str, Value)>;
@@ -25,12 +25,14 @@ pub struct Schema {
     pub name: String,
     pub kafka_topic: String,
     pub query_address: String,
+    pub schema_type: SchemaType,
 }
 
 impl Schema {
     pub const NAME: &'static str = "SCHEMA_NAME";
     pub const TOPIC_NAME: &'static str = "SCHEMA_TOPIC_NAME";
     pub const QUERY_ADDRESS: &'static str = "SCHEMA_QUERY_ADDRESS";
+    pub const SCHEMA_TYPE: &'static str = "SCHEMA_TYPE";
 }
 
 impl Vertex for Schema {
@@ -41,6 +43,7 @@ impl Vertex for Schema {
                 name: extract_vertex_property(&mut properties, Self::NAME)?,
                 kafka_topic: extract_vertex_property(&mut properties, Self::TOPIC_NAME)?,
                 query_address: extract_vertex_property(&mut properties, Self::QUERY_ADDRESS)?,
+                schema_type: extract_vertex_property(&mut properties, Self::SCHEMA_TYPE)?,
             },
         ))
     }
@@ -50,6 +53,10 @@ impl Vertex for Schema {
             (Self::NAME, Value::String(self.name)),
             (Self::TOPIC_NAME, Value::String(self.kafka_topic)),
             (Self::QUERY_ADDRESS, Value::String(self.query_address)),
+            (
+                Self::SCHEMA_TYPE,
+                Value::String(self.schema_type.to_string()),
+            ),
         ]
     }
 

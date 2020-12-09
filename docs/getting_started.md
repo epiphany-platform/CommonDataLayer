@@ -119,15 +119,15 @@ cargo run --bin query_router -- \
 
 ## Deployment
 
-See [Kubernetes-Local-Deployment.md][deployment]
+See [k8s_local_deployment.md][deployment]
 
 
 [installation]: https://www.rust-lang.org/tools/install
-[deployment]: ./K8s-Local-Deployment.md
+[deployment]: ./k8s_local_deployment.md
 [docker-desktop]: https://docs.docker.com/desktop/
 [local-setup]: ../examples/deploy/SETUP.md
 [grpc]: https://grpc.io/docs/what-is-grpc/introduction/
-[command-service]: ./Command-Service.md
+[command-service]: command_service.md
 [schema-registry]: ../schema-registry/README.md
-[query-service]: ./Query-Service.md
-[data-router]: ./Data-Router.md
+[query-service]: query_service.md
+[data-router]: data_router.md

@@ -78,6 +78,12 @@ async fn consume_message(
         } => {
             db.update_schema_query_address(id, new_query_address)?;
         }
+        ReplicationEvent::UpdateSchemaType {
+            id,
+            new_schema_type,
+        } => {
+            db.update_schema_type(id, new_schema_type)?;
+        }
         ReplicationEvent::UpdateView { id, view } => {
             db.update_view(id, view)?;
         }

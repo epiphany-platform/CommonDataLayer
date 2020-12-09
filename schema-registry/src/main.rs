@@ -53,7 +53,7 @@ pub async fn main() -> anyhow::Result<()> {
         let exported = registry.export_all()?;
         let exported = serde_json::to_string(&exported)?;
         let export_path = export_path(export_dir_path);
-        let mut file = File::open(export_path)?;
+        let mut file = File::create(export_path)?;
         write!(file, "{}", exported)?;
     }
 
