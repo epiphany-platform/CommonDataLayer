@@ -8,11 +8,11 @@ license = "Apache-2.0"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [[bin]]
-name = "upload_to_kafka"
+name = "upload-to-kafka"
 path = "src/upload_to_kafka.rs"
 
 [[bin]]
-name = "upload_to_rabbitmq"
+name = "upload-to-rabbitmq"
 path = "src/upload_to_rabbitmq.rs"
 
 [dependencies]

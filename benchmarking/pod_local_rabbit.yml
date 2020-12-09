@@ -5,12 +5,12 @@ metadata:
 spec:
   restartPolicy: Never
   containers:
-    - image: data-injector
+    - image: cdl-upload-to-rabbitmq
       imagePullPolicy: IfNotPresent
       name: data-injector
       command:
         [
-          "/usr/src/cdl/upload_to_rabbitmq",
+          "/usr/src/cdl/upload-to-rabbitmq",
           "-a",
           "amqp://user:CHANGEME@infrastructure-rabbitmq:5672/%2f",
           "-c",
