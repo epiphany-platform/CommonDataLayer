@@ -4,7 +4,7 @@ The Common Data Layer (CDL) is a cloud-native system, aimed at allowing **users*
 
 The CDL consists of four layers, each horizontally scalable and replaceable.
 
-![./graphs/QueryRouter-DataRetrieval.puml][architecture-puml]
+![./graphs/query_router_data_retrieval.puml][architecture-puml]
 
 ## Configuration Layer
 Consists of services responsible for holding state and configuration of CDL.  
