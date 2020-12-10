@@ -11,7 +11,7 @@ use tokio_amqp::LapinTokioExt;
 
 use super::{
     message::CommunicationMessage, message::KafkaCommunicationMessage,
-    message::RabbitCommunicationMessage, CommunicationResult,
+    message::RabbitCommunicationMessage, Result,
 };
 
 pub enum CommonConsumer {
@@ -27,7 +27,7 @@ impl CommonConsumer {
         group_id: &str,
         brokers: &str,
         topics: &[&str],
-    ) -> CommunicationResult<CommonConsumer> {
+    ) -> Result<CommonConsumer> {
         let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
             .set("group.id", &group_id)
             .set("bootstrap.servers", &brokers)
@@ -50,7 +50,7 @@ impl CommonConsumer {
         connection_string: &str,
         consumer_tag: &str,
         queue_name: &str,
-    ) -> CommunicationResult<CommonConsumer> {
+    ) -> Result<CommonConsumer> {
         let connection = lapin::Connection::connect(
             connection_string,
             lapin::ConnectionProperties::default().with_tokio(),
@@ -70,7 +70,7 @@ impl CommonConsumer {
 
     pub async fn consume(
         &mut self,
-    ) -> impl Stream<Item = CommunicationResult<Box<dyn CommunicationMessage + '_>>> {
+    ) -> impl Stream<Item = Result<Box<dyn CommunicationMessage + '_>>> {
         try_stream! {
         match self {
             CommonConsumer::Kafka { consumer } => {

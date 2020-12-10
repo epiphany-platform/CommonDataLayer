@@ -8,7 +8,7 @@ use tokio::pin;
 use utils::message_types::CommandServiceInsertMessage;
 use utils::messaging_system::consumer::CommonConsumer;
 use utils::messaging_system::message::CommunicationMessage;
-use utils::messaging_system::CommunicationResult;
+use utils::messaging_system::Result;
 use utils::metrics::counter;
 use utils::task_limiter::TaskLimiter;
 
@@ -37,7 +37,7 @@ impl<P: OutputPlugin> KafkaInput<P> {
 
     async fn handle_message(
         router: MessageRouter<P>,
-        message: CommunicationResult<Box<dyn CommunicationMessage>>,
+        message: Result<Box<dyn CommunicationMessage>>,
     ) -> Result<(), Error> {
         counter!("cdl.command-service.input-request", 1);
         let message = message.map_err(Error::FailedReadingMessage)?;

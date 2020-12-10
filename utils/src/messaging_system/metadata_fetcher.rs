@@ -3,14 +3,14 @@ use std::time::Duration;
 use anyhow::Context;
 use rdkafka::{producer::BaseProducer, ClientConfig};
 
-use super::CommunicationResult;
+use super::Result;
 
 pub struct KafkaMetadataFetcher {
     producer: BaseProducer,
 }
 
 impl KafkaMetadataFetcher {
-    pub async fn new(brokers: &str) -> CommunicationResult<Self> {
+    pub async fn new(brokers: &str) -> Result<Self> {
         let producer = ClientConfig::new()
             .set("bootstrap.servers", &brokers)
             .create()
@@ -19,7 +19,7 @@ impl KafkaMetadataFetcher {
         Ok(Self { producer })
     }
 
-    pub async fn topic_exists(&self, topic: &str) -> CommunicationResult<bool> {
+    pub async fn topic_exists(&self, topic: &str) -> Result<bool> {
         let owned_topic = String::from(topic);
         let producer = self.producer.clone();
 

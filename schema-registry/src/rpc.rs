@@ -19,7 +19,7 @@ use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Status};
 use utils::messaging_system::metadata_fetcher::KafkaMetadataFetcher;
-use utils::{abort_on_poison, messaging_system::CommunicationResult};
+use utils::{abort_on_poison, messaging_system::Result};
 use uuid::Uuid;
 
 pub mod schema {
@@ -39,7 +39,7 @@ impl SchemaRegistryImpl {
         replication_role: ReplicationRole,
         kafka_config: KafkaConfig,
         pod_name: Option<String>,
-    ) -> CommunicationResult<Self> {
+    ) -> Result<Self> {
         let child_db = Arc::new(SchemaDb { db });
         let mq_metadata = Arc::new(KafkaMetadataFetcher::new(&kafka_config.brokers).await?);
         let schema_registry = Self {

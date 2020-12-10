@@ -6,7 +6,7 @@ use rdkafka::{
 use std::time::Duration;
 use tokio_amqp::LapinTokioExt;
 
-use super::CommunicationResult;
+use super::Result;
 
 #[derive(Clone)]
 pub enum CommonPublisher {
@@ -14,7 +14,7 @@ pub enum CommonPublisher {
     RabbitMq { channel: Channel },
 }
 impl CommonPublisher {
-    pub async fn new_rabbit(connection_string: &str) -> CommunicationResult<CommonPublisher> {
+    pub async fn new_rabbit(connection_string: &str) -> Result<CommonPublisher> {
         let connection = lapin::Connection::connect(
             connection_string,
             lapin::ConnectionProperties::default().with_tokio(),
@@ -25,7 +25,7 @@ impl CommonPublisher {
         Ok(CommonPublisher::RabbitMq { channel })
     }
 
-    pub async fn new_kafka(brokers: &str) -> CommunicationResult<CommonPublisher> {
+    pub async fn new_kafka(brokers: &str) -> Result<CommonPublisher> {
         let publisher = ClientConfig::new()
             .set("bootstrap.servers", brokers)
             .set("message.timeout.ms", "5000")
@@ -43,7 +43,7 @@ impl CommonPublisher {
         topic_or_exchange: &str,
         key: &str,
         payload: Vec<u8>,
-    ) -> CommunicationResult<()> {
+    ) -> Result<()> {
         match self {
             CommonPublisher::Kafka { producer } => {
                 let delivery_status = producer.send(
