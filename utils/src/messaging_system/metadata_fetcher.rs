@@ -5,38 +5,34 @@ use rdkafka::{producer::BaseProducer, ClientConfig};
 
 use super::CommunicationResult;
 
-pub enum MetadataFetcher {
-    Kafka { producer: BaseProducer },
+pub struct KafkaMetadataFetcher {
+    producer: BaseProducer,
 }
 
-impl MetadataFetcher {
-    pub async fn new_kafka(brokers: &str) -> CommunicationResult<Self> {
+impl KafkaMetadataFetcher {
+    pub async fn new(brokers: &str) -> CommunicationResult<Self> {
         let producer = ClientConfig::new()
             .set("bootstrap.servers", &brokers)
             .create()
             .context("Metadata fetcher creation failed")?;
 
-        Ok(Self::Kafka { producer })
+        Ok(Self { producer })
     }
 
     pub async fn topic_exists(&self, topic: &str) -> CommunicationResult<bool> {
-        match self {
-            Self::Kafka { producer } => {
-                let owned_topic = String::from(topic);
-                let producer = producer.clone();
+        let owned_topic = String::from(topic);
+        let producer = self.producer.clone();
 
-                let metadata = tokio::task::spawn_blocking(move || {
-                    let client = producer.client();
-                    client.fetch_metadata(Some(&owned_topic), Duration::from_secs(5))
-                })
-                .await??;
+        let metadata = tokio::task::spawn_blocking(move || {
+            let client = producer.client();
+            client.fetch_metadata(Some(&owned_topic), Duration::from_secs(5))
+        })
+        .await??;
 
-                Ok(metadata
-                    .topics()
-                    .iter()
-                    .map(|topic| topic.name())
-                    .any(|name| name == topic))
-            }
-        }
+        Ok(metadata
+            .topics()
+            .iter()
+            .map(|topic| topic.name())
+            .any(|name| name == topic))
     }
 }

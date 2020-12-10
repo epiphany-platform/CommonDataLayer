@@ -18,7 +18,7 @@ use semver::VersionReq;
 use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Status};
-use utils::messaging_system::metadata_fetcher::MetadataFetcher;
+use utils::messaging_system::metadata_fetcher::KafkaMetadataFetcher;
 use utils::{abort_on_poison, messaging_system::CommunicationResult};
 use uuid::Uuid;
 
@@ -28,7 +28,7 @@ pub mod schema {
 
 pub struct SchemaRegistryImpl {
     pub db: Arc<SchemaDb>,
-    pub mq_metadata: Arc<MetadataFetcher>,
+    pub mq_metadata: Arc<KafkaMetadataFetcher>,
     pub replication: Arc<Mutex<ReplicationState>>,
     pub pod_name: Option<String>,
 }
@@ -41,7 +41,7 @@ impl SchemaRegistryImpl {
         pod_name: Option<String>,
     ) -> CommunicationResult<Self> {
         let child_db = Arc::new(SchemaDb { db });
-        let mq_metadata = Arc::new(MetadataFetcher::new_kafka(&kafka_config.brokers).await?);
+        let mq_metadata = Arc::new(KafkaMetadataFetcher::new(&kafka_config.brokers).await?);
         let schema_registry = Self {
             db: child_db.clone(),
             mq_metadata,
@@ -158,6 +158,15 @@ impl SchemaRegistry for SchemaRegistryImpl {
     ) -> Result<Response<Empty>, Status> {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
+
+        if !self
+            .mq_metadata
+            .topic_exists(&request.topic)
+            .await
+            .map_err(RegistryError::from)?
+        {
+            return Err(RegistryError::NoTopic(request.topic).into());
+        }
 
         self.db
             .update_schema_topic(schema_id, request.topic.clone())?;
