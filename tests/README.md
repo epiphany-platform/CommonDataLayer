@@ -25,7 +25,7 @@ Supported env variables are:
 | command-service | COMMAND_SERVICE_EXE |
 
 ### Docker and docker-compose
-We test using testcontainers python library, which spins up new docker environment for every test.
+We test using [testcontainers python library](https://pypi.org/project/testcontainers/), which spins up new docker environment for every test.
 For this reason, docker and docker-compose must be present on the machine in order to run these tests.
 
 ## Running

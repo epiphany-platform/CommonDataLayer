@@ -2,11 +2,16 @@ name: Test
 
 on:
   push:
-    branches: [ develop ]
+    branches:
+      - "develop"
   pull_request:
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: short
+  RUSTUP_MAX_RETRIES: 10
 
 jobs:
   cilppy:
@@ -24,11 +29,22 @@ jobs:
           override: true
           components: clippy, rustfmt
 
-      - name: Clippy
-        uses: actions-rs/cargo@v1
+      - name: Cache cargo directories
+        uses: actions/cache@v2
         with:
-          command: clippy
-          args: --all-features -- -D warnings
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Cache cargo target dir
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }} 
+
+      - name: Clippy
+        run: find . | grep "\.rs$" | grep -v "\./target/" | xargs touch ; cargo clippy --locked --all-features -- -D warnings
 
       - name: Fmt
         uses: actions-rs/cargo@v1
@@ -41,3 +57,6 @@ jobs:
         with:
           command: test
           args: --workspace
+
+      - name: Clear bloat
+        run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm

@@ -7,7 +7,7 @@ Sole purpose of this directory is to prepare exemplary development environment, 
 `common data layer` without Kubernetes knowledge. Contents of docker-compose may not contain all applications, so be aware of that. You may alter it
 on your local machine to your needs.
 
-For k8s deployment, please refer to our [documentation](../../docs/K8s-Local-Deployment.md). 
+For k8s deployment, please refer to our [documentation](../../docs/k8s_local_deployment.md). 
 
 ## Requirements
 * docker
@@ -26,7 +26,7 @@ You must first add environment variables:
 
 Due to services needing additional startup time, we advise to let docker setup infrastructure first, and deploy CDL after. So...
 
-`docker-compose up -d kafka1 zoo1 postgres1`
+`docker-compose up -d kafka zoo postgres`
 
 After it had some time to setup, you can proceed with rest of the environment:
 

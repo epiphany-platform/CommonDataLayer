@@ -1,0 +1,53 @@
+@startuml
+frame "Schema Registry" {
+    object schema_1 {
+        Schema = {...}
+        Topic = cdl.document.input
+        Query = http://query_psql:1234
+        Name = asset
+        Type = Document
+    }
+
+    object schema_2 {
+        Schema = {...}
+        Topic = cdl.document.input
+        Query = http://query_psql:1234
+        Name = employee
+        Type = Document
+    }
+
+    object view_1 {
+        View = jmespath(...)
+    }
+
+    object schema_3 {
+        Schema = {...}
+        Topic = cdl.timeseries.input
+        Query = http://query_vm:1234
+        Name = work.status
+        Type = Timeseries
+    }
+
+    object schema_4 {
+        Schema = {...}
+        Topic = cdl.document2.input
+        Query = http://query_mongodb:1234
+        Name = work.order
+        Type = Document
+    }
+
+    object view_2 {
+        View = jmespath(...)
+    }
+}
+
+view_1 -u-> schema_1
+view_1 -> schema_2
+
+view_2 -> schema_1
+view_2 -l-> schema_3
+view_2 -d-> schema_4
+
+hide methods
+show fields
+@enduml

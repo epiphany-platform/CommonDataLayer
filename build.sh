@@ -7,7 +7,7 @@ set -ex
 # CDL_VERSION=0.1.0
 # CDL_PUSH=true
 
-array=( data-router command-service query-router query-service leader-elector schema-registry )
+array=( data-router command-service query-router query-service query-service-ts leader-elector schema-registry )
 DOCKER_BUILDKIT=1
 for i in "${array[@]}"
 do

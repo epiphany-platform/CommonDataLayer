@@ -55,7 +55,7 @@ pub async fn query_by_schema(
     let values = query_service::query_by_schema(schema_id.to_string(), address)
         .await
         .map_err(Error::QueryError)?;
-
+    // TODO: switch between correct QS, this is being worked on by Issue #18
     Ok(warp::reply::json(&byte_map_to_json_map(values)?))
 }
 
@@ -68,4 +68,19 @@ fn byte_map_to_json_map(map: HashMap<String, Vec<u8>>) -> Result<Map<String, Val
             ))
         })
         .collect::<Result<Map<String, Value>, Error>>()
+}
+
+pub async fn query_by_range(
+    start: String,
+    end: String,
+    step: String,
+    object_id: Uuid,
+    cache: Arc<AddressCache>,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    let address = cache.get_address(object_id).await?;
+    let response =
+        query_service_ts::query_by_range(object_id.to_string(), start, end, step, address)
+            .await
+            .map_err(Error::QueryError)?;
+    Ok(warp::reply::json(&response))
 }

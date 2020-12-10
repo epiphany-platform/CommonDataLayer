@@ -22,6 +22,9 @@ pub async fn main() -> anyhow::Result<()> {
             SchemaAction::GetQueryAddress { schema_id } => {
                 get_schema_query_address(schema_id, args.registry_addr).await
             }
+            SchemaAction::GetSchemaType { schema_id } => {
+                get_schema_type(schema_id, args.registry_addr).await
+            }
             SchemaAction::Versions { schema_id } => {
                 get_schema_versions(schema_id, args.registry_addr).await
             }
@@ -30,7 +33,18 @@ pub async fn main() -> anyhow::Result<()> {
                 topic,
                 query_address,
                 file,
-            } => add_schema(name, topic, query_address, file, args.registry_addr).await,
+                schema_type,
+            } => {
+                add_schema(
+                    name,
+                    topic,
+                    query_address,
+                    file,
+                    args.registry_addr,
+                    schema_type,
+                )
+                .await
+            }
             SchemaAction::AddVersion {
                 schema_id,
                 version,
@@ -44,6 +58,9 @@ pub async fn main() -> anyhow::Result<()> {
             }
             SchemaAction::SetQueryAddress { id, query_address } => {
                 set_schema_query_address(id, query_address, args.registry_addr).await
+            }
+            SchemaAction::SetSchemaType { id, schema_type } => {
+                set_schema_type(id, schema_type, args.registry_addr).await
             }
             SchemaAction::Validate { schema_id, file } => {
                 validate_value(schema_id, file, args.registry_addr).await

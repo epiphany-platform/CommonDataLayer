@@ -12,6 +12,7 @@ use crate::{
     error::{MalformedError, RegistryError, RegistryResult},
     types::DbExport,
     types::SchemaDefinition,
+    types::SchemaType,
 };
 use indradb::{
     Datastore, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
@@ -160,6 +161,18 @@ impl<D: Datastore> SchemaDb<D> {
             .map_err(|_| MalformedError::MalformedSchema(id).into())
     }
 
+    pub fn get_schema_type(&self, id: Uuid) -> RegistryResult<SchemaType> {
+        let conn = self.connect()?;
+        let type_property = conn
+            .get_vertex_properties(SpecificVertexQuery::single(id).property(Schema::SCHEMA_TYPE))?
+            .into_iter()
+            .next()
+            .ok_or(RegistryError::NoSchemaWithId(id))?;
+
+        serde_json::from_value(type_property.value)
+            .map_err(|_| MalformedError::MalformedSchema(id).into())
+    }
+
     fn get_latest_valid_schema_version(
         &self,
         id: &VersionedUuid,
@@ -228,6 +241,20 @@ impl<D: Datastore> SchemaDb<D> {
         self.set_vertex_properties(
             id,
             &[(Schema::QUERY_ADDRESS, Value::String(new_query_address))],
+        )?;
+
+        Ok(())
+    }
+
+    pub fn update_schema_type(&self, id: Uuid, new_schema_type: SchemaType) -> RegistryResult<()> {
+        self.ensure_schema_exists(id)?;
+
+        self.set_vertex_properties(
+            id,
+            &[(
+                Schema::SCHEMA_TYPE,
+                Value::String(new_schema_type.to_string()),
+            )],
         )?;
 
         Ok(())
@@ -559,6 +586,37 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn get_schema_type() -> Result<()> {
+        let db = SchemaDb {
+            db: MemoryDatastore::default(),
+        };
+        let schema_id = db.add_schema(schema1(), None)?;
+
+        let schema_type = db.get_schema_type(schema_id)?;
+        assert_eq!(SchemaType::DocumentStorage, schema_type);
+
+        Ok(())
+    }
+
+    #[test]
+    fn update_schema_type() -> Result<()> {
+        let db = SchemaDb {
+            db: MemoryDatastore::default(),
+        };
+        let schema_id = db.add_schema(schema1(), None)?;
+
+        let schema_type = db.get_schema_type(schema_id)?;
+        assert_eq!(SchemaType::DocumentStorage, schema_type);
+
+        db.update_schema_type(schema_id, SchemaType::Timeseries)?;
+
+        let schema_type = db.get_schema_type(schema_id)?;
+        assert_eq!(SchemaType::Timeseries, schema_type);
+
+        Ok(())
+    }
+
     fn schema1() -> NewSchema {
         NewSchema {
             name: "test".into(),
@@ -574,6 +632,7 @@ mod tests {
             }),
             kafka_topic: "topic1".into(),
             query_address: "query1".into(),
+            schema_type: SchemaType::DocumentStorage,
         }
     }
 
@@ -599,6 +658,7 @@ mod tests {
             }),
             kafka_topic: "topic2".into(),
             query_address: "query2".into(),
+            schema_type: SchemaType::DocumentStorage,
         }
     }
 
