@@ -33,7 +33,7 @@ impl CommonConsumer {
             .set("bootstrap.servers", &brokers)
             .set("enable.partition.eof", "false")
             .set("session.timeout.ms", "6000")
-            .set("enable.auto.commit", "true")
+            .set("enable.auto.commit", "false")
             .set("auto.offset.reset", "earliest")
             .create()
             .context("Consumer creation failed")?;

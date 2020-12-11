@@ -11,8 +11,12 @@ pub enum Error {
     ConsumerCreationFailed(MSError),
     #[error("Failed to subscribe to kafka topics `{0}`")]
     FailedToSubscribe(MSError),
+    #[error("Failed to acknowledge message `{0}`")]
+    FailedToAcknowledge(MSError),
     #[error("Kafka message is missing a key `{0}`")]
     MissingKey(MSError),
+    #[error("Failed to create GRPC server `{0}`")]
+    ServerCreationFailed(#[from] tonic::transport::Error),
     #[error("Kafka message has a non-UUID key: {0}")]
     KeyNotValidUuid(uuid::Error),
     #[error("Kafka message is missing a schema ID header")]
