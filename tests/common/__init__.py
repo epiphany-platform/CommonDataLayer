@@ -36,7 +36,7 @@ def ensure_kafka_topic_exists(config):
             admin_client.create_topics([NewTopic(config.topic, 1, 1)])
             set_up = True
             break
-        except UnrecognizedBrokerVersion:
+        except (UnrecognizedBrokerVersion, ValueError):
             time.sleep(5)
 
     if not set_up:
