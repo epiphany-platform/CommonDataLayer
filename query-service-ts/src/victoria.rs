@@ -1,8 +1,9 @@
-use rpc::query_service_ts::{query_service_ts_server::QueryServiceTs, Range, SchemaId, TimeSeries};
-
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use reqwest::Client;
+use rpc::query_service_ts::{
+    query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
+};
 use structopt::StructOpt;
 use tonic::{Request, Response, Status};
 
@@ -62,7 +63,8 @@ impl VictoriaQuery {
         query: &T,
     ) -> Result<String, Status> {
         let conn = self.connect().await?;
-        let request = conn.get(&self.addr).query(query);
+        let query_range_url = format!("{}{}", self.addr, "/query_range");
+        let request = conn.get(&query_range_url).query(query);
         let response = request.send().await.map_err(|err| {
             Status::internal(format!(
                 "Error requesting value from VictoriaMetrics: {}",
@@ -120,6 +122,26 @@ impl QueryServiceTs for VictoriaQuery {
         let response: String = self.query_db(&query).await?;
         Ok(tonic::Response::new(TimeSeries {
             timeseries: response,
+        }))
+    }
+
+    async fn query_raw(
+        &self,
+        request: Request<RawStatement>,
+    ) -> Result<Response<ValueBytes>, Status> {
+        let url = format!("{}{}", self.addr, request.into_inner().raw_statement);
+        let body: serde_json::Value = reqwest::get(&url)
+            .await
+            .map_err(|e| Status::internal(format!("Error sending get request: {}", e)))?
+            .json()
+            .await
+            .map_err(|e| {
+                Status::internal(format!("Error response body is not in JSON format: {}", e))
+            })?;
+
+        Ok(tonic::Response::new(ValueBytes {
+            value_bytes: serde_json::to_vec(&body)
+                .map_err(|e| Status::internal(format!("Error serializing data: {}", e)))?,
         }))
     }
 }
