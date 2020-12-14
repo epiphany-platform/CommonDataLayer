@@ -1,5 +1,4 @@
 use crate::communication::resolution::Resolution;
-use crate::communication::GenericMessage;
 use crate::output::victoria_metrics::config::VictoriaMetricsConfig;
 use crate::output::OutputPlugin;
 use itertools::Itertools;
@@ -12,6 +11,8 @@ use thiserror::Error as DeriveError;
 use url::ParseError;
 use utils::metrics::counter;
 use uuid::Uuid;
+use utils::message_types::BorrowedInsertMessage;
+use serde_json::value::RawValue;
 
 pub mod config;
 
@@ -47,22 +48,22 @@ impl VictoriaMetricsOutputPlugin {
 
 #[async_trait::async_trait]
 impl OutputPlugin for VictoriaMetricsOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
+    async fn handle_message(&self, msg: BorrowedInsertMessage<'_>) -> Resolution {
         let mut url = self.url.clone();
 
         url.set_query(Some(&format!("db={}", msg.schema_id)));
 
-        let GenericMessage {
+        let BorrowedInsertMessage {
             object_id,
             schema_id,
             timestamp,
-            payload,
+            data,
         } = msg;
 
-        match build_line_protocol(schema_id, object_id, timestamp, &payload) {
+        match build_line_protocol(schema_id, object_id, timestamp, data) {
             Ok(line_protocol) => send_data(url, &self.client, line_protocol).await,
             Err(err) => {
-                let context = String::from_utf8_lossy(&payload).to_string();
+                let context = data.to_string();
 
                 error!(
                     "Failed to convert payload to line_protocol, cause `{}`, context `{}`",
@@ -85,9 +86,9 @@ fn build_line_protocol(
     measurement: Uuid,
     tag: Uuid,
     timestamp: i64,
-    payload: &[u8],
+    payload: &RawValue,
 ) -> Result<String, Error> {
-    let fields_raw: Value = serde_json::from_slice(payload).map_err(Error::DataIsNotValidJson)?;
+    let fields_raw: Value = serde_json::from_str(payload.get()).map_err(Error::DataIsNotValidJson)?;
 
     if let Value::Object(obj) = fields_raw {
         if obj.is_empty() {

@@ -1,5 +1,4 @@
 use crate::communication::resolution::Resolution;
-use crate::communication::GenericMessage;
 use crate::output::sleigh::connection_pool::SleighConnectionManager;
 use crate::output::OutputPlugin;
 use bb8::Pool;
@@ -8,6 +7,7 @@ use document_storage::grpc::schema::StoreRequest;
 pub use error::Error;
 use log::{error, trace};
 use utils::metrics::counter;
+use utils::message_types::BorrowedInsertMessage;
 
 mod connection_pool;
 
@@ -32,7 +32,7 @@ impl SleighOutputPlugin {
 
 #[async_trait::async_trait]
 impl OutputPlugin for SleighOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
+    async fn handle_message(&self, msg: BorrowedInsertMessage<'_>) -> Resolution {
         let mut connection = match self.pool.get().await {
             Ok(conn) => conn,
             Err(err) => {
@@ -47,7 +47,7 @@ impl OutputPlugin for SleighOutputPlugin {
             .store(StoreRequest {
                 object_id: msg.object_id.to_string(),
                 schema_id: msg.schema_id.to_string(),
-                data: msg.payload,
+                data: msg.data.get().as_bytes().to_vec(),
             })
             .await
         {

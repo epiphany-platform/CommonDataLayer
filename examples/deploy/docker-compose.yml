@@ -109,6 +109,7 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DBNAME: postgres
+      POSTGRES_SCHEMA: cdl
       REPORT_BROKER: "kafka:9093"
       REPORT_TOPIC: "cdl.reports"
       RUST_LOG: info,command_service=trace
@@ -134,7 +135,7 @@ services:
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DBNAME: postgres
-      POSTGRES_SCHEMA: public
+      POSTGRES_SCHEMA: cdl
       INPUT_PORT: 50102
       RUST_LOG: info,query_service=trace
 

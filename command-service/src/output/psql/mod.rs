@@ -1,7 +1,6 @@
 use std::time;
 
 use crate::communication::resolution::Resolution;
-use crate::communication::GenericMessage;
 use crate::output::OutputPlugin;
 use bb8::Pool;
 use bb8_postgres::tokio_postgres::types::Json;
@@ -12,6 +11,7 @@ pub use error::Error;
 use log::{error, trace};
 use serde_json::Value;
 use utils::{metrics::counter, psql::validate_schema};
+use utils::message_types::BorrowedInsertMessage;
 
 pub mod config;
 pub mod error;
@@ -49,7 +49,7 @@ impl PostgresOutputPlugin {
 
 #[async_trait::async_trait]
 impl OutputPlugin for PostgresOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
+    async fn handle_message(&self, msg: BorrowedInsertMessage<'_>) -> Resolution {
         let connection = match self.pool.get().await {
             Ok(conn) => conn,
             Err(err) => {
@@ -60,7 +60,7 @@ impl OutputPlugin for PostgresOutputPlugin {
 
         trace!("Storing message {:?}", msg);
 
-        let payload: Value = match serde_json::from_slice(&msg.payload) {
+        let payload: Value = match serde_json::from_str(&msg.data.get()) {
             Ok(json) => json,
             Err(_err) => return Resolution::CommandServiceFailure,
         };

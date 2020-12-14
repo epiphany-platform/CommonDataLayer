@@ -1,5 +1,4 @@
 use crate::communication::resolution::Resolution;
-use crate::communication::GenericMessage;
 pub use crate::output::druid::config::DruidOutputConfig;
 pub use crate::output::druid::error::Error;
 use crate::output::OutputPlugin;
@@ -7,6 +6,7 @@ use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::ClientConfig;
 use std::time::Duration;
 use utils::metrics::counter;
+use utils::message_types::BorrowedInsertMessage;
 
 mod config;
 mod error;
@@ -31,12 +31,12 @@ impl DruidOutputPlugin {
 
 #[async_trait::async_trait]
 impl OutputPlugin for DruidOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
+    async fn handle_message(&self, msg: BorrowedInsertMessage<'_>) -> Resolution {
         let key = msg.object_id.to_string();
         let record = FutureRecord {
             topic: &self.topic,
             partition: None,
-            payload: Some(&msg.payload),
+            payload: Some(msg.data.get().as_bytes()),
             key: Some(&key),
             timestamp: Some(msg.timestamp),
             headers: None,

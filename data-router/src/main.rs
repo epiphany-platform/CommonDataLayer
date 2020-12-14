@@ -13,7 +13,7 @@ use structopt::StructOpt;
 use tokio::pin;
 use utils::{
     abort_on_poison,
-    message_types::{CommandServiceInsertMessage, DataRouterInputData},
+    message_types::{BorrowedInsertMessage, DataRouterInputData},
     messaging_system::{
         consumer::CommonConsumer, message::CommunicationMessage, publisher::CommonPublisher,
     },
@@ -98,9 +98,9 @@ async fn handle_message(
             .duration_since(UNIX_EPOCH)
             .expect("Time went backwards"); // TODO: Ordering can be different when scaling
         let topic_name = get_schema_topic(&cache, &event, &schema_registry_addr).await?;
-        let data = CommandServiceInsertMessage {
+        let data = BorrowedInsertMessage {
             object_id: event.object_id,
-            payload: event.data,
+            data: event.data,
             schema_id: event.schema_id,
             timestamp: since_the_epoch.as_millis() as i64, // TODO: Change types?
         };
