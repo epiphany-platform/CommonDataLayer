@@ -153,14 +153,13 @@ mod tests {
 
         #[test_case("{}"                => matches Err(Error::EmptyFields))]
         #[test_case("{ \"y01\": {} }"   => matches Err(Error::InvalidFieldType))]
-        #[test_case("y00=32q,y01=14.0f" => matches Err(Error::DataIsNotValidJson(_)))]
         #[test_case("[ 1, 13 ]"         => matches Err(Error::DataIsNotAJsonObject))]
         fn produces_desired_errors(payload: &str) -> Result<String, Error> {
             build_line_protocol(
                 Uuid::default(),
                 Uuid::default(),
                 i64::default(),
-                payload.as_bytes(),
+                &RawValue::from_string(payload.to_string()).unwrap(),
             )
         }
 
@@ -232,7 +231,7 @@ mod tests {
                 case.schema_id.parse().unwrap(),
                 case.object_id.parse().unwrap(),
                 case.version,
-                case.payload.as_bytes(),
+                &RawValue::from_string(case.payload.to_string()).unwrap(),
             )
             .unwrap()
         }
