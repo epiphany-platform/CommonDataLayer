@@ -5,14 +5,14 @@ use itertools::Itertools;
 use log::error;
 use reqwest::Url;
 use reqwest::{Client, StatusCode};
+use serde_json::value::RawValue;
 use serde_json::Value;
 use std::iter;
 use thiserror::Error as DeriveError;
 use url::ParseError;
+use utils::message_types::BorrowedInsertMessage;
 use utils::metrics::counter;
 use uuid::Uuid;
-use utils::message_types::BorrowedInsertMessage;
-use serde_json::value::RawValue;
 
 pub mod config;
 
@@ -88,7 +88,8 @@ fn build_line_protocol(
     timestamp: i64,
     payload: &RawValue,
 ) -> Result<String, Error> {
-    let fields_raw: Value = serde_json::from_str(payload.get()).map_err(Error::DataIsNotValidJson)?;
+    let fields_raw: Value =
+        serde_json::from_str(payload.get()).map_err(Error::DataIsNotValidJson)?;
 
     if let Value::Object(obj) = fields_raw {
         if obj.is_empty() {

@@ -1,10 +1,10 @@
 use crate::report::{Error, Reporter};
 use serde::Serialize;
+use serde_json::Value;
 use std::sync::Arc;
+use utils::message_types::OwnedInsertMessage;
 use utils::messaging_system::publisher::CommonPublisher;
 use uuid::Uuid;
-use utils::message_types::{OwnedInsertMessage};
-use serde_json::Value;
 
 const APPLICATION_NAME: &str = "Command Service";
 

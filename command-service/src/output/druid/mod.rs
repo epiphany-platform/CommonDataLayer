@@ -5,8 +5,8 @@ use crate::output::OutputPlugin;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::ClientConfig;
 use std::time::Duration;
-use utils::metrics::counter;
 use utils::message_types::BorrowedInsertMessage;
+use utils::metrics::counter;
 
 mod config;
 mod error;

@@ -6,8 +6,8 @@ pub use config::SleighOutputConfig;
 use document_storage::grpc::schema::StoreRequest;
 pub use error::Error;
 use log::{error, trace};
-use utils::metrics::counter;
 use utils::message_types::BorrowedInsertMessage;
+use utils::metrics::counter;
 
 mod connection_pool;
 

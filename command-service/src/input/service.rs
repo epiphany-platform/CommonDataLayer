@@ -54,12 +54,14 @@ impl<P: OutputPlugin> KafkaInput<P> {
         Ok(())
     }
 
-    fn build_message(message: &'_ dyn CommunicationMessage) -> Result<BorrowedInsertMessage<'_>, Error> {
+    fn build_message(
+        message: &'_ dyn CommunicationMessage,
+    ) -> Result<BorrowedInsertMessage<'_>, Error> {
         let json = message.payload().map_err(Error::MissingPayload)?;
         let event: BorrowedInsertMessage =
             serde_json::from_str(json).map_err(Error::PayloadDeserializationFailed)?;
 
-       Ok(event)
+        Ok(event)
     }
 
     pub async fn listen(self) -> Result<(), Error> {

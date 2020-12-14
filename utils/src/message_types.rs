@@ -1,13 +1,15 @@
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
-use uuid::Uuid;
 use serde_json::Value;
+use std::time::{SystemTime, UNIX_EPOCH};
+use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct BorrowedInsertMessage<'a> {
     pub object_id: Uuid,
     pub schema_id: Uuid,
+    #[serde(default = "default_timestamp")]
     pub timestamp: i64,
     #[serde(borrow)]
     pub data: &'a RawValue,
@@ -31,11 +33,9 @@ impl BorrowedInsertMessage<'_> {
     }
 }
 
-#[derive(Deserialize, Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DataRouterInputData<'a> {
-    pub schema_id: Uuid,
-    pub object_id: Uuid,
-    #[serde(borrow)]
-    pub data: &'a RawValue,
+fn default_timestamp() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_millis() as i64
 }

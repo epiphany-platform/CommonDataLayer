@@ -7,13 +7,12 @@ use serde::{Deserialize, Serialize};
 use std::{
     process,
     sync::{Arc, Mutex},
-    time::{SystemTime, UNIX_EPOCH},
 };
 use structopt::StructOpt;
 use tokio::pin;
 use utils::{
     abort_on_poison,
-    message_types::{BorrowedInsertMessage, DataRouterInputData},
+    message_types::BorrowedInsertMessage,
     messaging_system::{
         consumer::CommonConsumer, message::CommunicationMessage, publisher::CommonPublisher,
     },
@@ -92,21 +91,21 @@ async fn handle_message(
     schema_registry_addr: Arc<String>,
 ) {
     let result: anyhow::Result<()> = async {
-        let event: DataRouterInputData =
-            serde_json::from_str(message.payload()?).context("Payload deserialization failed")?;
-        let since_the_epoch = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards"); // TODO: Ordering can be different when scaling
-        let topic_name = get_schema_topic(&cache, &event, &schema_registry_addr).await?;
-        let data = BorrowedInsertMessage {
-            object_id: event.object_id,
-            data: event.data,
-            schema_id: event.schema_id,
-            timestamp: since_the_epoch.as_millis() as i64, // TODO: Change types?
-        };
-        let payload = serde_json::to_vec(&data).unwrap_or_default();
+        let payload = message.payload()?;
+
+        let data: BorrowedInsertMessage =
+            serde_json::from_str(payload).context("Payload deserialization failed")?;
+
+        let topic_name = get_schema_topic(&cache, &data, &schema_registry_addr).await?;
+
         let key = data.object_id.to_string();
-        send_message(producer.as_ref(), &topic_name, &key, payload).await;
+        send_message(
+            producer.as_ref(),
+            &topic_name,
+            &key,
+            payload.as_bytes().to_vec(),
+        )
+        .await;
         Ok(())
     }
     .await;
@@ -135,7 +134,7 @@ async fn handle_message(
 
 async fn get_schema_topic(
     cache: &Mutex<LruCache<Uuid, String>>,
-    event: &DataRouterInputData<'_>,
+    event: &BorrowedInsertMessage<'_>,
     schema_addr: &str,
 ) -> anyhow::Result<String> {
     let recv_channel = cache

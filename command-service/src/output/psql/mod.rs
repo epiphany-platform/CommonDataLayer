@@ -10,8 +10,8 @@ pub use config::PostgresOutputConfig;
 pub use error::Error;
 use log::{error, trace};
 use serde_json::Value;
-use utils::{metrics::counter, psql::validate_schema};
 use utils::message_types::BorrowedInsertMessage;
+use utils::{metrics::counter, psql::validate_schema};
 
 pub mod config;
 pub mod error;
