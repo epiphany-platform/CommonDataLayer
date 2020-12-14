@@ -47,7 +47,8 @@ pub async fn main() -> anyhow::Result<()> {
         config.replication_role,
         replication_config,
         config.pod_name,
-    );
+    )
+    .await?;
 
     if let Some(export_dir_path) = config.export_dir {
         let exported = registry.export_all()?;

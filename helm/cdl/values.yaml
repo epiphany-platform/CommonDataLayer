@@ -68,3 +68,11 @@ druid-timeseries:
   commandService:
     image: cdl-command-service
     bin: command-service
+
+victoria-metrics-timeseries:
+  replicaCommandCount: 1
+  inputTopic: cdl.timeseries2.data
+  outputURL: http://infrastructure-victoria-metrics-single-server:8428/
+  commandService:
+    image: cdl-command-service
+    bin: command-service

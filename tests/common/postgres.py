@@ -20,15 +20,6 @@ def fetch_data_table(db):
     return rows
 
 
-def clear_data_table(db):
-    curr = db.cursor()
-
-    curr.execute("DELETE FROM cdl.data WHERE true")
-    db.commit()
-    curr.close()
-    curr.close()
-
-
 def insert_test_data(db, data):
     curr = db.cursor()
 

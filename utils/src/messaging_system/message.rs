@@ -9,13 +9,13 @@ use rdkafka::{
 };
 use std::sync::Arc;
 
-use super::CommunicationResult;
+use super::Result;
 
 #[async_trait]
 pub trait CommunicationMessage: Send + Sync {
-    fn payload(&self) -> CommunicationResult<&str>;
-    fn key(&self) -> CommunicationResult<&str>;
-    async fn ack(&self) -> CommunicationResult<()>;
+    fn payload(&self) -> Result<&str>;
+    fn key(&self) -> Result<&str>;
+    async fn ack(&self) -> Result<()>;
 }
 
 pub struct KafkaCommunicationMessage<'a> {
@@ -24,20 +24,20 @@ pub struct KafkaCommunicationMessage<'a> {
 }
 #[async_trait]
 impl<'a> CommunicationMessage for KafkaCommunicationMessage<'a> {
-    fn key(&self) -> CommunicationResult<&str> {
+    fn key(&self) -> Result<&str> {
         let key = self
             .message
             .key()
             .ok_or_else(|| anyhow::anyhow!("Message has no key"))?;
         Ok(std::str::from_utf8(key)?)
     }
-    fn payload(&self) -> CommunicationResult<&str> {
+    fn payload(&self) -> Result<&str> {
         Ok(self
             .message
             .payload_view::<str>()
             .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??)
     }
-    async fn ack(&self) -> CommunicationResult<()> {
+    async fn ack(&self) -> Result<()> {
         rdkafka::consumer::Consumer::commit_message(
             self.consumer.as_ref(),
             &self.message,
@@ -53,14 +53,14 @@ pub struct RabbitCommunicationMessage {
 }
 #[async_trait]
 impl CommunicationMessage for RabbitCommunicationMessage {
-    fn key(&self) -> CommunicationResult<&str> {
+    fn key(&self) -> Result<&str> {
         let key = self.delivery.routing_key.as_str();
         Ok(key)
     }
-    fn payload(&self) -> CommunicationResult<&str> {
+    fn payload(&self) -> Result<&str> {
         Ok(std::str::from_utf8(&self.delivery.data).context("Payload was not valid UTF-8")?)
     }
-    async fn ack(&self) -> CommunicationResult<()> {
+    async fn ack(&self) -> Result<()> {
         Ok(self
             .channel
             .basic_ack(self.delivery.delivery_tag, BasicAckOptions::default())

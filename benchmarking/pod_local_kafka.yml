@@ -5,20 +5,20 @@ metadata:
 spec:
   restartPolicy: Never
   containers:
-    - image: epiphanyservices.azurecr.io/cdl_upload_to_kafka:0.0.5
-      imagePullPolicy: Always
+    - image: cdl-upload-to-kafka
+      imagePullPolicy: IfNotPresent
       name: data-injector
       command:
         [
-          "/bin/upload_to_kafka",
+          "/bin/upload-to-kafka",
           "--brokers",
-          "10.1.5.4:9092",
+          "infrastructure-kafka:9092",
           "--count",
-          "500000",
+          "10",
           "--topic",
-          "cdl.input.data",
+          "cdl.data.input",
           "--schema-id",
-          "f17ff366-08a0-11eb-8000-000000000000",
+          "a6228589-3a0f-11eb-8000-000000000000",
         ]
   imagePullSecrets:
     - name: services
