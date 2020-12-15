@@ -49,7 +49,10 @@ async fn main() {
         .and(schema_id_filter)
         .and(address_filter.clone())
         .and_then(handler::query_by_schema);
-    let routes = warp::get().and(single_route.or(multiple_route).or(schema_route));
+
+    let routes = warp::post()
+        .and(single_route)
+        .or(warp::get().and(multiple_route.or(schema_route)));
 
     warp::serve(routes)
         .run(([0, 0, 0, 0], config.input_port))
