@@ -1,30 +1,31 @@
 use crate::error::Error;
 use lru_cache::LruCache;
 use rpc::error::ClientError;
+use schema_registry::types::SchemaType;
 use std::sync::{Mutex, MutexGuard};
 use utils::abort_on_poison;
 use uuid::Uuid;
 
-pub struct AddressCache {
+pub struct SchemaRegistryCache {
     schema_registry_addr: String,
-    addresses: Mutex<LruCache<Uuid, String>>,
+    cache: Mutex<LruCache<Uuid, (String, SchemaType)>>,
 }
 
-impl AddressCache {
+impl SchemaRegistryCache {
     pub fn new(schema_registry_addr: String, capacity: usize) -> Self {
         Self {
             schema_registry_addr,
-            addresses: Mutex::new(LruCache::new(capacity)),
+            cache: Mutex::new(LruCache::new(capacity)),
         }
     }
 
-    fn lock(&self) -> MutexGuard<LruCache<Uuid, String>> {
-        self.addresses.lock().unwrap_or_else(abort_on_poison)
+    fn lock(&self) -> MutexGuard<LruCache<Uuid, (String, SchemaType)>> {
+        self.cache.lock().unwrap_or_else(abort_on_poison)
     }
 
-    pub async fn get_address(&self, schema_id: Uuid) -> Result<String, Error> {
-        if let Some(address) = self.lock().get_mut(&schema_id) {
-            return Ok(address.clone());
+    pub async fn get_schema_info(&self, schema_id: Uuid) -> Result<(String, SchemaType), Error> {
+        if let Some(cached_data) = self.lock().get_mut(&schema_id) {
+            return Ok(cached_data.clone());
         }
 
         let mut conn = rpc::schema_registry::connect(self.schema_registry_addr.clone())
@@ -43,8 +44,17 @@ impl AddressCache {
             })?;
         let address = response.into_inner().address;
 
-        self.lock().insert(schema_id, address.clone());
+        let response = conn
+            .get_schema_type(schema_registry::rpc::schema::Id {
+                id: schema_id.to_string(),
+            })
+            .await
+            .map_err(Error::RegistryError)?;
+        let schema_type = response.into_inner().schema_type().into();
 
-        Ok(address)
+        let result = (address, schema_type);
+        self.lock().insert(schema_id, result.clone());
+
+        Ok(result)
     }
 }

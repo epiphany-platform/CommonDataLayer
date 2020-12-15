@@ -2470,6 +2470,7 @@ dependencies = [
  "log",
  "lru-cache",
  "rpc",
+ "serde",
  "serde_json",
  "structopt",
  "tokio 0.2.23",
