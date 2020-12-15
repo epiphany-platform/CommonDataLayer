@@ -1,8 +1,8 @@
 use anyhow::Context;
-use futures_util::stream::StreamExt;
+use tokio::stream::StreamExt;
 use log::error;
 use lru_cache::LruCache;
-use schema_registry::{connect_to_registry, rpc::schema::Id};
+use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
@@ -156,7 +156,7 @@ async fn get_schema_topic(
         return Ok(val);
     }
 
-    let mut client = connect_to_registry(schema_addr.to_owned()).await?;
+    let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
     let channel = client
         .get_schema_topic(Id {
             id: schema_id.to_string(),

@@ -1,11 +1,11 @@
-use crate::schema::query_server::Query;
-use crate::schema::{ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use anyhow::Context;
 use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::config::Config as PgConfig;
 use bb8_postgres::tokio_postgres::{types::ToSql, NoTls, Row, SimpleQueryMessage};
 use bb8_postgres::PostgresConnectionManager;
 use log::trace;
+use rpc::query_service::query_service_server::QueryService;
+use rpc::query_service::{ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use serde_json::Value;
 use std::collections::HashMap;
 use structopt::StructOpt;
@@ -125,7 +125,7 @@ impl PsqlQuery {
 }
 
 #[tonic::async_trait]
-impl Query for PsqlQuery {
+impl QueryService for PsqlQuery {
     async fn query_multiple(
         &self,
         request: Request<ObjectIds>,

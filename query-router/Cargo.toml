@@ -19,9 +19,7 @@ anyhow      = "1.0"
 lru-cache   = "0.1"
 serde_json  = "1.0"
 structopt   = "0.3"
+rpc         = { path = "../rpc" }
 utils       = { path = "../utils/" }
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 tokio       = { version = "0.2", features = ["macros"] }
-query-service           = { path = "../query-service/" }
-query-service-ts           = { path = "../query-service-ts/" }
-schema-registry         = { path = "../schema-registry/" }

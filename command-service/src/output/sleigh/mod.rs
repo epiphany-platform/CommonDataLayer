@@ -3,7 +3,7 @@ use crate::output::sleigh::connection_pool::SleighConnectionManager;
 use crate::output::OutputPlugin;
 use bb8::Pool;
 pub use config::SleighOutputConfig;
-use document_storage::grpc::schema::StoreRequest;
+use rpc::document_storage::StoreRequest;
 pub use error::Error;
 use log::{error, trace};
 use utils::message_types::BorrowedInsertMessage;

@@ -1,12 +1,9 @@
-use schema_registry::error::RegistryClientError;
-use utils::query_utils::error::{ClientError, Status};
+use rpc::error::{ClientError};
 use warp::{hyper::StatusCode, reject::Reject, Rejection};
 
 #[derive(Debug)]
 pub enum Error {
-    RegistryConnectionError(RegistryClientError),
-    RegistryError(Status),
-    QueryError(ClientError),
+    ClientError(ClientError),
     JsonError(serde_json::Error),
     SingleQueryMissingValue,
 }
@@ -22,11 +19,7 @@ impl From<Error> for Rejection {
 pub fn recover(rejection: Rejection) -> Result<impl warp::Reply, Rejection> {
     if let Some(error) = rejection.find::<Error>() {
         let message = match error {
-            Error::RegistryConnectionError(err) => err.to_string(),
-            Error::RegistryError(err) => {
-                format!("Error returned from the schema registry: {}", err)
-            }
-            Error::QueryError(err) => err.to_string(),
+            Error::ClientError(err) => err.to_string(),
             Error::JsonError(err) => format!("Unable to serialize JSON: {}", err),
             Error::SingleQueryMissingValue => "".to_owned(),
         };

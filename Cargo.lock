@@ -341,12 +341,11 @@ dependencies = [
  "anyhow",
  "env_logger 0.8.2",
  "log",
- "prost",
+ "rpc",
  "sled 0.34.6",
  "structopt",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "utils",
  "uuid",
 ]
@@ -432,7 +431,7 @@ name = "cdl-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "schema-registry",
+ "rpc",
  "semver 0.11.0",
  "serde",
  "serde_json",
@@ -512,11 +511,11 @@ dependencies = [
  "document-storage",
  "env_logger 0.8.2",
  "futures",
- "futures-util",
  "itertools 0.9.0",
  "log",
  "rdkafka",
  "reqwest",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
@@ -732,10 +731,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger 0.8.2",
- "futures-util",
  "log",
  "lru-cache",
- "schema-registry",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
@@ -832,12 +830,11 @@ dependencies = [
  "anyhow",
  "env_logger 0.8.2",
  "log",
- "prost",
+ "rpc",
  "sled 0.34.6",
  "structopt",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "utils",
  "uuid",
 ]
@@ -2472,9 +2469,7 @@ dependencies = [
  "env_logger 0.8.2",
  "log",
  "lru-cache",
- "query-service",
- "query-service-ts",
- "schema-registry",
+ "rpc",
  "serde_json",
  "structopt",
  "tokio 0.2.23",
@@ -2490,18 +2485,16 @@ dependencies = [
  "anyhow",
  "bb8",
  "bb8-postgres",
- "document-storage",
  "env_logger 0.8.2",
  "log",
- "prost",
  "reqwest",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
  "thiserror",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "utils",
  "uuid",
 ]
@@ -2514,14 +2507,13 @@ dependencies = [
  "bb8",
  "env_logger 0.8.2",
  "log",
- "prost",
  "reqwest",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "utils",
 ]
 
@@ -2858,6 +2850,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "rpc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "prost",
+ "serde",
+ "thiserror",
+ "tonic",
+ "tonic-build",
+]
+
+[[package]]
 name = "rust-argon2"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2915,20 +2919,18 @@ dependencies = [
  "env_logger 0.8.2",
  "envy",
  "futures",
- "futures-util",
  "indradb-lib",
  "jmespatch",
  "jsonschema",
  "lazy_static",
  "log",
- "prost",
+ "rpc",
  "semver 0.11.0",
  "serde",
  "serde_json",
  "thiserror",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "url",
  "utils",
  "uuid",

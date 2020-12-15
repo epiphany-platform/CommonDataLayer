@@ -12,9 +12,9 @@ pub async fn query_single(
     trace!("Received /single/{} (SCHEMA_ID={})", object_id, schema_id);
 
     let address = cache.get_address(schema_id).await?;
-    let mut values = query_service::query_multiple(vec![object_id.to_string()], address)
+    let mut values = rpc::query_service::query_multiple(vec![object_id.to_string()], address)
         .await
-        .map_err(Error::QueryError)?;
+        .map_err(Error::ClientError)?;
 
     Ok(warp::reply::with_header(
         values
@@ -38,9 +38,9 @@ pub async fn query_multiple(
 
     let address = cache.get_address(schema_id).await?;
     let object_ids = object_ids.split(',').map(str::to_owned).collect();
-    let values = query_service::query_multiple(object_ids, address)
+    let values = rpc::query_service::query_multiple(object_ids, address)
         .await
-        .map_err(Error::QueryError)?;
+        .map_err(Error::ClientError)?;
 
     Ok(warp::reply::json(&byte_map_to_json_map(values)?))
 }
@@ -52,9 +52,9 @@ pub async fn query_by_schema(
     trace!("Received /schema (SCHEMA_ID={})", schema_id);
 
     let address = cache.get_address(schema_id).await?;
-    let values = query_service::query_by_schema(schema_id.to_string(), address)
+    let values = rpc::query_service::query_by_schema(schema_id.to_string(), address)
         .await
-        .map_err(Error::QueryError)?;
+        .map_err(Error::ClientError)?;
     // TODO: switch between correct QS, this is being worked on by Issue #18
     Ok(warp::reply::json(&byte_map_to_json_map(values)?))
 }
@@ -79,8 +79,8 @@ pub async fn query_by_range(
 ) -> Result<impl warp::Reply, warp::Rejection> {
     let address = cache.get_address(object_id).await?;
     let response =
-        query_service_ts::query_by_range(object_id.to_string(), start, end, step, address)
+        rpc::query_service_ts::query_by_range(object_id.to_string(), start, end, step, address)
             .await
-            .map_err(Error::QueryError)?;
+            .map_err(Error::ClientError)?;
     Ok(warp::reply::json(&response))
 }

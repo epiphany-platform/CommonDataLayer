@@ -1,5 +1,5 @@
 use anyhow::Context;
-use query_service::schema::query_server::{Query, QueryServer};
+use rpc::query_service::query_service_server::{QueryService, QueryServiceServer};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use structopt::StructOpt;
 use tonic::transport::Server;
@@ -19,11 +19,11 @@ pub enum ConfigType {
     Sled(query_service::ds::DsConfig),
 }
 
-async fn spawn_server<Q: Query>(service: Q, port: u16) -> anyhow::Result<()> {
+async fn spawn_server<Q: QueryService>(service: Q, port: u16) -> anyhow::Result<()> {
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
 
     Server::builder()
-        .add_service(QueryServer::new(service))
+        .add_service(QueryServiceServer::new(service))
         .serve(addr.into())
         .await
         .context("gRPC server failed")

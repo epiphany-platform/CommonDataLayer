@@ -11,6 +11,7 @@ members = [
     "query-router",
     "query-service",
     "query-service-ts",
+    "rpc",
     "schema-registry",
 ]
 

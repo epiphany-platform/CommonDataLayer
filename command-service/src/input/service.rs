@@ -1,7 +1,7 @@
 use crate::communication::MessageRouter;
 use crate::input::{Error, KafkaInputConfig};
 use crate::output::OutputPlugin;
-use futures_util::stream::StreamExt;
+use tokio::stream::StreamExt;
 use log::{error, trace};
 use std::process;
 use tokio::pin;

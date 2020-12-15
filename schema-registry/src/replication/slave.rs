@@ -1,7 +1,7 @@
 use super::{KafkaConfig, ReplicationEvent};
 use crate::db::SchemaDb;
 use anyhow::Context;
-use futures_util::stream::StreamExt;
+use tokio::stream::StreamExt;
 use log::{error, info, trace};
 use std::{process, sync::Arc};
 use tokio::{pin, sync::oneshot::Receiver};

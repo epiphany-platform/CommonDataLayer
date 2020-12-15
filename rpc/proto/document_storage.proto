@@ -1,7 +1,7 @@
 syntax = "proto3";
-package docstore;
+package document_storage;
 
-service Storage {
+service DocumentStorage {
   rpc Store(StoreRequest) returns (Empty);
   rpc RetrieveMultiple(RetrieveMultipleRequest) returns (DataMap);
   rpc RetrieveBySchema(RetrieveBySchemaRequest) returns (DataMap);

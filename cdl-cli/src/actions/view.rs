@@ -1,9 +1,8 @@
-use crate::utils::*;
-use schema_registry::rpc::schema::{Id, NewSchemaView, UpdatedView};
+use rpc::schema_registry::{Id, NewSchemaView, UpdatedView};
 use uuid::Uuid;
 
 pub async fn get_view(view_id: Uuid, registry_addr: String) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let view = client
         .get_view(Id {
             id: view_id.to_string(),
@@ -22,7 +21,7 @@ pub async fn add_view_to_schema(
     jmespath: String,
     registry_addr: String,
 ) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let view = NewSchemaView {
         view_id: "".into(),
         schema_id: schema_id.to_string(),
@@ -48,7 +47,7 @@ pub async fn update_view(
     jmespath: String,
     registry_addr: String,
 ) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let view = UpdatedView {
         id: view_id.to_string(),
         name,
@@ -66,7 +65,7 @@ pub async fn update_view(
 }
 
 pub async fn get_schema_views(schema_id: Uuid, registry_addr: String) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let views = client
         .get_all_views_of_schema(Id {
             id: schema_id.to_string(),

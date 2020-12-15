@@ -1,5 +1,5 @@
-use crate::rpc::schema::schema_type;
 use indradb::{EdgeProperties, VertexProperties};
+use rpc::schema_registry::types::SchemaType;
 use semver::{Version, VersionReq};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
@@ -21,43 +21,6 @@ pub struct NewSchema {
     pub kafka_topic: String,
     pub query_address: String,
     pub schema_type: SchemaType,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-#[repr(i32)]
-pub enum SchemaType {
-    DocumentStorage,
-    Timeseries,
-}
-
-impl From<schema_type::Type> for SchemaType {
-    fn from(st: schema_type::Type) -> Self {
-        match st {
-            schema_type::Type::DocumentStorage => SchemaType::DocumentStorage,
-            schema_type::Type::Timeseries => SchemaType::Timeseries,
-        }
-    }
-}
-
-impl std::fmt::Display for SchemaType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
-            SchemaType::DocumentStorage => "DocumentStorage",
-            SchemaType::Timeseries => "Timeseries",
-        })
-    }
-}
-
-impl std::str::FromStr for SchemaType {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "DocumentStorage" => Ok(SchemaType::DocumentStorage),
-            "Timeseries" => Ok(SchemaType::Timeseries),
-            invalid => Err(anyhow::anyhow!("Invalid schema type: {}", invalid)),
-        }
-    }
 }
 
 impl NewSchema {

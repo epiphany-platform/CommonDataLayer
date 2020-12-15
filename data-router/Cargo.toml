@@ -21,6 +21,5 @@ serde_json  = "1.0"
 structopt   = "0.3"
 tokio       = { version = "0.2", features = ["macros"] }
 utils       = { path = "../utils" }
+rpc         = { path = "../rpc" }
 uuid        = { version = "0.8", features = ["v1", "serde"] }
-futures-util            = "0.3"
-schema-registry         = { path = "../schema-registry" }

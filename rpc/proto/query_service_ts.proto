@@ -1,7 +1,7 @@
 syntax = "proto3";
-package query;
+package query_service_ts;
 
-service Query {
+service QueryServiceTs {
      rpc QueryBySchema(SchemaId) returns (TimeSeries);
      rpc QueryByRange(Range) returns (TimeSeries);
 }
@@ -17,6 +17,6 @@ message SchemaId {
     string schema_id = 1;
 }
 
-message TimeSeries{
+message TimeSeries {
     string timeseries = 1;
 }

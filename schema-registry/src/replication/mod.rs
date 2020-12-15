@@ -1,9 +1,10 @@
 use crate::{
     db::SchemaDb,
     types::storage::vertices::View,
-    types::{NewSchema, NewSchemaVersion, SchemaType},
+    types::{NewSchema, NewSchemaVersion},
 };
 use log::info;
+use rpc::schema_registry::types::SchemaType;
 use serde::{Deserialize, Serialize};
 use std::{
     sync::{mpsc, Arc},
