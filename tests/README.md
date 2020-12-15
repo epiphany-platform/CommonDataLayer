@@ -36,7 +36,7 @@ Access to such set up services is managed via env variables:
 |---|---|---|
 |PostgreSQL database | POSTGRES_CONNECTION_URL | postgresql://postgres:1234@localhost:5432/postgres |
 
-#### command-service
+#### postgres command-service
 
 | service | env | example |
 |---|---|---|
@@ -45,6 +45,18 @@ Access to such set up services is managed via env variables:
 | ... host | POSTGRES_HOST | localhost |
 | ... port | POSTGRES_PORT | 5432 |
 | CDL database name | POSTGRES_DBNAME | postgres |
+| Kafka broker | KAFKA_BROKERS | localhost:9092 |
+
+### victoriametrics command-service
+VictoriaMetrics instance must be started manually in order to execute tests.
+WARNING!!! Test wipes all data in database
+#### Requirements:
+VictoriaMetrics ``` https://victoriametrics.github.io/Quick-Start.html ```
+#### Params:
+| service | env | example |
+|---|---|---|
+| Victoria metrics url | VICTORIA_METRICS_URL | localhost:8428 |
+| command-service Executable | COMMAND_SERVICE_EXE | target/debug/command-service |
 | Kafka broker | KAFKA_BROKERS | localhost:9092 |
 
 ## Running

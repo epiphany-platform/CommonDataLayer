@@ -15,9 +15,11 @@ KAFKA_INPUT_GROUP_ID = "victoria_command"
 KAFKA_INPUT_TOPIC = "cdl.timeseries.input"
 VICTORIA_METRICS_URL = os.getenv(
     "VICTORIA_METRICS_URL", "http://0.0.0.0:8428")
+EXECUTABLE = os.getenv("COMMAND_SERVICE_EXE", "command-service")
+REPORT_TOPIC = "cdl.reports"
 
 
-def clear_data_table():
+def clear_data_base():
     delete_url = os.path.join(VICTORIA_METRICS_URL,
                               "api/v1/admin/tsdb/delete_series")
     requests.post(delete_url, data={"match[]": '{__name__!=""}'})
@@ -31,15 +33,21 @@ def fetch_data_table():
         json_lines.append(json.loads(line))
     return json_lines
 
-
+#TODO: Setup VictoriaMetrics in prepare instead of manually
 @pytest.fixture(params=['single_insert', 'multiple_inserts'])
 def prepare(request):
+
+    svc = subprocess.Popen([EXECUTABLE, "victoria-metrics"],
+                           env={"KAFKA_INPUT_GROUP_ID": KAFKA_INPUT_GROUP_ID, "KAFKA_INPUT_BROKERS": KAFKA_BROKERS,
+                                "KAFKA_INPUT_TOPIC": KAFKA_INPUT_TOPIC, "VICTORIA_METRICS_OUTPUT_URL": VICTORIA_METRICS_URL,
+                                "REPORT_BROKER": KAFKA_BROKERS, "REPORT_TOPIC": REPORT_TOPIC})
 
     data, expected = load_case(
         request.param, "command_service/victoria_command")
 
     yield data, expected
-    clear_data_table()
+    svc.kill()
+    clear_data_base()
 
 
 def test_inserting(prepare):
@@ -50,6 +58,7 @@ def test_inserting(prepare):
         kafka.push_to_kafka(producer, entry, TOPIC)
     producer.flush()
     # TODO: Actively wait for DB to update
-    sleep(3)
+    sleep(5)
     actual = fetch_data_table()
-    assert actual == expected
+    for a in actual:
+        assert a in expected
