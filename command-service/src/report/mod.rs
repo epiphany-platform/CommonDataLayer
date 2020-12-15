@@ -29,8 +29,8 @@ impl ReportSender {
     pub fn with_message_body(self, msg: &BorrowedInsertMessage) -> Box<dyn Reporter> {
         match self {
             ReportSender::Full(config) => Box::new(FullReportSender {
-                producer: config.producer.clone(),
-                topic: config.topic.clone(),
+                producer: config.producer,
+                topic: config.topic,
                 output_plugin: config.output_plugin,
                 msg: msg.to_owned(),
             }),

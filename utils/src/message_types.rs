@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
 use serde_json::Value;
-use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -9,7 +8,6 @@ use uuid::Uuid;
 pub struct BorrowedInsertMessage<'a> {
     pub object_id: Uuid,
     pub schema_id: Uuid,
-    #[serde(default = "default_timestamp")]
     pub timestamp: i64,
     #[serde(borrow)]
     pub data: &'a RawValue,
@@ -31,11 +29,4 @@ impl BorrowedInsertMessage<'_> {
             data: serde_json::from_str(&self.data.get()).expect("RawValue wasn't valid json Value"),
         }
     }
-}
-
-fn default_timestamp() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_millis() as i64
 }

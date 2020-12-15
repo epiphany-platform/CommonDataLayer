@@ -4,6 +4,8 @@ use log::error;
 use lru_cache::LruCache;
 use schema_registry::{connect_to_registry, rpc::schema::Id};
 use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
     process,
     sync::{Arc, Mutex},
@@ -36,6 +38,14 @@ struct Config {
     pub schema_registry_addr: String,
     #[structopt(long, env)]
     pub cache_capacity: usize,
+}
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataRouterInsertMessage<'a> {
+    pub object_id: Uuid,
+    pub schema_id: Uuid,
+    #[serde(borrow)]
+    pub data: &'a RawValue,
 }
 
 #[tokio::main]
@@ -93,17 +103,25 @@ async fn handle_message(
     let result: anyhow::Result<()> = async {
         let payload = message.payload()?;
 
-        let data: BorrowedInsertMessage =
+        let insert_message: DataRouterInsertMessage =
             serde_json::from_str(payload).context("Payload deserialization failed")?;
 
-        let topic_name = get_schema_topic(&cache, &data, &schema_registry_addr).await?;
+        let topic_name =
+            get_schema_topic(&cache, insert_message.schema_id, &schema_registry_addr).await?;
 
-        let key = data.object_id.to_string();
+        let payload = BorrowedInsertMessage {
+            object_id: insert_message.object_id,
+            schema_id: insert_message.schema_id,
+            timestamp: current_timestamp(),
+            data: insert_message.data,
+        };
+
+        let key = payload.object_id.to_string();
         send_message(
             producer.as_ref(),
             &topic_name,
             &key,
-            payload.as_bytes().to_vec(),
+            serde_json::to_vec(&payload)?,
         )
         .await;
         Ok(())
@@ -134,13 +152,13 @@ async fn handle_message(
 
 async fn get_schema_topic(
     cache: &Mutex<LruCache<Uuid, String>>,
-    event: &BorrowedInsertMessage<'_>,
+    schema_id: Uuid,
     schema_addr: &str,
 ) -> anyhow::Result<String> {
     let recv_channel = cache
         .lock()
         .unwrap_or_else(abort_on_poison)
-        .get_mut(&event.schema_id)
+        .get_mut(&schema_id)
         .cloned();
     if let Some(val) = recv_channel {
         return Ok(val);
@@ -149,7 +167,7 @@ async fn get_schema_topic(
     let mut client = connect_to_registry(schema_addr.to_owned()).await?;
     let channel = client
         .get_schema_topic(Id {
-            id: event.schema_id.to_string(),
+            id: schema_id.to_string(),
         })
         .await?
         .into_inner()
@@ -157,7 +175,7 @@ async fn get_schema_topic(
     cache
         .lock()
         .unwrap_or_else(abort_on_poison)
-        .insert(event.schema_id, channel.clone());
+        .insert(schema_id, channel.clone());
 
     Ok(channel)
 }
@@ -173,4 +191,11 @@ async fn send_message(producer: &CommonPublisher, topic_name: &str, key: &str, p
         );
         process::abort();
     };
+}
+
+fn current_timestamp() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_millis() as i64
 }
