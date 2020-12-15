@@ -24,7 +24,7 @@ pub struct VictoriaMetricsOutputPlugin {
 pub enum Error {
     #[error("Url was invalid `{0}`")]
     InvalidUrl(ParseError),
-    #[error("Data cannot be parsed")]
+    #[error("Data cannot be parsed `{0}`")]
     DataCannotBeParsed(serde_json::Error),
     #[error("Value cannot be an object, array or null")]
     InvalidFieldType,
@@ -103,7 +103,7 @@ fn build_line_protocol(measurement: Uuid, tag: Uuid, payload: &[u8]) -> Result<S
         })
         .collect::<Result<Vec<String>, Error>>()?
         .join("\n");
-
+    dbg!(&line_protocol);
     Ok(line_protocol)
 }
 
@@ -168,16 +168,16 @@ mod tests {
 
         #[test_case(r#"[{"fields":{}, "ts": 15},
                        {"fields":{"a01": 10}, "ts": 15}]"#                => matches Err(Error::EmptyFields))]
-        #[test_case(r#"[{"fields":{"y01": {}}, "ts": 10}]"#   => matches Err(Error::InvalidFieldType))]
-        #[test_case(r#"[{"fields":{"y01": []}, "ts": 5}]"#   => matches Err(Error::InvalidFieldType))]
-        #[test_case(r#"[{"fields":{"y01": null}, "ts": 1}]"#   => matches Err(Error::InvalidFieldType))]
-        #[test_case(r#"[{"fields":{"y01": 123}, "ts": {}}]"#   => matches Err(Error::InvalidFieldType))]
-        #[test_case(r#"[{"fields":{"y01": 1234}, "ts": []}]"#   => matches Err(Error::InvalidFieldType))]
-        #[test_case(r#"[{"fields":{"y01": 12345}, "ts": null}]"#   => matches Err(Error::InvalidFieldType))]
-        #[test_case(r#"[{"fields":{"y01": 12345}, "ts": ""}]"#   => matches Err(Error::FieldTimeStampMissing))]
-        #[test_case(r#"y00=32q,y01=14.0f"#     => matches Err(Error::DataCannotBeParsed(_)))]
-        #[test_case(r#"{"fields" : {"y01": 13.4}, "ts": 123 }"#       => matches Err(Error::DataCannotBeParsed(_)))]
-        #[test_case(r#"[ 1, 13]"#             => matches Err(Error::DataCannotBeParsed(_)))]
+        #[test_case(r#"[{"fields":{"y01": {}}, "ts": 10}]"#               => matches Err(Error::InvalidFieldType))]
+        #[test_case(r#"[{"fields":{"y01": []}, "ts": 5}]"#                => matches Err(Error::InvalidFieldType))]
+        #[test_case(r#"[{"fields":{"y01": null}, "ts": 1}]"#              => matches Err(Error::InvalidFieldType))]
+        #[test_case(r#"[{"fields":{"y01": 123}, "ts": {}}]"#              => matches Err(Error::InvalidFieldType))]
+        #[test_case(r#"[{"fields":{"y01": 1234}, "ts": []}]"#             => matches Err(Error::InvalidFieldType))]
+        #[test_case(r#"[{"fields":{"y01": 12345}, "ts": null}]"#          => matches Err(Error::InvalidFieldType))]
+        #[test_case(r#"[{"fields":{"y01": 12345}, "ts": ""}]"#            => matches Err(Error::FieldTimeStampMissing))]
+        #[test_case(r#"y00=32q,y01=14.0f"#                                => matches Err(Error::DataCannotBeParsed(_)))]
+        #[test_case(r#"{"fields" : {"y01": 13.4}, "ts": 123 }"#           => matches Err(Error::DataCannotBeParsed(_)))]
+        #[test_case(r#"[ 1, 13, { "fields": {"y01": 1}, "ts": 1234 }]"#   => matches Err(Error::DataCannotBeParsed(_)))]
         fn produces_desired_errors(payload: &str) -> Result<String, Error> {
             build_line_protocol(Uuid::default(), Uuid::default(), payload.as_bytes())
         }
@@ -251,7 +251,8 @@ mod tests {
 "00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=123,y02=54321 1234
 00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=321,y02=12345 4321
 00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 a02=\"string\",z01=true 0"; 
-"handles multiple objects")]
+                                 "handles multiple objects")]
+
         fn produces_desired_correct_output(case: TestCase) -> String {
             build_line_protocol(
                 case.schema_id.parse().unwrap(),

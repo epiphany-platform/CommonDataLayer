@@ -129,8 +129,10 @@ services:
       KAFKA_INPUT_GROUP_ID: "victoria_command"
       KAFKA_INPUT_BROKERS: "kafka:9093"
       KAFKA_INPUT_TOPIC: "cdl.timeseries.input"
-      VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:50105
-      RUST_LOG: trace
+      VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
+      REPORT_BROKER: "kafka:9093"
+      REPORT_TOPIC: "cdl.reports"
+      RUST_LOG: info,command_service=trace
     depends_on:
       - victoria_metrics
       - data_router
