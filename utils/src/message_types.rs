@@ -30,3 +30,12 @@ impl BorrowedInsertMessage<'_> {
         }
     }
 }
+
+#[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DataRouterInsertMessage<'a> {
+    pub object_id: Uuid,
+    pub schema_id: Uuid,
+    #[serde(borrow)]
+    pub data: &'a RawValue,
+}

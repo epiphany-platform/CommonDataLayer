@@ -4,7 +4,6 @@ use log::error;
 use lru_cache::LruCache;
 use schema_registry::{connect_to_registry, rpc::schema::Id};
 use serde::{Deserialize, Serialize};
-use serde_json::value::RawValue;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
     process,
@@ -12,6 +11,7 @@ use std::{
 };
 use structopt::StructOpt;
 use tokio::pin;
+use utils::message_types::DataRouterInsertMessage;
 use utils::{
     abort_on_poison,
     message_types::BorrowedInsertMessage,
@@ -38,14 +38,6 @@ struct Config {
     pub schema_registry_addr: String,
     #[structopt(long, env)]
     pub cache_capacity: usize,
-}
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct DataRouterInsertMessage<'a> {
-    pub object_id: Uuid,
-    pub schema_id: Uuid,
-    #[serde(borrow)]
-    pub data: &'a RawValue,
 }
 
 #[tokio::main]
