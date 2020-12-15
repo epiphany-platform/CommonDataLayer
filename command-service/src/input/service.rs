@@ -1,10 +1,10 @@
 use crate::communication::MessageRouter;
 use crate::input::{Error, KafkaInputConfig};
 use crate::output::OutputPlugin;
-use tokio::stream::StreamExt;
 use log::{error, trace};
 use std::process;
 use tokio::pin;
+use tokio::stream::StreamExt;
 use utils::message_types::BorrowedInsertMessage;
 use utils::messaging_system::consumer::CommonConsumer;
 use utils::messaging_system::message::CommunicationMessage;

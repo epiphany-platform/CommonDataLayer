@@ -3,9 +3,9 @@ use crate::output::sleigh::connection_pool::SleighConnectionManager;
 use crate::output::OutputPlugin;
 use bb8::Pool;
 pub use config::SleighOutputConfig;
-use rpc::document_storage::StoreRequest;
 pub use error::Error;
 use log::{error, trace};
+use rpc::document_storage::StoreRequest;
 use utils::message_types::BorrowedInsertMessage;
 use utils::metrics::counter;
 

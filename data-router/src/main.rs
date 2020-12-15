@@ -1,5 +1,4 @@
 use anyhow::Context;
-use tokio::stream::StreamExt;
 use log::error;
 use lru_cache::LruCache;
 use rpc::schema_registry::Id;
@@ -11,6 +10,7 @@ use std::{
 };
 use structopt::StructOpt;
 use tokio::pin;
+use tokio::stream::StreamExt;
 use utils::message_types::DataRouterInsertMessage;
 use utils::{
     abort_on_poison,

@@ -1,4 +1,4 @@
-use rpc::error::{ClientError};
+use rpc::error::ClientError;
 use warp::{hyper::StatusCode, reject::Reject, Rejection};
 
 #[derive(Debug)]
