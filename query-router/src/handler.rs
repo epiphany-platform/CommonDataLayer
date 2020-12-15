@@ -29,9 +29,10 @@ pub async fn query_single(
 
     let values = match (schema_type, request_body) {
         (SchemaType::DocumentStorage, _) => {
-            let mut values = rpc::query_service::query_multiple(vec![object_id.to_string()], address)
-                .await
-                .map_err(Error::QueryError)?;
+            let mut values =
+                rpc::query_service::query_multiple(vec![object_id.to_string()], address)
+                    .await
+                    .map_err(Error::ClientError)?;
 
             values
                 .remove(&object_id.to_string())
@@ -39,10 +40,15 @@ pub async fn query_single(
         }
 
         (SchemaType::Timeseries, Body::Range { from, to, step }) => {
-            let timeseries =
-                query_service_ts::query_by_range(object_id.to_string(), from, to, step, address)
-                    .await
-                    .map_err(Error::QueryError)?;
+            let timeseries = rpc::query_service_ts::query_by_range(
+                object_id.to_string(),
+                from,
+                to,
+                step,
+                address,
+            )
+            .await
+            .map_err(Error::ClientError)?;
 
             Ok(timeseries.as_bytes().to_vec())
         }
@@ -87,15 +93,15 @@ pub async fn query_by_schema(
 
     let reply = match schema_type {
         SchemaType::DocumentStorage => {
-            let values = query_service::query_by_schema(schema_id.to_string(), address)
+            let values = rpc::query_service::query_by_schema(schema_id.to_string(), address)
                 .await
-                .map_err(Error::QueryError)?;
+                .map_err(Error::ClientError)?;
             warp::reply::json(&byte_map_to_json_map(values)?)
         }
         SchemaType::Timeseries => {
-            let timeseries = query_service_ts::query_by_schema(schema_id.to_string(), address)
+            let timeseries = rpc::query_service_ts::query_by_schema(schema_id.to_string(), address)
                 .await
-                .map_err(Error::QueryError)?;
+                .map_err(Error::ClientError)?;
             warp::reply::json(&(timeseries))
         }
     };

@@ -1,7 +1,7 @@
 use crate::error::Error;
 use lru_cache::LruCache;
 use rpc::error::ClientError;
-use schema_registry::types::SchemaType;
+use rpc::schema_registry::types::SchemaType;
 use std::sync::{Mutex, MutexGuard};
 use utils::abort_on_poison;
 use uuid::Uuid;
@@ -45,11 +45,16 @@ impl SchemaRegistryCache {
         let address = response.into_inner().address;
 
         let response = conn
-            .get_schema_type(schema_registry::rpc::schema::Id {
+            .get_schema_type(rpc::schema_registry::Id {
                 id: schema_id.to_string(),
             })
             .await
-            .map_err(Error::RegistryError)?;
+            .map_err(|err| {
+                Error::ClientError(ClientError::QueryError {
+                    service: "schema registry",
+                    source: err,
+                })
+            })?;
         let schema_type = response.into_inner().schema_type().into();
 
         let result = (address, schema_type);
