@@ -4,7 +4,7 @@ info:
   version: 0.1.0
 paths:
   /single/{object_id}:
-    get:
+    post:
       summary: Retrieve single object
       operationId: getSingleObject
       parameters:
@@ -22,6 +22,14 @@ paths:
           schema:
             type: string
             example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/Empty'
+                - $ref: '#/components/schemas/Range'
       responses:
         '200':
           description: >-
@@ -45,6 +53,8 @@ paths:
           example: "bcebabfe-8da6-4c37-aa97-b373db2f2338,2454b325-9cdb-48e1-bc97-02720d689951"
           schema:
             type: array
+            items:
+              type: string
         - name: SCHEMA_ID
           in: header
           description: 'Schema ID of document to retrieve'
@@ -83,3 +93,17 @@ paths:
             application/json:
               schema:
                 type: object
+
+components:
+  schemas:
+    Empty:
+      type: object
+    Range:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        step:
+          type: string

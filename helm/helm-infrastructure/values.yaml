@@ -95,6 +95,7 @@ rabbitmq:
 
 kafka:
   replicaCount: 1
+  autoCreateTopicsEnable: true
   zookeeper:
     enabled: true
 

@@ -1,8 +1,8 @@
-use crate::communication::GenericMessage;
 use crate::report::{Error, Reporter};
 use serde::Serialize;
-use std::borrow::Cow;
+use serde_json::Value;
 use std::sync::Arc;
+use utils::message_types::OwnedInsertMessage;
 use utils::messaging_system::publisher::CommonPublisher;
 use uuid::Uuid;
 
@@ -15,12 +15,11 @@ pub struct FullReportSenderBase {
     pub output_plugin: Arc<String>,
 }
 
-#[derive(Clone)]
 pub struct FullReportSender {
     pub producer: CommonPublisher,
     pub topic: Arc<String>,
     pub output_plugin: Arc<String>,
-    pub msg: GenericMessage,
+    pub msg: OwnedInsertMessage,
 }
 
 #[derive(Serialize)]
@@ -29,7 +28,7 @@ struct ReportBody<'a> {
     output_plugin: &'a str,
     description: &'a str,
     object_id: Uuid,
-    payload: Cow<'a, str>,
+    payload: Value,
 }
 
 impl FullReportSenderBase {
@@ -46,13 +45,13 @@ impl FullReportSenderBase {
 
 #[async_trait::async_trait]
 impl Reporter for FullReportSender {
-    async fn report(&mut self, description: &str) -> Result<(), Error> {
+    async fn report(self: Box<Self>, description: &str) -> Result<(), Error> {
         let payload = ReportBody {
             application: APPLICATION_NAME,
             output_plugin: self.output_plugin.as_str(),
             description,
             object_id: self.msg.object_id,
-            payload: String::from_utf8_lossy(&self.msg.payload),
+            payload: self.msg.data,
         };
 
         self.producer

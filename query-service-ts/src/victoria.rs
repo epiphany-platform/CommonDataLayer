@@ -111,7 +111,10 @@ impl Query for VictoriaQuery {
         &self,
         request: Request<SchemaId>,
     ) -> Result<Response<TimeSeries>, Status> {
-        let query = ([("query", request.into_inner().schema_id)]);
+        let query = [(
+            "query",
+            format!("{{_name_=\"{}\"}}", request.into_inner().schema_id),
+        )];
 
         let response: String = self.query_db(&query).await?;
         Ok(tonic::Response::new(TimeSeries {

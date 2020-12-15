@@ -1,51 +1,44 @@
 import json
-import os
-import subprocess
-import psycopg2
-import pytest
 
+import pytest
 from kafka import KafkaProducer
 
-from tests.common import load_case, retry_retrieve, kafka
-from tests.common.postgres import fetch_data_table, clear_data_table
+from tests.common import load_case, retry_retrieve
+from tests.common.cdl_env import CdlEnv
+from tests.common.command_service import CommandService
+from tests.common.config import PostgresConfig, KafkaInputConfig
+from tests.common.postgres import fetch_data_table, connect_to_postgres
 
 TOPIC = "cdl.document.input"
 
-POSTGRES_USERNAME = os.getenv("POSTGRES_USERNAME") or "postgres"
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD") or "1234"
-POSTGRES_HOST = os.getenv("POSTGRES_HOST") or "localhost"
-POSTGRES_PORT = os.getenv("POSTGRES_PORT") or "5432"
-POSTGRES_DBNAME = os.getenv("POSTGRES_DBNAME") or "postgres"
-EXECUTABLE = os.getenv("COMMAND_SERVICE_EXE") or "command-service"
-KAFKA_BROKERS = os.getenv("KAFKA_BROKERS") or "localhost:9092"
+
+def push_to_kafka(producer, data):
+    producer.send(
+        TOPIC,
+        json.dumps(data).encode(),
+        key=data['object_id'].encode(),
+        timestamp_ms=data['timestamp']
+    ).get(3)
+
 
 @pytest.fixture(params=['single_insert', 'multiple_inserts'])
 def prepare(request):
-    psql_url = f"postgresql://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@{POSTGRES_HOST}:{POSTGRES_PORT}/{POSTGRES_DBNAME}"
+    with CdlEnv('.', postgres_config=PostgresConfig(), kafka_input_config=KafkaInputConfig(TOPIC)) as env:
+        data, expected = load_case(request.param, 'command_service')
 
-    svc = subprocess.Popen([EXECUTABLE, "postgres"],
-                           env={"POSTGRES_USERNAME": POSTGRES_USERNAME, "POSTGRES_PASSWORD": POSTGRES_PASSWORD,
-                                "POSTGRES_HOST": POSTGRES_HOST, "POSTGRES_PORT": POSTGRES_PORT,
-                                "POSTGRES_DBNAME": POSTGRES_DBNAME, "KAFKA_INPUT_BROKERS": KAFKA_BROKERS,
-                                "KAFKA_INPUT_TOPIC": TOPIC, "KAFKA_INPUT_GROUP_ID": "cdl.command-service.psql",
-                                "REPORT_BROKER": KAFKA_BROKERS, "REPORT_TOPIC": "cdl.notify"})
+        db = connect_to_postgres(env.postgres_config)
+        producer = KafkaProducer(bootstrap_servers='localhost:9092')
 
-    data, expected = load_case(request.param, "command_service/postgres")
+        with CommandService(env.kafka_input_config, db_config=env.postgres_config) as _:
+            yield db, producer, data, expected
 
-    db = psycopg2.connect(psql_url)
-
-    yield db, data, expected
-
-    svc.kill()
-
-    clear_data_table(db)
-    db.close()
+        producer.close()
+        db.close()
 
 
 def test_inserting(prepare):
-    db, data, expected = prepare
+    db, producer, data, expected = prepare
 
-    producer = KafkaProducer(bootstrap_servers=KAFKA_BROKERS)
     for entry in data:
         kafka.push_to_kafka(producer, entry, TOPIC)
     producer.flush()

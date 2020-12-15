@@ -7,7 +7,7 @@ use kube::{
 };
 use log::{info, warn};
 use serde::Deserialize;
-use std::{env, time::Duration};
+use std::{fs, time::Duration};
 
 #[derive(Deserialize)]
 pub struct Config {
@@ -21,6 +21,7 @@ pub struct Config {
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let config = envy::from_env::<Config>().context("Env vars not set correctly")?;
+    let namespace = get_k8s_namespace();
     let schema_elector = LeaderElector {
         master_addr: format!("{}-master", config.schema_addr),
         slave_addr: config.schema_addr,
@@ -28,6 +29,7 @@ async fn main() -> anyhow::Result<()> {
         name: config.schema_app_name,
         election_type: LeaderElectorType::Schema,
         port: config.schema_port,
+        namespace,
     };
 
     schema_elector.elect_leader().await
@@ -45,13 +47,13 @@ struct LeaderElector {
     port: u16,
     heartbeat_time: Duration,
     election_type: LeaderElectorType,
+    namespace: String,
 }
 
 impl LeaderElector {
     pub async fn elect_leader(&self) -> anyhow::Result<()> {
         let client_api = Client::try_default().await?;
-        let namespace = env::var("NAMESPACE").unwrap_or_else(|_| "default".into());
-        let pods: Api<Pod> = Api::namespaced(client_api, &namespace);
+        let pods: Api<Pod> = Api::namespaced(client_api, &self.namespace);
         loop {
             tokio::time::delay_for(self.heartbeat_time).await;
 
@@ -117,4 +119,9 @@ fn schema_heartbeat(addr: &str, port: u16) -> impl Future<Output = anyhow::Resul
 fn schema_promotion(addr: &str, port: u16) -> impl Future<Output = anyhow::Result<String>> + '_ {
     schema_registry::promote_to_master(format!("{}:{}", addr, port))
         .map(|x| x.map_err(anyhow::Error::new))
+}
+
+fn get_k8s_namespace() -> String {
+    fs::read_to_string("/var/run/secrets/kubernetes.io/serviceaccount/namespace")
+        .expect("Not running in k8s environment")
 }

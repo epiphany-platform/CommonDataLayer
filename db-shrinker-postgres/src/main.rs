@@ -1,23 +1,55 @@
 #![feature(iterator_fold_self)]
 
 use anyhow::Context;
-use postgres::{Client, NoTls, Row};
+use postgres::{Client, Config, NoTls, Row};
 use serde_json::Value as JsonValue;
 use structopt::StructOpt;
 use uuid::Uuid;
 
+use log::{debug, info, trace};
+
 #[derive(Debug, Clone, StructOpt)]
 struct Opts {
-    #[structopt(env = "POSTGRESQL_CONNECTION")]
-    pub connection_string: String,
+    #[structopt(long, env = "POSTGRES_USERNAME")]
+    username: String,
+    #[structopt(long, env = "POSTGRES_PASSWORD")]
+    password: String,
+    #[structopt(long, env = "POSTGRES_HOST")]
+    host: String,
+    #[structopt(long, env = "POSTGRES_PORT", default_value = "5432")]
+    port: u16,
+    #[structopt(long, env = "POSTGRES_DBNAME")]
+    dbname: String,
+    #[structopt(long, env = "POSTGRES_SCHEMA", default_value = "public")]
+    schema: String,
 }
 
 /// This app is called by some external scheduler (eg. cron),
 /// It merges all documents with same object_id into one.
 fn main() -> anyhow::Result<()> {
     let opts = Opts::from_args();
-    let mut client =
-        Client::connect(&opts.connection_string, NoTls).context("Connection to PostgreSQL")?;
+
+    env_logger::init();
+
+    info!("Running shrinker on PSQL with {:?}", opts);
+
+    let mut pg_config = Config::new();
+    pg_config
+        .user(&opts.username)
+        .password(&opts.password)
+        .host(&opts.host)
+        .port(opts.port)
+        .dbname(&opts.dbname);
+    let mut client = pg_config
+        .connect(NoTls)
+        .context("Connection to PostgreSQL")?;
+
+    client
+        .execute(
+            format!("set search_path to '{}'", opts.schema).as_str(),
+            &[],
+        )
+        .context("Unable to select schema!")?;
 
     let changed_ids = client
         .query(
@@ -28,6 +60,7 @@ fn main() -> anyhow::Result<()> {
 
     for id in changed_ids {
         let object_id: Uuid = id.get(0);
+
         shrink_by_id(&mut client, object_id)
             .with_context(|| format!("Shrinking of {}", object_id))?;
     }
@@ -42,7 +75,20 @@ fn shrink_by_id(client: &mut Client, object_id: Uuid) -> anyhow::Result<()> {
         .context("No rows with selected ID, did database change mid-shrink?")?
         .get(0);
 
+    debug!(
+        "Shrinking object {}, {} rows, most recent version: {}",
+        object_id,
+        rows.len(),
+        version
+    );
+    trace!("Rows: {:?}", rows);
+
     let document = minimize_document(rows).context("Failed minimizing document")?;
+
+    trace!(
+        "After minimization: {}",
+        serde_json::to_string_pretty(&document)?
+    );
 
     let mut transaction = client.transaction()?;
 
@@ -85,5 +131,31 @@ fn merge(a: &mut JsonValue, b: JsonValue) {
             }
         }
         (a, b) => *a = b,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    mod describe_merge {
+        use crate::merge;
+        use serde_json::{json, Value};
+        use test_case::test_case;
+
+        #[test_case("{}", "{}" => json!({}))]
+        #[test_case(r#"{"success": true}"#, "{}" => json!({"success": true}))]
+        #[test_case(r#"{"success": true}"#, r#"{"success": false}"# => json!({"success": false}))]
+        #[test_case(r#"{"success": true}"#, r#"{"success": null}"# => json!({"success": null}))]
+        #[test_case(r#"{"success": {"a":1, "b":2}}"#, r#"{"success": {"c": 3}}"# => json!({"success": {"a": 1,"b": 2,"c": 3}}))]
+        #[test_case(r#"{"success": [1,2]}"#, r#"{"success": [3]}"# => json!({"success": [3]}))]
+        #[test_case(r#"{"top":1}"#, r#"{"level":2}"# => json!({"top": 1,"level": 2}))]
+        #[test_case(r#"{"top":{"success":true}}"#, r#"{"top": null}"# => json!({"top": null}))]
+        fn combines_two_jsons(left: &str, right: &str) -> Value {
+            let mut left: Value = serde_json::from_str(left).unwrap();
+            let right: Value = serde_json::from_str(right).unwrap();
+
+            merge(&mut left, right);
+
+            left
+        }
     }
 }

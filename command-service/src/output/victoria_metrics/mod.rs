@@ -1,5 +1,4 @@
 use crate::communication::resolution::Resolution;
-use crate::communication::GenericMessage;
 use crate::output::victoria_metrics::config::VictoriaMetricsConfig;
 use crate::output::OutputPlugin;
 use fnv::FnvHashMap;
@@ -7,9 +6,11 @@ use log::error;
 use reqwest::Url;
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
 use serde_json::Value;
 use thiserror::Error as DeriveError;
 use url::ParseError;
+use utils::message_types::BorrowedInsertMessage;
 use utils::metrics::counter;
 use uuid::Uuid;
 
@@ -47,22 +48,22 @@ impl VictoriaMetricsOutputPlugin {
 
 #[async_trait::async_trait]
 impl OutputPlugin for VictoriaMetricsOutputPlugin {
-    async fn handle_message(&self, msg: GenericMessage) -> Resolution {
+    async fn handle_message(&self, msg: BorrowedInsertMessage<'_>) -> Resolution {
         let mut url = self.url.clone();
 
         url.set_query(Some(&format!("db={}", msg.schema_id)));
 
-        let GenericMessage {
+        let BorrowedInsertMessage {
             object_id,
             schema_id,
-            timestamp: _, // ignored for now
-            payload,
+            timestamp: _,
+            data,
         } = msg;
 
-        match build_line_protocol(schema_id, object_id, &payload) {
+        match build_line_protocol(schema_id, object_id, data) {
             Ok(line_protocol) => send_data(url, &self.client, line_protocol).await,
             Err(err) => {
-                let context = String::from_utf8_lossy(&payload).to_string();
+                let context = data.to_string();
 
                 error!(
                     "Failed to convert payload to line_protocol, cause `{}`, context `{}`",
@@ -87,9 +88,9 @@ struct Payload {
     ts: Value,
 }
 
-fn build_line_protocol(measurement: Uuid, tag: Uuid, payload: &[u8]) -> Result<String, Error> {
+fn build_line_protocol(measurement: Uuid, tag: Uuid, payload: &RawValue) -> Result<String, Error> {
     let payloads: Vec<Payload> =
-        serde_json::from_slice(payload).map_err(Error::DataCannotBeParsed)?;
+        serde_json::from_str(payload.get()).map_err(Error::DataCannotBeParsed)?;
     let line_protocol = payloads
         .into_iter()
         .map(|obj| {
@@ -111,7 +112,7 @@ fn get_object_timestamp(request_object: &Payload) -> Result<String, Error> {
     let timestamp = &request_object.ts;
     if timestamp.is_array() || timestamp.is_null() || timestamp.is_object() {
         return Err(Error::InvalidFieldType);
-    }else if timestamp.is_string() && timestamp==""{
+    } else if timestamp.is_string() && timestamp == "" {
         return Err(Error::FieldTimeStampMissing);
     }
     Ok(timestamp.to_string())
@@ -175,11 +176,14 @@ mod tests {
         #[test_case(r#"[{"fields":{"y01": 1234}, "ts": []}]"#             => matches Err(Error::InvalidFieldType))]
         #[test_case(r#"[{"fields":{"y01": 12345}, "ts": null}]"#          => matches Err(Error::InvalidFieldType))]
         #[test_case(r#"[{"fields":{"y01": 12345}, "ts": ""}]"#            => matches Err(Error::FieldTimeStampMissing))]
-        #[test_case(r#"y00=32q,y01=14.0f"#                                => matches Err(Error::DataCannotBeParsed(_)))]
         #[test_case(r#"{"fields" : {"y01": 13.4}, "ts": 123 }"#           => matches Err(Error::DataCannotBeParsed(_)))]
         #[test_case(r#"[ 1, 13, { "fields": {"y01": 1}, "ts": 1234 }]"#   => matches Err(Error::DataCannotBeParsed(_)))]
         fn produces_desired_errors(payload: &str) -> Result<String, Error> {
-            build_line_protocol(Uuid::default(), Uuid::default(), payload.as_bytes())
+            build_line_protocol(
+                Uuid::default(),
+                Uuid::default(),
+                &RawValue::from_string(payload.to_string()).unwrap(),
+            )
         }
 
         struct TestCase {
@@ -247,7 +251,7 @@ mod tests {
         #[test_case(TEST_CASE_5 => "00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=13.4,y02=12.2 123" ; "handles many fields")]
         #[test_case(TEST_CASE_6 => "00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=true 123"          ; "handles boolean fields")]
         #[test_case(TEST_CASE_7 => "00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=\"some-msg\" 123"  ; "handles string fields")]
-        #[test_case(TEST_CASE_8 => 
+        #[test_case(TEST_CASE_8 =>
 "00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=123,y02=54321 1234
 00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=321,y02=12345 4321
 00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 a02=\"string\",z01=true 0"; 
@@ -257,7 +261,7 @@ mod tests {
             build_line_protocol(
                 case.schema_id.parse().unwrap(),
                 case.object_id.parse().unwrap(),
-                case.payload.as_bytes(),
+                &RawValue::from_string(case.payload.to_string()).unwrap(),
             )
             .unwrap()
         }

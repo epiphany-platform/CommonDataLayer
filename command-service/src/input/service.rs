@@ -1,11 +1,11 @@
-use crate::communication::{GenericMessage, MessageRouter};
+use crate::communication::MessageRouter;
 use crate::input::{Error, KafkaInputConfig};
 use crate::output::OutputPlugin;
 use futures_util::stream::StreamExt;
 use log::{error, trace};
 use std::process;
 use tokio::pin;
-use utils::message_types::CommandServiceInsertMessage;
+use utils::message_types::BorrowedInsertMessage;
 use utils::messaging_system::consumer::CommonConsumer;
 use utils::messaging_system::message::CommunicationMessage;
 use utils::messaging_system::Result;
@@ -54,17 +54,14 @@ impl<P: OutputPlugin> KafkaInput<P> {
         Ok(())
     }
 
-    fn build_message(message: &'_ dyn CommunicationMessage) -> Result<GenericMessage, Error> {
+    fn build_message(
+        message: &'_ dyn CommunicationMessage,
+    ) -> Result<BorrowedInsertMessage<'_>, Error> {
         let json = message.payload().map_err(Error::MissingPayload)?;
-        let event: CommandServiceInsertMessage =
+        let event: BorrowedInsertMessage =
             serde_json::from_str(json).map_err(Error::PayloadDeserializationFailed)?;
 
-        Ok(GenericMessage {
-            object_id: event.object_id,
-            schema_id: event.schema_id,
-            timestamp: event.timestamp,
-            payload: event.payload.to_string().as_bytes().to_vec(),
-        })
+        Ok(event)
     }
 
     pub async fn listen(self) -> Result<(), Error> {

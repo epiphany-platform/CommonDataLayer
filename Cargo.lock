@@ -750,9 +750,12 @@ name = "db-shrinker-postgres"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "env_logger 0.8.2",
+ "log",
  "postgres",
  "serde_json",
  "structopt",
+ "test-case",
  "uuid",
 ]
 
@@ -2473,6 +2476,7 @@ dependencies = [
  "query-service",
  "query-service-ts",
  "schema-registry",
+ "serde",
  "serde_json",
  "structopt",
  "tokio 0.2.23",
