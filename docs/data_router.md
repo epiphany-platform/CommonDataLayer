@@ -17,12 +17,10 @@ Interacts with:
 
 Ingest methods:
 - Kafka
-- RabbitMq
 
-Egest methods (supported repositores):
-- Kafka
-- RabbitMq
-- GRPC
+Internal communication methods:
+- Kafka (command-service)
+- gRPC (schema-registry)
 
 
 Below are the example data required by data router:

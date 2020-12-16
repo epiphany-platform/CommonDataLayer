@@ -16,9 +16,9 @@ Currently consists only of the [Data Router][data-router]. The [Data Router][dat
 
 ```json
 {
-  "schemaID": "ca435cee-2944-41f7-94ff-d1b26e99ba48",
-  "objectID": "fc0b95e1-07eb-4bf8-b691-1a85a49ef8f0",
-  "payload": { ...valid json object }
+  "schemaId": "ca435cee-2944-41f7-94ff-d1b26e99ba48",
+  "objectId": "fc0b95e1-07eb-4bf8-b691-1a85a49ef8f0",
+  "data": { ...valid json object }
 }
 ```
 
