@@ -257,17 +257,6 @@ checksum = "904dfeac50f3cdaba28fc6f57fdcddb75f49ed61346676a78c4ffe55877802fd"
 
 [[package]]
 name = "bb8"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "374bba43fc924d90393ee7768e6f75d223a98307a488fe5bc34b66c3e96932a6"
-dependencies = [
- "async-trait",
- "futures",
- "tokio 0.2.24",
-]
-
-[[package]]
-name = "bb8"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a4d5a11ea6fe65800f3225ab57f7c28024595c99e809a0ca7eee60a8e3fa24b"
@@ -286,7 +275,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7556910cdbd798b51b16da3a93dfc4cc303b326503a8d03e830d11fe3969ae1d"
 dependencies = [
  "async-trait",
- "bb8 0.6.1",
+ "bb8",
  "tokio 0.3.6",
  "tokio-postgres",
 ]
@@ -518,7 +507,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bb8 0.4.2",
+ "bb8",
  "bb8-postgres",
  "document-storage",
  "env_logger 0.8.2",
@@ -2486,7 +2475,7 @@ name = "query-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bb8 0.4.2",
+ "bb8",
  "bb8-postgres",
  "env_logger 0.8.2",
  "log",
@@ -2507,7 +2496,7 @@ name = "query-service-ts"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bb8 0.4.2",
+ "bb8",
  "env_logger 0.8.2",
  "log",
  "reqwest",

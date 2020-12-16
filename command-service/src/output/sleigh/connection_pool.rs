@@ -1,3 +1,4 @@
+use bb8::PooledConnection;
 use rpc::document_storage::document_storage_client::DocumentStorageClient;
 use tonic::transport::Channel;
 
@@ -14,8 +15,8 @@ impl bb8::ManageConnection for SleighConnectionManager {
         Ok(DocumentStorageClient::connect(self.addr.clone()).await?)
     }
 
-    async fn is_valid(&self, conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
-        Ok(conn)
+    async fn is_valid(&self, _: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
+        Ok(())
     }
 
     fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
