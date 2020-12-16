@@ -267,16 +267,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "bb8-postgres"
-version = "0.4.0"
+name = "bb8"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39a233af6ea3952e20d01863c87b4f6689b2f806249688b0908b5f02d4fa41ac"
+checksum = "4a4d5a11ea6fe65800f3225ab57f7c28024595c99e809a0ca7eee60a8e3fa24b"
 dependencies = [
  "async-trait",
- "bb8",
- "futures",
- "tokio 0.2.24",
- "tokio-postgres 0.5.5",
+ "futures-channel",
+ "futures-util",
+ "parking_lot 0.11.1",
+ "tokio 0.3.6",
+]
+
+[[package]]
+name = "bb8-postgres"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7556910cdbd798b51b16da3a93dfc4cc303b326503a8d03e830d11fe3969ae1d"
+dependencies = [
+ "async-trait",
+ "bb8 0.6.1",
+ "tokio 0.3.6",
+ "tokio-postgres",
 ]
 
 [[package]]
@@ -506,7 +518,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bb8",
+ "bb8 0.4.2",
  "bb8-postgres",
  "document-storage",
  "env_logger 0.8.2",
@@ -2293,7 +2305,7 @@ dependencies = [
  "futures",
  "log",
  "tokio 0.3.6",
- "tokio-postgres 0.6.0",
+ "tokio-postgres",
 ]
 
 [[package]]
@@ -2474,7 +2486,7 @@ name = "query-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bb8",
+ "bb8 0.4.2",
  "bb8-postgres",
  "env_logger 0.8.2",
  "log",
@@ -2495,7 +2507,7 @@ name = "query-service-ts"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bb8",
+ "bb8 0.4.2",
  "env_logger 0.8.2",
  "log",
  "reqwest",
@@ -3530,6 +3542,7 @@ dependencies = [
  "libc",
  "memchr",
  "mio 0.7.6",
+ "parking_lot 0.11.1",
  "pin-project-lite 0.2.0",
  "slab",
 ]
@@ -3553,28 +3566,6 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
-]
-
-[[package]]
-name = "tokio-postgres"
-version = "0.5.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "55a2482c9fe4dd481723cf5c0616f34afc710e55dcda0944e12e7b3316117892"
-dependencies = [
- "async-trait",
- "byteorder",
- "bytes 0.5.6",
- "fallible-iterator",
- "futures",
- "log",
- "parking_lot 0.11.1",
- "percent-encoding",
- "phf",
- "pin-project-lite 0.1.11",
- "postgres-protocol",
- "postgres-types",
- "tokio 0.2.24",
- "tokio-util 0.3.1",
 ]
 
 [[package]]

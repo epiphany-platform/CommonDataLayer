@@ -30,4 +30,4 @@ serde       = { version = "1.0", features = ["derive"] }
 tokio       = { version = "0.2", features = ["macros"] }
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 reqwest     = { version = "0.10", features = ["json"] }
-bb8-postgres            = { version = "0.4", features = ["with-uuid-0_8", "with-serde_json-1"] }
+bb8-postgres            = { version = "0.6", features = ["with-uuid-0_8", "with-serde_json-1"] }
