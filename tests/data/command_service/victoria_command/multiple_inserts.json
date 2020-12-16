@@ -1,9 +1,9 @@
 {
   "data": [
     {
-      "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c70",
+      "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c70",
       "timestamp": 1603285775,
-      "schema_id": "a46a7fc0-0ca3-4852-affc-d589355524c0",
+      "schemaId": "a46a7fc0-0ca3-4852-affc-d589355524c0",
       "payload": [
         {
           "fields": {
@@ -14,9 +14,9 @@
       ]
     },
     {
-      "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c79",
+      "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c79",
       "timestamp": 1603285778,
-      "schema_id": "a46a7fc0-0ca3-4852-affc-d589355524c6",
+      "schemaId": "a46a7fc0-0ca3-4852-affc-d589355524c6",
       "payload": [
         {
           "fields": {
@@ -35,9 +35,9 @@
       ]
     },
     {
-      "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c71",
+      "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c71",
       "timestamp": 1603285779,
-      "schema_id": "a46a7fc0-0ca3-4852-affc-d589355524c5",
+      "schemaId": "a46a7fc0-0ca3-4852-affc-d589355524c5",
       "payload": [
         {
           "fields": {
@@ -53,7 +53,7 @@
       "metric": {
         "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c6_a",
         "db": "a46a7fc0-0ca3-4852-affc-d589355524c6",
-        "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c79"
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c79"
       },
       "values": [
         1,
@@ -68,7 +68,7 @@
       "metric": {
         "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c5_w",
         "db": "a46a7fc0-0ca3-4852-affc-d589355524c5",
-        "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c71"
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c71"
       },
       "values": [
         4
@@ -81,7 +81,7 @@
       "metric": {
         "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c0_x",
         "db": "a46a7fc0-0ca3-4852-affc-d589355524c0",
-        "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c70"
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c70"
       },
       "values": [
         1
@@ -94,7 +94,7 @@
       "metric": {
         "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c6_b",
         "db": "a46a7fc0-0ca3-4852-affc-d589355524c6",
-        "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c79"
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c79"
       },
       "values": [
         2,

@@ -23,6 +23,8 @@ Supported env variables are:
 |---|---|
 | db-shrinker-postgres | DB_SHRINKER_POSTGRES_EXE |
 | command-service | COMMAND_SERVICE_EXE |
+| Victoria metrics url | VICTORIA_METRICS_URL | localhost:8428 |
+
 
 ### Docker and docker-compose
 We test using [testcontainers python library](https://pypi.org/project/testcontainers/), which spins up new docker environment for every test.
@@ -33,12 +35,6 @@ VictoriaMetrics instance must be started manually in order to execute tests.
 WARNING!!! Test wipes all data in database
 #### Requirements:
 VictoriaMetrics ``` https://victoriametrics.github.io/Quick-Start.html ```
-#### Params:
-| service | env | example |
-|---|---|---|
-| Victoria metrics url | VICTORIA_METRICS_URL | localhost:8428 |
-| command-service Executable | COMMAND_SERVICE_EXE | target/debug/command-service |
-| Kafka broker | KAFKA_BROKERS | localhost:9092 |
 
 ## Running
 First we need to initialize environment from `requirements.txt` located at the top of project directory.

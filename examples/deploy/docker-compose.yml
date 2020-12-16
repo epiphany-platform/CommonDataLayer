@@ -200,3 +200,6 @@ services:
     command: -opentsdbHTTPListenAddr :50105 -retentionPeriod 0
     volumes:
       - ./docker-volume/victoria_metrics/db:/victoria-metrics-data
+
+networks:
+  default:

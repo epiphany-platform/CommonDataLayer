@@ -15,3 +15,7 @@ serde       = { version = "1.0", features = ["derive"] }
 
 [build-dependencies]
 tonic-build = { version = "0.3", default-features = false, features = ["prost", "transport"] }
+
+[lib]
+name = "rpc"
+path = "src/lib.rs"

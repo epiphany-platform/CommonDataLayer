@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from tests.common.config import PostgresConfig
+from tests.common.config import PostgresConfig, VictoriaMetricsConfig
 
 EXE = os.getenv('COMMAND_SERVICE_EXE') or 'command-service'
 
@@ -21,6 +21,9 @@ class CommandService:
 
         if type(self.db_config) is PostgresConfig:
             plugin = 'postgres'
+
+        if type(self.db_config) is VictoriaMetricsConfig:
+            plugin = 'victoria-metrics'
 
         if not plugin:
             raise Exception('Unsupported database or no database at all')

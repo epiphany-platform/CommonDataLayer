@@ -1,9 +1,9 @@
 {
   "data": [
     {
-      "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
+      "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
       "timestamp": 1603285776,
-      "schema_id": "a46a7fc0-0ca3-4852-affc-d589355524c5",
+      "schemaId": "a46a7fc0-0ca3-4852-affc-d589355524c5",
       "payload": [
         {
           "fields": {
@@ -20,7 +20,7 @@
       "metric": {
         "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c5_b",
         "db": "a46a7fc0-0ca3-4852-affc-d589355524c5",
-        "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c78"
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c78"
       },
       "values": [
         2
@@ -33,7 +33,7 @@
       "metric": {
         "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c5_a",
         "db": "a46a7fc0-0ca3-4852-affc-d589355524c5",
-        "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c78"
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c78"
       },
       "values": [
         1

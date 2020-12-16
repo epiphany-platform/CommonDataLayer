@@ -5,60 +5,42 @@ import requests
 import pytest
 
 from time import sleep
-from kafka import KafkaProducer
 
-from tests.common import load_case, kafka
+from tests.common import load_case
+from tests.common.kafka import kafka_producer_manager, push_to_kafka
+from tests.common.victoria_metrics import VictoriaMetrics
+from tests.common.cdl_env import cdl_env_manager
+from tests.common.config import VictoriaMetricsConfig, KafkaInputConfig
+from tests.common.command_service import CommandService
+
 
 TOPIC = "cdl.timeseries.input"
-KAFKA_BROKERS = os.getenv("KAFKA_BROKERS", "localhost:9092")
-KAFKA_INPUT_GROUP_ID = "victoria_command"
-KAFKA_INPUT_TOPIC = "cdl.timeseries.input"
 VICTORIA_METRICS_URL = os.getenv(
-    "VICTORIA_METRICS_URL", "http://0.0.0.0:8428")
-EXECUTABLE = os.getenv("COMMAND_SERVICE_EXE", "command-service")
-REPORT_TOPIC = "cdl.reports"
+    "VICTORIA_METRICS_URL", "http://127.0.0.1:12345")
 
 
-def clear_data_base():
-    delete_url = os.path.join(VICTORIA_METRICS_URL,
-                              "api/v1/admin/tsdb/delete_series")
-    requests.post(delete_url, data={"match[]": '{__name__!=""}'})
-
-
-def fetch_data_table():
-    export_url = os.path.join(VICTORIA_METRICS_URL,
-                              "api/v1/export")
-    json_lines = []
-    for line in requests.get(export_url, 'match[]={__name__!=""}').text.splitlines():
-        json_lines.append(json.loads(line))
-    return json_lines
-
-#TODO: Setup VictoriaMetrics in prepare instead of manually
 @pytest.fixture(params=['single_insert', 'multiple_inserts'])
 def prepare(request):
 
-    svc = subprocess.Popen([EXECUTABLE, "victoria-metrics"],
-                           env={"KAFKA_INPUT_GROUP_ID": KAFKA_INPUT_GROUP_ID, "KAFKA_INPUT_BROKERS": KAFKA_BROKERS,
-                                "KAFKA_INPUT_TOPIC": KAFKA_INPUT_TOPIC, "VICTORIA_METRICS_OUTPUT_URL": VICTORIA_METRICS_URL,
-                                "REPORT_BROKER": KAFKA_BROKERS, "REPORT_TOPIC": REPORT_TOPIC})
+    with cdl_env_manager('.',  kafka_input_config=KafkaInputConfig(TOPIC), victoria_metrics_config=VictoriaMetricsConfig(VICTORIA_METRICS_URL)) as env:
+        data, expected = load_case(
+            request.param, "command_service/victoria_command")
+        db = VictoriaMetrics(env.victoria_metrics_config)
 
-    data, expected = load_case(
-        request.param, "command_service/victoria_command")
-
-    yield data, expected
-    svc.kill()
-    clear_data_base()
+        with kafka_producer_manager() as producer:
+            with CommandService(env.kafka_input_config, db_config=env.victoria_metrics_config) as _:
+                yield db, producer, data, expected
+        db.clear_data_base()
 
 
 def test_inserting(prepare):
-    data, expected = prepare
+    db, producer, data, expected = prepare
 
-    producer = KafkaProducer(bootstrap_servers=KAFKA_BROKERS)
     for entry in data:
-        kafka.push_to_kafka(producer, entry, TOPIC)
+        push_to_kafka(producer, entry, TOPIC)
     producer.flush()
     # TODO: Actively wait for DB to update
-    sleep(5)
-    actual = fetch_data_table()
+    sleep(1)
+    actual = db.fetch_data_table()
     for a in actual:
         assert a in expected
