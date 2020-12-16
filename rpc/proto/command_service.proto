@@ -1,0 +1,15 @@
+syntax = "proto3";
+package command_service;
+
+service CommandService {
+  rpc Insert(InsertMessage) returns (Empty);
+}
+
+message InsertMessage {
+  string object_id = 1;
+  string schema_id = 2;
+  int64 timestamp = 3;
+  bytes data = 4;
+}
+
+message Empty {}

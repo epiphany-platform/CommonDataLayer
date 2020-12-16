@@ -9,12 +9,9 @@ use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
 use crate::GRPC_PORT;
-use schema::storage_server::{Storage, StorageServer};
+use rpc::blob_storage::blob_storage_server::{BlobStorage, BlobStorageServer};
+use rpc::blob_storage::{Empty, RetrieveRequest, RetrieveResponse, StoreRequest};
 use utils::metrics::counter;
-
-pub mod schema {
-    tonic::include_proto!("blobstore");
-}
 
 struct Connector {
     db: Db,
@@ -42,11 +39,8 @@ impl Connector {
 }
 
 #[tonic::async_trait]
-impl Storage for Connector {
-    async fn store(
-        &self,
-        request: Request<schema::StoreRequest>,
-    ) -> Result<Response<schema::Empty>, Status> {
+impl BlobStorage for Connector {
+    async fn store(&self, request: Request<StoreRequest>) -> Result<Response<Empty>, Status> {
         counter!("cdl.blob-store.store", 1);
         let request = request.into_inner();
 
@@ -57,19 +51,19 @@ impl Storage for Connector {
 
         trace!("Finished store gRPC request {:?}", object_id);
 
-        Ok(Response::new(schema::Empty {}))
+        Ok(Response::new(Empty {}))
     }
 
     async fn retrieve(
         &self,
-        request: Request<schema::RetrieveRequest>,
-    ) -> Result<Response<schema::RetrieveResponse>, Status> {
+        request: Request<RetrieveRequest>,
+    ) -> Result<Response<RetrieveResponse>, Status> {
         counter!("cdl.blob-store.retrieve", 1);
         let object_id = parse_object_id(&request.into_inner().object_id)?;
 
         let data = self.retrieve(object_id)?;
 
-        Ok(Response::new(schema::RetrieveResponse { data }))
+        Ok(Response::new(RetrieveResponse { data }))
     }
 }
 
@@ -77,7 +71,7 @@ pub async fn run(datastore_root: PathBuf) -> anyhow::Result<()> {
     let db = sled::open(datastore_root)?;
 
     Server::builder()
-        .add_service(StorageServer::new(Connector { db }))
+        .add_service(BlobStorageServer::new(Connector { db }))
         .serve(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), GRPC_PORT).into())
         .await
         .context("Couldn't spawn gRPC server")

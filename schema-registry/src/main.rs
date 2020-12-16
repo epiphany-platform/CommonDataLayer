@@ -1,10 +1,10 @@
 use anyhow::Context;
 use chrono::{DateTime, Utc};
 use indradb::SledDatastore;
+use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
 use schema_registry::{
     error::RegistryError,
     replication::{KafkaConfig, ReplicationRole},
-    rpc::schema::schema_registry_server::SchemaRegistryServer,
     rpc::SchemaRegistryImpl,
 };
 use serde::Deserialize;

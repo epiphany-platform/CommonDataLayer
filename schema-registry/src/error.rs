@@ -1,4 +1,5 @@
 use crate::types::VersionedUuid;
+use rpc::error::ClientError;
 use semver::Version;
 use thiserror::Error;
 use tonic::Status;
@@ -126,9 +127,14 @@ fn join_with_commas<'a>(errors: impl IntoIterator<Item = &'a String>) -> String 
         .join(", ")
 }
 
-impl From<tonic::transport::Error> for RegistryClientError {
-    fn from(error: tonic::transport::Error) -> Self {
-        RegistryClientError::ConnectionError(error)
+impl From<ClientError> for RegistryClientError {
+    fn from(error: ClientError) -> Self {
+        match error {
+            ClientError::ConnectionError { source, .. } => {
+                RegistryClientError::ConnectionError(source)
+            }
+            ClientError::QueryError { source, .. } => RegistryClientError::RequestFailure(source),
+        }
     }
 }
 

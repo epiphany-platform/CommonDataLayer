@@ -12,13 +12,13 @@ use crate::{
     error::{MalformedError, RegistryError, RegistryResult},
     types::DbExport,
     types::SchemaDefinition,
-    types::SchemaType,
 };
 use indradb::{
     Datastore, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
     SpecificVertexQuery, Transaction, VertexQueryExt,
 };
 use log::{trace, warn};
+use rpc::schema_registry::types::SchemaType;
 use semver::Version;
 use serde_json::Value;
 use std::collections::HashMap;

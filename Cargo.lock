@@ -91,9 +91,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.34"
+version = "1.0.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bf8dcb5b4bbaa28653b647d8c77bd4ed40183b48882e130c1f1ffb73de069fd7"
+checksum = "2c0df63cb2955042487fad3aefd2c6e3ae7389ac5dc1beb28921de0b69f779d4"
 
 [[package]]
 name = "arc-swap"
@@ -341,12 +341,11 @@ dependencies = [
  "anyhow",
  "env_logger 0.8.2",
  "log",
- "prost",
+ "rpc",
  "sled 0.34.6",
  "structopt",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "utils",
  "uuid",
 ]
@@ -432,7 +431,7 @@ name = "cdl-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "schema-registry",
+ "rpc",
  "semver 0.11.0",
  "serde",
  "serde_json",
@@ -513,11 +512,11 @@ dependencies = [
  "env_logger 0.8.2",
  "fnv",
  "futures",
- "futures-util",
  "itertools 0.9.0",
  "log",
  "rdkafka",
  "reqwest",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
@@ -528,16 +527,6 @@ dependencies = [
  "url",
  "utils",
  "uuid",
-]
-
-[[package]]
-name = "console_error_panic_hook"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8d976903543e0c48546a91908f21588a680a8c8f984df9a5d69feccb2b2a211"
-dependencies = [
- "cfg-if 0.1.10",
- "wasm-bindgen",
 ]
 
 [[package]]
@@ -733,10 +722,9 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "env_logger 0.8.2",
- "futures-util",
  "log",
  "lru-cache",
- "schema-registry",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
@@ -833,12 +821,11 @@ dependencies = [
  "anyhow",
  "env_logger 0.8.2",
  "log",
- "prost",
+ "rpc",
  "sled 0.34.6",
  "structopt",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "utils",
  "uuid",
 ]
@@ -2473,9 +2460,7 @@ dependencies = [
  "env_logger 0.8.2",
  "log",
  "lru-cache",
- "query-service",
- "query-service-ts",
- "schema-registry",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
@@ -2492,18 +2477,16 @@ dependencies = [
  "anyhow",
  "bb8",
  "bb8-postgres",
- "document-storage",
  "env_logger 0.8.2",
  "log",
- "prost",
  "reqwest",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
  "thiserror",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "utils",
  "uuid",
 ]
@@ -2516,14 +2499,13 @@ dependencies = [
  "bb8",
  "env_logger 0.8.2",
  "log",
- "prost",
  "reqwest",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "utils",
 ]
 
@@ -2823,9 +2805,9 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.10.9"
+version = "0.10.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb15d6255c792356a0f578d8a645c677904dc02e862bebe2ecc18e0c01b9a0ce"
+checksum = "0718f81a8e14c4dbb3b34cf23dc6aaf9ab8a0dfec160c534b3dbca1aaa21f47c"
 dependencies = [
  "async-compression",
  "base64 0.13.0",
@@ -2854,9 +2836,20 @@ dependencies = [
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
- "wasm-bindgen-test",
  "web-sys",
  "winreg",
+]
+
+[[package]]
+name = "rpc"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "prost",
+ "serde",
+ "thiserror",
+ "tonic",
+ "tonic-build",
 ]
 
 [[package]]
@@ -2917,20 +2910,18 @@ dependencies = [
  "env_logger 0.8.2",
  "envy",
  "futures",
- "futures-util",
  "indradb-lib",
  "jmespatch",
  "jsonschema",
  "lazy_static",
  "log",
- "prost",
+ "rpc",
  "semver 0.11.0",
  "serde",
  "serde_json",
  "thiserror",
  "tokio 0.2.23",
  "tonic",
- "tonic-build",
  "url",
  "utils",
  "uuid",
@@ -4220,30 +4211,6 @@ name = "wasm-bindgen-shared"
 version = "0.2.69"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e7811dd7f9398f14cc76efd356f98f03aa30419dea46aa810d71e819fc97158"
-
-[[package]]
-name = "wasm-bindgen-test"
-version = "0.3.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0355fa0c1f9b792a09b6dcb6a8be24d51e71e6d74972f9eb4a44c4c004d24a25"
-dependencies = [
- "console_error_panic_hook",
- "js-sys",
- "scoped-tls",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "wasm-bindgen-test-macro",
-]
-
-[[package]]
-name = "wasm-bindgen-test-macro"
-version = "0.3.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27e07b46b98024c2ba2f9e83a10c2ef0515f057f2da299c1762a2017de80438b"
-dependencies = [
- "proc-macro2",
- "quote",
-]
 
 [[package]]
 name = "web-sys"

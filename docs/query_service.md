@@ -16,11 +16,11 @@ Interacts with:
 - Troika
 - .. any similar grpc-able repo
 
-Ingest methods:
+Query methods:
 - GRPC (req-response)
 
-Egest methods (supported repositores):
-- GRPC
+Communication protocols:
+- database specific
 
 ### Configuration
 

@@ -1,4 +1,4 @@
-use schema_registry::types::SchemaType;
+use rpc::schema_registry::types::SchemaType;
 use semver::{Version, VersionReq};
 use std::path::PathBuf;
 use structopt::StructOpt;

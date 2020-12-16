@@ -1,5 +1,5 @@
 syntax = "proto3";
-package registry;
+package schema_registry;
 
 service SchemaRegistry {
     rpc AddSchema (NewSchema) returns (Id);
@@ -28,7 +28,7 @@ message NewSchema {
     string id = 1;
     string name = 2;
     string query_address = 3;
-    string topic_name = 4;
+    string topic = 4;
     string definition = 5;
     SchemaType.Type schema_type = 6;
 }
@@ -56,7 +56,7 @@ message SchemaTypeUpdate {
 
 message SchemaQueryAddressUpdate {
     string id = 1;
-    string query_address = 2;
+    string address = 2;
 }
 
 message NewSchemaView {

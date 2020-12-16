@@ -1,4 +1,5 @@
-use crate::schema::{query_server::Query, Range, SchemaId, TimeSeries};
+use rpc::query_service_ts::{query_service_ts_server::QueryServiceTs, Range, SchemaId, TimeSeries};
+
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use reqwest::Client;
@@ -80,7 +81,7 @@ impl VictoriaQuery {
 }
 
 #[tonic::async_trait]
-impl Query for VictoriaQuery {
+impl QueryServiceTs for VictoriaQuery {
     async fn query_by_range(
         &self,
         request: Request<Range>,

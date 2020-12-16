@@ -1,7 +1,7 @@
 syntax = "proto3";
-package blobstore;
+package blob_storage;
 
-service Storage {
+service BlobStorage {
   rpc Store(StoreRequest) returns (Empty);
   rpc Retrieve(RetrieveRequest) returns (RetrieveResponse);
 }

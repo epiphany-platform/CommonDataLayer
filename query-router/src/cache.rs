@@ -1,6 +1,7 @@
 use crate::error::Error;
 use lru_cache::LruCache;
-use schema_registry::types::SchemaType;
+use rpc::error::ClientError;
+use rpc::schema_registry::types::SchemaType;
 use std::sync::{Mutex, MutexGuard};
 use utils::abort_on_poison;
 use uuid::Uuid;
@@ -27,24 +28,33 @@ impl SchemaRegistryCache {
             return Ok(cached_data.clone());
         }
 
-        let mut conn = schema_registry::connect_to_registry(self.schema_registry_addr.clone())
+        let mut conn = rpc::schema_registry::connect(self.schema_registry_addr.clone())
             .await
-            .map_err(Error::RegistryConnectionError)?;
-
+            .map_err(Error::ClientError)?;
         let response = conn
-            .get_schema_query_address(schema_registry::rpc::schema::Id {
+            .get_schema_query_address(rpc::schema_registry::Id {
                 id: schema_id.to_string(),
             })
             .await
-            .map_err(Error::RegistryError)?;
+            .map_err(|err| {
+                Error::ClientError(ClientError::QueryError {
+                    service: "schema registry",
+                    source: err,
+                })
+            })?;
         let address = response.into_inner().address;
 
         let response = conn
-            .get_schema_type(schema_registry::rpc::schema::Id {
+            .get_schema_type(rpc::schema_registry::Id {
                 id: schema_id.to_string(),
             })
             .await
-            .map_err(Error::RegistryError)?;
+            .map_err(|err| {
+                Error::ClientError(ClientError::QueryError {
+                    service: "schema registry",
+                    source: err,
+                })
+            })?;
         let schema_type = response.into_inner().schema_type().into();
 
         let result = (address, schema_type);

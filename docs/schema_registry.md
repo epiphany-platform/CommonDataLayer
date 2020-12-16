@@ -12,11 +12,11 @@ Is used by:
 - Query Router
 - cdl-cli
 
-Ingest methods:
-- GRPC (cdl-cli)
+Query methods:
+- gRPC (clients may use cdl-cli CLI application)
 
-Egest methods (supported repositores):
-- GRPC
+Communication methods (supported repositores):
+- Kafka (with other schema-registry instances)
 
 ### Configuration
 
