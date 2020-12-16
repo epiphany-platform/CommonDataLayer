@@ -41,7 +41,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: target
-          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }} 
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Clippy
         run: find . | grep "\.rs$" | grep -v "\./target/" | xargs touch ; cargo clippy --locked --all-features -- -D warnings
@@ -51,6 +51,11 @@ jobs:
         with:
           command: fmt
           args: -- --check
+
+      - name: Deny invalid licenses
+        uses: EmbarkStudios/cargo-deny-action@v1
+        with:
+          command: check license
 
       - name: Test
         uses: actions-rs/cargo@v1
