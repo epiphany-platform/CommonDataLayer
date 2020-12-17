@@ -43,6 +43,7 @@ postgres-document:
   postgresPort: 5432
   postgresDbname: CDL
   postgresSchema: public
+  ingestionMethod: kafka
   inputTopic: cdl.document.data
   commandService:
     image: cdl-command-service

@@ -34,6 +34,8 @@ spec:
           value: "cdl-postgres-command-service"
         - name: KAFKA_INPUT_TOPIC
           value: {{ .Values.inputTopic }}
+        - name: INGESTION_METHOD
+          value: {{ .Values.ingestionMethod }}
         - name: POSTGRES_USERNAME
           value: {{ .Values.postgresUsername }}
         - name: POSTGRES_PASSWORD
