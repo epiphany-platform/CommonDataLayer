@@ -385,7 +385,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let full_schema = self
             .db
             .get_schema_definition(&VersionedUuid::any(schema_id))?;
-        let schema = jsonschema::JSONSchema::compile(&full_schema.definition, None)
+        let schema = jsonschema::JSONSchema::compile(&full_schema.definition)
             .map_err(|_err| RegistryError::InvalidSchema)?;
         let errors = match schema.validate(&json) {
             Ok(()) => vec![],

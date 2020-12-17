@@ -30,7 +30,7 @@ pub fn build_full_schema<D: Datastore>(
         }
     }
 
-    JSONSchema::compile(&schema, None)?;
+    JSONSchema::compile(&schema)?;
 
     Ok(Definition { definition: schema })
 }
