@@ -31,8 +31,6 @@ pub enum Error {
     InvalidFieldType,
     #[error("Cannot handle empty payload")]
     EmptyFields,
-    #[error("Field(s) timestamp is missing")]
-    FieldTimeStampMissing,
 }
 
 impl VictoriaMetricsOutputPlugin {
@@ -85,7 +83,7 @@ impl OutputPlugin for VictoriaMetricsOutputPlugin {
 #[derive(Serialize, Deserialize, Debug)]
 struct Payload {
     fields: FnvHashMap<String, Value>,
-    ts: Value,
+    ts: u64,
 }
 
 fn build_line_protocol(measurement: Uuid, tag: Uuid, payload: &RawValue) -> Result<String, Error> {
@@ -95,27 +93,16 @@ fn build_line_protocol(measurement: Uuid, tag: Uuid, payload: &RawValue) -> Resu
         .into_iter()
         .map(|obj| {
             Ok(format!(
-                "{},object_id={} {} {}",
+                "{},objectId={} {} {}",
                 measurement,
                 tag,
                 get_object_fields(&obj)?,
-                get_object_timestamp(&obj)?,
+                obj.ts.to_string()
             ))
         })
         .collect::<Result<Vec<String>, Error>>()?
         .join("\n");
-    dbg!(&line_protocol);
     Ok(line_protocol)
-}
-
-fn get_object_timestamp(request_object: &Payload) -> Result<String, Error> {
-    let timestamp = &request_object.ts;
-    if timestamp.is_array() || timestamp.is_null() || timestamp.is_object() {
-        return Err(Error::InvalidFieldType);
-    } else if timestamp.is_string() && timestamp == "" {
-        return Err(Error::FieldTimeStampMissing);
-    }
-    Ok(timestamp.to_string())
 }
 
 fn get_object_fields(request_object: &Payload) -> Result<String, Error> {
@@ -172,10 +159,10 @@ mod tests {
         #[test_case(r#"[{"fields":{"y01": {}}, "ts": 10}]"#               => matches Err(Error::InvalidFieldType))]
         #[test_case(r#"[{"fields":{"y01": []}, "ts": 5}]"#                => matches Err(Error::InvalidFieldType))]
         #[test_case(r#"[{"fields":{"y01": null}, "ts": 1}]"#              => matches Err(Error::InvalidFieldType))]
-        #[test_case(r#"[{"fields":{"y01": 123}, "ts": {}}]"#              => matches Err(Error::InvalidFieldType))]
-        #[test_case(r#"[{"fields":{"y01": 1234}, "ts": []}]"#             => matches Err(Error::InvalidFieldType))]
-        #[test_case(r#"[{"fields":{"y01": 12345}, "ts": null}]"#          => matches Err(Error::InvalidFieldType))]
-        #[test_case(r#"[{"fields":{"y01": 12345}, "ts": ""}]"#            => matches Err(Error::FieldTimeStampMissing))]
+        #[test_case(r#"[{"fields":{"y01": 123}, "ts": {}}]"#              => matches Err(Error::DataCannotBeParsed(_)))]
+        #[test_case(r#"[{"fields":{"y01": 1234}, "ts": []}]"#             => matches Err(Error::DataCannotBeParsed(_)))]
+        #[test_case(r#"[{"fields":{"y01": 12345}, "ts": null}]"#          => matches Err(Error::DataCannotBeParsed(_)))]
+        #[test_case(r#"[{"fields":{"y01": 12345}, "ts": ""}]"#            => matches Err(Error::DataCannotBeParsed(_)))]
         #[test_case(r#"{"fields" : {"y01": 13.4}, "ts": 123 }"#           => matches Err(Error::DataCannotBeParsed(_)))]
         #[test_case(r#"[ 1, 13, { "fields": {"y01": 1}, "ts": 1234 }]"#   => matches Err(Error::DataCannotBeParsed(_)))]
         fn produces_desired_errors(payload: &str) -> Result<String, Error> {
@@ -244,17 +231,17 @@ mod tests {
                         ]"#,
         };
 
-        #[test_case(TEST_CASE_1 => "00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=13.4 123")]
-        #[test_case(TEST_CASE_2 => "00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=13.4 1603887165" ; "changes timestamp")]
-        #[test_case(TEST_CASE_3 => "10b7a9cd-0daf-4cb6-a7ef-b9db6058a2d3,object_id=00000000-0000-0000-0000-000000000000 y01=13.4 123"          ; "changes schema_id")]
-        #[test_case(TEST_CASE_4 => "00000000-0000-0000-0000-000000000000,object_id=85cf3b2e-0c9c-40e1-ade3-4596a2e1d9b6 y01=13.4 123"          ; "changes object_id")]
-        #[test_case(TEST_CASE_5 => "00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=13.4,y02=12.2 123" ; "handles many fields")]
-        #[test_case(TEST_CASE_6 => "00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=true 123"          ; "handles boolean fields")]
-        #[test_case(TEST_CASE_7 => "00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=\"some-msg\" 123"  ; "handles string fields")]
+        #[test_case(TEST_CASE_1 => "00000000-0000-0000-0000-000000000000,objectId=00000000-0000-0000-0000-000000000000 y01=13.4 123")]
+        #[test_case(TEST_CASE_2 => "00000000-0000-0000-0000-000000000000,objectId=00000000-0000-0000-0000-000000000000 y01=13.4 1603887165" ; "changes timestamp")]
+        #[test_case(TEST_CASE_3 => "10b7a9cd-0daf-4cb6-a7ef-b9db6058a2d3,objectId=00000000-0000-0000-0000-000000000000 y01=13.4 123"          ; "changes schema_id")]
+        #[test_case(TEST_CASE_4 => "00000000-0000-0000-0000-000000000000,objectId=85cf3b2e-0c9c-40e1-ade3-4596a2e1d9b6 y01=13.4 123"          ; "changes object_id")]
+        #[test_case(TEST_CASE_5 => "00000000-0000-0000-0000-000000000000,objectId=00000000-0000-0000-0000-000000000000 y01=13.4,y02=12.2 123" ; "handles many fields")]
+        #[test_case(TEST_CASE_6 => "00000000-0000-0000-0000-000000000000,objectId=00000000-0000-0000-0000-000000000000 y01=true 123"          ; "handles boolean fields")]
+        #[test_case(TEST_CASE_7 => "00000000-0000-0000-0000-000000000000,objectId=00000000-0000-0000-0000-000000000000 y01=\"some-msg\" 123"  ; "handles string fields")]
         #[test_case(TEST_CASE_8 =>
-"00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=123,y02=54321 1234
-00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 y01=321,y02=12345 4321
-00000000-0000-0000-0000-000000000000,object_id=00000000-0000-0000-0000-000000000000 a02=\"string\",z01=true 0"; 
+"00000000-0000-0000-0000-000000000000,objectId=00000000-0000-0000-0000-000000000000 y01=123,y02=54321 1234
+00000000-0000-0000-0000-000000000000,objectId=00000000-0000-0000-0000-000000000000 y01=321,y02=12345 4321
+00000000-0000-0000-0000-000000000000,objectId=00000000-0000-0000-0000-000000000000 a02=\"string\",z01=true 0";
                                  "handles multiple objects")]
 
         fn produces_desired_correct_output(case: TestCase) -> String {

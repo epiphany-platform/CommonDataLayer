@@ -37,5 +37,3 @@ services:
     ports:
       - "12345:12345"
     command: -retentionPeriod 0 -search.latencyOffset=1s -httpListenAddr=:12345
-    #volumes:
-    #  - ./docker-volume/victoria_metrics/db:/victoria-metrics-data

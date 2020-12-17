@@ -6,6 +6,7 @@ from kafka import KafkaAdminClient
 from kafka.admin import NewTopic
 from kafka.errors import UnrecognizedBrokerVersion
 from psycopg2._psycopg import OperationalError
+from requests import HTTPError
 from tests.common.victoria_metrics import VictoriaMetrics
 from tests.common.postgres import connect_to_postgres
 from tests.common.config import VictoriaMetricsConfig
@@ -80,7 +81,7 @@ def ensure_victoria_metrics_database_exists(victoria_config: VictoriaMetricsConf
             set_up = db.is_db_alive()
             if set_up:
                 break
-        except:
+        except HTTPError:
             time.sleep(5)
 
     if not set_up:

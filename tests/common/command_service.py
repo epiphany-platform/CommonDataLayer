@@ -1,6 +1,5 @@
 import os
 import subprocess
-
 from tests.common.config import PostgresConfig, VictoriaMetricsConfig
 
 EXE = os.getenv('COMMAND_SERVICE_EXE') or 'command-service'

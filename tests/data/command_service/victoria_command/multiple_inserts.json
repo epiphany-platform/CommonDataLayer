@@ -4,7 +4,7 @@
       "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c70",
       "timestamp": 1603285775,
       "schemaId": "a46a7fc0-0ca3-4852-affc-d589355524c0",
-      "payload": [
+      "data": [
         {
           "fields": {
             "x": 1
@@ -17,7 +17,7 @@
       "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c79",
       "timestamp": 1603285778,
       "schemaId": "a46a7fc0-0ca3-4852-affc-d589355524c6",
-      "payload": [
+      "data": [
         {
           "fields": {
             "a": 1,
@@ -38,7 +38,7 @@
       "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c71",
       "timestamp": 1603285779,
       "schemaId": "a46a7fc0-0ca3-4852-affc-d589355524c5",
-      "payload": [
+      "data": [
         {
           "fields": {
             "w": 4

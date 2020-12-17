@@ -23,12 +23,12 @@ class PostgresConfig:
 
 
 class VictoriaMetricsConfig:
-    def __init__(self, database_url="0.0.0.0:12345"):
+    def __init__(self, database_url="http://localhost:12345"):
         self.database_url = database_url
 
     def to_dict(self):
         return {
-            "VICTORIA_METRICS_URL": self.database_url
+            "VICTORIA_METRICS_OUTPUT_URL": self.database_url
         }
 
 
