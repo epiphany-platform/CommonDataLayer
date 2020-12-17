@@ -54,8 +54,8 @@ impl OutputPlugin for VictoriaMetricsOutputPlugin {
         let BorrowedInsertMessage {
             object_id,
             schema_id,
-            timestamp: _,
             data,
+            ..
         } = msg;
 
         match build_line_protocol(schema_id, object_id, data) {
