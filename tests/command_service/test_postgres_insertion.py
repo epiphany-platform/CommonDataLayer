@@ -27,7 +27,6 @@ def test_inserting(prepare):
     db, producer, data, expected = prepare
 
     for entry in data:
-        print(entry)
         push_to_kafka(producer, entry, TOPIC)
     producer.flush()
 

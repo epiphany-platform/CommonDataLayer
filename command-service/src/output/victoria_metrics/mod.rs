@@ -97,7 +97,7 @@ fn build_line_protocol(measurement: Uuid, tag: Uuid, payload: &RawValue) -> Resu
                 measurement,
                 tag,
                 get_object_fields(&obj)?,
-                obj.ts.to_string()
+                obj.ts
             ))
         })
         .collect::<Result<Vec<String>, Error>>()?
@@ -116,7 +116,7 @@ fn get_object_fields(request_object: &Payload) -> Result<String, Error> {
             if value.is_array() || value.is_null() || value.is_object() {
                 return Err(Error::InvalidFieldType);
             }
-            Ok(format!("{}={}", key, value.to_string()))
+            Ok(format!("{}={}", key, value))
         })
         .collect::<Result<Vec<String>, Error>>()?
         .join(","))
