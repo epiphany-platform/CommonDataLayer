@@ -1,6 +1,6 @@
-pub use crate::input::config::KafkaInputConfig;
+pub use crate::input::config::{GRpcConfig, InputConfig, KafkaConfig};
 pub use crate::input::error::Error;
-pub use crate::input::service::KafkaInput;
+pub use crate::input::service::{GRPCInput, KafkaInput};
 
 mod config;
 mod error;
