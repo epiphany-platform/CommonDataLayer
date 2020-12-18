@@ -2,6 +2,8 @@
 
 ## Preamble
 
+> Intended way of deploying CDL is through helm files.
+> 
 Contents of this folder aren't meant for use on production and they may be lagging behind our k8s deployment. 
 Sole purpose of this directory is to prepare exemplary development environment, from which anyone can startup their development on 
 `common data layer` without Kubernetes knowledge. Contents of docker-compose may not contain all applications, so be aware of that. You may alter it
@@ -16,7 +18,7 @@ For k8s deployment, please refer to our [documentation](../../docs/k8s_local_dep
 
 ## Volume
 
-The directory `./docker-volume` is used as a volume. Please note it is not fully `.gitignore`d because we rely on `init.sql` for postgres, both in docker-compose and in Github Actions. DO NOT REMOVE IT UNDER ANY CIRCUMSTANCES.
+The directory `./docker-volume` is used as a volume. Please note it is not fully `.gitignore`d because we rely on some setup scripts attached via volumes.
 
 ## Deployment
 You must first add environment variables:
@@ -24,19 +26,23 @@ You must first add environment variables:
 `DOCKER_BUILDKIT=1`  
 `COMPOSE_DOCKER_CLI_BUILD=1`
 
-Due to services needing additional startup time, we advise to let docker setup infrastructure first, and deploy CDL after. So...
-
-`docker-compose up -d kafka zoo postgres`
-
-After it had some time to setup, you can proceed with rest of the environment:
+Environment with infrastructure alone is started via:
 
 `docker-compose up -d`
+
+If you want to add cdl components to it, you must specify `-f` options:
+
+`docker-compose -f docker-compose.cdl.yml -f docker-compose.yml up -d`
+
+Sometimes it's useful to store data on disk (eg. for debugging), we can achieve this by adding `-f docker-compose.persistent-storage.yml` to combination:
+
+`docker-compose -f docker-compose.persistent-storage.yml -f docker-compose.yml up -d`
 
 ## Entry points in system
 ### Kafka
 
 You can write to kafka on `localhost:9092`.
-By default there is no replication on *schema_registry* and postgres *command_service* input channel is `cdl.document.input`.
+By default there is no replication on *schema_registry*. Postgres *command_service* input channel is `cdl.document.input`.
 
 Errors are written to `cdl.reports`.
 

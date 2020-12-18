@@ -23,7 +23,7 @@ def push_to_kafka(producer, data):
 
 @pytest.fixture(params=['single_insert', 'multiple_inserts'])
 def prepare(request):
-    with CdlEnv('.', postgres_config=PostgresConfig(), kafka_input_config=KafkaInputConfig(TOPIC)) as env:
+    with CdlEnv('../deployment/compose', postgres_config=PostgresConfig(), kafka_input_config=KafkaInputConfig(TOPIC)) as env:
         data, expected = load_case(request.param, 'command_service')
 
         db = connect_to_postgres(env.postgres_config)

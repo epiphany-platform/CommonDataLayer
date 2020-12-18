@@ -1,0 +1,24 @@
+###
+# This is example docker compose that sets up local developer environment.
+# Please refer to README.md for instructions on how to run it.
+###
+
+version: "3"
+
+services:
+  zoo:
+    volumes:
+      - ./docker-volume/zoo/data:/data
+      - ./docker-volume/zoo/datalog:/datalog
+
+  kafka:
+    volumes:
+      - ./docker-volume/kafka/data:/var/lib/kafka/data
+
+  postgres:
+    volumes:
+      - ./docker-volume/victoria_metrics/db:/victoria-metrics-data
+
+  victoria_metrics:
+    volumes:
+      - ./docker-volume/victoria_metrics/db:/victoria-metrics-data
