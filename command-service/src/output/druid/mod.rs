@@ -87,10 +87,10 @@ fn deserialize_payloads(msg: &BorrowedInsertMessage<'_>) -> Result<Vec<Vec<u8>>,
                 "Failed to read payload, cause `{}`, context `{}`",
                 err, context
             );
-            return Err(Resolution::UserFailure {
+            Err(Resolution::UserFailure {
                 description: err.to_string(),
                 context,
-            });
+            })
         }
     }
 }
