@@ -9,6 +9,4 @@ pub enum Error {
     KafkaError(KafkaError),
     #[error("Failed creating kafka producer `{0}`")]
     ProducerCreation(KafkaError),
-    #[error("Channel was closed on receiver side.")]
-    RecvDropped,
 }

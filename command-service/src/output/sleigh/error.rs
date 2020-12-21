@@ -4,6 +4,4 @@ use thiserror::Error as DeriveError;
 pub enum Error {
     #[error("Unable to connect to server via gRPC `{0}`")]
     FailedToConnect(tonic::transport::Error),
-    #[error("Channel was closed on receiver side.")]
-    RecvDropped,
 }
