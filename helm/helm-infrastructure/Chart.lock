@@ -1,15 +1,15 @@
 dependencies:
 - name: rabbitmq
   repository: https://charts.bitnami.com/bitnami
-  version: 7.5.7
+  version: 8.6.0
 - name: kafka
   repository: https://charts.bitnami.com/bitnami
-  version: 11.6.2
+  version: 12.4.0
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
-  version: 9.4.0
+  version: 10.2.0
 - name: victoria-metrics-single
   repository: https://victoriametrics.github.io/helm-charts/
   version: 0.6.6
-digest: sha256:68b0c1192843ce5f2ee4e250e63147dc6fe95f6d166374036f4f90909d2c3fb6
-generated: "2020-12-08T17:02:57.107785065+01:00"
+digest: sha256:76fa9c55c41857bd64f86ff08cea29aa550e117cb1f83fe5ae7933a2dd500ae9
+generated: "2020-12-21T15:33:40.108425242+01:00"
