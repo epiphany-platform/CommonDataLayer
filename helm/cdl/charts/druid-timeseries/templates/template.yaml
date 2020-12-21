@@ -45,6 +45,8 @@ spec:
           value: {{ .Values.global.kafkaBrokers }}
         - name: REPORT_TOPIC
           value: {{ .Values.global.reportTopic }}
+        - name: INGESTION_METHOD
+          value: kafka
         ports:
         - containerPort: 51805
   # TODO: Probes
