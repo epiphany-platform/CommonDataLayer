@@ -24,9 +24,9 @@ spec:
     spec:
       containers:
       - name: cdl-postgres-command-service
-        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.commandService.image }}:{{ .Values.global.imageVersion }}"
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-command-service:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/{{ .Values.commandService.bin }}","postgres"]
+        command: ["/bin/command-service","postgres"]
         env:
         - name: KAFKA_INPUT_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
@@ -49,7 +49,7 @@ spec:
         - name: POSTGRES_SCHEMA
           value: {{ .Values.postgresSchema }}
         - name: RUST_LOG
-          value: "info,{{ .Values.commandService.bin }}=debug"
+          value: "info,command-service=debug"
         - name: REPORT_BROKER
           value: {{ .Values.global.kafkaBrokers }}
         - name: REPORT_TOPIC
