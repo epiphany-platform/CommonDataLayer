@@ -29,8 +29,4 @@ RUST_LOG
 
 See an example [configuration][configuration] of deployment of data router and other services.
 
-[grpc]: https://grpc.io/docs/what-is-grpc/introduction/
-[proto]: ../query-service/proto/query.proto
-[schema-registry]: ../schema-registry/README.md
-[configuration]: ../examples/deploy/SETUP.md
-[endpoints]: ../query-service/proto/query.proto
+[configuration]: ../deployment/compose/README.md
