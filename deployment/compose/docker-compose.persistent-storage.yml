@@ -22,3 +22,7 @@ services:
   victoria_metrics:
     volumes:
       - ./docker-volume/victoria_metrics/db:/victoria-metrics-data
+
+  schema_registry:
+    volumes:
+      - ./docker-volume/schema_registry/db:/var/data/schema

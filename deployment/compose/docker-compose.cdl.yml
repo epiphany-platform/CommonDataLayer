@@ -33,8 +33,6 @@ services:
       KAFKA_TOPICS: "cdl.schema_registry.internal"
       INPUT_PORT: "50101"
       RUST_LOG: info,schema_registry=trace
-    volumes:
-      - ./docker-volume/schema_registry/db:/var/data/schema
     depends_on:
       - kafka
 

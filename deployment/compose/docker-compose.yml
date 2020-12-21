@@ -14,9 +14,6 @@ services:
       ZOO_MY_ID: 1
       ZOO_PORT: 2181
       ZOO_SERVERS: server.1=zoo:2888:3888
-    volumes:
-      - ./docker-volume/zoo/data:/data
-      - ./docker-volume/zoo/datalog:/datalog
 
   kafka:
     image: wurstmeister/kafka:2.13-2.6.0
@@ -30,8 +27,6 @@ services:
       KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka:9093,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
       KAFKA_ZOOKEEPER_CONNECT: "zoo:2181"
       KAFKA_BROKER_ID: 1
-    volumes:
-      - ./docker-volume/kafka/data:/var/lib/kafka/data
     depends_on:
       - zoo
 
@@ -41,8 +36,6 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: "1234"
-    volumes:
-      - ./docker-volume/postgres/db:/var/lib/postgresql/data
 
   victoria_metrics:
     image: victoriametrics/victoria-metrics:latest
@@ -50,5 +43,3 @@ services:
       - "50105:50105"
       - "8428:8428"
     command: -opentsdbHTTPListenAddr :50105 -retentionPeriod 0
-    volumes:
-      - ./docker-volume/victoria_metrics/db:/victoria-metrics-data
