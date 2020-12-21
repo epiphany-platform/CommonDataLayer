@@ -1,5 +1,6 @@
 use rdkafka::error::KafkaError;
 use thiserror::Error as DeriveError;
+use serde_json;
 
 #[derive(Debug, DeriveError)]
 pub enum Error {
@@ -11,4 +12,6 @@ pub enum Error {
     ProducerCreation(KafkaError),
     #[error("Channel was closed on receiver side.")]
     RecvDropped,
+    #[error("Data cannot be parsed `{0}`")]
+    DataCannotBeParsed(serde_json::Error),
 }
