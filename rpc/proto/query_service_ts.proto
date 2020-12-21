@@ -4,6 +4,7 @@ package query_service_ts;
 service QueryServiceTs {
      rpc QueryBySchema(SchemaId) returns (TimeSeries);
      rpc QueryByRange(Range) returns (TimeSeries);
+     rpc QueryRaw (RawStatement) returns (ValueBytes);
 }
 
 message Range {
@@ -19,4 +20,12 @@ message SchemaId {
 
 message TimeSeries {
     string timeseries = 1;
+}
+
+message RawStatement {
+    string raw_statement = 1;
+}
+
+message ValueBytes {
+    bytes value_bytes = 1;
 }

@@ -49,3 +49,16 @@ pub async fn query_by_schema(schema_id: String, addr: String) -> Result<String, 
 
     Ok(response.into_inner().timeseries)
 }
+
+pub async fn query_raw(raw_statement: String, addr: String) -> Result<Vec<u8>, ClientError> {
+    let mut conn = connect(addr).await?;
+    let response = conn
+        .query_raw(RawStatement { raw_statement })
+        .await
+        .map_err(|err| ClientError::QueryError {
+            service: "timeseries query service",
+            source: err,
+        })?;
+
+    Ok(response.into_inner().value_bytes)
+}
