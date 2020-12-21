@@ -1,8 +1,10 @@
-use rpc::query_service_ts::{query_service_ts_server::QueryServiceTs, Range, SchemaId, TimeSeries};
-
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use reqwest::Client;
+use rpc::query_service_ts::{
+    query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
+};
+use serde::Deserialize;
 use structopt::StructOpt;
 use tonic::{Request, Response, Status};
 
@@ -37,6 +39,13 @@ pub struct VictoriaQuery {
     addr: String,
 }
 
+#[derive(Deserialize)]
+struct RawStatementParameters {
+    method: String,
+    endpoint: String,
+    queries: Vec<(String, String)>,
+}
+
 impl VictoriaQuery {
     pub async fn load(config: VictoriaConfig) -> anyhow::Result<Self> {
         let pool = Pool::builder()
@@ -59,10 +68,24 @@ impl VictoriaQuery {
 
     async fn query_db<T: serde::ser::Serialize + std::fmt::Debug>(
         &self,
+        method: &str,
+        endpoint: &str,
         query: &T,
     ) -> Result<String, Status> {
         let conn = self.connect().await?;
-        let request = conn.get(&self.addr).query(query);
+        let url = format!("{}{}", self.addr, endpoint);
+
+        let request = match method {
+            "POST" => conn.post(&url).form(query),
+            "GET" => conn.get(&url).query(query),
+            m => {
+                return Err(Status::internal(format!(
+                    "Method \"{}\" not matched. Only POST and GET are currently supported",
+                    m
+                )))
+            }
+        };
+
         let response = request.send().await.map_err(|err| {
             Status::internal(format!(
                 "Error requesting value from VictoriaMetrics: {}",
@@ -102,7 +125,8 @@ impl QueryServiceTs for VictoriaQuery {
             queries.push(("step", request_payload.step));
         }
 
-        let response: String = self.query_db(&queries).await?;
+        let response: String = self.query_db("GET", "/query_range", &queries).await?;
+
         Ok(tonic::Response::new(TimeSeries {
             timeseries: response,
         }))
@@ -117,9 +141,29 @@ impl QueryServiceTs for VictoriaQuery {
             format!("{{_name_=\"{}\"}}", request.into_inner().schema_id),
         )];
 
-        let response: String = self.query_db(&query).await?;
+        let response: String = self.query_db("GET", "/query_range", &query).await?;
+
         Ok(tonic::Response::new(TimeSeries {
             timeseries: response,
+        }))
+    }
+
+    async fn query_raw(
+        &self,
+        request: Request<RawStatement>,
+    ) -> Result<Response<ValueBytes>, Status> {
+        let params: RawStatementParameters =
+            serde_json::from_str(&request.into_inner().raw_statement).map_err(|e| {
+                Status::internal(format!("Did not deserialise raw_statement: {}", e))
+            })?;
+
+        let response = self
+            .query_db(&params.method, &params.endpoint, &params.queries)
+            .await?;
+
+        Ok(tonic::Response::new(ValueBytes {
+            value_bytes: serde_json::to_vec(&response)
+                .map_err(|e| Status::internal(format!("Error serializing data: {}", e)))?,
         }))
     }
 }
