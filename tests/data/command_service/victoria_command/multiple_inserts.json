@@ -1,0 +1,109 @@
+{
+  "data": [
+    {
+      "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c70",
+      "timestamp": 1603285775,
+      "schemaId": "a46a7fc0-0ca3-4852-affc-d589355524c0",
+      "data": [
+        {
+          "fields": {
+            "x": 1
+          },
+          "ts": 123
+        }
+      ]
+    },
+    {
+      "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c79",
+      "timestamp": 1603285778,
+      "schemaId": "a46a7fc0-0ca3-4852-affc-d589355524c6",
+      "data": [
+        {
+          "fields": {
+            "a": 1,
+            "b": 2
+          },
+          "ts": 123456789000000
+        },
+        {
+          "fields": {
+            "a": 4,
+            "b": 5
+          },
+          "ts": 987654321000000
+        }
+      ]
+    },
+    {
+      "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c71",
+      "timestamp": 1603285779,
+      "schemaId": "a46a7fc0-0ca3-4852-affc-d589355524c5",
+      "data": [
+        {
+          "fields": {
+            "w": 4
+          },
+          "ts": 1000000
+        }
+      ]
+    }
+  ],
+  "expected": [
+    {
+      "metric": {
+        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c6_a",
+        "db": "a46a7fc0-0ca3-4852-affc-d589355524c6",
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c79"
+      },
+      "values": [
+        1,
+        4
+      ],
+      "timestamps": [
+        123456789,
+        987654321
+      ]
+    },
+    {
+      "metric": {
+        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c5_w",
+        "db": "a46a7fc0-0ca3-4852-affc-d589355524c5",
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c71"
+      },
+      "values": [
+        4
+      ],
+      "timestamps": [
+        1
+      ]
+    },
+    {
+      "metric": {
+        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c0_x",
+        "db": "a46a7fc0-0ca3-4852-affc-d589355524c0",
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c70"
+      },
+      "values": [
+        1
+      ],
+      "timestamps": [
+        0
+      ]
+    },
+    {
+      "metric": {
+        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c6_b",
+        "db": "a46a7fc0-0ca3-4852-affc-d589355524c6",
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c79"
+      },
+      "values": [
+        2,
+        5
+      ],
+      "timestamps": [
+        123456789,
+        987654321
+      ]
+    }
+  ]
+}

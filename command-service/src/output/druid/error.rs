@@ -11,4 +11,6 @@ pub enum Error {
     ProducerCreation(KafkaError),
     #[error("Channel was closed on receiver side.")]
     RecvDropped,
+    #[error("Data cannot be parsed `{0}`")]
+    DataCannotBeParsed(serde_json::Error),
 }

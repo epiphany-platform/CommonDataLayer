@@ -6,8 +6,10 @@ from kafka import KafkaAdminClient
 from kafka.admin import NewTopic
 from kafka.errors import UnrecognizedBrokerVersion
 from psycopg2._psycopg import OperationalError
-
+from requests import HTTPError
+from tests.common.victoria_metrics import VictoriaMetrics
 from tests.common.postgres import connect_to_postgres
+from tests.common.config import VictoriaMetricsConfig
 
 
 def load_case(case_name, app):
@@ -30,7 +32,7 @@ def retry_retrieve(fetch, expected_rows, retries=10, delay=6):
 
 def ensure_kafka_topic_exists(config):
     set_up = False
-    for i in range(1, 12):
+    for _ in range(1, 12):
         try:
             admin_client = KafkaAdminClient(bootstrap_servers=config.brokers)
             admin_client.create_topics([NewTopic(config.topic, 1, 1)])
@@ -40,12 +42,12 @@ def ensure_kafka_topic_exists(config):
             time.sleep(5)
 
     if not set_up:
-        raise Exception('Failed it setup kafka topic')
+        raise Exception('Failed to setup kafka topic')
 
 
 def ensure_postgres_database_exists(config):
     set_up = False
-    for i in range(1, 12):
+    for _ in range(1, 12):
         try:
             db = connect_to_postgres(config)
             curr = db.cursor()
@@ -69,3 +71,18 @@ def ensure_postgres_database_exists(config):
 
     if not set_up:
         raise Exception('Failed to set up postgres database')
+
+
+def ensure_victoria_metrics_database_exists(victoria_config: VictoriaMetricsConfig):
+    set_up = False
+    for _ in range(1, 12):
+        try:
+            db = VictoriaMetrics(victoria_config)
+            set_up = db.is_db_alive()
+            if set_up:
+                break
+        except HTTPError:
+            time.sleep(5)
+
+    if not set_up:
+        raise Exception('Failed to set up victoriametrics database')

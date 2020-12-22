@@ -25,15 +25,15 @@ Second command builds docker image, it may take some time first time you build t
 ## Spin up infrastructure services
 To start necessary infrastructure(not necessary if you've deployed infrastructure yourself/you want to connect to services on our azure cluster):
 
-`helm install --values ./helm/helm-infrastructure/values.yaml infrastructure ./helm/helm-infrastructure`
+`helm install --values ./deployment/helm/infrastructure/values.yaml infrastructure ./deployment/helm/infrastructure`
 
 If you want to use druid repository you also need to start druid.
-`helm install --values ./helm/helm-infrastructure-druid/values.yaml infrastructure-druid ./helm-infrastructure-druid`
+`helm install --values ./deployment/helm/infrastructure-druid/values.yaml infrastructure-druid ./deployment/helm/infrastructure-druid`
 
 ## Installing CDL
 To install the solution you need to execute:
 
-`helm install --values ./helm/cdl/values-local.yaml cdl ./helm/cdl`
+`helm install --values ./helm/cdl/values-local.yaml cdl ./deployment/helm/cdl`
 
 After a moment Kubernetes pods should get started. You can check their status by `kubectl get pods`
 

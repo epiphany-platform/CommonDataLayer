@@ -22,6 +22,16 @@ class PostgresConfig:
         }
 
 
+class VictoriaMetricsConfig:
+    def __init__(self, database_url="http://localhost:12345"):
+        self.database_url = database_url
+
+    def to_dict(self):
+        return {
+            "VICTORIA_METRICS_OUTPUT_URL": self.database_url
+        }
+
+
 class KafkaInputConfig:
     def __init__(self, topic, brokers='localhost:9092', group_id=None):
         self.topic = topic
