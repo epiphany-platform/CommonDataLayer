@@ -34,9 +34,9 @@ If you want to add cdl components to it, you must specify `-f` options:
 
 `docker-compose -f docker-compose.cdl.yml -f docker-compose.yml up -d`
 
-Sometimes it's useful to store data on disk (eg. for debugging), we can achieve this by adding `-f docker-compose.persistent-storage.yml` to combination:
+Sometimes it's useful to store data on disk (eg. for debugging), we can achieve this by adding `-f docker-compose.host-storage.yml` to combination:
 
-`docker-compose -f docker-compose.persistent-storage.yml -f docker-compose.yml up -d`
+`docker-compose -f docker-compose.host-storage.yml -f docker-compose.yml up -d`
 
 ## Entry points in system
 ### Kafka
