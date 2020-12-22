@@ -18,7 +18,7 @@ path = "src/upload_to_rabbitmq.rs"
 [dependencies]
 anyhow      = "1.0"
 pbr         = "1.0"
-rand        = "0.7"
+rand        = "0.8"
 rdkafka     = "0.24"
 tokio-amqp  = "0.1"
 lapin       = "1.2"
