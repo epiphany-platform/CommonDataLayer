@@ -16,12 +16,12 @@ class CommandService:
         env.update(self.kafka_input_config.to_dict())
         if self.kafka_report_config:
             env.update(self.kafka_report_config.to_dict())
+        env.update({'INGESTION_METHOD': 'kafka'})
         plugin = None
 
         if type(self.db_config) is PostgresConfig:
             plugin = 'postgres'
-
-        if type(self.db_config) is VictoriaMetricsConfig:
+        elif type(self.db_config) is VictoriaMetricsConfig:
             plugin = 'victoria-metrics'
 
         if not plugin:
