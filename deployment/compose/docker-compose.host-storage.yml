@@ -17,7 +17,7 @@ services:
 
   postgres:
     volumes:
-      - ./docker-volume/victoria_metrics/db:/victoria-metrics-data
+      - ./docker-volume/postgres/db:/var/lib/postgresql/data
 
   victoria_metrics:
     volumes:
