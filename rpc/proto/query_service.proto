@@ -1,0 +1,28 @@
+syntax = "proto3";
+package query_service;
+
+service QueryService {
+    rpc QueryMultiple (ObjectIds) returns (ValueMap);
+    rpc QueryBySchema (SchemaId) returns (ValueMap);
+    rpc QueryRaw (RawStatement) returns (ValueBytes);
+}
+
+message ObjectIds {
+    repeated string object_ids = 1;
+}
+
+message SchemaId {
+    string schema_id = 1;
+}
+
+message ValueMap {
+    map<string, bytes> values = 1;
+}
+
+message RawStatement {
+    string raw_statement = 1;
+}
+
+message ValueBytes {
+    bytes value_bytes = 1;
+}

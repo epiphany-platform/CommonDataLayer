@@ -3,7 +3,6 @@ name = "schema-registry"
 authors = ["CDL Team"]
 version = "0.1.0"
 edition = "2018"
-build = "build.rs"
 license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -22,10 +21,9 @@ env_logger  = "0.8"
 envy        = "0.4"
 futures     = "0.3"
 log         = "0.4"
-prost       = "0.6"
 indradb-lib = { git = "https://github.com/jespersm/indradb", branch = "sled", features = ["sled-datastore"] } # We use fork due to reported incompatibility of sled 0.34 with azure k8s. More testing needed before switching to official build.
 jmespatch   = "0.3"
-jsonschema  = "0.3"
+jsonschema  = "0.4"
 lazy_static = "1.4"
 semver      = { version = "0.11", features = ["serde"] }
 serde       = { version = "1.0", features = ["derive"] }
@@ -36,8 +34,5 @@ tonic       = "0.3"
 url         = "2.1"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 utils       = { path = "../utils" }
-futures-util            = "0.3"
+rpc         = { path = "../rpc" }
 chrono      = "0.4.19"
-
-[build-dependencies]
-tonic-build = { version = "0.3", default-features = false, features = ["prost", "transport"] }

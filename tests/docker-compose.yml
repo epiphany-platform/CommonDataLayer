@@ -1,4 +1,4 @@
-version: '3'
+version: "3"
 
 services:
   zoo:
@@ -31,3 +31,9 @@ services:
       - "5432:5432"
     environment:
       POSTGRES_PASSWORD: "1234"
+
+  victoria_metrics:
+    image: victoriametrics/victoria-metrics:latest
+    ports:
+      - "8428:8428"
+    command: -retentionPeriod 0 -search.latencyOffset=1s

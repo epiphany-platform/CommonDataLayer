@@ -1,0 +1,20 @@
+[package]
+name = "rpc"
+version = "0.1.0"
+authors = ["CDL Team"]
+edition = "2018"
+license = "Apache-2.0"
+
+[lib]
+name = "rpc"
+path = "src/lib.rs"
+
+[dependencies]
+tonic       = "0.3"
+prost       = "0.6"
+anyhow      = "1.0"
+thiserror   = "1.0"
+serde       = { version = "1.0", features = ["derive"] }
+
+[build-dependencies]
+tonic-build = { version = "0.3", default-features = false, features = ["prost", "transport"] }

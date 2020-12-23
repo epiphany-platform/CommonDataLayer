@@ -1,37 +1,35 @@
-pub use crate::communication::message::GenericMessage;
 use crate::communication::resolution::Resolution;
 use crate::output::OutputPlugin;
 use crate::report::{Error, ReportSender};
 use std::sync::Arc;
-
-mod message;
+use utils::message_types::BorrowedInsertMessage;
 
 pub mod resolution;
 
 pub struct MessageRouter<P: OutputPlugin> {
-    report_service: Arc<ReportSender>,
+    report_sender: ReportSender,
     output_plugin: Arc<P>,
 }
 
 impl<P: OutputPlugin> Clone for MessageRouter<P> {
     fn clone(&self) -> Self {
         MessageRouter {
-            report_service: self.report_service.clone(),
+            report_sender: self.report_sender.clone(),
             output_plugin: self.output_plugin.clone(),
         }
     }
 }
 
 impl<P: OutputPlugin> MessageRouter<P> {
-    pub fn new(report_service: ReportSender, output_plugin: P) -> Self {
+    pub fn new(report_sender: ReportSender, output_plugin: P) -> Self {
         Self {
-            report_service: Arc::new(report_service),
+            report_sender,
             output_plugin: Arc::new(output_plugin),
         }
     }
 
-    pub async fn handle_message(&self, msg: GenericMessage) -> Result<(), Error> {
-        let mut instance = self.report_service.with_message_body(&msg);
+    pub async fn handle_message(&self, msg: BorrowedInsertMessage<'_>) -> Result<(), Error> {
+        let instance = self.report_sender.clone().with_message_body(&msg);
 
         let status = self.output_plugin.handle_message(msg).await;
 

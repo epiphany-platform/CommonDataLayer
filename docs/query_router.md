@@ -11,11 +11,12 @@ Interacts with:
 - Query Service
 - Schema Registry
 
-Ingest methods:
+Query methods:
 - REST (request-response)
 
-Egest methods (supported repositores):
-- REST (request-response)
+Communication protocols:
+- gRPC with query-services (request-response)
+- gRPC with schema-registry (request-response)
 
 ### Configuration
 

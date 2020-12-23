@@ -1,7 +1,9 @@
-use crate::schema::{query_server::Query, ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use reqwest::Client;
+use rpc::query_service::{
+    query_service_server::QueryService, ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap,
+};
 use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::{json, Value};
 use structopt::StructOpt;
@@ -92,7 +94,7 @@ impl DruidQuery {
 }
 
 #[tonic::async_trait]
-impl Query for DruidQuery {
+impl QueryService for DruidQuery {
     async fn query_multiple(
         &self,
         request: Request<ObjectIds>,

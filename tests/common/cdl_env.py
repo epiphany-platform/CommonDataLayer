@@ -1,24 +1,34 @@
 from testcontainers.compose import DockerCompose
+import os
+from contextlib import contextmanager
 
-from tests.common import ensure_kafka_topic_exists, ensure_postgres_database_exists
+from tests.common import ensure_kafka_topic_exists, ensure_postgres_database_exists, ensure_victoria_metrics_database_exists
+from tests.common.config import KafkaInputConfig, PostgresConfig, VictoriaMetricsConfig
 
 
-class CdlEnv:
-    def __init__(self, testcontainers_path, kafka_input_config = None, postgres_config = None):
+class CdlEnvCofig:
+    def __init__(self, testcontainers_path: os.path,
+                 kafka_input_config: KafkaInputConfig = None,
+                 postgres_config: PostgresConfig = None,
+                 victoria_metrics_config: VictoriaMetricsConfig = None):
         self.testcontainers_path = testcontainers_path
         self.kafka_input_config = kafka_input_config
         self.postgres_config = postgres_config
+        self.victoria_metrics_config = victoria_metrics_config
 
-    def __enter__(self):
-        self.compose = DockerCompose(self.testcontainers_path)
-        self.compose.start()
 
-        if self.kafka_input_config:
-            ensure_kafka_topic_exists(self.kafka_input_config)
-        if self.postgres_config:
-            ensure_postgres_database_exists(self.postgres_config)
+@ contextmanager
+def cdl_env(
+        testcontainers_path: os.path,
+        kafka_input_config: KafkaInputConfig = None,
+        postgres_config: PostgresConfig = None,
+        victoria_metrics_config: VictoriaMetricsConfig = None):
+    with DockerCompose(testcontainers_path) as _:
+        if kafka_input_config:
+            ensure_kafka_topic_exists(kafka_input_config)
+        if postgres_config:
+            ensure_postgres_database_exists(postgres_config)
+        if victoria_metrics_config:
+            ensure_victoria_metrics_database_exists(victoria_metrics_config)
 
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.compose.stop()
+        yield CdlEnvCofig(testcontainers_path, kafka_input_config, postgres_config, victoria_metrics_config)

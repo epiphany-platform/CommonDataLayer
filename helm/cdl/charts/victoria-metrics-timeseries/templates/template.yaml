@@ -25,9 +25,9 @@ spec:
     spec:
       containers:
       - name: {{ .Release.Name }}-victoria-metrics-command-service
-        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.commandService.image }}:{{ .Values.global.imageVersion }}"
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-command-service:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/{{ .Values.commandService.bin }}","victoria-metrics"]
+        command: ["/bin/command-service","victoria-metrics"]
         env:
         - name: KAFKA_INPUT_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
@@ -38,11 +38,13 @@ spec:
         - name: VICTORIA_METRICS_OUTPUT_URL
           value: {{ .Values.outputURL }}
         - name: RUST_LOG
-          value: "info,{{ .Values.commandService.bin }}=debug"
+          value: "info,command-service=debug"
         - name: REPORT_BROKER
           value: {{ .Values.global.kafkaBrokers }}
         - name: REPORT_TOPIC
           value: {{ .Values.global.reportTopic }}
+        - name: INGESTION_METHOD
+          value: kafka
         ports:
         - containerPort: 51805
   # TODO: Probes

@@ -1,19 +1,20 @@
 use anyhow::Context;
-use futures_util::stream::StreamExt;
 use log::error;
 use lru_cache::LruCache;
-use schema_registry::{connect_to_registry, rpc::schema::Id};
+use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
+use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
     process,
     sync::{Arc, Mutex},
-    time::{SystemTime, UNIX_EPOCH},
 };
 use structopt::StructOpt;
 use tokio::pin;
+use tokio::stream::StreamExt;
+use utils::message_types::DataRouterInsertMessage;
 use utils::{
     abort_on_poison,
-    message_types::{CommandServiceInsertMessage, DataRouterInputData},
+    message_types::BorrowedInsertMessage,
     messaging_system::{
         consumer::CommonConsumer, message::CommunicationMessage, publisher::CommonPublisher,
     },
@@ -92,21 +93,29 @@ async fn handle_message(
     schema_registry_addr: Arc<String>,
 ) {
     let result: anyhow::Result<()> = async {
-        let event: DataRouterInputData =
-            serde_json::from_str(message.payload()?).context("Payload deserialization failed")?;
-        let since_the_epoch = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards"); // TODO: Ordering can be different when scaling
-        let topic_name = get_schema_topic(&cache, &event, &schema_registry_addr).await?;
-        let data = CommandServiceInsertMessage {
-            object_id: event.object_id,
-            payload: event.data,
-            schema_id: event.schema_id,
-            timestamp: since_the_epoch.as_millis() as i64, // TODO: Change types?
+        let payload = message.payload()?;
+
+        let insert_message: DataRouterInsertMessage =
+            serde_json::from_str(payload).context("Payload deserialization failed")?;
+
+        let topic_name =
+            get_schema_topic(&cache, insert_message.schema_id, &schema_registry_addr).await?;
+
+        let payload = BorrowedInsertMessage {
+            object_id: insert_message.object_id,
+            schema_id: insert_message.schema_id,
+            timestamp: current_timestamp(),
+            data: insert_message.data,
         };
-        let payload = serde_json::to_vec(&data).unwrap_or_default();
-        let key = data.object_id.to_string();
-        send_message(producer.as_ref(), &topic_name, &key, payload).await;
+
+        let key = payload.object_id.to_string();
+        send_message(
+            producer.as_ref(),
+            &topic_name,
+            &key,
+            serde_json::to_vec(&payload)?,
+        )
+        .await;
         Ok(())
     }
     .await;
@@ -135,22 +144,22 @@ async fn handle_message(
 
 async fn get_schema_topic(
     cache: &Mutex<LruCache<Uuid, String>>,
-    event: &DataRouterInputData<'_>,
+    schema_id: Uuid,
     schema_addr: &str,
 ) -> anyhow::Result<String> {
     let recv_channel = cache
         .lock()
         .unwrap_or_else(abort_on_poison)
-        .get_mut(&event.schema_id)
+        .get_mut(&schema_id)
         .cloned();
     if let Some(val) = recv_channel {
         return Ok(val);
     }
 
-    let mut client = connect_to_registry(schema_addr.to_owned()).await?;
+    let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
     let channel = client
         .get_schema_topic(Id {
-            id: event.schema_id.to_string(),
+            id: schema_id.to_string(),
         })
         .await?
         .into_inner()
@@ -158,7 +167,7 @@ async fn get_schema_topic(
     cache
         .lock()
         .unwrap_or_else(abort_on_poison)
-        .insert(event.schema_id, channel.clone());
+        .insert(schema_id, channel.clone());
 
     Ok(channel)
 }
@@ -174,4 +183,11 @@ async fn send_message(producer: &CommonPublisher, topic_name: &str, key: &str, p
         );
         process::abort();
     };
+}
+
+fn current_timestamp() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_millis() as i64
 }

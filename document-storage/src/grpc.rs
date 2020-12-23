@@ -3,6 +3,10 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use log::trace;
+use rpc::document_storage::document_storage_server::{DocumentStorage, DocumentStorageServer};
+use rpc::document_storage::{
+    DataMap, Empty, RetrieveBySchemaRequest, RetrieveMultipleRequest, StoreRequest,
+};
 use sled::{Db, IVec};
 use std::collections::HashMap;
 use tonic::transport::Server;
@@ -10,12 +14,7 @@ use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
 use crate::GRPC_PORT;
-use schema::storage_server::{Storage, StorageServer};
 use utils::metrics::counter;
-
-pub mod schema {
-    tonic::include_proto!("docstore");
-}
 
 struct Connector {
     db: Db,
@@ -100,11 +99,8 @@ impl Connector {
 }
 
 #[tonic::async_trait]
-impl Storage for Connector {
-    async fn store(
-        &self,
-        request: Request<schema::StoreRequest>,
-    ) -> Result<Response<schema::Empty>, Status> {
+impl DocumentStorage for Connector {
+    async fn store(&self, request: Request<StoreRequest>) -> Result<Response<Empty>, Status> {
         counter!("cdl.document-storage.store", 1);
         let request = request.into_inner();
 
@@ -122,13 +118,13 @@ impl Storage for Connector {
 
         trace!("Finished store gRPC request {:?}", object_id);
 
-        Ok(Response::new(schema::Empty {}))
+        Ok(Response::new(Empty {}))
     }
 
     async fn retrieve_multiple(
         &self,
-        request: Request<schema::RetrieveMultipleRequest>,
-    ) -> Result<Response<schema::DataMap>, Status> {
+        request: Request<RetrieveMultipleRequest>,
+    ) -> Result<Response<DataMap>, Status> {
         counter!("cdl.document-storage.retrieve-multiple", 1);
         let object_ids = request
             .into_inner()
@@ -145,19 +141,19 @@ impl Storage for Connector {
             })
             .collect::<Result<HashMap<String, Vec<u8>>, Status>>()?;
 
-        Ok(Response::new(schema::DataMap { values }))
+        Ok(Response::new(DataMap { values }))
     }
 
     async fn retrieve_by_schema(
         &self,
-        request: Request<schema::RetrieveBySchemaRequest>,
-    ) -> Result<Response<schema::DataMap>, Status> {
+        request: Request<RetrieveBySchemaRequest>,
+    ) -> Result<Response<DataMap>, Status> {
         counter!("cdl.document-storage.retrieve-by-schema", 1);
         let schema_id = parse_schema_id(&request.into_inner().schema_id)?;
 
         let values = self.retrieve_by_schema(schema_id)?;
 
-        Ok(Response::new(schema::DataMap { values }))
+        Ok(Response::new(DataMap { values }))
     }
 }
 
@@ -165,7 +161,7 @@ pub async fn run(datastore_root: PathBuf) -> anyhow::Result<()> {
     let db = sled::open(datastore_root)?;
 
     Server::builder()
-        .add_service(StorageServer::new(Connector { db }))
+        .add_service(DocumentStorageServer::new(Connector { db }))
         .serve(SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), GRPC_PORT).into())
         .await
         .context("Couldn't spawn gRPC server")

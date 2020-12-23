@@ -1,0 +1,136 @@
+syntax = "proto3";
+package schema_registry;
+
+service SchemaRegistry {
+    rpc AddSchema (NewSchema) returns (Id);
+    rpc AddSchemaVersion (NewSchemaVersion) returns (Empty);
+    rpc UpdateSchemaName (SchemaNameUpdate) returns (Empty);
+    rpc UpdateSchemaTopic (SchemaTopicUpdate) returns (Empty);
+    rpc UpdateSchemaQueryAddress (SchemaQueryAddressUpdate) returns (Empty);
+    rpc UpdateSchemaType (SchemaTypeUpdate) returns (Empty);
+    rpc AddViewToSchema (NewSchemaView) returns (Id);
+    rpc UpdateView (UpdatedView) returns (View);
+    rpc GetSchema (VersionedId) returns (SchemaDefinition);
+    rpc GetSchemaTopic (Id) returns (SchemaTopic);
+    rpc GetSchemaQueryAddress (Id) returns (SchemaQueryAddress);
+    rpc GetSchemaVersions (Id) returns (SchemaVersions);
+    rpc GetSchemaType(Id) returns (SchemaType);
+    rpc GetView (Id) returns (View);
+    rpc GetAllSchemaNames (Empty) returns (SchemaNames);
+    rpc GetAllViewsOfSchema (Id) returns (SchemaViews);
+    rpc ValidateValue (ValueToValidate) returns (Errors);
+    rpc PromoteToMaster (Empty) returns (PodName);
+    rpc Heartbeat (Empty) returns (Empty);
+}
+
+message NewSchema {
+    // for replication (empty for master, UUID for slaves)
+    string id = 1;
+    string name = 2;
+    string query_address = 3;
+    string topic = 4;
+    string definition = 5;
+    SchemaType.Type schema_type = 6;
+}
+
+message NewSchemaVersion {
+    string id = 1;
+    string version = 2;
+    string definition = 3;
+}
+
+message SchemaNameUpdate {
+    string id = 1;
+    string name = 2;
+}
+
+message SchemaTopicUpdate {
+    string id = 1;
+    string topic = 2;
+}
+
+message SchemaTypeUpdate {
+    string id = 1;
+    SchemaType.Type schema_type = 2;
+}
+
+message SchemaQueryAddressUpdate {
+    string id = 1;
+    string address = 2;
+}
+
+message NewSchemaView {
+    string schema_id = 1;
+    // for replication (empty for master, UUID for slaves)
+    string view_id = 2;
+    string name = 3;
+    string jmespath = 4;
+}
+
+message UpdatedView {
+    string id = 1;
+    string name = 2;
+    string jmespath = 3;
+}
+
+message View {
+    string name = 1;
+    string jmespath = 2;
+}
+
+message VersionedId {
+    string id = 1;
+    string version_req = 2;
+}
+
+message SchemaDefinition {
+    string version = 1;
+    string definition = 2;
+}
+
+message SchemaTopic {
+    string topic = 1;
+}
+
+message SchemaQueryAddress {
+    string address = 1;
+}
+
+message Id {
+    string id = 1;
+}
+
+message SchemaVersions {
+    repeated string versions = 1;
+}
+
+message SchemaNames {
+    map<string, string> names = 1;
+}
+
+message SchemaViews {
+    map<string, View> views = 1;
+}
+
+message ValueToValidate {
+    string schema_id = 1;
+    string value = 2;
+}
+
+message Errors {
+    repeated string errors = 1;
+}
+
+message PodName {
+    string name = 1;
+}
+
+message SchemaType {
+    enum Type {
+        DocumentStorage = 0;
+        Timeseries = 1;
+    }
+    Type schema_type = 1;
+}
+
+message Empty {}

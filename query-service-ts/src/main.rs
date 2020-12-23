@@ -1,8 +1,6 @@
 use anyhow::Context;
-use query_service_ts::{
-    schema::query_server::{Query, QueryServer},
-    victoria::VictoriaQuery,
-};
+use query_service_ts::victoria::VictoriaQuery;
+use rpc::query_service_ts::query_service_ts_server::{QueryServiceTs, QueryServiceTsServer};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use structopt::StructOpt;
 use tonic::transport::Server;
@@ -22,11 +20,11 @@ pub enum ConfigType {
 }
 
 //Could be extracted to utils, dunno how without schema
-async fn spawn_server<Q: Query>(service: Q, port: u16) -> anyhow::Result<()> {
+async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Result<()> {
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
 
     Server::builder()
-        .add_service(QueryServer::new(service))
+        .add_service(QueryServiceTsServer::new(service))
         .serve(addr.into())
         .await
         .context("gRPC server failed")

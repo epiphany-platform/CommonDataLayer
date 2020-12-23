@@ -1,7 +1,6 @@
 import os
 import subprocess
-
-from tests.common.config import PostgresConfig
+from tests.common.config import PostgresConfig, VictoriaMetricsConfig
 
 EXE = os.getenv('COMMAND_SERVICE_EXE') or 'command-service'
 
@@ -17,10 +16,13 @@ class CommandService:
         env.update(self.kafka_input_config.to_dict())
         if self.kafka_report_config:
             env.update(self.kafka_report_config.to_dict())
+        env.update({'INGESTION_METHOD': 'kafka'})
         plugin = None
 
         if type(self.db_config) is PostgresConfig:
             plugin = 'postgres'
+        elif type(self.db_config) is VictoriaMetricsConfig:
+            plugin = 'victoria-metrics'
 
         if not plugin:
             raise Exception('Unsupported database or no database at all')

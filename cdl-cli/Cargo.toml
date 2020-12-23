@@ -20,4 +20,4 @@ structopt   = "0.3"
 tokio       = { version = "0.2", features = ["macros", "io-std", "io-util", "fs"] }
 tonic       = "0.3"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
-schema-registry         = { path = "../schema-registry" }
+rpc         = { path = "../rpc" }

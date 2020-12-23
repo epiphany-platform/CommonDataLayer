@@ -1,10 +1,7 @@
 use crate::utils::*;
-use schema_registry::{
-    rpc::schema::{
-        Empty, Id, NewSchema, NewSchemaVersion, SchemaNameUpdate, SchemaQueryAddressUpdate,
-        SchemaTopicUpdate, SchemaTypeUpdate, ValueToValidate, VersionedId,
-    },
-    types::SchemaType,
+use rpc::schema_registry::{
+    types::SchemaType, Empty, Id, NewSchema, NewSchemaVersion, SchemaNameUpdate,
+    SchemaQueryAddressUpdate, SchemaTopicUpdate, SchemaTypeUpdate, ValueToValidate, VersionedId,
 };
 use semver::{Version, VersionReq};
 use serde_json::Value;
@@ -16,7 +13,7 @@ pub async fn get_schema(
     version: Option<VersionReq>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let response = client
         .get_schema(VersionedId {
             id: schema_id.to_string(),
@@ -42,14 +39,14 @@ pub async fn add_schema(
 ) -> anyhow::Result<()> {
     let definition = read_json(file)?;
 
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let response = client
         .add_schema(NewSchema {
             id: "".into(),
             name: schema_name.clone(),
             definition: serde_json::to_string(&definition)?,
             query_address,
-            topic_name: topic,
+            topic,
             schema_type: schema_type as i32,
         })
         .await?;
@@ -65,7 +62,7 @@ pub async fn add_schema(
 }
 
 pub async fn get_schema_versions(schema_id: Uuid, registry_addr: String) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let response = client
         .get_schema_versions(Id {
             id: schema_id.to_string(),
@@ -76,7 +73,7 @@ pub async fn get_schema_versions(schema_id: Uuid, registry_addr: String) -> anyh
         .into_inner()
         .versions
         .into_iter()
-        .map(|v| Version::parse(&v))
+        .map(|v: String| Version::parse(&v))
         .collect::<Result<Vec<Version>, _>>()?;
     versions.sort();
 
@@ -92,7 +89,7 @@ pub async fn set_schema_name(
     name: String,
     registry_addr: String,
 ) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client
         .update_schema_name(SchemaNameUpdate {
             id: schema_id.to_string(),
@@ -108,7 +105,7 @@ pub async fn set_schema_topic(
     topic: String,
     registry_addr: String,
 ) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client
         .update_schema_topic(SchemaTopicUpdate {
             id: schema_id.to_string(),
@@ -124,11 +121,11 @@ pub async fn set_schema_query_address(
     query_address: String,
     registry_addr: String,
 ) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client
         .update_schema_query_address(SchemaQueryAddressUpdate {
             id: schema_id.to_string(),
-            query_address,
+            address: query_address,
         })
         .await?;
 
@@ -140,7 +137,7 @@ pub async fn set_schema_type(
     schema_type: SchemaType,
     registry_addr: String,
 ) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client
         .update_schema_type(SchemaTypeUpdate {
             id: schema_id.to_string(),
@@ -164,14 +161,14 @@ pub async fn add_schema_version(
         definition: serde_json::to_string(&definition)?,
     };
 
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client.add_schema_version(schema).await?;
 
     Ok(())
 }
 
 pub async fn get_schema_names(registry_addr: String) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let schemas = client
         .get_all_schema_names(Empty {})
         .await?
@@ -190,7 +187,7 @@ pub async fn get_schema_names(registry_addr: String) -> anyhow::Result<()> {
 }
 
 pub async fn get_schema_topic(schema_id: Uuid, registry_addr: String) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let response = client
         .get_schema_topic(Id {
             id: schema_id.to_string(),
@@ -206,7 +203,7 @@ pub async fn get_schema_query_address(
     schema_id: Uuid,
     registry_addr: String,
 ) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let response = client
         .get_schema_query_address(Id {
             id: schema_id.to_string(),
@@ -219,7 +216,7 @@ pub async fn get_schema_query_address(
 }
 
 pub async fn get_schema_type(schema_id: Uuid, registry_addr: String) -> anyhow::Result<()> {
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let response = client
         .get_schema_type(Id {
             id: schema_id.to_string(),
@@ -238,7 +235,7 @@ pub async fn validate_value(
 ) -> anyhow::Result<()> {
     let value = read_json(file)?;
 
-    let mut client = connect_to_registry(registry_addr).await?;
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let errors = client
         .validate_value(ValueToValidate {
             schema_id: schema_id.to_string(),

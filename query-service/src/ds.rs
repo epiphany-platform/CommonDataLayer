@@ -1,8 +1,10 @@
-use crate::schema::{query_server::Query, ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
-use document_storage::grpc::schema::storage_client::StorageClient;
-use document_storage::grpc::schema::{RetrieveBySchemaRequest, RetrieveMultipleRequest};
+use rpc::document_storage::document_storage_client::DocumentStorageClient;
+use rpc::document_storage::{RetrieveBySchemaRequest, RetrieveMultipleRequest};
+use rpc::query_service::{
+    query_service_server::QueryService, ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap,
+};
 use structopt::StructOpt;
 use tonic::transport::Channel;
 use tonic::{Code, Request, Response, Status};
@@ -20,11 +22,11 @@ pub struct DsConnectionManager {
 
 #[tonic::async_trait]
 impl bb8::ManageConnection for DsConnectionManager {
-    type Connection = StorageClient<Channel>;
+    type Connection = DocumentStorageClient<Channel>;
     type Error = tonic::transport::Error;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        Ok(StorageClient::connect(self.addr.clone()).await?)
+        Ok(DocumentStorageClient::connect(self.addr.clone()).await?)
     }
 
     async fn is_valid(&self, conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
@@ -62,7 +64,7 @@ impl DsQuery {
 }
 
 #[tonic::async_trait]
-impl Query for DsQuery {
+impl QueryService for DsQuery {
     async fn query_multiple(
         &self,
         request: Request<ObjectIds>,
