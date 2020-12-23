@@ -11,12 +11,12 @@ Communication Methods:
 
 ## How to guide:
 
-#### Manipulate views
+#### Manipulate Views
 Views are a WIP feature, currently not used widely beside some cases in development.
 
-#### manipulate schemas
+#### Manipulate Schemas
 
-###### add schema
+###### Add Schema
 `cdl --registry-address "http://localhost:6400 schema <add|get|names|update> --name <schemaname> \
     --query-address <query-service-uri>" \
     --topic <ingest-topic> \
@@ -24,11 +24,11 @@ Views are a WIP feature, currently not used widely beside some cases in developm
 `
 
 - if `--file` is provided, specific file must have valid json inside.
-- if `--file` is missing, you will be asked to provide json inside cli,
-  to do so, insety valid json, followed by newline, and then press `ctrl+d` to finish editing
-- minimal valid json schema is `{}`
-- random schema id will be assigned to the request
+- If `--file` is missing, the CLI will expect JSON to be piped in over `stdin`.
+- A schema containing `true` will accept any valid JSON data.
+- New schemas are assigned a random UUID on creation, which will be printed after a successful insert.
 
-###### List schemas
-Will print all existing schema names and IDs:
-`cdl --registry-address "http:/localhost:6400 schema names`
+###### List Schemas
+
+ To print all existing schema names and their respective ID's:
+`cdl --registry-address "http://localhost:6400 schema names`
