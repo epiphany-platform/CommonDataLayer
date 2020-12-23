@@ -1,7 +1,7 @@
 from kafka import KafkaProducer
 import grpc
-import registry_pb2 as pb2
-import registry_pb2_grpc as pb2_grpc
+import schema_registry_pb2 as pb2
+import schema_registry_pb2_grpc as pb2_grpc
 import requests
 
 
@@ -17,7 +17,7 @@ def kafka_insert_data(brokers, topic, payload):
 def registry_create_schema(url, name, topic, query, body):
     with grpc.insecure_channel(url) as channel:
         stub = pb2_grpc.SchemaRegistryStub(channel)
-        resp = stub.AddSchema(pb2.NewSchema(id="", name=name, topic_name=topic, query_address=query, definition=body))
+        resp = stub.AddSchema(pb2.NewSchema(id="", name=name, topic=topic, query_address=query, definition=body))
         return resp.id
 
 

@@ -9,4 +9,6 @@ pub enum Error {
     KafkaError(KafkaError),
     #[error("Failed creating kafka producer `{0}`")]
     ProducerCreation(KafkaError),
+    #[error("Data cannot be parsed `{0}`")]
+    DataCannotBeParsed(serde_json::Error),
 }

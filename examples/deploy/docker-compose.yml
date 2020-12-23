@@ -30,7 +30,7 @@ services:
       KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka:9093,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
       KAFKA_ZOOKEEPER_CONNECT: "zoo:2181"
       KAFKA_BROKER_ID: 1
-      KAFKA_CREATE_TOPICS: "cdl.data.input:1:1,cdl.document.input:1:1,cdl.reports:1:1"
+      KAFKA_CREATE_TOPICS: "cdl.data.input:1:1,cdl.document.input:1:1,cdl.reports:1:1,cdl.timeseries.input:1:1"
     volumes:
       - ./docker-volume/kafka/data:/var/lib/kafka/data
     depends_on:
@@ -117,6 +117,30 @@ services:
     depends_on:
       - postgres
       - data_router
+      - kafka
+
+  victoria_command:
+    image: cdl-command-service:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=command-service
+        - ENV=DEV
+    command: "/bin/command-service victoria-metrics"
+    environment:
+      KAFKA_INPUT_GROUP_ID: "victoria_command"
+      KAFKA_INPUT_BROKERS: "kafka:9093"
+      KAFKA_INPUT_TOPIC: "cdl.timeseries.input"
+      INGESTION_METHOD: KAFKA
+      VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
+      REPORT_BROKER: "kafka:9093"
+      REPORT_TOPIC: "cdl.reports"
+      RUST_LOG: info,command_service=trace
+    depends_on:
+      - victoria_metrics
+      - data_router
+      - kafka
 
   postgres_query:
     image: cdl-query-service:latest

@@ -15,7 +15,8 @@ def fetch_data_table(db):
 
     curr.execute('SELECT * FROM cdl.data ORDER BY version')
     rows = curr.fetchall()
-    rows = [{'object_id': row[0], 'version': row[1], 'schema_id': row[2], 'payload': row[3]} for row in rows]
+    rows = [{'object_id': row[0], 'version': row[1],
+             'schema_id': row[2], 'payload': row[3]} for row in rows]
     curr.close()
     return rows
 
