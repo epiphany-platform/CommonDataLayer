@@ -44,7 +44,7 @@ Below are the example data required by data router:
 ```
 
 Messages can be batched together, however please mind, that batched messages works best when used with the same schemaId.
-Otherwise, messages will be split into subbatches containing messages with the same schemaId
+Otherwise, messages will be split into sub-batches containing messages with the same schemaId
 ```
 [
   { "objectId": 9056c0b3-2ceb-42a6-a6b6-9718c3e273bc, "schemaId": f79d7ebd-4260-4919-9ba3-45ea6701f065, "data": {} }
@@ -75,4 +75,4 @@ Mind that GRPC uses HTTP2 as its transport protocol (L4), so SCHEMA_REGISTRY_ADD
 
 See an example [configuration][configuration] of deployment of data router and other services.
 
-[configuration]: ../examples/deploy/SETUP.md
+[configuration]: ../deployment/compose/README.md

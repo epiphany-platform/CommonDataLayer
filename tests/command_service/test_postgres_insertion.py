@@ -16,7 +16,7 @@ TOPIC = "cdl.document.input"
 
 @pytest.fixture(params=['single_insert', 'multiple_inserts'])
 def prepare(request):
-    with cdl_env('.', postgres_config=PostgresConfig(), kafka_input_config=KafkaInputConfig(TOPIC)) as env:
+    with cdl_env('../deployment/compose', postgres_config=PostgresConfig(), kafka_input_config=KafkaInputConfig(TOPIC)) as env:
         data, expected = load_case(request.param, 'command_service/postgres')
 
         with closing(KafkaProducer(bootstrap_servers='localhost:9092')) as producer, CommandService(env.kafka_input_config, db_config=env.postgres_config) as _, closing(connect_to_postgres(env.postgres_config)) as db:

@@ -15,7 +15,7 @@ TOPIC = "cdl.timeseries.input"
 
 @pytest.fixture(params=['single_insert', 'multiple_inserts'])
 def prepare(request):
-    with cdl_env('.', kafka_input_config=KafkaInputConfig(TOPIC),
+    with cdl_env('../deployment/compose', kafka_input_config=KafkaInputConfig(TOPIC),
                  victoria_metrics_config=VictoriaMetricsConfig()) as env:
         data, expected = load_case(
             request.param, "command_service/victoria_command")

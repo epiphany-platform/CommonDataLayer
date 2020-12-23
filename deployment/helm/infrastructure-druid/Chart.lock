@@ -1,0 +1,6 @@
+dependencies:
+- name: druid
+  repository: https://charts.helm.sh/incubator
+  version: 0.2.10
+digest: sha256:4b29f9f2cae608b2484199f8041300e09f1217588d3c3e11541042d7c1ec820b
+generated: "2020-12-23T14:34:17.0151+01:00"

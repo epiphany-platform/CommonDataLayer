@@ -1,10 +1,10 @@
 # K8s local deployment
 For most use cases using docker-compose is a good way for local development. However some features can be developed/tested only inside Kubernetes cluster environments.
 ## Requirements
-- [docker](https://docs.docker.com/engine/install/), [docker-compose](https://docs.docker.com/compose/install/)
-- [kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl/)
-- [minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/) (other type of local Kubernetes cluster may be used, but some commands may differ)
-- [helm](https://helm.sh/docs/intro/install/)
+- [docker][docker-www], [docker-compose][docker-compose-www]
+- [kubectl][kubectl-www]
+- [minikube][minikube-www] (other type of local Kubernetes cluster may be used, but some commands may differ)
+- [helm][helm-www]
 ## Setting up local cluster
 ### Start the cluster
 Decide how much resources can be used by the local k8s cluster and start it. 
@@ -25,15 +25,15 @@ Second command builds docker image, it may take some time first time you build t
 ## Spin up infrastructure services
 To start necessary infrastructure(not necessary if you've deployed infrastructure yourself/you want to connect to services on our azure cluster):
 
-`helm install --values ./helm/helm-infrastructure/values.yaml infrastructure ./helm/helm-infrastructure`
+`helm install --values ./deployment/helm/infrastructure/values.yaml infrastructure ./deployment/helm/infrastructure`
 
 If you want to use druid repository you also need to start druid.
-`helm install --values ./helm/helm-infrastructure-druid/values.yaml infrastructure-druid ./helm-infrastructure-druid`
+`helm install --values ./deployment/helm/infrastructure-druid/values.yaml infrastructure-druid ./deployment/helm/infrastructure-druid`
 
 ## Installing CDL
 To install the solution you need to execute:
 
-`helm install --values ./helm/cdl/values-local.yaml cdl ./helm/cdl`
+`helm install --values ./helm/cdl/values-local.yaml cdl ./deployment/helm/cdl`
 
 After a moment Kubernetes pods should get started. You can check their status by `kubectl get pods`
 
@@ -60,3 +60,9 @@ Few problems you might encounter during development on local k8s cluster:
 ### TLS errors while running docker commands
 Sometimes(if minikube isn't properly stopped) it changes cluster address. This results with errors while trying to connect to minikube docker daemon. In order to fix it we have to restart the daemon.
 _This issue should be fixed on current minikube version._
+
+[docker-www]: https://docs.docker.com/engine/install/
+[docker-compose-www]: https://docs.docker.com/compose/install/
+[kubectl-www]: https://kubernetes.io/docs/tasks/tools/install-kubectl/
+[minikube-www]: https://kubernetes.io/docs/tasks/tools/install-minikube/
+[helm-www]: https://helm.sh/docs/intro/install/

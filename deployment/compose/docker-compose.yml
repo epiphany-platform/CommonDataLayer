@@ -1,3 +1,8 @@
+###
+# This is example docker compose that sets up local developer environment.
+# Please refer to README.md for instructions on how to run it.
+###
+
 version: "3"
 
 services:

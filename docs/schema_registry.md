@@ -39,4 +39,3 @@ See an example [configuration][configuration] of deployment of data router and o
 
 [configuration]: ../examples/deploy/SETUP.md
 [CDL-CLI]: CDL-CLI.md
-
