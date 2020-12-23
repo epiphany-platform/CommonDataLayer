@@ -25,4 +25,4 @@ appVersion: 0.0.5
 dependencies:
 - name: druid
   version: "0.2.10"
-  repository: "https://kubernetes-charts-incubator.storage.googleapis.com"
+  repository: "https://charts.helm.sh/incubator"

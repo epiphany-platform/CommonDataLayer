@@ -1,6 +1,6 @@
 dependencies:
 - name: druid
-  repository: https://kubernetes-charts-incubator.storage.googleapis.com
+  repository: https://charts.helm.sh/incubator
   version: 0.2.10
-digest: sha256:59c90ccaf4bad7af21c4ac93bab4f0f1d13c511a87a3547bd826a7afd8795040
-generated: "2020-09-07T12:28:54.939399487+02:00"
+digest: sha256:4b29f9f2cae608b2484199f8041300e09f1217588d3c3e11541042d7c1ec820b
+generated: "2020-12-23T14:34:17.0151+01:00"

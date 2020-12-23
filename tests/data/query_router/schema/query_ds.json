@@ -1,0 +1,68 @@
+{
+  "data": [
+    {
+      "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
+      "version": 1603285776,
+      "schema_id": "{value_replaced_by_test}",
+      "payload": {
+        "name": "John",
+        "surname": "Doe",
+        "address": {
+          "city": "Benton (IL)",
+          "line1": "1205 E Bond St",
+          "line2": "",
+          "postal_code": "62812"
+        },
+        "department": "ACC",
+        "start_of_employment": "2020-01-01",
+        "end_of_employment": "2020-04-23"
+      }
+    },
+    {
+      "object_id": "00000000-1b5a-413c-b310-1a86dc2d3c78",
+      "version": 1603285780,
+      "schema_id": "{value_replaced_by_test}",
+      "payload": {
+        "name": "John",
+        "surname": "Doe",
+        "address": {
+          "city": "Benton (IL)",
+          "line1": "1205 E Bond St",
+          "line2": "",
+          "postal_code": "62812"
+        },
+        "department": "ACC",
+        "start_of_employment": "2020-01-01",
+        "end_of_employment": "2020-04-23"
+      }
+    }
+  ],
+  "expected": {
+    "00000000-1b5a-413c-b310-1a86dc2d3c78": {
+      "address": {
+        "city": "Benton (IL)",
+        "line1": "1205 E Bond St",
+        "line2": "",
+        "postal_code": "62812"
+      },
+      "department": "ACC",
+      "end_of_employment": "2020-04-23",
+      "name": "John",
+      "start_of_employment": "2020-01-01",
+      "surname": "Doe"
+    },
+    "6793227c-1b5a-413c-b310-1a86dc2d3c78": {
+      "address": {
+        "city": "Benton (IL)",
+        "line1": "1205 E Bond St",
+        "line2": "",
+        "postal_code": "62812"
+      },
+      "department": "ACC",
+      "end_of_employment": "2020-04-23",
+      "name": "John",
+      "start_of_employment": "2020-01-01",
+      "surname": "Doe"
+    }
+  }
+}

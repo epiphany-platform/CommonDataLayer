@@ -50,9 +50,9 @@ spec:
     spec:
       containers:
       - name: cdl-schema-registry
-        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.schemaRegistry.image }}:{{ .Values.global.imageVersion }}"
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-schema-registry:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/{{ .Values.schemaRegistry.bin }}"]
+        command: ["/bin/schema-registry"]
         env:
         - name: INPUT_PORT
           value: "6400"
@@ -73,7 +73,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         - name: RUST_LOG
-          value: "info,{{ .Values.schemaRegistry.bin }}=debug"
+          value: "info,schema-registry=debug"
         ports:
         - containerPort: 51805
         volumeMounts:
@@ -133,9 +133,9 @@ spec:
     spec:
       containers:
       - name: cdl-data-router
-        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.dataRouter.image }}:{{ .Values.global.imageVersion }}"
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-data-router:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/{{ .Values.dataRouter.bin }}"]
+        command: ["/bin/data-router"]
         env:
         - name: KAFKA_TOPIC
           value: "{{ .Values.dataRouter.inputTopic }}"
@@ -150,7 +150,7 @@ spec:
         - name: CACHE_CAPACITY
           value: "500"
         - name: RUST_LOG
-          value: "info,{{ .Values.dataRouter.bin }}=debug"
+          value: "info,data-router=debug"
         ports:
         - containerPort: 51805
       imagePullSecrets:
@@ -176,9 +176,9 @@ spec:
       serviceAccountName: {{ .Release.Name }}-leader-elector-sa
       containers:
       - name: cdl-leader-elector
-        image: "{{ .Values.global.imageRepositoryPath }}{{ .Values.leaderElector.image }}:{{ .Values.global.imageVersion }}"
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-leader-elector:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/{{ .Values.leaderElector.bin }}"]
+        command: ["/bin/leader-elector"]
         env:
         - name: HEARTBEAT_SECS
           value: "{{ .Values.leaderElector.heartbeatTime }}"
@@ -189,7 +189,7 @@ spec:
         - name: SCHEMA_PORT
           value: "6400"
         - name: RUST_LOG
-          value: "info,{{ .Values.leaderElector.bin }}=debug"
+          value: "info,leader-elector=debug"
       imagePullSecrets:
         - name: {{ .Values.global.cdlImagePullSecrets }}
 

@@ -24,13 +24,13 @@ appVersion: 0.0.5
 
 dependencies:
 - name: rabbitmq
-  version: "7.5.7"
+  version: "8.6.0"
   repository: "https://charts.bitnami.com/bitnami"
 - name: kafka
-  version: "11.6.2"
+  version: "12.4.0"
   repository: "https://charts.bitnami.com/bitnami"
 - name: postgresql
-  version: "9.4.0"
+  version: "10.2.0"
   repository: "https://charts.bitnami.com/bitnami"
 - name: victoria-metrics-single
   version: "0.6.6"
