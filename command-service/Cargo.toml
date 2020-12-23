@@ -18,7 +18,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow      = "1.0"
 async-trait = "0.1"
-bb8         = "0.4"
+bb8         = "0.6"
 env_logger  = "0.8"
 fnv         = "1.0"
 futures     = "0.3"

@@ -267,13 +267,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "bb8"
+version = "0.6.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "486f2c0824c803d4e77f7cb915c9f0413a772f1dcef3ccf304bd39fa099c781a"
+dependencies = [
+ "async-trait",
+ "futures-channel",
+ "futures-util",
+ "parking_lot 0.11.1",
+ "tokio 0.3.6",
+]
+
+[[package]]
 name = "bb8-postgres"
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39a233af6ea3952e20d01863c87b4f6689b2f806249688b0908b5f02d4fa41ac"
 dependencies = [
  "async-trait",
- "bb8",
+ "bb8 0.4.2",
  "futures",
  "tokio 0.2.24",
  "tokio-postgres 0.5.5",
@@ -506,7 +519,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "bb8",
+ "bb8 0.6.2",
  "bb8-postgres",
  "document-storage",
  "env_logger 0.8.2",
@@ -2471,7 +2484,7 @@ name = "query-service"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bb8",
+ "bb8 0.6.2",
  "bb8-postgres",
  "env_logger 0.8.2",
  "log",
@@ -2492,7 +2505,7 @@ name = "query-service-ts"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bb8",
+ "bb8 0.6.2",
  "env_logger 0.8.2",
  "log",
  "reqwest",
@@ -3567,6 +3580,7 @@ dependencies = [
  "libc",
  "memchr",
  "mio 0.7.6",
+ "parking_lot 0.11.1",
  "pin-project-lite 0.2.0",
  "slab",
 ]
