@@ -21,7 +21,7 @@ pbr         = "1.0"
 rand        = "0.8"
 rdkafka     = "0.24"
 tokio-amqp  = "0.1"
-lapin       = "1.2"
+lapin       = "1.6"
 structopt   = "0.3"
 serde_json  = "1.0"
 serde       = { version = "1.0", features = ["derive"] }
