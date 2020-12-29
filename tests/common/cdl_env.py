@@ -5,6 +5,8 @@ from contextlib import contextmanager
 from tests.common import ensure_kafka_topic_exists, ensure_postgres_database_exists, ensure_victoria_metrics_database_exists
 from tests.common.config import KafkaInputConfig, PostgresConfig, VictoriaMetricsConfig
 
+CWD = os.getenv("WORKDIR") or os.getcwd()
+
 
 class CdlEnvCofig:
     def __init__(self, testcontainers_path: os.path,
@@ -23,7 +25,7 @@ def cdl_env(
         kafka_input_config: KafkaInputConfig = None,
         postgres_config: PostgresConfig = None,
         victoria_metrics_config: VictoriaMetricsConfig = None):
-    with DockerCompose(testcontainers_path) as _:
+    with DockerCompose(os.path.join(CWD, testcontainers_path)) as _:
         if kafka_input_config:
             ensure_kafka_topic_exists(kafka_input_config)
         if postgres_config:
