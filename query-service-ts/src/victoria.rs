@@ -138,11 +138,12 @@ impl QueryServiceTs for VictoriaQuery {
     ) -> Result<Response<TimeSeries>, Status> {
         let query = [(
             "query",
-            format!("{{_name_=~\"{}_*\"}}", request.into_inner().schema_id),
+            format!("{{__name__=~\"{}_.*\"}}", request.into_inner().schema_id),
         )];
         dbg!(&query);
 
         let response: String = self.query_db("GET", "/query", &query).await?;
+        dbg!(&response);
 
         Ok(tonic::Response::new(TimeSeries {
             timeseries: response,

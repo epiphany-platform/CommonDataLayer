@@ -1,5 +1,6 @@
 import pytest
 import json
+import time
 
 from tests.query_service_ts import prepare_env
 from tests.common import load_case
@@ -11,10 +12,12 @@ def prepare(request, prepare_env):
     db, stub = prepare_env
     data, expected = load_case(request.param, "query_service_ts")
     db.insert_test_data(data['database_setup'])
+    time.sleep(2)  # Ensure that 'search.latencyOffset' passed
+
     query = data["query_for"]
     return db, stub, expected, query
 
-# TODO: Debug why it doesn't work, fix to query by schema instead of name of metrics and more testcases
+# TODO: Handle that instant query returns current timestamp instead of timestamp of insert
 
 
 def test_query_by_schema(prepare):
