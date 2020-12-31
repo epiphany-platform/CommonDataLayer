@@ -24,8 +24,7 @@ class QueryServiceTs:
         env.update(INPUT_PORT=self.input_port)
         env.update(self.db_config.to_dict())
 
-        self.svc = subprocess.Popen(
-            [EXE, plugin], env=env, stdout=subprocess.PIPE)
+        self.svc = subprocess.Popen([EXE, plugin], env=env)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
