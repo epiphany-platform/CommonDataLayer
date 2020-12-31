@@ -1,0 +1,47 @@
+global:
+  imageRepositoryPath: epiphanyplatform/
+  imageVersion: master
+  imagePullPolicy: Always
+  kafkaBrokers: 10.1.5.4:9092
+  cdlImagePullSecrets: services
+  reportTopic: cdl.errors
+
+dataRouter:
+  inputTopic: cdl.data.input
+
+schemaRegistry:
+  storageClass: standard
+  storageSize: 3Gi
+  port: 30150
+
+leaderElector:
+  heartbeatTime: 2
+
+postgres-document:
+  commandServiceReplicaCount: 1
+  postgresDbReplicaCount: 0
+  postgresUsername: postgres
+  postgresPassword: postgres
+  postgresHost: 10.1.1.5
+  postgresPort: 5432
+  postgresDbname: cdldb
+  postgresSchema: public
+  ingestionMethod: kafka
+  inputTopic: cdl.document.data
+
+sled-document:
+  replicaCommandCount: 0
+  replicaDbCount: 0
+  maxDbSize: 3Gi
+  storageClass: azurefile
+  inputTopic: cdl.document2.data
+
+druid-timeseries:
+  replicaCommandCount: 1
+  inputTopic: cdl.timeseries.data
+  outputTopic: cdl.timeseries.generic-druid
+
+victoria-metrics-timeseries:
+  replicaCommandCount: 1
+  inputTopic: cdl.timeseries2.data
+  outputURL: http://infrastructure-victoria-metrics-single-server:8428/

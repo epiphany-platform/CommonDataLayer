@@ -30,7 +30,7 @@ Crate Name              | Purpose
 data-router             | Route incoming data from and through MQ for consumption by the specific Command Service
 schema-registry         | Manage user-defined schemas that define the format of incoming values and their respective topics
 query-service           | Wrap each individual repository for retrieval of data
-command-service         | Intake data from a MQ and storege, in specific repository
+command-service         | Intake data from a MQ and storage, in specific repository
 leader-elector          | Elect master nodes in replicated services (_only for the Schema Repository, currently_)
 document-storage        | Store document data keyed on UUIDs powered by [sled][sled]
 blob-store              | Store binary data keyed on UUIDs from user powered by [sled][sled]

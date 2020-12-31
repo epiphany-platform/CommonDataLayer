@@ -14,7 +14,7 @@ Ingest methods:
 - RabbitMq
 - GRPC (currently either only one instance without kubernetes)
 
-Egest methods (supported repositores):
+Egest methods (supported repositories):
 - Postgresql (tested on 12, should support anything >=9, advised 13)
 - VictoriaMetrics
 - Druid

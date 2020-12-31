@@ -2,7 +2,7 @@
 
 ### Technical Description
 
-Schema Registy (also, `SR` for short) is responible for storing configuration about the data types handled by CDL. Schema Registry is a persistant graph database, that can be interfaced via grpc (other means of interaction are in progresss). Currently there is no GUI nor TUI. User interaction consist of internal tool [cdl-cli][cdl-cli]. There are also basic replication ability built-in.
+The Schema Registry (`SR` for short) is responsible for storing configuration about the data types handled by CDL. It is a persistent graph database, that can be queried via gRPC (other means of interaction are in progress). Currently there is no GUI nor TUI; user interaction is currently performed with the [CDL-CLI][CDL-CLI]. Replication across multiple instances of the Schema Registry is supported.
 
 Interacts with:
 - nothing on its own
@@ -38,4 +38,4 @@ Mind that GRPC uses HTTP2 as its transport protocol (L4), so SCHEMA_REGISTRY_ADD
 See an example [configuration][configuration] of deployment of data router and other services.
 
 [configuration]: ../examples/deploy/SETUP.md
-[cdl-cli]: cdl-cli.md
+[CDL-CLI]: CDL-CLI.md

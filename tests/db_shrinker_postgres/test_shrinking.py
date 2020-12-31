@@ -9,7 +9,7 @@ from tests.common.postgres import fetch_data_table, insert_test_data, connect_to
 
 @pytest.fixture(params=['field_added', 'field_deleted', 'partial_update', 'simple_override'])
 def shrinking(request):
-    with cdl_env('.', postgres_config=PostgresConfig()) as env:
+    with cdl_env('../deployment/compose', postgres_config=PostgresConfig()) as env:
         db = connect_to_postgres(env.postgres_config)
         data, expected = load_case(request.param, 'db_shrinker_postgres')
 

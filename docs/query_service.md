@@ -11,7 +11,7 @@ Communication to query service is done through [gRPC][grpc] based on two [endpoi
 Interacts with:
 - Druid
 - Postgresql
-- VictoriaMetrics (accidentaly also Prometheus)
+- VictoriaMetrics (accidentally also Prometheus)
 - Sled
 - Troika
 - .. any similar grpc-able repo
@@ -38,7 +38,6 @@ POSTGRES_SCHEMA
 See an example [configuration][configuration] of deployment of data router and other services. 
 
 [grpc]: https://grpc.io/docs/what-is-grpc/introduction/
-[proto]: ../query-service/proto/query.proto
 [schema-registry]: ../schema-registry/README.md
-[configuration]: ../examples/deploy/SETUP.md
-[endpoints]: ../query-service/proto/query.proto
+[configuration]: ../deployment/compose/README.md
+[endpoints]: ../rpc/proto

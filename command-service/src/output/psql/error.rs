@@ -4,8 +4,6 @@ use thiserror::Error as DeriveError;
 pub enum Error {
     #[error("Unable to connect to server via gRPC `{0}`")]
     FailedToConnect(bb8_postgres::tokio_postgres::Error),
-    #[error("Channel was closed on receiver side.")]
-    RecvDropped,
     #[error("Failed to parse url into postgres connection string `{0}`")]
     FailedToParseUrl(bb8_postgres::tokio_postgres::Error),
     #[error(

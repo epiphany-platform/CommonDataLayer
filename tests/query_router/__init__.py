@@ -15,7 +15,7 @@ def assert_json(lhs, rhs):
 
 @pytest.fixture
 def prepare_env(tmp_path):
-    with cdl_env('.', kafka_input_config=KafkaInputConfig('cdl.data.input'),
+    with cdl_env('../deployment/compose', kafka_input_config=KafkaInputConfig('cdl.data.input'),
                  postgres_config=PostgresConfig(),
                  victoria_metrics_config=VictoriaMetricsConfig()) as env:
         with SchemaRegistry(str(tmp_path), env.kafka_input_config.brokers) as sr:

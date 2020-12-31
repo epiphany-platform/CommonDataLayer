@@ -14,8 +14,8 @@ env:
   RUSTUP_MAX_RETRIES: 10
 
 jobs:
-  cilppy:
-    name: Verify and test workspace
+  cargo-testing:
+    name: Test rust code
     runs-on: ubuntu-latest
 
     steps:
@@ -62,6 +62,37 @@ jobs:
         with:
           command: test
           args: --workspace
+
+      - name: Clear bloat
+        run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm
+
+  component-testing:
+    name: Test modules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          override: true
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+          architecture: 'x64'
+
+      - name: Cache cargo target dir
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run tests
+        run: tests/run-tests.sh
 
       - name: Clear bloat
         run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm

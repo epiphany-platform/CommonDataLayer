@@ -96,7 +96,8 @@ http://${ampq_url}/api/exchanges/%2F/${exchange}/publish
 ## Query Data 
 
 ### Query via Query Service
-Following this example local deploymet, you can query for data saved. Here data is saved within the PR. Ensure that environment variables are set for `POSTGRES_USERNAME`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DBNAME`, `POSTGRES_SCHEMA`, `INPUT_PORT` and `DS_QUERY_URL` or run query service directly on machine.
+Following this example local deployment, you can query for data saved. Here data is saved within the PR.
+Ensure that environment variables are set for `POSTGRES_USERNAME`, `POSTGRES_PASSWORD`, `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DBNAME`, `POSTGRES_SCHEMA`, `INPUT_PORT` and `DS_QUERY_URL` or run query service directly on machine.
 
 ```
 cargo run --bin query_service -- \
@@ -125,7 +126,7 @@ See [k8s_local_deployment.md][deployment]
 [installation]: https://www.rust-lang.org/tools/install
 [deployment]: ./k8s_local_deployment.md
 [docker-desktop]: https://docs.docker.com/desktop/
-[local-setup]: ../examples/deploy/SETUP.md
+[local-setup]: ../deployment/compose/README.md
 [grpc]: https://grpc.io/docs/what-is-grpc/introduction/
 [command-service]: command_service.md
 [schema-registry]: ../schema-registry/README.md

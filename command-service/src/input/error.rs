@@ -33,8 +33,6 @@ pub enum Error {
     TimestampUnavailable,
     #[error("Failed to communicate with handler `{0}`")]
     CommunicationError(report::Error),
-    #[error("Channel was closed on sender side")]
-    SenderDropped,
     #[error("Failed to initialize reporting module")]
     FailedToInitializeReporting(report::Error),
 }
