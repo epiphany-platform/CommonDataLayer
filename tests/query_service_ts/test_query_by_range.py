@@ -5,7 +5,7 @@ from tests.common import load_case
 from rpc.proto.query_service_ts_pb2 import Range
 
 
-@pytest.fixture(params=["range/single"])
+@pytest.fixture(params=["range/single", "range/lower_step", "range/bigger_step", "range/out_of_range"])
 def prepare(request, prepare_env):
     db, stub = prepare_env
     data, expected = load_case(request.param, "query_service_ts")
@@ -13,7 +13,7 @@ def prepare(request, prepare_env):
     query = data["query_for"]
     return stub, expected, query
 
-#TODO: More testcases
+
 def test_query_by_range(prepare):
     stub, expected, query = prepare
     response = stub.QueryByRange(Range(**query))
