@@ -164,8 +164,7 @@ impl QueryServiceTs for VictoriaQuery {
             .await?;
 
         Ok(tonic::Response::new(ValueBytes {
-            value_bytes: serde_json::to_vec(&response)
-                .map_err(|e| Status::internal(format!("Error serializing data: {}", e)))?,
+            value_bytes: response.as_bytes().to_vec(),
         }))
     }
 }
