@@ -5,7 +5,7 @@ from tests.common import load_case
 from rpc.proto.query_service_ts_pb2 import RawStatement
 
 
-@pytest.fixture(params=["raw/export"])
+@pytest.fixture(params=["raw/export", "raw/get_query_range", "raw/post_query_range", "raw/handle_functions"])
 def prepare(request, prepare_env):
     db, stub = prepare_env
     data, expected = load_case(request.param, "query_service_ts")
