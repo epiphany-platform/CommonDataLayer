@@ -36,7 +36,6 @@ utils       = { path = "../utils" }
 url         = "2.1"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 bb8-postgres            = { version = "0.4", features = ["with-uuid-0_8", "with-serde_json-1"] }
-document-storage        = { path = "../document-storage" }
 
 [dev-dependencies]
 test-case = "1.0"

@@ -292,7 +292,6 @@ dependencies = [
  "serde_json",
  "structopt",
  "tokio 0.2.24",
- "tokio-amqp",
  "uuid",
 ]
 
@@ -508,7 +507,6 @@ dependencies = [
  "async-trait",
  "bb8",
  "bb8-postgres",
- "document-storage",
  "env_logger 0.8.2",
  "fnv",
  "futures",
