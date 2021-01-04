@@ -82,7 +82,7 @@ def ensure_victoria_metrics_database_exists(victoria_config):
             set_up = db.is_db_alive()
             if set_up:
                 break
-        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError) as _:
+        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError):
             time.sleep(5)
 
     if not set_up:
