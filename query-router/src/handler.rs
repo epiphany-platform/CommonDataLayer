@@ -59,7 +59,7 @@ pub async fn query_single(
         }
 
         (SchemaType::Timeseries, Body::Empty {}) => Err(Error::SingleQueryMissingValue),
-        (_, Body::Raw{query}) => Err(Error::WrongValueFormat),
+        (_, Body::Raw{query: _}) => Err(Error::WrongValueFormat),
     }?;
 
     Ok(warp::reply::with_header(
@@ -139,7 +139,7 @@ pub async fn query_raw(
 
         (Body::Empty {}, _) => Err(Error::RawQueryMissingValue),
 
-        (Body::Range { from, to, step }, _) => Err(Error::WrongValueFormat),
+        (Body::Range { from: _, to: _, step: _ }, _) => Err(Error::WrongValueFormat),
     }?;
 
     Ok(warp::reply::with_header(
