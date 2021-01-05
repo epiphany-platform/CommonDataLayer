@@ -43,7 +43,6 @@ Because our schema-registry is automatically initialized with some schemas, you 
       id,
       definitions {
         version,
-        queriedVersion,
         definition
       },
       views {
