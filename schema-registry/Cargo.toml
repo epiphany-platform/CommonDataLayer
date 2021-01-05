@@ -16,6 +16,11 @@ name = "schema-registry"
 path = "src/main.rs"
 
 [dependencies]
+# Workspace
+utils       = { path = "../utils" }
+rpc         = { path = "../rpc" }
+
+# Crates.io
 anyhow      = "1.0"
 env_logger  = "0.8"
 envy        = "0.4"
@@ -33,6 +38,4 @@ tokio       = { version = "0.2", features = ["macros"] }
 tonic       = "0.3"
 url         = "2.1"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
-utils       = { path = "../utils" }
-rpc         = { path = "../rpc" }
 chrono      = "0.4.19"

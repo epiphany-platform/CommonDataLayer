@@ -12,6 +12,10 @@ name = "leader-elector"
 path = "src/main.rs"
 
 [dependencies]
+# Workspace
+schema-registry         = { path = "../schema-registry" }
+
+# Crates.io
 anyhow      = "1.0"
 env_logger  = "0.8"
 envy        = "0.4"
@@ -24,4 +28,3 @@ serde_json  = "1.0"
 serde_yaml  = "0.8"
 tokio       = { version = "0.2", features = ["rt-core"] }
 futures-util            = "0.3"
-schema-registry         = { path = "../schema-registry" }
