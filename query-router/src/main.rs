@@ -49,7 +49,7 @@ async fn main() {
         .and(schema_id_filter)
         .and(address_filter.clone())
         .and_then(handler::query_by_schema);
-    let raw_route = warp::path!("Raw")
+    let raw_route = warp::path!("raw")
         .and(schema_id_filter)
         .and(address_filter.clone())
         .and(body_filter)
