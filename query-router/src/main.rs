@@ -56,8 +56,8 @@ async fn main() {
         .and_then(handler::query_raw);
 
     let routes = warp::post()
-        .and(single_route)
-        .or(warp::get().and(multiple_route.or(schema_route.or(raw_route))));
+        .and(single_route.or(raw_route))
+        .or(warp::get().and(multiple_route.or(schema_route)));
 
     warp::serve(routes)
         .run(([0, 0, 0, 0], config.input_port))
