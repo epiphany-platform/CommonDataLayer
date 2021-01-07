@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
-use warp::Buf;
 use rpc::{query_service, query_service_ts};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -17,7 +16,7 @@ pub enum Body {
         step: String,
     },
     Raw {
-        query: String,
+        raw_statement: String,
     },
     Empty {},
 }
@@ -59,7 +58,7 @@ pub async fn query_single(
         }
 
         (SchemaType::Timeseries, Body::Empty {}) => Err(Error::SingleQueryMissingValue),
-        (_, Body::Raw{query: _}) => Err(Error::WrongValueFormat),
+        (_, Body::Raw{raw_statement: _}) => Err(Error::WrongValueFormat),
     }?;
 
     Ok(warp::reply::with_header(
@@ -125,14 +124,14 @@ pub async fn query_raw(
     let (address, schema_type) = cache.get_schema_info(schema_id).await?;
 
     let values = match (request_body, schema_type) {
-        (Body::Raw{ query}, SchemaType::DocumentStorage) => {
-            query_service::query_raw(query, address)
+        (Body::Raw{ raw_statement}, SchemaType::DocumentStorage) => {
+            query_service::query_raw(raw_statement, address)
                     .await
                     .map_err(Error::ClientError)
         }
 
-        (Body::Raw{ query}, SchemaType::Timeseries) => {
-            query_service_ts::query_raw(query, address)
+        (Body::Raw{ raw_statement}, SchemaType::Timeseries) => {
+            query_service_ts::query_raw(raw_statement, address)
                     .await
                     .map_err(Error::ClientError)
         }
