@@ -14,5 +14,6 @@ export QUERY_SERVICE_TS_EXE="${SCRIPT_DIR}/../target/debug/query-service-ts"
 pip3 install -r "${SCRIPT_DIR}/../requirements.txt"
 
 export WORKDIR=${SCRIPT_DIR}
+export PYTHONPATH=$PYTHONPATH:"${SCRIPT_DIR}/../crates/"
 
 python3 -m pytest "${SCRIPT_DIR}"
