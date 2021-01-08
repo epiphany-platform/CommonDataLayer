@@ -52,8 +52,8 @@ COPY crates/api/ crates/api/
 ARG ENV
 ARG BIN
 
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/src/cdl/target \
+RUN --mount=type=cache,mode=0755,target=/usr/local/cargo/registry \
+    --mount=type=cache,mode=0755,target=/usr/src/cdl/target \
     if [ "$ENV" = "DEV" ]; \
     then CARGO_ARGS="--offline"; CARGO_PROFILE="debug"; \
     else CARGO_ARGS="--offline --release"; CARGO_PROFILE="release"; \
