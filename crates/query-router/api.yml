@@ -105,6 +105,13 @@ paths:
           schema:
             type: string
             example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/Raw'
       responses:
         '200':
           description: >-
@@ -113,13 +120,6 @@ paths:
             application/json:
               schema:
                 type: object
-          requestBody:
-            required: true
-            content:
-              application/json:
-                schema:
-                  oneOf:
-                    - $ref: '#/components/schemas/Raw'
 
 components:
   schemas:
