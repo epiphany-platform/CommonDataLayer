@@ -14,44 +14,46 @@ COPY rust-toolchain ./
 COPY Cargo.lock ./
 COPY Cargo.toml ./
 
-COPY blob-store/Cargo.toml blob-store/Cargo.toml
-COPY benchmarking/Cargo.toml benchmarking/Cargo.toml
-COPY cdl-cli/Cargo.toml cdl-cli/Cargo.toml
-COPY command-service/Cargo.toml command-service/Cargo.toml
-COPY data-router/Cargo.toml data-router/Cargo.toml
-COPY db-shrinker-postgres/Cargo.toml db-shrinker-postgres/Cargo.toml
-COPY document-storage/Cargo.toml document-storage/Cargo.toml
-COPY leader-elector/Cargo.toml leader-elector/Cargo.toml
-COPY query-router/Cargo.toml query-router/Cargo.toml
-COPY query-service/Cargo.toml query-service/Cargo.toml
-COPY query-service-ts/Cargo.toml query-service-ts/Cargo.toml
-COPY rpc/Cargo.toml rpc/Cargo.toml
-COPY schema-registry/Cargo.toml schema-registry/Cargo.toml
-COPY utils/Cargo.toml utils/Cargo.toml
+COPY crates/blob-store/Cargo.toml crates/blob-store/Cargo.toml
+COPY crates/benchmarking/Cargo.toml crates/benchmarking/Cargo.toml
+COPY crates/cdl-cli/Cargo.toml crates/cdl-cli/Cargo.toml
+COPY crates/command-service/Cargo.toml crates/command-service/Cargo.toml
+COPY crates/data-router/Cargo.toml crates/data-router/Cargo.toml
+COPY crates/db-shrinker-postgres/Cargo.toml crates/db-shrinker-postgres/Cargo.toml
+COPY crates/document-storage/Cargo.toml crates/document-storage/Cargo.toml
+COPY crates/leader-elector/Cargo.toml crates/leader-elector/Cargo.toml
+COPY crates/query-router/Cargo.toml crates/query-router/Cargo.toml
+COPY crates/query-service/Cargo.toml crates/query-service/Cargo.toml
+COPY crates/query-service-ts/Cargo.toml crates/query-service-ts/Cargo.toml
+COPY crates/rpc/Cargo.toml crates/rpc/Cargo.toml
+COPY crates/schema-registry/Cargo.toml crates/schema-registry/Cargo.toml
+COPY crates/utils/Cargo.toml crates/utils/Cargo.toml
+COPY crates/api/Cargo.toml crates/api/Cargo.toml
 
 RUN cargo fetch
 RUN rustup target add x86_64-unknown-linux-musl
 
-COPY blob-store/ blob-store/
-COPY benchmarking/ benchmarking/
-COPY cdl-cli/ cdl-cli/
-COPY command-service/ command-service/
-COPY data-router/ data-router/
-COPY db-shrinker-postgres/ db-shrinker-postgres/
-COPY document-storage/ document-storage/
-COPY leader-elector/ leader-elector/
-COPY query-router/ query-router/
-COPY query-service/ query-service/
-COPY query-service-ts/ query-service-ts/
-COPY rpc/ rpc/
-COPY schema-registry/ schema-registry/
-COPY utils/ utils/
+COPY crates/blob-store/ crates/blob-store/
+COPY crates/benchmarking/ crates/benchmarking/
+COPY crates/cdl-cli/ crates/cdl-cli/
+COPY crates/command-service/ crates/command-service/
+COPY crates/data-router/ crates/data-router/
+COPY crates/db-shrinker-postgres/ crates/db-shrinker-postgres/
+COPY crates/document-storage/ crates/document-storage/
+COPY crates/leader-elector/ crates/leader-elector/
+COPY crates/query-router/ crates/query-router/
+COPY crates/query-service/ crates/query-service/
+COPY crates/query-service-ts/ crates/query-service-ts/
+COPY crates/rpc/ crates/rpc/
+COPY crates/schema-registry/ crates/schema-registry/
+COPY crates/utils/ crates/utils/
+COPY crates/api/ crates/api/
 
 ARG ENV
 ARG BIN
 
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/src/cdl/target \
+RUN --mount=type=cache,mode=0755,target=/usr/local/cargo/registry \
+    --mount=type=cache,mode=0755,target=/usr/src/cdl/target \
     if [ "$ENV" = "DEV" ]; \
     then CARGO_ARGS="--offline"; CARGO_PROFILE="debug"; \
     else CARGO_ARGS="--offline --release"; CARGO_PROFILE="release"; \
@@ -71,4 +73,4 @@ RUN if [ "$ENV" != "DEV" ]; \
 FROM alpine
 
 COPY --from=cargo-build /usr/src/cdl/output/* /bin/
-COPY benchmarking/sample_json sample_json/
+COPY crates/benchmarking/sample_json sample_json/

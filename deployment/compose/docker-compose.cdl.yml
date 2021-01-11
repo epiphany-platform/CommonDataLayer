@@ -32,7 +32,10 @@ services:
       KAFKA_GROUP_ID: "schema_registry"
       KAFKA_TOPICS: "cdl.schema_registry.internal"
       INPUT_PORT: "50101"
+      IMPORT_FILE: "/var/data/schema.json"
       RUST_LOG: info,schema_registry=trace
+    volumes:
+      - ./setup/initial-schema.json:/var/data/schema.json
     depends_on:
       - kafka
 
@@ -161,3 +164,19 @@ services:
       VICTORIA_QUERY_URL: "http://victoria_metrics:8428/api/v1"
       INPUT_PORT: 50104
       RUST_LOG: debug
+
+  web_api:
+    image: cdl-api:latest
+    command: "/bin/api"
+    ports:
+      - "50106:50106"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=api
+    environment:
+      INPUT_PORT: 50106
+      RUST_LOG: info,api=trace
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      QUERY_ROUTER_ADDR: "http://query_router:50103"

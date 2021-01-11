@@ -49,8 +49,8 @@ The Query Router is capable of retrieving data from various repositories. More a
 
 
 [architecture-puml]: http://www.plantuml.com/plantuml/proxy?src=https://raw.githubusercontent.com/epiphany-platform/CommonDataLayer/develop/docs/graphs/cdl.puml
-[schema-registry]: ../schema-registry/README.md
-[data-router]: ../data-router
+[schema-registry]: ../crates/schema-registry/README.md
+[data-router]: ../crates/data-router
 [sled]: https://github.com/spacejam/sled
-[command-service]: ../command-service
-[query-router]: ../query-router/README.md
+[command-service]: ../crates/command-service
+[query-router]: ../crates/query-router/README.md
