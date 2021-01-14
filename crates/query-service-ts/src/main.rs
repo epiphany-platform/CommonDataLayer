@@ -1,5 +1,6 @@
 use anyhow::Context;
-use query_service_ts::victoria::VictoriaQuery;
+use query_service_ts::druid::{DruidConfig, DruidQuery};
+use query_service_ts::victoria::{VictoriaConfig, VictoriaQuery};
 use rpc::query_service_ts::query_service_ts_server::{QueryServiceTs, QueryServiceTsServer};
 use std::net::{Ipv4Addr, SocketAddrV4};
 use structopt::StructOpt;
@@ -16,7 +17,8 @@ pub struct Config {
 
 #[derive(StructOpt)]
 pub enum ConfigType {
-    Victoria(query_service_ts::victoria::VictoriaConfig),
+    Victoria(VictoriaConfig),
+    Druid(DruidConfig),
 }
 
 //Could be extracted to utils, dunno how without schema
@@ -43,6 +45,9 @@ async fn main() -> anyhow::Result<()> {
                 config.input_port,
             )
             .await
+        }
+        ConfigType::Druid(druid_config) => {
+            spawn_server(DruidQuery::load(druid_config).await?, config.input_port).await
         }
     }
 }
