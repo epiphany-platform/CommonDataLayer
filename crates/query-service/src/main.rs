@@ -16,7 +16,6 @@ pub struct Config {
 #[derive(StructOpt)]
 pub enum ConfigType {
     Postgres(query_service::psql::PsqlConfig),
-    Sled(query_service::ds::DsConfig),
 }
 
 async fn spawn_server<Q: QueryService>(service: Q, port: u16) -> anyhow::Result<()> {
@@ -41,13 +40,6 @@ async fn main() -> anyhow::Result<()> {
         ConfigType::Postgres(psql_config) => {
             spawn_server(
                 query_service::psql::PsqlQuery::load(psql_config).await?,
-                config.input_port,
-            )
-            .await
-        }
-        ConfigType::Sled(sled_config) => {
-            spawn_server(
-                query_service::ds::DsQuery::load(sled_config).await?,
                 config.input_port,
             )
             .await
