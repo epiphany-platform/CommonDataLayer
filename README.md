@@ -41,10 +41,12 @@ In addition to the above crates, there are some other useful directories:
 
 Directory       | Purpose
 ----------------|--------
-helm            | helm charts for remote deployment
+deploy/helm     | helm charts for remote deployment
+deploy/compose  | sample deployment guide for docker
 benchmarking    | scripts and scaffolding data for benchmarking
-examples/deploy | sample deployment guide for docker
-
+tests           | component tests
+examples        | examplary client of cdl
+docs            | cdl documentation
 
 ## Getting Started
 
