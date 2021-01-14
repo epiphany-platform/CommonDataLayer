@@ -76,8 +76,8 @@ services:
       COMMUNICATION_METHOD: "kafka"
       KAFKA_GROUP_ID: "postgres_command"
       KAFKA_BROKERS: "kafka:9093"
-      ORDERED_TOPICS_OR_QUEUES: "cdl.document.1.data"
-      UNORDERED_TOPICS_OR_QUEUES: "cdl.document.2.data"
+      ORDERED_TOPICS_OR_QUEUES: "cdl.document.data"
+      UNORDERED_TOPICS_OR_QUEUES: ""
       POSTGRES_USERNAME: postgres
       POSTGRES_PASSWORD: 1234
       POSTGRES_HOST: postgres
@@ -104,8 +104,8 @@ services:
       COMMUNICATION_METHOD: "kafka"
       KAFKA_GROUP_ID: "victoria_command"
       KAFKA_BROKERS: "kafka:9093"
-      ORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.1.data"
-      UNORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.2.data"
+      ORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.data"
+      UNORDERED_TOPICS_OR_QUEUES: ""
       VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
       REPORT_TOPIC_OR_EXCHANGE: "cdl.reports"
       RUST_LOG: info,command_service=trace

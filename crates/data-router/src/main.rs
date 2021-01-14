@@ -1,5 +1,5 @@
 use anyhow::Context;
-use log::{error, trace};
+use log::error;
 use lru_cache::LruCache;
 use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
@@ -12,7 +12,6 @@ use std::{
 use structopt::{clap::arg_enum, StructOpt};
 use tokio::pin;
 use tokio::stream::StreamExt;
-use utils::message_types::{DataRouterInsertMessage, OwnedInsertMessage};
 use utils::{
     abort_on_poison,
     message_types::BorrowedInsertMessage,
@@ -161,23 +160,25 @@ async fn handle_message(
 ) {
     counter!("cdl.data-router.input-msg", 1);
     let result: anyhow::Result<()> = async {
-        let json_payload: Value =
+        let json_something: Value =
             serde_json::from_str(message.payload()?).context("Payload deserialization failed")?;
-        if json_payload.is_array() {
-            // let msg_array : Vec<DataRouterInsertMessage> = serde_json::from_str(message.payload()?)?
-            //     .context("Payload deserialization failed, message is not a valid cdl message")?;
-            for entry in json_payload.as_array().context("Array Deserialization Problem")? {
-                // let single_msg =  serde_json::from_value::<DataRouterInsertMessage>(*entry)
-                //     .context("Payload deserialization failed, message is not a valid cdl message")?;
-                route(&cache, entry.clone(), &producer, &schema_registry_addr)
+        if json_something.is_array() {
+            let maybe_array: Vec<DataRouterInsertMessage> = serde_json::from_str(
+                message.payload()?,
+            )
+            .context("Payload deserialization failed, message is not a valid cdl message ")?;
+            for entry in maybe_array.iter() {
+                route(&cache, &entry, &producer, &schema_registry_addr)
                     .await
                     .context("Tried to send message and failed")?;
                 counter!("cdl.data-router.input-multimsg", 1);
             }
         } else {
-            // let single_msg =  serde_json::from_value::<DataRouterInsertMessage>(json_payload)
-            //     .context("Payload deserialization failed, message is not a valid cdl message")?;
-            route(&cache, json_payload.clone(), &producer, &schema_registry_addr)
+            let owned: DataRouterInsertMessage = serde_json::from_str::<DataRouterInsertMessage>(
+                message.payload()?,
+            )
+            .context("Payload deserialization failed, message is not a valid cdl message")?;
+            route(&cache, &owned, &producer, &schema_registry_addr)
                 .await
                 .context("Tried to send message and failed")?;
             counter!("cdl.data-router.input-singlemsg", 1);
@@ -211,32 +212,21 @@ async fn handle_message(
 
 async fn route(
     cache: &Mutex<LruCache<Uuid, String>>,
-    // event: Box<DataRouterInsertMessage<'_>>,
-    event: Value,
+    event: &DataRouterInsertMessage<'_>,
     producer: &CommonPublisher,
-    schema_registry_addr: &String,
+    schema_registry_addr: &str,
 ) -> anyhow::Result<()> {
-
-    // let single_msg =  serde_json::from_value::<DataRouterInsertMessage>(*entry)
-    //     .context("Payload deserialization failed, message is not a valid cdl message")?;
-    let payload = serde_json::from_value::<DataRouterInsertMessage>(event)
-        .context("Payload deserialization failed, message is not a valid cdl message")?;
-    // let payload = BorrowedInsertMessage {
-    //     object_id: event.object_id,
-    //     schema_id: event.schema_id,
-    //     timestamp: current_timestamp(),
-    //     data: event.data,
-    // };
-    let topic_name = get_schema_topic(&cache, payload.schema_id.clone(), &schema_registry_addr).await?;
+    let payload = BorrowedInsertMessage {
+        object_id: event.object_id,
+        order_group_id: event.order_group_id,
+        schema_id: event.schema_id,
+        timestamp: current_timestamp(),
+        data: event.data,
+    };
+    let topic_name = get_schema_topic(&cache, payload.schema_id, &schema_registry_addr).await?;
 
     let key = payload.object_id.to_string();
-    send_message(
-        producer,
-        &topic_name,
-        &key,
-        serde_json::to_vec(&payload)?,
-    )
-    .await;
+    send_message(producer, &topic_name, &key, serde_json::to_vec(&payload)?).await;
     counter!("cdl.data-router.input-single-msg", 1);
     Ok(())
 }
@@ -283,7 +273,7 @@ async fn send_message(producer: &CommonPublisher, topic_name: &str, key: &str, p
         counter!("cdl.data-router.output-sendabort", 1);
         process::abort();
     };
-        counter!("cdl.data-router.output-singleok", 1);
+    counter!("cdl.data-router.output-singleok", 1);
 }
 
 fn current_timestamp() -> i64 {
