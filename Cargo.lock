@@ -358,22 +358,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "blob-store"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "env_logger 0.8.2",
- "log",
- "rpc",
- "sled 0.34.6",
- "structopt",
- "tokio 0.2.24",
- "tonic",
- "utils",
- "uuid",
-]
-
-[[package]]
 name = "block-buffer"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -884,22 +868,6 @@ name = "doc-comment"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fea41bba32d969b513997752735605054bc0dfa92b4c56bf1189f2e174be7a10"
-
-[[package]]
-name = "document-storage"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "env_logger 0.8.2",
- "log",
- "rpc",
- "sled 0.34.6",
- "structopt",
- "tokio 0.2.24",
- "tonic",
- "utils",
- "uuid",
-]
 
 [[package]]
 name = "dtoa"
@@ -1488,7 +1456,7 @@ dependencies = [
  "rand 0.7.3",
  "regex",
  "serde_json",
- "sled 0.31.0",
+ "sled",
  "uuid",
 ]
 
@@ -3402,22 +3370,6 @@ dependencies = [
  "libc",
  "log",
  "parking_lot 0.10.2",
-]
-
-[[package]]
-name = "sled"
-version = "0.34.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d0132f3e393bcb7390c60bb45769498cf4550bcb7a21d7f95c02b69f6362cdc"
-dependencies = [
- "crc32fast",
- "crossbeam-epoch 0.9.1",
- "crossbeam-utils 0.8.1",
- "fs2",
- "fxhash",
- "libc",
- "log",
- "parking_lot 0.11.1",
 ]
 
 [[package]]

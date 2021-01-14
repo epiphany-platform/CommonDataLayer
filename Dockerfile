@@ -15,7 +15,7 @@ COPY Cargo.lock ./
 COPY Cargo.toml ./
 
 COPY crates/blob-store/Cargo.toml crates/blob-store/Cargo.toml
-COPY crates/benchmarking/Cargo.toml crates/benchmarking/Cargo.toml
+COPY benchmarking/Cargo.toml crates/benchmarking/Cargo.toml
 COPY crates/cdl-cli/Cargo.toml crates/cdl-cli/Cargo.toml
 COPY crates/command-service/Cargo.toml crates/command-service/Cargo.toml
 COPY crates/data-router/Cargo.toml crates/data-router/Cargo.toml
@@ -34,7 +34,7 @@ RUN cargo fetch
 RUN rustup target add x86_64-unknown-linux-musl
 
 COPY crates/blob-store/ crates/blob-store/
-COPY crates/benchmarking/ crates/benchmarking/
+COPY benchmarking/ crates/benchmarking/
 COPY crates/cdl-cli/ crates/cdl-cli/
 COPY crates/command-service/ crates/command-service/
 COPY crates/data-router/ crates/data-router/
@@ -73,4 +73,4 @@ RUN if [ "$ENV" != "DEV" ]; \
 FROM alpine
 
 COPY --from=cargo-build /usr/src/cdl/output/* /bin/
-COPY crates/benchmarking/sample_json sample_json/
+COPY benchmarking/sample_json sample_json/
