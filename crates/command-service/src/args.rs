@@ -73,7 +73,7 @@ impl Args {
                     .clone()
                     .unwrap_or_default()
                     .split(',')
-                    .filter(|x| !x.is_empty())
+                    .filter(|queue_name| !queue_name.is_empty())
                     .map(String::from)
                     .collect();
                 let unordered_queue_names: Vec<_> = input_args
@@ -81,7 +81,7 @@ impl Args {
                     .clone()
                     .unwrap_or_default()
                     .split(',')
-                    .filter(|x| !x.is_empty())
+                    .filter(|queue_name| !queue_name.is_empty())
                     .map(String::from)
                     .collect();
 

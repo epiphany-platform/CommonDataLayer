@@ -121,7 +121,7 @@ async fn handle_message(
 
         let key = payload
             .order_group_id
-            .map(|x| x.to_string().replace("-", "."))
+            .map(|tag| tag.to_string().replace("-", "."))
             .unwrap_or_else(|| "unordered".to_string());
         trace!("send_message {:?} {:?} ", key, topic_name);
         send_message(
