@@ -44,7 +44,14 @@ impl Context {
                 Ok(stream)
             }
             None => {
-                let (subscriber, stream) = EventSubscriber::new(&self.config.kafka, topic)?;
+                let kafka_events = self.kafka_events.clone();
+                let (subscriber, stream) =
+                    EventSubscriber::new(&self.config.kafka, topic, move |topic| async move {
+                        log::warn!("Kafka stream has closed");
+                        // Remove topic from hashmap so next time someone ask about this stream,
+                        // it will be recreated
+                        kafka_events.lock().await.remove(&topic);
+                    })?;
                 event_map.insert(topic.to_string(), subscriber);
                 Ok(stream)
             }

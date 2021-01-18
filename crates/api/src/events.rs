@@ -6,7 +6,7 @@
 use crate::config::KafkaConfig;
 use anyhow::Context as _Context;
 use futures::task::{Context as FutCtx, Poll};
-use futures::{Stream, StreamExt, TryStreamExt};
+use futures::{Future, Stream, StreamExt, TryStreamExt};
 use juniper::FieldResult;
 use rdkafka::{
     consumer::{DefaultConsumerContext, StreamConsumer},
@@ -36,7 +36,15 @@ pub struct EventStream {
 
 impl EventSubscriber {
     /// Connects to kafka and sends all messages to broadcast channel.
-    pub fn new(config: &KafkaConfig, topic: &str) -> Result<(Self, EventStream), anyhow::Error> {
+    pub fn new<F, Fut>(
+        config: &KafkaConfig,
+        topic: &str,
+        on_close: F,
+    ) -> Result<(Self, EventStream), anyhow::Error>
+    where
+        F: FnOnce(String) -> Fut + Send + 'static,
+        Fut: Future<Output = ()>,
+    {
         let (tx, rx) = broadcast::channel(32);
 
         log::debug!("Create new consumer for topic: {}", topic);
@@ -57,6 +65,7 @@ impl EventSubscriber {
         let sink = tx.clone();
 
         let consumer = Box::leak(Box::new(consumer));
+        let topic = String::from(topic);
         tokio::spawn(async move {
             let stream = consumer.start().map_ok(move |msg| {
                 let key = msg
@@ -76,7 +85,7 @@ impl EventSubscriber {
                 sink.send(item).ok();
             }
 
-            log::warn!("Kafka stream has ended");
+            on_close(topic);
         });
 
         Ok((Self(tx), EventStream::new(rx)))
