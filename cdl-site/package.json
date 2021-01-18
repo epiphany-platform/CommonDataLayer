@@ -1,5 +1,6 @@
 {
   "name": "cdl-site",
+  "homepage": "https://epiphany-platform.github.io/CommonDataLayer/",
   "version": "1.0.0",
   "scripts": {
     "build": "rollup -c",
