@@ -51,7 +51,8 @@ impl Context {
                         // Remove topic from hashmap so next time someone ask about this stream,
                         // it will be recreated
                         kafka_events.lock().await.remove(&topic);
-                    })?;
+                    })
+                    .await?;
                 event_map.insert(topic.to_string(), subscriber);
                 Ok(stream)
             }

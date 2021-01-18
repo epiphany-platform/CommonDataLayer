@@ -4,19 +4,15 @@
 /// Each websocket client has its own Receiver.
 /// Thanks to that we are not only reusing connection, but also limit dangerous `consumer.leak()` usage.
 use crate::config::KafkaConfig;
-use anyhow::Context as _Context;
 use futures::task::{Context as FutCtx, Poll};
 use futures::{Future, Stream, StreamExt, TryStreamExt};
 use juniper::FieldResult;
-use rdkafka::{
-    consumer::{DefaultConsumerContext, StreamConsumer},
-    error::KafkaError,
-    ClientConfig, Message,
-};
 use std::pin::Pin;
 use tokio::sync::broadcast;
+use utils::messaging_system::consumer::CommonConsumer;
+use utils::messaging_system::Error;
 
-// TODO: Probably could be replaced by OwnedMessage from kafkard?
+// TODO: Rename it to generic `Event` after adding support to RabbitMQ
 /// Owned generic message received from kafka.
 #[derive(Clone, Debug)]
 pub struct KafkaEvent {
@@ -25,7 +21,7 @@ pub struct KafkaEvent {
 }
 
 /// Wrapper to prevent accidental sending data to channel. `Sender` is used only for subscription mechanism
-pub struct EventSubscriber(broadcast::Sender<Result<KafkaEvent, KafkaError>>);
+pub struct EventSubscriber(broadcast::Sender<Result<KafkaEvent, Error>>);
 
 // We are using Box<dyn> approach (recommended) by Tokio maintainers,
 // as unfortunately `broadcast::Receiver` doesn't implement `Stream` trait,
@@ -36,7 +32,7 @@ pub struct EventStream {
 
 impl EventSubscriber {
     /// Connects to kafka and sends all messages to broadcast channel.
-    pub fn new<F, Fut>(
+    pub async fn new<F, Fut>(
         config: &KafkaConfig,
         topic: &str,
         on_close: F,
@@ -49,33 +45,16 @@ impl EventSubscriber {
 
         log::debug!("Create new consumer for topic: {}", topic);
 
-        let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
-            .set("group.id", &config.group_id)
-            .set("bootstrap.servers", &config.brokers)
-            .set("enable.partition.eof", "false")
-            .set("session.timeout.ms", "6000")
-            .set("enable.auto.commit", "false")
-            .set("auto.offset.reset", "earliest")
-            .create()
-            .context("Consumer creation failed")?;
-
-        rdkafka::consumer::Consumer::subscribe(&consumer, &[topic])
-            .context("Can't subscribe to specified topics")?;
+        let consumer =
+            CommonConsumer::new_kafka(&config.group_id, &config.brokers, &[topic]).await?;
+        let consumer = Box::leak(Box::new(consumer));
 
         let sink = tx.clone();
-
-        let consumer = Box::leak(Box::new(consumer));
         let topic = String::from(topic);
         tokio::spawn(async move {
-            let stream = consumer.start().map_ok(move |msg| {
-                let key = msg
-                    .key()
-                    .and_then(|s| std::str::from_utf8(s).ok())
-                    .map(|s| s.to_string());
-                let payload = msg
-                    .payload()
-                    .and_then(|s| std::str::from_utf8(s).ok())
-                    .map(|s| s.to_string());
+            let stream = consumer.consume().await.map_ok(move |msg| {
+                let key = msg.key().map(|s| s.to_string()).ok();
+                let payload = msg.payload().map(|s| s.to_string()).ok();
                 KafkaEvent { key, payload }
             });
 
@@ -98,7 +77,7 @@ impl EventSubscriber {
 }
 
 impl EventStream {
-    fn new(mut rx: broadcast::Receiver<Result<KafkaEvent, KafkaError>>) -> Self {
+    fn new(mut rx: broadcast::Receiver<Result<KafkaEvent, Error>>) -> Self {
         let stream = async_stream::try_stream! {
             loop {
                 let item = rx.recv().await??;
