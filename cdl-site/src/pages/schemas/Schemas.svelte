@@ -83,9 +83,11 @@
               {#if $schema}
                 <Overview schema={$schema} version={$version} />
               {:else}
-                <p class="no-schema-selected align-center">
+                <section class="no-schema-selected">
+                  <p class="align-center">
                   Please select a schema from the left.
-                </p>
+                  </p>
+                </section>
               {/if}
             </div>
           </div>
