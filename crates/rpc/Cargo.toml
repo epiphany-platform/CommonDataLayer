@@ -17,4 +17,4 @@ thiserror   = "1.0"
 serde       = { version = "1.0", features = ["derive"] }
 
 [build-dependencies]
-tonic-build = { version = "0.3", default-features = false, features = ["prost", "transport"] }
+tonic-build = { version = "0.4", default-features = false, features = ["prost", "transport"] }
