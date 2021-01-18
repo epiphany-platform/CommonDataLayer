@@ -14,7 +14,7 @@ pub struct ParallelTaskQueue {
 }
 
 impl ParallelTaskQueue {
-    pub async fn run_task(&self, key: String) -> LockGuard {
+    pub async fn acquire_permit(&self, key: String) -> LockGuard {
         let receiver = {
             let mut locks = self.locks.lock().unwrap();
             let lock_queue = LockQueue::new();
@@ -122,7 +122,7 @@ mod tests {
         task_queue: Arc<ParallelTaskQueue>,
         lock_key: String,
     ) {
-        let _guard = task_queue.run_task(lock_key).await;
+        let _guard = task_queue.acquire_permit(lock_key).await;
         wait_barrier.wait().await;
     }
 
@@ -132,7 +132,7 @@ mod tests {
         lock_key: String,
         counter: Arc<AtomicU32>,
     ) -> u32 {
-        let _guard = task_queue.run_task(lock_key).await;
+        let _guard = task_queue.acquire_permit(lock_key).await;
         waiter.await.unwrap();
         counter.fetch_add(1, Ordering::SeqCst)
     }
@@ -196,7 +196,7 @@ mod tests {
     async fn should_clean_up_after_task_group_is_done() {
         let task_queue = Arc::new(ParallelTaskQueue::new());
         {
-            let _guard = task_queue.run_task("A".to_string()).await;
+            let _guard = task_queue.acquire_permit("A".to_string()).await;
             // DO SOME WORK
         }
         assert!(
