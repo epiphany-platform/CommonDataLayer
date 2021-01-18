@@ -1604,9 +1604,9 @@ dependencies = [
 
 [[package]]
 name = "juniper"
-version = "0.15.1"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "19309aa4fd360d59b35edf306a3e1740e9784866bf6e222767fd7217b13d885c"
+checksum = "8d18bea4f6aa903e3176556c45e9d78fed966f8083b324fc35e383f8351a2869"
 dependencies = [
  "async-trait",
  "bson",
@@ -1625,9 +1625,9 @@ dependencies = [
 
 [[package]]
 name = "juniper_codegen"
-version = "0.15.1"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a57106f1e3bb3f7156d240f062c3eee0c83dece5e7e2ff49c4da980a10def2bf"
+checksum = "ad4272ac0ace346ffe07be22838607d60cea037334d9f16f5dfaac82da778f3a"
 dependencies = [
  "proc-macro-error",
  "proc-macro2",
@@ -1637,9 +1637,9 @@ dependencies = [
 
 [[package]]
 name = "juniper_graphql_ws"
-version = "0.2.1"
+version = "0.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2257153e0d0792f0ad4e78663d9498d619e7ae63234b9b16d690ff7306abdbd"
+checksum = "d958937ed703c7e8127f1726c4f849ecb865624973d5d5899923735373abdb50"
 dependencies = [
  "juniper",
  "juniper_subscriptions",
@@ -1649,9 +1649,9 @@ dependencies = [
 
 [[package]]
 name = "juniper_subscriptions"
-version = "0.15.1"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3107834ba4f957766f47dc0bc74f647ceda9ef3d75239cc9f65681f84ab082d"
+checksum = "a84690d9bdfd48113404447736cb1ae7534c00dca6a9a77666821f07ea36103d"
 dependencies = [
  "futures",
  "juniper",
@@ -1659,9 +1659,9 @@ dependencies = [
 
 [[package]]
 name = "juniper_warp"
-version = "0.6.0"
+version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9eb2ffd6cf828d1ec4195afdc6d8903aebbcaa8d8b874428ca187685952ad27a"
+checksum = "ca4e8b0aad77fb5029e39ac765fe1fea4c78cca75e979781761338d1c081134e"
 dependencies = [
  "anyhow",
  "bytes 0.5.6",
