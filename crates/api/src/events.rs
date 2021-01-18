@@ -73,11 +73,9 @@ impl EventSubscriber {
             tokio::pin!(stream);
 
             while let Some(item) = stream.next().await {
-                if let Err(e) = sink.send(item) {
-                    log::error!("Couldn't send message to sink: {:?}", e);
-                    break;
-                }
+                sink.send(item).ok();
             }
+
             log::warn!("Kafka stream has ended");
         });
 

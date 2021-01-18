@@ -13,6 +13,9 @@ use futures::FutureExt;
 use structopt::StructOpt;
 use warp::{http::Response, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
 
+const SEC_WEBSOCKET_PROTOCOL_NAME: &str = "Sec-WebSocket-Protocol";
+const SEC_WEBSOCKET_PROTOCOL_VALUE: &str = "graphql-ws";
+
 #[tokio::main]
 async fn main() {
     env_logger::init();
@@ -68,7 +71,13 @@ async fn main() {
                 })
             }
         })
-        .map(|reply| warp::reply::with_header(reply, "Sec-WebSocket-Protocol", "graphql-ws"));
+        .map(|reply| {
+            warp::reply::with_header(
+                reply,
+                SEC_WEBSOCKET_PROTOCOL_NAME,
+                SEC_WEBSOCKET_PROTOCOL_VALUE,
+            )
+        });
 
     warp::serve(
         warp::get()
