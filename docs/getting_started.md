@@ -129,7 +129,7 @@ See [k8s_local_deployment.md][deployment]
 [local-setup]: ../deployment/compose/README.md
 [grpc]: https://grpc.io/docs/what-is-grpc/introduction/
 [command-service]: command_service.md
-[schema-registry]: ../schema-registry/README.md
+[schema-registry]: ../crates/schema-registry/README.md
 [query-service]: query_service.md
 [data-router]: data_router.md
-[proto]: ../rpc/proto
+[proto]: ../crates/rpc/proto

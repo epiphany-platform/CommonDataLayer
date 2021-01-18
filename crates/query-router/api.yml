@@ -1,0 +1,154 @@
+openapi: 3.0.0
+info:
+  title: CDL Query Router
+  version: 0.1.0
+paths:
+  /single/{object_id}:
+    post:
+      summary: Retrieve single object
+      operationId: getSingleObject
+      parameters:
+        - name: object_id
+          in: path
+          description: 'Object ID of document to retrieve'
+          required: true
+          example: "bcebabfe-8da6-4c37-aa97-b373db2f2338"
+          schema:
+            type: string
+        - name: SCHEMA_ID
+          in: header
+          description: 'Schema ID of document to retrieve'
+          required: true
+          schema:
+            type: string
+            example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/Empty'
+                - $ref: '#/components/schemas/Range'
+      responses:
+        '200':
+          description: >-
+            JSON containing document retrieved from repositories
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: >-
+            Given `object_id` is missing
+  /multiple/{object_ids}:
+    get:
+      summary: Retrieve several objects
+      operationId: getMultipleObjects
+      parameters:
+        - name: object_ids
+          in: path
+          description: 'Object IDs of documents to retrieve'
+          required: true
+          example: "bcebabfe-8da6-4c37-aa97-b373db2f2338,2454b325-9cdb-48e1-bc97-02720d689951"
+          schema:
+            type: array
+            items:
+              type: string
+        - name: SCHEMA_ID
+          in: header
+          description: 'Schema ID of document to retrieve'
+          required: true
+          schema:
+            type: string
+            example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+      responses:
+        '200':
+          description: >-
+            JSON containing documents retrieved from repository
+          content:
+            application/json:
+              schema:
+                type: object
+        '404':
+          description: >-
+            At least one object is missing
+  /schema:
+    get:
+      summary: Retrieve all objects associated with schema
+      operationId: getAllObjects
+      parameters:
+        - name: SCHEMA_ID
+          in: header
+          description: 'Schema ID of document to retrieve'
+          required: true
+          schema:
+            type: string
+            example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+      responses:
+        '200':
+          description: >-
+            JSON containing documents retrieved from repository
+          content:
+            application/json:
+              schema:
+                type: object
+  /raw:
+    get:
+      summary: Execute queries given in body
+      operationId: executeRawQuery
+      parameters:
+        - name: SCHEMA_ID
+          in: header
+          description: 'Schema ID of document to execute a queries'
+          required: true
+          schema:
+            type: string
+            example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/Raw'
+      responses:
+        '200':
+          description: >-
+            JSON containing the results of executed commands
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  schemas:
+    Empty:
+      type: object
+    Range:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        step:
+          type: string
+    Raw:
+      type: object
+      properties:
+        raw_statement:
+          type: string
+          Raw:
+            type: object
+            properties:
+              raw_statemenet:
+                type: string
+                examples:
+                  victoriametrics:
+                    value: "\"method\": \"GET\", \"endpoint\": \"/export\", \"queries\": [[\"match\", \"{__name__!=''}\"]] }"
+                    summary: Victoriametrics needs string in json format which should contain "method", "endpoint" and "queries" fields
+                  default:
+                    value: "SELECT * FROM 15251181-f749-42e0-b4a4-e4b3d90e990d"
+                    summary: If database is not mentioned in above examples, strings are directly translated to database
+

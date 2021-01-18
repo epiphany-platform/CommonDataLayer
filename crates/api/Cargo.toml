@@ -1,0 +1,29 @@
+[package]
+name = "api"
+authors = ["CDL Team"]
+version = "0.1.0"
+edition = "2018"
+license = "Apache-2.0"
+
+[[bin]]
+name = "api"
+path = "src/main.rs"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Workspace
+rpc         = { path = "../rpc" }
+
+# Crates.io
+env_logger  = "0.8"
+juniper     = { version = "0.15", features = ["uuid"] }
+num-derive  = "0.3.3"
+num-traits  = "0.2.14"
+log         = "0.4"
+structopt   = "0.3"
+thiserror   = "1.0"
+tokio       = { version = "0.2", default-features = false, features = ["sync", "rt-threaded", "macros"] }
+uuid        = { version = "0.8", features = ["v4", "serde"] }
+warp        = "0.2"
+juniper_warp            = "0.6"

@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-data-router
+  labels:
+    app: {{ .Release.Name }}-data-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-data-router
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-data-router
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51805'
+        prometheus.io/path: '/metrics'
+    spec:
+      containers:
+      - name: cdl-data-router
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-data-router:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["/bin/data-router"]
+        env:
+        - name: KAFKA_TOPIC
+          value: "{{ .Values.dataRouter.inputTopic }}"
+        - name: KAFKA_BROKERS
+          value: "{{ .Values.global.kafkaBrokers }}"
+        - name: KAFKA_GROUP_ID
+          value: "data-router"
+        - name: KAFKA_ERROR_CHANNEL
+          value: "{{ .Values.global.reportTopic }}"
+        - name: SCHEMA_REGISTRY_ADDR
+          value: "http://{{ .Release.Name }}-schema-registry:6400"
+        - name: CACHE_CAPACITY
+          value: "500"
+        - name: RUST_LOG
+          value: "info,data-router=debug"
+        ports:
+        - containerPort: 51805
+      imagePullSecrets:
+        - name: {{ .Values.global.cdlImagePullSecrets }}
