@@ -22,5 +22,5 @@ serde       = { version = "1.0", features = ["derive"] }
 serde_json  = { version = "1.0" }
 structopt   = "0.3"
 tokio       = { version = "0.2", features = ["macros", "io-std", "io-util", "fs"] }
-tonic       = "0.3"
+tonic       = "0.4"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
