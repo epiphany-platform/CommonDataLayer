@@ -1,0 +1,29 @@
+html, body {
+  font-family: 'Rubik', arial, sans-serif;
+}
+
+.nav-logo a {
+  font-family: 'Fredoka One', cursive;
+  font-size: 40px;
+  color: #fafafa;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Fredoka One', cursive;
+}
+
+.dark-mode * {
+  color: #fafafa;
+}
+
+.dark-mode input, .dark-mode textarea, .dark-mode select {
+  color: #424242;
+}
+
+.dark-mode p.validation-error {
+  color: #ffaaa9;
+}
+
+.dark-mode pre {
+  background: #646464;
+}
