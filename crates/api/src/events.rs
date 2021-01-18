@@ -7,13 +7,13 @@ use crate::config::KafkaConfig;
 use anyhow::Context as _Context;
 use futures::task::{Context as FutCtx, Poll};
 use futures::{Stream, StreamExt, TryStreamExt};
+use juniper::FieldResult;
 use rdkafka::{
     consumer::{DefaultConsumerContext, StreamConsumer},
     error::KafkaError,
     ClientConfig, Message,
 };
 use std::pin::Pin;
-use thiserror::Error;
 use tokio::sync::broadcast;
 
 // TODO: Probably could be replaced by OwnedMessage from kafkard?
@@ -27,19 +27,11 @@ pub struct KafkaEvent {
 /// Wrapper to prevent accidental sending data to channel. `Sender` is used only for subscription mechanism
 pub struct EventSubscriber(broadcast::Sender<Result<KafkaEvent, KafkaError>>);
 
-#[derive(Error, Debug)]
-pub enum EventError {
-    #[error("{0}")]
-    Broadcast(#[from] broadcast::RecvError),
-    #[error("{0}")]
-    Kafka(#[from] KafkaError),
-}
-
 // We are using Box<dyn> approach (recommended) by Tokio maintainers,
 // as unfortunately `broadcast::Receiver` doesn't implement `Stream` trait,
 // and it is hard to achieve it without major refactor. Therefore we are using `async_stream` as a loophole.
 pub struct EventStream {
-    inner: Pin<Box<dyn Stream<Item = Result<KafkaEvent, EventError>> + Send + Sync>>,
+    inner: Pin<Box<dyn Stream<Item = FieldResult<KafkaEvent>> + Send + Sync>>,
 }
 
 impl EventSubscriber {
@@ -113,7 +105,7 @@ impl EventStream {
 }
 
 impl Stream for EventStream {
-    type Item = Result<KafkaEvent, EventError>;
+    type Item = FieldResult<KafkaEvent>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut FutCtx<'_>) -> Poll<Option<Self::Item>> {
         Pin::new(&mut self.inner).poll_next(cx)

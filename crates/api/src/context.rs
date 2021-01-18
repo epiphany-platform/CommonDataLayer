@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
-use crate::{config::Config, error::Error, events::EventStream, events::EventSubscriber};
+use crate::{config::Config, events::EventStream, events::EventSubscriber};
+use anyhow::Result;
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
 use std::collections::HashMap;
@@ -27,20 +28,14 @@ impl Context {
         &self.config
     }
 
-    pub async fn connect_to_registry(&self) -> Result<SchemaRegistryConn, Error> {
+    pub async fn connect_to_registry(&self) -> Result<SchemaRegistryConn> {
         // TODO: Make proper connection pool
         let new_conn = rpc::schema_registry::connect(self.config.registry_addr.clone()).await?;
         Ok(new_conn)
     }
 
-    pub async fn subscribe_on_kafka_topic(&self, topic: &str) -> Result<EventStream, Error> {
+    pub async fn subscribe_on_kafka_topic(&self, topic: &str) -> Result<EventStream> {
         log::debug!("subscribe on kafka topic {}", topic);
-        self.consume_kafka_topic_inner(topic)
-            .await
-            .map_err(|e| Error::KafkaClientError(format!("{:?}", e)))
-    }
-
-    async fn consume_kafka_topic_inner(&self, topic: &str) -> Result<EventStream, anyhow::Error> {
         let mut event_map = self.kafka_events.lock().await;
         match event_map.get(topic) {
             Some(subscriber) => {

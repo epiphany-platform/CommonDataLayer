@@ -5,7 +5,7 @@ use crate::{
     error::Error,
 };
 use futures::{Stream, TryStreamExt};
-use juniper::{graphql_object, graphql_subscription, FieldResult, RootNode};
+use juniper::{graphql_object, graphql_subscription, FieldError, FieldResult, RootNode};
 use num_traits::{FromPrimitive, ToPrimitive};
 use rpc::schema_registry::Empty;
 use std::pin::Pin;
@@ -29,11 +29,9 @@ impl Subscription {
             .subscribe_on_kafka_topic(topic)
             .await?
             .try_filter_map(|ev| async move { Ok(ev.payload) })
-            .map_err(anyhow::Error::from)
-            .and_then(|payload| async move {
-                serde_json::from_str(&payload).map_err(anyhow::Error::from)
-            })
-            .err_into();
+            .and_then(
+                |payload| async move { serde_json::from_str(&payload).map_err(FieldError::from) },
+            );
 
         Box::pin(stream)
     }
