@@ -54,16 +54,16 @@ function parseCurrentRoute(): Route | null {
 
 export function routeToString(route: Route): string {
   if (route.page === "home") {
-    return "/";
+    return "#/";
   } else if (route.page === "insert") {
-    return "/#/insert";
+    return "#/insert";
   } else if (route.page === "settings") {
-    return "/#/settings";
+    return "#/settings";
   } else if (route.page === "query") {
     if (route.by) {
-      return `/#/query?by=${route.by}`;
+      return `#/query?by=${route.by}`;
     } else {
-      return "/#/query";
+      return "#/query";
     }
   } else {
     const params = [
@@ -74,9 +74,9 @@ export function routeToString(route: Route): string {
     ].filter(([_, value]) => value).map(([key, value]) => `${key}=${value}`);
 
     if (params.length) {
-      return `/#/schemas?${params.join("&")}`;
+      return `#/schemas?${params.join("&")}`;
     } else {
-      return "/#/schemas";
+      return "#/schemas";
     }
   }
 }
