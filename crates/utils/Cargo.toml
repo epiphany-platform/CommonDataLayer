@@ -34,4 +34,4 @@ tonic                   = "0.3"
 metrics-observer-prometheus         = "0.1"
 
 [dev-dependencies]
-test-case = "1.0"
+test-case = "1.1"

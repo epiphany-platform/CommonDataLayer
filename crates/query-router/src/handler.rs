@@ -1,6 +1,7 @@
 use crate::{cache::SchemaRegistryCache, error::Error};
 use log::trace;
 use rpc::schema_registry::types::SchemaType;
+use rpc::{query_service, query_service_ts};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 use std::{collections::HashMap, sync::Arc};
@@ -13,6 +14,9 @@ pub enum Body {
         from: String,
         to: String,
         step: String,
+    },
+    Raw {
+        raw_statement: String,
     },
     Empty {},
 }
@@ -54,6 +58,7 @@ pub async fn query_single(
         }
 
         (SchemaType::Timeseries, Body::Empty {}) => Err(Error::SingleQueryMissingValue),
+        (_, Body::Raw { raw_statement: _ }) => Err(Error::WrongValueFormat),
     }?;
 
     Ok(warp::reply::with_header(
@@ -107,6 +112,47 @@ pub async fn query_by_schema(
     };
 
     Ok(reply)
+}
+
+pub async fn query_raw(
+    schema_id: Uuid,
+    cache: Arc<SchemaRegistryCache>,
+    request_body: Body,
+) -> Result<impl warp::Reply, warp::Rejection> {
+    trace!("Received /raw/ (SCHEMA_ID={})", schema_id);
+
+    let (address, schema_type) = cache.get_schema_info(schema_id).await?;
+
+    let values = match (request_body, schema_type) {
+        (Body::Raw { raw_statement }, SchemaType::DocumentStorage) => {
+            query_service::query_raw(raw_statement, address)
+                .await
+                .map_err(Error::ClientError)
+        }
+
+        (Body::Raw { raw_statement }, SchemaType::Timeseries) => {
+            query_service_ts::query_raw(raw_statement, address)
+                .await
+                .map_err(Error::ClientError)
+        }
+
+        (Body::Empty {}, _) => Err(Error::RawQueryMissingValue),
+
+        (
+            Body::Range {
+                from: _,
+                to: _,
+                step: _,
+            },
+            _,
+        ) => Err(Error::WrongValueFormat),
+    }?;
+
+    Ok(warp::reply::with_header(
+        values,
+        "Content-Type",
+        "application/json",
+    ))
 }
 
 fn byte_map_to_json_map(map: HashMap<String, Vec<u8>>) -> Result<Map<String, Value>, Error> {

@@ -6,6 +6,8 @@ pub enum Error {
     ClientError(ClientError),
     JsonError(serde_json::Error),
     SingleQueryMissingValue,
+    RawQueryMissingValue,
+    WrongValueFormat,
 }
 
 impl Reject for Error {}
@@ -22,6 +24,8 @@ pub fn recover(rejection: Rejection) -> Result<impl warp::Reply, Rejection> {
             Error::ClientError(err) => err.to_string(),
             Error::JsonError(err) => format!("Unable to serialize JSON: {}", err),
             Error::SingleQueryMissingValue => "".to_owned(),
+            Error::WrongValueFormat => "".to_owned(),
+            Error::RawQueryMissingValue => "".to_owned(),
         };
 
         Ok(warp::reply::with_status(

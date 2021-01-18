@@ -32,3 +32,6 @@ class QueryRouter:
 
     def query_get_schema(self, schema_id):
         return requests.get(f"http://localhost:{self.input_port}/schema", headers={'SCHEMA_ID': schema_id})
+
+    def query_get_raw(self, schema_id, body):
+        return requests.post(f"http://localhost:{self.input_port}/raw", body, headers={'SCHEMA_ID': schema_id})

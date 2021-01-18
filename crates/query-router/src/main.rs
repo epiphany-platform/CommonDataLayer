@@ -49,9 +49,14 @@ async fn main() {
         .and(schema_id_filter)
         .and(address_filter.clone())
         .and_then(handler::query_by_schema);
+    let raw_route = warp::path!("raw")
+        .and(schema_id_filter)
+        .and(address_filter.clone())
+        .and(body_filter)
+        .and_then(handler::query_raw);
 
     let routes = warp::post()
-        .and(single_route)
+        .and(single_route.or(raw_route))
         .or(warp::get().and(multiple_route.or(schema_route)));
 
     warp::serve(routes)

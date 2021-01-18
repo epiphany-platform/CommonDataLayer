@@ -93,6 +93,33 @@ paths:
             application/json:
               schema:
                 type: object
+  /raw:
+    get:
+      summary: Execute queries given in body
+      operationId: executeRawQuery
+      parameters:
+        - name: SCHEMA_ID
+          in: header
+          description: 'Schema ID of document to execute a queries'
+          required: true
+          schema:
+            type: string
+            example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/Raw'
+      responses:
+        '200':
+          description: >-
+            JSON containing the results of executed commands
+          content:
+            application/json:
+              schema:
+                type: object
 
 components:
   schemas:
@@ -107,3 +134,21 @@ components:
           type: string
         step:
           type: string
+    Raw:
+      type: object
+      properties:
+        raw_statement:
+          type: string
+          Raw:
+            type: object
+            properties:
+              raw_statemenet:
+                type: string
+                examples:
+                  victoriametrics:
+                    value: "\"method\": \"GET\", \"endpoint\": \"/export\", \"queries\": [[\"match\", \"{__name__!=''}\"]] }"
+                    summary: Victoriametrics needs string in json format which should contain "method", "endpoint" and "queries" fields
+                  default:
+                    value: "SELECT * FROM 15251181-f749-42e0-b4a4-e4b3d90e990d"
+                    summary: If database is not mentioned in above examples, strings are directly translated to database
+
