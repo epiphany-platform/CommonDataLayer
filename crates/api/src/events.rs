@@ -45,9 +45,8 @@ impl EventSubscriber {
 
         log::debug!("Create new consumer for topic: {}", topic);
 
-        let consumer =
+        let mut consumer =
             CommonConsumer::new_kafka(&config.group_id, &config.brokers, &[topic]).await?;
-        let consumer = Box::leak(Box::new(consumer));
 
         let sink = tx.clone();
         let topic = String::from(topic);
