@@ -7,12 +7,10 @@ use rpc::tonic::transport::Channel;
 use std::collections::HashMap;
 use tokio::sync::Mutex;
 
-type Topic = String;
-
 #[derive(Clone)]
 pub struct Context {
     config: Arc<Config>,
-    kafka_events: Arc<Mutex<HashMap<Topic, EventSubscriber>>>,
+    kafka_events: Arc<Mutex<HashMap<String, EventSubscriber>>>,
 }
 
 impl juniper::Context for Context {}
