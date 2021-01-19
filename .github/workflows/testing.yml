@@ -66,13 +66,13 @@ jobs:
       - name: Clear bloat
         run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm
 
-  # component-testing:
-  #   name: Test modules
-  #   runs-on: ubuntu-latest
+  component-testing:
+    name: Test modules
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - name: Checkout source code
-  #       uses: actions/checkout@v2
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
 
   #     - name: Install Rust
   #       uses: actions-rs/toolchain@v1
