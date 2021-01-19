@@ -53,7 +53,7 @@ impl Context {
                         kafka_events.lock().await.remove(&topic);
                     })
                     .await?;
-                event_map.insert(topic.to_string(), subscriber);
+                event_map.insert(topic.into(), subscriber);
                 Ok(stream)
             }
         }
