@@ -32,8 +32,6 @@ schema-registry         | Manage user-defined schemas that define the format of 
 query-service           | Wrap each individual repository for retrieval of data
 command-service         | Intake data from a MQ and storage, in specific repository
 leader-elector          | Elect master nodes in replicated services (_only for the Schema Repository, currently_)
-document-storage        | Store document data keyed on UUIDs powered by [sled][sled]
-blob-store              | Store binary data keyed on UUIDs from user powered by [sled][sled]
 db-shrinker-storage     | A service to remove older data from storage
 query-router            | Route incoming requests to query service given a schema and object id
 utils                   | A collection of utilities used throughout the Common Data Layer
@@ -43,10 +41,12 @@ In addition to the above crates, there are some other useful directories:
 
 Directory       | Purpose
 ----------------|--------
-helm            | helm charts for remote deployment
+deploy/helm     | helm charts for remote deployment
+deploy/compose  | sample deployment guide for docker
 benchmarking    | scripts and scaffolding data for benchmarking
-examples/deploy | sample deployment guide for docker
-
+tests           | component tests
+examples        | examplary client of cdl
+docs            | cdl documentation
 
 ## Getting Started
 

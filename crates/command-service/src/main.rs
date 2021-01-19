@@ -1,8 +1,7 @@
 use command_service::communication::MessageRouter;
 use command_service::input::{Error, KafkaInput};
 use command_service::output::{
-    DruidOutputPlugin, OutputArgs, OutputPlugin, PostgresOutputPlugin, SleighOutputPlugin,
-    VictoriaMetricsOutputPlugin,
+    DruidOutputPlugin, OutputArgs, OutputPlugin, PostgresOutputPlugin, VictoriaMetricsOutputPlugin,
 };
 use command_service::report::{FullReportSenderBase, ReportSender, ReportServiceConfig};
 use command_service::{args::Args, input::GRPCInput, input::InputConfig};
@@ -25,14 +24,6 @@ async fn main() -> anyhow::Result<()> {
     let input_config = args.input_config()?;
 
     match args.output_config {
-        OutputArgs::Sleigh(sleigh_config) => {
-            start_services(
-                input_config,
-                args.report_config,
-                SleighOutputPlugin::new(sleigh_config).await?,
-            )
-            .await
-        }
         OutputArgs::Postgres(postgres_config) => {
             start_services(
                 input_config,
