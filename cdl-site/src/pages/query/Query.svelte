@@ -31,7 +31,7 @@
 <div class="container">
   <div class="row">
     <div class="col align-center">
-      <h2>Insert Data</h2>
+      <h2>Query Data</h2>
     </div>
   </div>
   <div class="row">
