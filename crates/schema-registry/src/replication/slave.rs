@@ -1,28 +1,40 @@
-use super::{KafkaConfig, ReplicationEvent};
+use super::{MessageQueue, MessageQueueConfig, ReplicationEvent};
 use crate::db::SchemaDb;
 use anyhow::Context;
 use log::{error, info, trace};
 use std::{process, sync::Arc};
 use tokio::stream::StreamExt;
 use tokio::{pin, sync::oneshot::Receiver};
-use utils::messaging_system::{consumer::CommonConsumer, message::CommunicationMessage};
+use utils::messaging_system::{
+    consumer::AmqpConsumerConfig, consumer::CommonConsumer, consumer::CommonConsumerConfig,
+    consumer::KafkaConsumerConfig, message::CommunicationMessage,
+};
 
-pub async fn consume_kafka_topic(
-    config: KafkaConfig,
+pub async fn consume_mq(
+    config: MessageQueueConfig,
     db: Arc<SchemaDb>,
     mut kill_signal: Receiver<()>,
 ) -> anyhow::Result<()> {
-    let topics: Vec<_> = config.topics.iter().map(String::as_str).collect();
-    let mut consumer =
-        CommonConsumer::new_kafka(&config.group_id, &config.brokers, topics.as_slice())
-            .await
-            .unwrap_or_else(|err| {
-                error!(
-                    "Fatal error. Encountered some problems connecting to kafka service. {:?}",
-                    err
-                );
-                process::abort();
-            });
+    let config = match &config.queue {
+        MessageQueue::Kafka(kafka) => CommonConsumerConfig::Kafka(KafkaConsumerConfig {
+            group_id: &kafka.group_id,
+            brokers: &kafka.brokers,
+            topic: &config.topic_or_queue,
+        }),
+        MessageQueue::Amqp(amqp) => CommonConsumerConfig::Amqp(AmqpConsumerConfig {
+            connection_string: &amqp.connection_string,
+            consumer_tag: &amqp.consumer_tag,
+            queue_name: &config.topic_or_queue,
+            options: None,
+        }),
+    };
+    let mut consumer = CommonConsumer::new(config).await.unwrap_or_else(|err| {
+        error!(
+            "Fatal error. Encountered some problems connecting to kafka service. {:?}",
+            err
+        );
+        process::abort();
+    });
     let message_stream = consumer.consume().await;
     pin!(message_stream);
     while let Some(message) = message_stream.next().await {

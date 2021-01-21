@@ -4300,6 +4300,7 @@ dependencies = [
  "rdkafka",
  "serde",
  "serde_json",
+ "structopt",
  "test-case",
  "thiserror",
  "tokio 0.2.24",

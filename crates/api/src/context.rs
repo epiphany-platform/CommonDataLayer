@@ -33,8 +33,8 @@ impl Context {
         Ok(new_conn)
     }
 
-    pub async fn subscribe_on_kafka_topic(&self, topic: &str) -> Result<EventStream> {
-        log::debug!("subscribe on kafka topic {}", topic);
+    pub async fn subscribe_on_message_queue(&self, topic: &str) -> Result<EventStream> {
+        log::debug!("subscribe on message queue: {}", topic);
         let mut event_map = self.kafka_events.lock().await;
         match event_map.get(topic) {
             Some(subscriber) => {
@@ -43,14 +43,17 @@ impl Context {
             }
             None => {
                 let kafka_events = self.kafka_events.clone();
-                let (subscriber, stream) =
-                    EventSubscriber::new(&self.config.kafka, topic, move |topic| async move {
-                        log::warn!("Kafka stream has closed");
+                let (subscriber, stream) = EventSubscriber::new(
+                    self.config.message_queue.config()?,
+                    topic,
+                    move |topic| async move {
+                        log::warn!("Message queue stream has closed");
                         // Remove topic from hashmap so next time someone ask about this stream,
                         // it will be recreated
                         kafka_events.lock().await.remove(&topic);
-                    })
-                    .await?;
+                    },
+                )
+                .await?;
                 event_map.insert(topic.into(), subscriber);
                 Ok(stream)
             }

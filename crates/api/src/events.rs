@@ -3,13 +3,15 @@
 /// Instead you listen on different task (See: `tokio::spawn` in `EventSubscriber::new`) and then send message to broadcast channel.
 /// Each websocket client has its own Receiver.
 /// Thanks to that we are not only reusing connection, but also limit dangerous `consumer.leak()` usage.
-use crate::config::KafkaConfig;
+use crate::config::MessageQueueConfig;
 use futures::task::{Context as FutCtx, Poll};
 use futures::{Future, Stream, StreamExt, TryStreamExt};
 use juniper::FieldResult;
 use std::pin::Pin;
 use tokio::sync::broadcast;
-use utils::messaging_system::consumer::CommonConsumer;
+use utils::messaging_system::consumer::{
+    AmqpConsumerConfig, CommonConsumer, CommonConsumerConfig, KafkaConsumerConfig,
+};
 use utils::messaging_system::Error;
 
 // TODO: Rename it to generic `Event` after adding support to RabbitMQ
@@ -33,8 +35,8 @@ pub struct EventStream {
 impl EventSubscriber {
     /// Connects to kafka and sends all messages to broadcast channel.
     pub async fn new<F, Fut>(
-        config: &KafkaConfig,
-        topic: &str,
+        config: MessageQueueConfig,
+        topic_or_queue: &str,
         on_close: F,
     ) -> Result<(Self, EventStream), anyhow::Error>
     where
@@ -43,13 +45,31 @@ impl EventSubscriber {
     {
         let (tx, rx) = broadcast::channel(32);
 
-        log::debug!("Create new consumer for topic: {}", topic);
+        log::debug!("Create new consumer for: {}", topic_or_queue);
 
-        let mut consumer =
-            CommonConsumer::new_kafka(&config.group_id, &config.brokers, &[topic]).await?;
+        let config = match &config {
+            MessageQueueConfig::Kafka { group_id, brokers } => {
+                CommonConsumerConfig::Kafka(KafkaConsumerConfig {
+                    group_id: &group_id,
+                    brokers: &brokers,
+                    topic: topic_or_queue,
+                })
+            }
+            MessageQueueConfig::Amqp {
+                connection_string,
+                consumer_tag,
+            } => CommonConsumerConfig::Amqp(AmqpConsumerConfig {
+                connection_string: &connection_string,
+                consumer_tag: &consumer_tag,
+                queue_name: topic_or_queue,
+                options: None,
+            }),
+        };
+
+        let mut consumer = CommonConsumer::new(config).await?;
 
         let sink = tx.clone();
-        let topic = String::from(topic);
+        let topic_or_queue = String::from(topic_or_queue);
         tokio::spawn(async move {
             let stream = consumer.consume().await.map_ok(move |msg| {
                 let key = msg.key().map(|s| s.to_string()).ok();
@@ -63,7 +83,7 @@ impl EventSubscriber {
                 sink.send(item).ok();
             }
 
-            on_close(topic);
+            on_close(topic_or_queue);
         });
 
         Ok((Self(tx), EventStream::new(rx)))

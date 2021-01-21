@@ -15,20 +15,51 @@ use super::{
     message::RabbitCommunicationMessage, Result,
 };
 
+pub enum CommonConsumerConfig<'a> {
+    Kafka(KafkaConsumerConfig<'a>),
+    Amqp(AmqpConsumerConfig<'a>),
+}
+
+pub struct KafkaConsumerConfig<'a> {
+    pub brokers: &'a str,
+    pub group_id: &'a str,
+    pub topic: &'a str,
+}
+
+pub struct AmqpConsumerConfig<'a> {
+    pub connection_string: &'a str,
+    pub consumer_tag: &'a str,
+    pub queue_name: &'a str,
+    pub options: Option<BasicConsumeOptions>,
+}
+
 pub enum CommonConsumer {
     Kafka {
         consumer: Arc<StreamConsumer<DefaultConsumerContext>>,
     },
-    RabbitMq {
+    Amqp {
         consumer: lapin::Consumer,
     },
 }
 impl CommonConsumer {
-    pub async fn new_kafka(
-        group_id: &str,
-        brokers: &str,
-        topics: &[&str],
-    ) -> Result<CommonConsumer> {
+    pub async fn new(config: CommonConsumerConfig<'_>) -> Result<Self> {
+        match config {
+            CommonConsumerConfig::Kafka(kafka) => {
+                Self::new_kafka(kafka.group_id, kafka.brokers, &[kafka.topic]).await
+            }
+            CommonConsumerConfig::Amqp(amqp) => {
+                Self::new_amqp(
+                    amqp.connection_string,
+                    amqp.consumer_tag,
+                    amqp.queue_name,
+                    amqp.options,
+                )
+                .await
+            }
+        }
+    }
+
+    async fn new_kafka(group_id: &str, brokers: &str, topics: &[&str]) -> Result<Self> {
         let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
             .set("group.id", &group_id)
             .set("bootstrap.servers", &brokers)
@@ -47,12 +78,12 @@ impl CommonConsumer {
         })
     }
 
-    pub async fn new_rabbit(
+    async fn new_amqp(
         connection_string: &str,
         consumer_tag: &str,
         queue_name: &str,
         consume_options: Option<BasicConsumeOptions>,
-    ) -> Result<CommonConsumer> {
+    ) -> Result<Self> {
         let consume_options = consume_options.unwrap_or_default();
         let connection = lapin::Connection::connect(
             connection_string,
@@ -68,7 +99,7 @@ impl CommonConsumer {
                 FieldTable::default(),
             )
             .await?;
-        Ok(CommonConsumer::RabbitMq { consumer })
+        Ok(CommonConsumer::Amqp { consumer })
     }
 
     pub async fn consume(
@@ -83,7 +114,7 @@ impl CommonConsumer {
                         yield Box::new(KafkaCommunicationMessage{message,consumer:consumer.clone()}) as Box<dyn CommunicationMessage>;
                     }
                 }
-                CommonConsumer::RabbitMq {
+                CommonConsumer::Amqp {
                     consumer,
                 } => {
                     while let Some(message) = consumer.next().await {

@@ -1,7 +1,9 @@
 use crate::{
     db::SchemaDb,
     error::RegistryError,
-    replication::{KafkaConfig, ReplicationEvent, ReplicationRole, ReplicationState},
+    replication::MessageQueue,
+    replication::MessageQueueConfig,
+    replication::{ReplicationEvent, ReplicationRole, ReplicationState},
     types::DbExport,
     types::ViewUpdate,
     types::{NewSchema, NewSchemaVersion, VersionedUuid},
@@ -19,13 +21,13 @@ use semver::VersionReq;
 use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Status};
-use utils::messaging_system::metadata_fetcher::KafkaMetadataFetcher;
+use utils::messaging_system::metadata_fetcher::MetadataFetcher;
 use utils::{abort_on_poison, messaging_system::Result};
 use uuid::Uuid;
 
 pub struct SchemaRegistryImpl {
     pub db: Arc<SchemaDb>,
-    pub mq_metadata: Arc<KafkaMetadataFetcher>,
+    pub mq_metadata: Arc<MetadataFetcher>,
     pub replication: Arc<Mutex<ReplicationState>>,
     pub pod_name: Option<String>,
 }
@@ -34,15 +36,21 @@ impl SchemaRegistryImpl {
     pub async fn new(
         db: SledDatastore,
         replication_role: ReplicationRole,
-        kafka_config: KafkaConfig,
+        message_queue_config: MessageQueueConfig,
         pod_name: Option<String>,
     ) -> Result<Self> {
         let child_db = Arc::new(SchemaDb { db });
-        let mq_metadata = Arc::new(KafkaMetadataFetcher::new(&kafka_config.brokers).await?);
+        let mq_metadata = Arc::new(match &message_queue_config.queue {
+            MessageQueue::Kafka(kafka) => MetadataFetcher::new_kafka(&kafka.brokers).await?,
+            MessageQueue::Amqp(amqp) => MetadataFetcher::new_amqp(&amqp.connection_string).await?,
+        });
         let schema_registry = Self {
             db: child_db.clone(),
             mq_metadata,
-            replication: Arc::new(Mutex::new(ReplicationState::new(kafka_config, child_db))),
+            replication: Arc::new(Mutex::new(ReplicationState::new(
+                message_queue_config,
+                child_db,
+            ))),
             pod_name,
         };
         schema_registry.set_replication_role(replication_role);
@@ -96,7 +104,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
         if !self
             .mq_metadata
-            .topic_exists(&new_schema.kafka_topic)
+            .topic_or_exchange_exists(&new_schema.kafka_topic)
             .await
             .map_err(RegistryError::from)?
         {
@@ -145,7 +153,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         if let Some(topic) = request.topic.as_ref() {
             if !self
                 .mq_metadata
-                .topic_exists(&topic)
+                .topic_or_exchange_exists(&topic)
                 .await
                 .map_err(RegistryError::from)?
             {

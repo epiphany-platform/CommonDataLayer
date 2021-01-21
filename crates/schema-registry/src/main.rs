@@ -4,7 +4,9 @@ use indradb::SledDatastore;
 use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
 use schema_registry::{
     error::RegistryError,
-    replication::{KafkaConfig, ReplicationRole},
+    replication::AmqpConfig,
+    replication::MessageQueue,
+    replication::{KafkaConfig, MessageQueueConfig, ReplicationRole},
     rpc::SchemaRegistryImpl,
 };
 use serde::Deserialize;
@@ -16,13 +18,26 @@ use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
 
 #[derive(Deserialize)]
+enum MessageQueueType {
+    Kafka,
+    Amqp,
+}
+
+#[derive(Deserialize)]
 struct Config {
     pub input_port: u16,
     pub db_name: String,
     pub replication_role: ReplicationRole,
-    pub kafka_brokers: String,
-    pub kafka_group_id: String,
-    pub kafka_topics: Vec<String>,
+
+    pub replication_queue: MessageQueueType,
+    pub kafka_brokers: Option<String>,
+    pub kafka_group_id: Option<String>,
+    pub amqp_connection_string: Option<String>,
+    pub amqp_consumer_tag: Option<String>,
+
+    pub replication_topic_or_queue: String,
+    pub replication_topic_or_exchange: String,
+
     pub pod_name: Option<String>,
     pub export_dir: Option<PathBuf>,
     pub import_file: Option<PathBuf>,
@@ -32,10 +47,28 @@ struct Config {
 pub async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let config = envy::from_env::<Config>().context("Env vars not set correctly")?;
-    let replication_config = KafkaConfig {
-        brokers: config.kafka_brokers,
-        group_id: config.kafka_group_id,
-        topics: config.kafka_topics,
+    let replication_config = MessageQueueConfig {
+        queue: match config.replication_queue {
+            MessageQueueType::Kafka => {
+                let brokers = config.kafka_brokers.context("Missing kafka brokers")?;
+                let group_id = config.kafka_group_id.context("Missing kafka group")?;
+                MessageQueue::Kafka(KafkaConfig { brokers, group_id })
+            }
+            MessageQueueType::Amqp => {
+                let connection_string = config
+                    .amqp_connection_string
+                    .context("Missing amqp connection string")?;
+                let consumer_tag = config
+                    .amqp_consumer_tag
+                    .context("Missing amqp consumer tag")?;
+                MessageQueue::Amqp(AmqpConfig {
+                    connection_string,
+                    consumer_tag,
+                })
+            }
+        },
+        topic_or_exchange: config.replication_topic_or_exchange,
+        topic_or_queue: config.replication_topic_or_queue,
     };
 
     status_endpoints::serve();
