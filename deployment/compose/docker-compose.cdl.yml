@@ -180,3 +180,6 @@ services:
       RUST_LOG: info,api=trace
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       QUERY_ROUTER_ADDR: "http://query_router:50103"
+      KAFKA_GROUP_ID: "cdl-api"
+      KAFKA_BROKERS: "kafka:9093"
+      REPORT_TOPIC: "cdl.reports"

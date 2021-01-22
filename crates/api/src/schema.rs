@@ -43,6 +43,20 @@ pub struct View {
     pub expression: String,
 }
 
+#[derive(Debug, serde::Deserialize)]
+pub struct Report {
+    /// Application which generated the report
+    pub application: String,
+    /// Output plugin in command service
+    pub output_plugin: Option<String>,
+    /// Success/Failure
+    pub description: String,
+    /// Object id
+    pub object_id: Uuid,
+    /// JSON encoded payload
+    pub payload: serde_json::Value,
+}
+
 /// Input object which creates new schema and new definition. Each schema has to contain at least one definition, which can be later overriden.
 #[derive(Debug, juniper::GraphQLInputObject)]
 pub struct NewSchema {
