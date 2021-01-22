@@ -6,8 +6,7 @@ use std::{process, sync::Arc};
 use tokio::stream::StreamExt;
 use tokio::{pin, sync::oneshot::Receiver};
 use utils::messaging_system::{
-    consumer::AmqpConsumerConfig, consumer::CommonConsumer, consumer::CommonConsumerConfig,
-    consumer::KafkaConsumerConfig, message::CommunicationMessage,
+    consumer::CommonConsumer, consumer::CommonConsumerConfig, message::CommunicationMessage,
 };
 
 pub async fn consume_mq(
@@ -16,17 +15,17 @@ pub async fn consume_mq(
     mut kill_signal: Receiver<()>,
 ) -> anyhow::Result<()> {
     let config = match &config.queue {
-        MessageQueue::Kafka(kafka) => CommonConsumerConfig::Kafka(KafkaConsumerConfig {
+        MessageQueue::Kafka(kafka) => CommonConsumerConfig::Kafka {
             group_id: &kafka.group_id,
             brokers: &kafka.brokers,
             topic: &config.topic_or_queue,
-        }),
-        MessageQueue::Amqp(amqp) => CommonConsumerConfig::Amqp(AmqpConsumerConfig {
+        },
+        MessageQueue::Amqp(amqp) => CommonConsumerConfig::Amqp {
             connection_string: &amqp.connection_string,
             consumer_tag: &amqp.consumer_tag,
             queue_name: &config.topic_or_queue,
             options: None,
-        }),
+        },
     };
     let mut consumer = CommonConsumer::new(config).await.unwrap_or_else(|err| {
         error!(

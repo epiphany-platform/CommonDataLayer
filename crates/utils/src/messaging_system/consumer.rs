@@ -11,26 +11,22 @@ use std::sync::Arc;
 use tokio_amqp::LapinTokioExt;
 
 use super::{
-    message::CommunicationMessage, message::KafkaCommunicationMessage,
-    message::RabbitCommunicationMessage, Result,
+    message::AmqpCommunicationMessage, message::CommunicationMessage,
+    message::KafkaCommunicationMessage, Result,
 };
 
 pub enum CommonConsumerConfig<'a> {
-    Kafka(KafkaConsumerConfig<'a>),
-    Amqp(AmqpConsumerConfig<'a>),
-}
-
-pub struct KafkaConsumerConfig<'a> {
-    pub brokers: &'a str,
-    pub group_id: &'a str,
-    pub topic: &'a str,
-}
-
-pub struct AmqpConsumerConfig<'a> {
-    pub connection_string: &'a str,
-    pub consumer_tag: &'a str,
-    pub queue_name: &'a str,
-    pub options: Option<BasicConsumeOptions>,
+    Kafka {
+        brokers: &'a str,
+        group_id: &'a str,
+        topic: &'a str,
+    },
+    Amqp {
+        connection_string: &'a str,
+        consumer_tag: &'a str,
+        queue_name: &'a str,
+        options: Option<BasicConsumeOptions>,
+    },
 }
 
 pub enum CommonConsumer {
@@ -44,18 +40,17 @@ pub enum CommonConsumer {
 impl CommonConsumer {
     pub async fn new(config: CommonConsumerConfig<'_>) -> Result<Self> {
         match config {
-            CommonConsumerConfig::Kafka(kafka) => {
-                Self::new_kafka(kafka.group_id, kafka.brokers, &[kafka.topic]).await
-            }
-            CommonConsumerConfig::Amqp(amqp) => {
-                Self::new_amqp(
-                    amqp.connection_string,
-                    amqp.consumer_tag,
-                    amqp.queue_name,
-                    amqp.options,
-                )
-                .await
-            }
+            CommonConsumerConfig::Kafka {
+                group_id,
+                brokers,
+                topic,
+            } => Self::new_kafka(group_id, brokers, &[topic]).await,
+            CommonConsumerConfig::Amqp {
+                connection_string,
+                consumer_tag,
+                queue_name,
+                options,
+            } => Self::new_amqp(connection_string, consumer_tag, queue_name, options).await,
         }
     }
 
@@ -119,7 +114,7 @@ impl CommonConsumer {
                 } => {
                     while let Some(message) = consumer.next().await {
                         let message = message?;
-                        yield Box::new(RabbitCommunicationMessage{channel:message.0, delivery:message.1})as Box<dyn CommunicationMessage>;
+                        yield Box::new(AmqpCommunicationMessage{channel:message.0, delivery:message.1})as Box<dyn CommunicationMessage>;
                     }
                 }
             }

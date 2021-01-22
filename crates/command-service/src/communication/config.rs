@@ -1,6 +1,4 @@
-use utils::messaging_system::consumer::{
-    AmqpConsumerConfig, BasicConsumeOptions, CommonConsumerConfig, KafkaConsumerConfig,
-};
+use utils::messaging_system::consumer::{BasicConsumeOptions, CommonConsumerConfig};
 
 pub enum CommunicationConfig {
     MessageQueue(MessageQueueConfig),
@@ -43,13 +41,13 @@ impl MessageQueueConfig {
                 ordered_topics,
                 ..
             } => {
-                let iter = ordered_topics.iter().map(move |topic| {
-                    CommonConsumerConfig::Kafka(KafkaConsumerConfig {
+                let iter = ordered_topics
+                    .iter()
+                    .map(move |topic| CommonConsumerConfig::Kafka {
                         brokers: &brokers,
                         group_id: &group_id,
                         topic,
-                    })
-                });
+                    });
                 Box::new(iter)
             }
             MessageQueueConfig::Amqp {
@@ -62,14 +60,15 @@ impl MessageQueueConfig {
                     exclusive: true,
                     ..Default::default()
                 });
-                let iter = ordered_queue_names.iter().map(move |queue_name| {
-                    CommonConsumerConfig::Amqp(AmqpConsumerConfig {
-                        connection_string: &connection_string,
-                        consumer_tag: &consumer_tag,
-                        queue_name,
-                        options,
-                    })
-                });
+                let iter =
+                    ordered_queue_names
+                        .iter()
+                        .map(move |queue_name| CommonConsumerConfig::Amqp {
+                            connection_string: &connection_string,
+                            consumer_tag: &consumer_tag,
+                            queue_name,
+                            options,
+                        });
                 Box::new(iter)
             }
         }
@@ -85,13 +84,13 @@ impl MessageQueueConfig {
                 unordered_topics,
                 ..
             } => {
-                let iter = unordered_topics.iter().map(move |topic| {
-                    CommonConsumerConfig::Kafka(KafkaConsumerConfig {
+                let iter = unordered_topics
+                    .iter()
+                    .map(move |topic| CommonConsumerConfig::Kafka {
                         brokers: &brokers,
                         group_id: &group_id,
                         topic,
-                    })
-                });
+                    });
                 Box::new(iter)
             }
             MessageQueueConfig::Amqp {
@@ -105,12 +104,12 @@ impl MessageQueueConfig {
                     ..Default::default()
                 });
                 let iter = unordered_queue_names.iter().map(move |queue_name| {
-                    CommonConsumerConfig::Amqp(AmqpConsumerConfig {
+                    CommonConsumerConfig::Amqp {
                         connection_string: &connection_string,
                         consumer_tag: &consumer_tag,
                         queue_name,
                         options,
-                    })
+                    }
                 });
                 Box::new(iter)
             }

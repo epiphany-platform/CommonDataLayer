@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 #[derive(Clone)]
 pub struct Context {
     config: Arc<Config>,
-    kafka_events: Arc<Mutex<HashMap<String, EventSubscriber>>>,
+    mq_events: Arc<Mutex<HashMap<String, EventSubscriber>>>,
 }
 
 impl juniper::Context for Context {}
@@ -19,7 +19,7 @@ impl Context {
     pub fn new(config: Arc<Config>) -> Self {
         Context {
             config,
-            kafka_events: Default::default(),
+            mq_events: Default::default(),
         }
     }
 
@@ -35,14 +35,14 @@ impl Context {
 
     pub async fn subscribe_on_message_queue(&self, topic: &str) -> Result<EventStream> {
         log::debug!("subscribe on message queue: {}", topic);
-        let mut event_map = self.kafka_events.lock().await;
+        let mut event_map = self.mq_events.lock().await;
         match event_map.get(topic) {
             Some(subscriber) => {
                 let stream = subscriber.subscribe();
                 Ok(stream)
             }
             None => {
-                let kafka_events = self.kafka_events.clone();
+                let kafka_events = self.mq_events.clone();
                 let (subscriber, stream) = EventSubscriber::new(
                     self.config.message_queue.config()?,
                     topic,

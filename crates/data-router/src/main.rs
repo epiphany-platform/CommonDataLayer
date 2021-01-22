@@ -20,9 +20,7 @@ use utils::{
     metrics::{self, counter},
 };
 use utils::{
-    message_types::DataRouterInsertMessage, messaging_system::consumer::AmqpConsumerConfig,
-    messaging_system::consumer::CommonConsumerConfig,
-    messaging_system::consumer::KafkaConsumerConfig,
+    message_types::DataRouterInsertMessage, messaging_system::consumer::CommonConsumerConfig,
 };
 use uuid::Uuid;
 
@@ -72,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
     let message_stream = consumer.consume().await;
     pin!(message_stream);
 
-    let kafka_error_channel = Arc::new(config.error_topic_or_exchange);
+    let error_topic_or_exchange = Arc::new(config.error_topic_or_exchange);
     let schema_registry_addr = Arc::new(config.schema_registry_addr);
 
     while let Some(message) = message_stream.next().await {
@@ -82,7 +80,7 @@ async fn main() -> anyhow::Result<()> {
                     message,
                     cache.clone(),
                     producer.clone(),
-                    kafka_error_channel.clone(),
+                    error_topic_or_exchange.clone(),
                     schema_registry_addr.clone(),
                 )
                 .await;
@@ -126,11 +124,11 @@ async fn new_consumer(config: &Config, topic_or_queue: &str) -> anyhow::Result<C
                 .kafka_group_id
                 .as_ref()
                 .context("kafka group was not specified")?;
-            CommonConsumerConfig::Kafka(KafkaConsumerConfig {
+            CommonConsumerConfig::Kafka {
                 brokers: &brokers,
                 group_id: &group_id,
                 topic: topic_or_queue,
-            })
+            }
         }
         MessageQueueKind::Amqp => {
             let connection_string = config
@@ -141,12 +139,12 @@ async fn new_consumer(config: &Config, topic_or_queue: &str) -> anyhow::Result<C
                 .amqp_consumer_tag
                 .as_ref()
                 .context("amqp consumer tag was not specified")?;
-            CommonConsumerConfig::Amqp(AmqpConsumerConfig {
+            CommonConsumerConfig::Amqp {
                 connection_string: &connection_string,
                 consumer_tag: &consumer_tag,
                 queue_name: topic_or_queue,
                 options: None,
-            })
+            }
         }
     };
     Ok(CommonConsumer::new(config).await?)
@@ -156,7 +154,7 @@ async fn handle_message(
     message: Box<dyn CommunicationMessage>,
     cache: Arc<Mutex<LruCache<Uuid, String>>>,
     producer: Arc<CommonPublisher>,
-    kafka_error_channel: Arc<String>,
+    error_topic_or_exchange: Arc<String>,
     schema_registry_addr: Arc<String>,
 ) {
     let result: anyhow::Result<()> = async {
@@ -198,7 +196,7 @@ async fn handle_message(
         error!("{:?}", error);
         send_message(
             producer.as_ref(),
-            &kafka_error_channel,
+            &error_topic_or_exchange,
             SERVICE_NAME,
             format!("{:?}", error).into(),
         )
