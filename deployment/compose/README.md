@@ -32,7 +32,9 @@ Environment with infrastructure alone is started via:
 
 If you want to add cdl components to it, you must specify `-f` options:
 
-`docker-compose -f docker-compose.cdl.yml -f docker-compose.yml up -d`
+`docker-compose -f docker-compose.cdl-kafka.yml -f docker-compose.yml up -d`
+or
+`docker-compose -f docker-compose.cdl-rabbit.yml -f docker-compose.yml up -d`
 
 Sometimes it's useful to store data on disk (eg. for debugging), we can achieve this by adding `-f docker-compose.host-storage.yml` to combination:
 
@@ -42,9 +44,19 @@ Sometimes it's useful to store data on disk (eg. for debugging), we can achieve 
 ### Kafka
 
 You can write to kafka on `localhost:9092`.
-By default there is no replication on *schema_registry*. Postgres *command_service* input channel is `cdl.document.input`.
+Default *data-router* topic is `cdl.data.input`.
+By default there is no replication on *schema_registry*. Postgres *command_service* input channel is `cdl.document.data`.
 
 Errors are written to `cdl.reports`.
+
+### Rabbitmq
+
+You can write to rabbit on `localhost:5672`.
+Default *data-router* fanout exchange is `cdl.data.input`.
+There is also managament panel available at `localhost:15672`. The credentials are `user`/`CHANGEME`.
+By default there is no replication on *schema_registry*. Postgres *command_service* input channel is `cdl.document.data`.
+
+Errors are written to `cdl.reports` fanout exchange and can be read via `cdl.reports` queue.
 
 ### PostgreSQL
 

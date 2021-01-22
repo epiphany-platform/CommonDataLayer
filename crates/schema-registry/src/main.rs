@@ -17,10 +17,29 @@ use std::path::PathBuf;
 use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
 
-#[derive(Deserialize)]
 enum MessageQueueType {
     Kafka,
     Amqp,
+}
+
+impl<'de> Deserialize<'de> for MessageQueueType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?.to_lowercase();
+        let mqt = match s.as_str() {
+            "kafka" => Self::Kafka,
+            "amqp" => Self::Amqp,
+            other => {
+                return Err(serde::de::Error::custom(format!(
+                    "Invalid message queue type: `{}`",
+                    other
+                )));
+            }
+        };
+        Ok(mqt)
+    }
 }
 
 #[derive(Deserialize)]

@@ -117,6 +117,12 @@ def create_schema():
             'message': 'Kafka topic for data-router to route messages to',
         },
         {
+            'type': 'list',
+            'name': 'schema_type',
+            'choices': ['DocumentStorage', 'Timeseries'],
+            'message': 'Type of repository',
+        },
+        {
             'type': 'input',
             'name': 'schema_query',
             'default': 'http://postgres_query:50102',
@@ -137,7 +143,7 @@ def create_schema():
     create = prompt(questions)
 
     schema_id = cdl.registry_create_schema(create['schema_url'], create['schema_name'], create['schema_topic'],
-                                           create['schema_query'], create['schema_body'])
+                                           create['schema_query'], create['schema_body'], create['schema_type'])
 
     print(f"Schema was assigned id: {schema_id}")
 
