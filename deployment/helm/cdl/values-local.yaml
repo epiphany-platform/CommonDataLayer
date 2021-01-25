@@ -2,6 +2,7 @@ global:
   imageRepositoryPath: ""
   imageVersion: latest
   imagePullPolicy: IfNotPresent
+  communicationMethod: "kafka"
   kafkaBrokers:  infrastructure-kafka-headless
   cdlImagePullSecrets: services
   reportTopicOrExchange: cdl.errors
