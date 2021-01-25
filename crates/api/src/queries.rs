@@ -4,15 +4,65 @@ use crate::{
     context::{Context, SchemaRegistryConn},
     error::Error,
 };
-use juniper::{graphql_object, EmptySubscription, FieldResult, RootNode};
+use futures::{Stream, TryStreamExt};
+use juniper::{graphql_object, graphql_subscription, FieldError, FieldResult, RootNode};
 use num_traits::{FromPrimitive, ToPrimitive};
 use rpc::schema_registry::Empty;
+use std::pin::Pin;
 use uuid::Uuid;
 
-pub type GQLSchema = RootNode<'static, Query, QueryMut, EmptySubscription<Context>>;
+pub type GQLSchema = RootNode<'static, Query, QueryMut, Subscription>;
 
 pub fn schema() -> GQLSchema {
-    GQLSchema::new(Query, QueryMut, EmptySubscription::new())
+    GQLSchema::new(Query, QueryMut, Subscription)
+}
+
+type ReportStream = Pin<Box<dyn Stream<Item = FieldResult<Report>> + Send>>;
+
+pub struct Subscription;
+
+#[graphql_subscription(context = Context)]
+impl Subscription {
+    async fn reports(context: &Context) -> ReportStream {
+        let topic = &context.config().report_topic;
+        let stream = context
+            .subscribe_on_kafka_topic(topic)
+            .await?
+            .try_filter_map(|ev| async move { Ok(ev.payload) })
+            .and_then(
+                |payload| async move { serde_json::from_str(&payload).map_err(FieldError::from) },
+            );
+
+        Box::pin(stream)
+    }
+}
+
+#[graphql_object(context = Context)]
+impl Report {
+    /// Application which generated the report
+    fn application(&self) -> &str {
+        &self.application
+    }
+
+    /// Output plugin in command service
+    fn output_plugin(&self) -> Option<&str> {
+        self.output_plugin.as_deref()
+    }
+
+    /// Success/Failure
+    fn description(&self) -> &str {
+        &self.description
+    }
+
+    /// Object id
+    fn object_id(&self) -> &Uuid {
+        &self.object_id
+    }
+
+    /// JSON encoded payload
+    fn payload(&self) -> FieldResult<String> {
+        Ok(serde_json::to_string(&self.payload)?)
+    }
 }
 
 pub struct QueryMut;

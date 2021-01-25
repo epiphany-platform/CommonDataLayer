@@ -6,7 +6,7 @@ pub mod publisher;
 
 pub mod metadata_fetcher;
 
-#[derive(Debug, DeriveError)]
+#[derive(Clone, Debug, DeriveError)]
 pub enum Error {
     #[error("Error during communication via message queue \"{0}\"")]
     CommunicationError(String),
