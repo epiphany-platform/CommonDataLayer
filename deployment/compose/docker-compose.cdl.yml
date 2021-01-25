@@ -3,7 +3,7 @@
 # Please refer to README.md for instructions on how to run it.
 ###
 
-version: "3"
+version: "2.2"
 
 services:
   postgres:
@@ -12,7 +12,7 @@ services:
 
   kafka:
     environment:
-      KAFKA_CREATE_TOPICS: "cdl.data.input:1:1,cdl.document.input:1:1,cdl.reports:1:1,cdl.timeseries.input:1:1"
+      KAFKA_CREATE_TOPICS: "cdl.data.input:1:1,cdl.document.input:1:1,cdl.reports:1:1,cdl.timeseries.input:1:1,cdl.internal.druid:1:1"
 
   schema_registry:
     image: cdl-schema-registry:latest
@@ -88,7 +88,30 @@ services:
       - data_router
       - kafka
 
-  victoria_command:
+#  victoria_command:
+#    image: cdl-command-service:latest
+#    build:
+#      context: ../..
+#      dockerfile: Dockerfile
+#      args:
+#        - BIN=command-service
+#        - ENV=DEV
+#    command: "/bin/command-service victoria-metrics"
+#    environment:
+#      KAFKA_INPUT_GROUP_ID: "victoria_command"
+#      KAFKA_INPUT_BROKERS: "kafka:9093"
+#      KAFKA_INPUT_TOPIC: "cdl.timeseries.input"
+#      INGESTION_METHOD: KAFKA
+#      VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
+#      REPORT_BROKER: "kafka:9093"
+#      REPORT_TOPIC: "cdl.reports"
+#      RUST_LOG: info,command_service=trace
+#    depends_on:
+#      - victoria_metrics
+#      - data_router
+#      - kafka
+
+  druid_command:
     image: cdl-command-service:latest
     build:
       context: ../..
@@ -96,18 +119,18 @@ services:
       args:
         - BIN=command-service
         - ENV=DEV
-    command: "/bin/command-service victoria-metrics"
+    command: "/bin/command-service druid"
     environment:
       KAFKA_INPUT_GROUP_ID: "victoria_command"
       KAFKA_INPUT_BROKERS: "kafka:9093"
       KAFKA_INPUT_TOPIC: "cdl.timeseries.input"
       INGESTION_METHOD: KAFKA
-      VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
+      DRUID_OUTPUT_BROKERS: "kafka:9093"
+      DRUID_OUTPUT_TOPIC: 'cdl.druid.internal'
       REPORT_BROKER: "kafka:9093"
       REPORT_TOPIC: "cdl.reports"
       RUST_LOG: info,command_service=trace
     depends_on:
-      - victoria_metrics
       - data_router
       - kafka
 
@@ -150,20 +173,20 @@ services:
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       RUST_LOG: info,query_router=trace
 
-  victoria_query:
-    image: cdl-query-service-ts:latest
-    command: "/bin/query-service-ts victoria"
-    ports:
-      - "50104:50104"
-    build:
-      context: ../..
-      dockerfile: Dockerfile
-      args:
-        - BIN=query-service-ts
-    environment:
-      VICTORIA_QUERY_URL: "http://victoria_metrics:8428/api/v1"
-      INPUT_PORT: 50104
-      RUST_LOG: debug
+#  victoria_query:
+#    image: cdl-query-service-ts:latest
+#    command: "/bin/query-service-ts victoria"
+#    ports:
+#      - "50104:50104"
+#    build:
+#      context: ../..
+#      dockerfile: Dockerfile
+#      args:
+#        - BIN=query-service-ts
+#    environment:
+#      VICTORIA_QUERY_URL: "http://victoria_metrics:8428/api/v1"
+#      INPUT_PORT: 50104
+#      RUST_LOG: debug
 
   web_api:
     image: cdl-api:latest

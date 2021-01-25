@@ -77,14 +77,14 @@ impl DruidQuery {
             .map_err(|err| Status::internal(format!("Unable to connect to database: {}", err)))
     }
 
-    async fn query_db<T: DeserializeOwned>(&self, query: &Value) -> Result<T, Status> {
+    async fn query_db(&self, query: &Value) -> Result<String, Status> {
         let conn = self.connect().await?;
         let request = conn.post(&self.addr).json(query);
         let response = request.send().await.map_err(|err| {
             Status::internal(format!("Error requesting value from druid: {}", err))
         })?;
 
-        response.json().await.map_err(|err| {
+        response.text().await.map_err(|err| {
             Status::internal(format!(
                 "Failed to deserialize response from Druid: {}",
                 err
@@ -100,40 +100,38 @@ impl QueryServiceTs for DruidQuery {
         request: Request<Range>,
     ) -> Result<Response<TimeSeries>, Status> {
         counter!("cdl.query-service.query-multiple.druid", 1);
+
+        let request = request.into_inner();
+
+        let intervals = format!("{}/{}", request.start, request.end);
+
         let query = json!({
             "queryType": "timeseries",
             "dataSource": &self.table_name,
-            "granularity": "all",
-            "filter": {
-                "type": "in",
-                "dimension": "objectId",
-                "values": request.into_inner().object_ids
-            },
-            "aggregations": [
-                { "type": "stringLast", "name": "object_id", "fieldName": "objectId" },
-                { "type": "stringLast", "name": "data", "fieldName": "data" }
-            ],
-            "intervals": [ "2000-01-01T00:00:00.000/3000-01-01T00:00:00.000" ]
+            "granularity": &request.step,
+            "intervals": [ intervals ]
         });
 
-        let response: Vec<DruidValue> = self.query_db(&query).await?;
-        let values = response
-            .into_iter()
-            .map(|val| (val.result.object_id, val.result.data.into_bytes()))
-            .collect();
-
-        Ok(tonic::Response::new(Timeseries { timeseries: values }))
+        Ok(tonic::Response::new(TimeSeries {
+            timeseries: self.query_db(&query).await?,
+        }))
     }
 
     async fn query_by_schema(
         &self,
         request: Request<SchemaId>,
     ) -> Result<Response<TimeSeries>, Status> {
+        Ok(tonic::Response::new(TimeSeries {
+            timeseries: "".to_string(),
+        }))
     }
 
     async fn query_raw(
         &self,
         request: Request<RawStatement>,
     ) -> Result<Response<ValueBytes>, Status> {
+        Ok(tonic::Response::new(ValueBytes {
+            value_bytes: vec![],
+        }))
     }
 }

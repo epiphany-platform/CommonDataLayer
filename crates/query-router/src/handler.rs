@@ -45,6 +45,7 @@ pub async fn query_single(
 
         (SchemaType::Timeseries, Body::Range { from, to, step }) => {
             let timeseries = rpc::query_service_ts::query_by_range(
+                schema_id.to_string(),
                 object_id.to_string(),
                 from,
                 to,

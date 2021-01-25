@@ -11,7 +11,18 @@ LAST_SCHEMA_FILENAME = '.last_schema'
 DEFAULT_INSERT_MESSAGE = """{{
     "schemaId": "{0}",
     "objectId": "{1}",
-    "data": {{ "success": true }}
+    "data": [
+        {{
+          "fields": {{
+            "a": 1,
+            "b": 3,
+            "c": true,
+            "d": 13.0,
+            "e": "Hello, world"
+          }},
+          "ts": 1611224750
+        }}
+    ]
 }}"""
 
 
@@ -111,6 +122,12 @@ def create_schema():
             'message': 'Name of schema to insert',
         },
         {
+            'type': 'list',
+            'name': 'schema_type',
+            'choices': ['DocumentStorage', 'Timeseries'],
+            'message': 'Type of repository',
+        },
+        {
             'type': 'input',
             'name': 'schema_topic',
             'default': 'cdl.document.input',
@@ -137,7 +154,7 @@ def create_schema():
     create = prompt(questions)
 
     schema_id = cdl.registry_create_schema(create['schema_url'], create['schema_name'], create['schema_topic'],
-                                           create['schema_query'], create['schema_body'])
+                                           create['schema_query'], create['schema_body'], create['schema_type'])
 
     print(f"Schema was assigned id: {schema_id}")
 

@@ -113,6 +113,10 @@ impl QueryServiceTs for VictoriaQuery {
         let mut queries = Vec::new();
         queries.push((
             "query",
+            format!("{{__name__=~\"{}_.*\"}}", request_payload.schema_id),
+        ));
+        queries.push((
+            "query",
             format!("{{object_id=\"{}\"}}", request_payload.object_id),
         ));
         if !request_payload.start.is_empty() {
