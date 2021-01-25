@@ -29,22 +29,27 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/command-service","druid"]
         env:
-        - name: QUEUE_CONNECTION_STRING
-          value: {{ .Values.global.rabbitConnectionString }}
-        - name: QUEUE_CONSUMER_TAG
-          value: "cdl-postgres-command-service"
-        - name: ORDERED_QUEUE_NAMES
-          value: {{ .Values.inputTopic }}
+        {{- if eq .Values.global.communicationMethod "kafka" }}
+        - name: COMMUNICATION_METHOD
+          value: "kafka"
+        - name: KAFKA_BROKERS
+          value: {{ .Values.global.kafkaBrokers }}
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "amqp"
+        - name: AMQP_CONNECTION_STRING
+          value: {{ .Values.global.amqpConnectionString }}
+        - name: AMQP_CONSUMER_TAG
+          value: "cdl-druid-command-service"
+        {{- end }}
+        - name: ORDERED_TOPICS_OR_QUEUES
+          value: {{ .Values.inputTopicOrQueue }}
         - name: DRUID_OUTPUT_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
         - name: DRUID_OUTPUT_TOPIC
           value: {{ .Values.outputTopic }}
-        - name: REPORT_BROKER
-          value: {{ .Values.global.kafkaBrokers }}
-        - name: REPORT_TOPIC
-          value: {{ .Values.global.reportTopic }}
-        - name: INGESTION_METHOD
-          value: {{ .Values.ingestionMethod }}
+        - name: REPORT_TOPIC_OR_EXCHANGE
+          value: {{ .Values.global.reportTopicOrExchange }}
         - name: RUST_LOG
           value: "info,command_service=debug"
         ports:

@@ -31,13 +31,28 @@ spec:
           value: "/data/db/registry_db"
         - name: REPLICATION_ROLE
           value: "slave"
+        {{- if eq .Values.global.communicationMethod "kafka" }}
+        - name: REPLICATION_QUEUE
+          value: "kafka"
         - name: KAFKA_BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
         - name: KAFKA_GROUP_ID
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        - name: KAFKA_TOPICS
+        {{- else }}
+        - name: REPLICATION_QUEUE
+          value: "amqp"
+        - name: AMQP_CONNECTION_STRING
+          value: "{{ .Values.global.amqpConnectionString }}"
+        - name: AMQP_CONSUMER_TAG
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        {{- end }}
+        - name: REPLICATION_TOPIC_OR_QUEUE
+          value: "{{ .Release.Name | upper }}_SCHEMA_SYNCHRO"
+        - name: REPLICATION_TOPIC_OR_EXCHANGE
           value: "{{ .Release.Name | upper }}_SCHEMA_SYNCHRO"
         - name: POD_NAME
           valueFrom:
