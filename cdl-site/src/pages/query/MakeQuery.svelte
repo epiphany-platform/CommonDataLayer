@@ -156,7 +156,7 @@
     {/if}
   {/if}
   <div class="align-right">
-    <button type="button" on:click={resetResults}>Reset Results</button>
+    <button type="button" on:click={resetResults}>Clear</button>
     <button class="run-query-button" type="submit">Run Query</button>
   </div>
 </form>

@@ -27,7 +27,7 @@ export async function queryApi<T>(query: string, variables?: Object): Promise<Re
   }
 }
 
-export const UPDATE_SCHEMA = ``;
+export const GET_SCHEMAS = ``;
 
 export function loadSchemas() {
   schemas.set(loading);

@@ -17,7 +17,7 @@
 </script>
 
 <a
-  class={`${routeToString($route) === routeToString(to) ? 'active' : ''} ${className}`}
+  class={`${$route && routeToString($route) === routeToString(to) ? 'active' : ''} ${className}`}
   {title}
   on:click={handleClick}>
   <slot />

@@ -28,7 +28,11 @@
   }
 
   function selectSchema(schemaId: string) {
-    replaceRoute({ ...(get(route) as SchemasRoute), id: schemaId, version: undefined });
+    replaceRoute({
+      ...(get(route) as SchemasRoute),
+      id: schemaId,
+      version: undefined,
+    });
   }
 </script>
 
@@ -71,7 +75,7 @@
     {/if}
     <li class="add-schema-button">
       <Link to={{ page: 'schemas', creating: true }}>
-        <button>Add New Schema</button>
+        <button>New Schema</button>
       </Link>
     </li>
   </ul>

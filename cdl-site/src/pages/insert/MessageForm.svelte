@@ -39,15 +39,15 @@
     }
 
     if (!errorsFound) {
-      objectId = "";
-      schemaId = "";
-      data = "";
-
       addMessage({
         objectId: objectId || uuidv4(),
         schemaId,
         data: parsedData,
       });
+
+      objectId = "";
+      schemaId = "";
+      data = "";
     }
   }
 </script>

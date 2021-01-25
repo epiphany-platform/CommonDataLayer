@@ -85,7 +85,7 @@
               {:else}
                 <section class="no-schema-selected">
                   <p class="align-center">
-                  Please select a schema from the left.
+                    Please select a schema from the left.
                   </p>
                 </section>
               {/if}

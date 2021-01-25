@@ -5,7 +5,9 @@
 
   let transaction: InsertMessage[] = [];
 
-  function sendTransaction() {}
+  function sendTransaction() {
+    alert("Insertion is not supported by the GraphQL API at the moment.");
+  }
 </script>
 
 <style>
@@ -21,13 +23,15 @@
       <h2>Insert Data</h2>
     </div>
   </div>
-  <div class="row">
-    <div class="col-sm-3 align-right">
-      <MessageList messages={transaction} {sendTransaction} />
+  <section>
+    <div class="row">
+      <div class="col-sm-3 align-right">
+        <MessageList messages={transaction} {sendTransaction} />
+      </div>
+      <div class="form-container col-sm-8 col-sm-offset-1">
+        <MessageForm
+          addMessage={(message) => (transaction = [...transaction, message])} />
+      </div>
     </div>
-    <div class="form-container col-sm-8 col-sm-offset-1">
-      <MessageForm
-        addMessage={(message) => (transaction = [...transaction, message])} />
-    </div>
-  </div>
+  </section>
 </div>

@@ -34,18 +34,20 @@
       <h2>Insert Data</h2>
     </div>
   </div>
-  <div class="row">
-    <div class="col-sm-4">
-      <MakeQuery {setResults} />
+  <section>
+    <div class="row">
+      <div class="col-sm-4">
+        <MakeQuery {setResults} />
+      </div>
+      <div class="col-sm-8 align-center">
+        <section>
+          <h4>Results</h4>
+          <RemoteContent data={results}>
+            <pre class="data">{resultsPretty}</pre>
+            <p slot="not-loaded">Make a query to see data.</p>
+          </RemoteContent>
+        </section>
+      </div>
     </div>
-    <div class="col-sm-8 align-center">
-      <section>
-        <h4>Results</h4>
-        <RemoteContent data={results}>
-          <pre class="data">{resultsPretty}</pre>
-          <p slot="not-loaded">Make a query to see data.</p>
-        </RemoteContent>
-      </section>
-    </div>
-  </div>
+  </section>
 </div>

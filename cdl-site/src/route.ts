@@ -26,7 +26,7 @@ function parseCurrentRoute(): Route | null {
   const hash = location.hash;
   const params = new URLSearchParams(location.hash.split("?")[1] || "");
 
-  if (hash === "") {
+  if (hash === "" || hash === "#/") {
     return { page: "home" };
   } else if (hash.startsWith("#/insert")) {
     return { page: "insert" };

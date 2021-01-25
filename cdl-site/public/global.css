@@ -1,15 +1,19 @@
 html, body {
-  font-family: 'Rubik', arial, sans-serif;
+  font-family: 'Heebo', arial, sans-serif;
 }
 
 .nav-logo a {
-  font-family: 'Fredoka One', cursive;
+  font-family: 'Alfa Slab One', cursive;
   font-size: 40px;
   color: #fafafa;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Fredoka One', cursive;
+  font-family: 'Alfa Slab One', cursive;
+}
+
+.sidebar-category {
+  line-height: 30px;
 }
 
 .dark-mode * {
