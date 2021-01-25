@@ -1865,6 +1865,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "metrics"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6d31b8f6fe04ed4ac33f735f97576b37750df3baf684107d545a8d30efcf584"
+dependencies = [
+ "metrics-macros",
+ "proc-macro-hack",
+]
+
+[[package]]
 name = "metrics-core"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1890,6 +1900,20 @@ dependencies = [
  "log",
  "metrics-core",
  "tokio 0.2.24",
+]
+
+[[package]]
+name = "metrics-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "487119a99660e9b2879132f1b84e067b6d68c85cc228e31789567c14bcaa6a1a"
+dependencies = [
+ "lazy_static",
+ "proc-macro-hack",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "syn",
 ]
 
 [[package]]
@@ -1937,7 +1961,7 @@ dependencies = [
  "atomic-shim",
  "crossbeam-utils 0.7.2",
  "im",
- "metrics",
+ "metrics 0.12.1",
  "metrics-core",
  "metrics-exporter-http",
  "metrics-exporter-log",
@@ -4293,7 +4317,7 @@ dependencies = [
  "lapin",
  "lazy_static",
  "log",
- "metrics",
+ "metrics 0.13.1",
  "metrics-exporter-http",
  "metrics-observer-prometheus",
  "metrics-runtime",
