@@ -1,0 +1,135 @@
+syntax = "proto2";
+
+package schema_registry;
+
+service SchemaRegistry {
+    rpc AddSchema (NewSchema) returns (Id);
+    rpc AddSchemaVersion (NewSchemaVersion) returns (Empty);
+    rpc UpdateSchemaMetadata (SchemaMetadataUpdate) returns (Empty);
+    rpc AddViewToSchema (NewSchemaView) returns (Id);
+    rpc UpdateView (UpdatedView) returns (View);
+    rpc GetSchema (VersionedId) returns (SchemaDefinition);
+    rpc GetSchemaMetadata (Id) returns (Schema);
+    rpc GetSchemaTopic (Id) returns (SchemaTopic);
+    rpc GetSchemaQueryAddress (Id) returns (SchemaQueryAddress);
+    rpc GetSchemaVersions (Id) returns (SchemaVersions);
+    rpc GetSchemaType(Id) returns (SchemaType);
+    rpc GetView (Id) returns (View);
+    rpc GetAllSchemas (Empty) returns (Schemas);
+    rpc GetAllSchemaNames (Empty) returns (SchemaNames);
+    rpc GetAllViewsOfSchema (Id) returns (SchemaViews);
+    rpc ValidateValue (ValueToValidate) returns (Errors);
+    rpc PromoteToMaster (Empty) returns (PodName);
+    rpc Heartbeat (Empty) returns (Empty);
+}
+
+message NewSchema {
+    // for replication (empty for master, UUID for slaves)
+    required string id = 1;
+    required string name = 2;
+    required string query_address = 3;
+    required string topic = 4;
+    required string definition = 5;
+    required SchemaType.Type schema_type = 6;
+}
+
+message Schema {
+    required string name = 1;
+    required string topic = 2;
+    required string query_address = 3;
+    required SchemaType.Type schema_type = 4;
+}
+
+message NewSchemaVersion {
+    required string id = 1;
+    required string version = 2;
+    required string definition = 3;
+}
+
+message SchemaMetadataUpdate {
+    required string id = 1;
+    optional string name = 2;
+    optional string topic = 3;
+    optional string address = 4;
+    optional SchemaType.Type schema_type = 5;
+}
+
+message NewSchemaView {
+    required string schema_id = 1;
+    // for replication (empty for master, UUID for slaves)
+    required string view_id = 2;
+    required string name = 3;
+    required string jmespath = 4;
+}
+
+message UpdatedView {
+    required string id = 1;
+    optional string name = 2;
+    optional string jmespath = 3;
+}
+
+message View {
+    required string name = 1;
+    required string jmespath = 2;
+}
+
+message VersionedId {
+    required string id = 1;
+    required string version_req = 2;
+}
+
+message SchemaDefinition {
+    required string version = 1;
+    required string definition = 2;
+}
+
+message SchemaTopic {
+    required string topic = 1;
+}
+
+message SchemaQueryAddress {
+    required string address = 1;
+}
+
+message Id {
+    required string id = 1;
+}
+
+message SchemaVersions {
+    repeated string versions = 1;
+}
+
+message Schemas {
+    map<string, Schema> schemas = 1;
+}
+
+message SchemaNames {
+    map<string, string> names = 1;
+}
+
+message SchemaViews {
+    map<string, View> views = 1;
+}
+
+message ValueToValidate {
+    required string schema_id = 1;
+    required string value = 2;
+}
+
+message Errors {
+    repeated string errors = 1;
+}
+
+message PodName {
+    required string name = 1;
+}
+
+message SchemaType {
+    enum Type {
+        DocumentStorage = 0;
+        Timeseries = 1;
+    }
+    required Type schema_type = 1;
+}
+
+message Empty {}

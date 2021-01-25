@@ -41,4 +41,4 @@ services:
     image: victoriametrics/victoria-metrics:latest
     ports:
       - "8428:8428"
-    command: -retentionPeriod 0 -search.latencyOffset=1s
+    command: -retentionPeriod 0 -search.latencyOffset 1s -search.maxLookback 50000m

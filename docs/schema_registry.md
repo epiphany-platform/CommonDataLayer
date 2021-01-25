@@ -37,5 +37,5 @@ Mind that GRPC uses HTTP2 as its transport protocol (L4), so SCHEMA_REGISTRY_ADD
 
 See an example [configuration][configuration] of deployment of data router and other services.
 
-[configuration]: ../examples/deploy/SETUP.md
-[CDL-CLI]: CDL-CLI.md
+[configuration]: ../deployment/compose/README.md
+[CDL-CLI]: CDL-Cli.md

@@ -38,6 +38,6 @@ POSTGRES_SCHEMA
 See an example [configuration][configuration] of deployment of data router and other services. 
 
 [grpc]: https://grpc.io/docs/what-is-grpc/introduction/
-[schema-registry]: ../schema-registry/README.md
+[schema-registry]: ../crates/schema-registry/README.md
 [configuration]: ../deployment/compose/README.md
-[endpoints]: ../rpc/proto
+[endpoints]: ../crates/rpc/proto

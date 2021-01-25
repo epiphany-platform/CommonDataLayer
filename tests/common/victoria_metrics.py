@@ -1,6 +1,7 @@
 import requests
 import json
 from urllib.parse import urljoin
+from time import sleep
 
 from tests.common.config import VictoriaMetricsConfig
 
@@ -25,3 +26,10 @@ class VictoriaMetrics:
         result = requests.get(self.config.database_url)
         result.raise_for_status()
         return result.ok
+
+    def insert_test_data(self, data):
+        insert_url = urljoin(self.config.database_url,
+                             "write")
+        for line in data:
+            requests.post(insert_url, line)
+        sleep(2)  # Ensure that 'search.latencyOffset' passed
