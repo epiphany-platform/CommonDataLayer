@@ -348,33 +348,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "blob-store"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "env_logger 0.8.2",
- "log",
- "rpc",
- "sled 0.34.6",
- "structopt",
- "tokio 0.2.24",
- "tonic",
- "utils",
- "uuid",
-]
-
-[[package]]
-name = "blake2b_simd"
-version = "0.5.11"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "afa748e348ad3be8263be728124b24a24f268266f6f5d58af9d75f6a40b5c587"
-dependencies = [
- "arrayref",
- "arrayvec",
- "constant_time_eq",
-]
-
-[[package]]
 name = "block-buffer"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
