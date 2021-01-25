@@ -32,13 +32,17 @@ spec:
         {{- if eq .Values.global.communicationMethod "kafka" }}
         - name: COMMUNICATION_METHOD
           value: "kafka"
+        - name: KAFKA_BROKERS
+          value: {{ .Values.global.kafkaBrokers }}
+        - name: KAFKA_GROUP_ID
+          value: "cdl-victoria-command-service"
         {{- else }}
         - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: {{ .Values.global.amqpConnectionString }}
         - name: AMQP_CONSUMER_TAG
-          value: "cdl-postgres-command-service"
+          value: "cdl-victoria-command-service"
         {{- end }}
         - name: ORDERED_TOPICS_OR_QUEUES
           value: {{ .Values.inputTopicOrQueue }}

@@ -34,6 +34,8 @@ spec:
           value: "kafka"
         - name: KAFKA_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
+        - name: KAFKA_GROUP_ID
+          value: "cdl-druid-command-service"
         {{- else }}
         - name: COMMUNICATION_METHOD
           value: "amqp"
