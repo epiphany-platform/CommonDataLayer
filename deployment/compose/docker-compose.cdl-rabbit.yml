@@ -8,11 +8,7 @@ version: "3"
 services:
   postgres:
     volumes:
-      - ./docker-volume/postgres/init:/docker-entrypoint-initdb.d
-
-  kafka:
-    environment:
-      KAFKA_CREATE_TOPICS: "cdl.data.input:1:1,cdl.document.input:1:1,cdl.reports:1:1,cdl.timeseries.input:1:1"
+      - ./setup/postgres:/docker-entrypoint-initdb.d
 
   schema_registry:
     image: cdl-schema-registry:latest
@@ -28,16 +24,18 @@ services:
     environment:
       DB_NAME: "/var/data/schema"
       REPLICATION_ROLE: "master"
-      KAFKA_BROKERS: "kafka:9093"
-      KAFKA_GROUP_ID: "schema_registry"
-      KAFKA_TOPICS: "cdl.schema_registry.internal"
+      REPLICATION_QUEUE: "amqp"
+      AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      AMQP_CONSUMER_TAG: "schema_registry"
+      REPLICATION_TOPIC_OR_QUEUE: "cdl.schema_registry.internal"
+      REPLICATION_TOPIC_OR_EXCHANGE: "cdl.schema_registry.internal"
       INPUT_PORT: "50101"
       IMPORT_FILE: "/var/data/schema.json"
       RUST_LOG: info,schema_registry=trace
     volumes:
-      - ./setup/initial-schema.json:/var/data/schema.json
+      - ./setup/schema_registry/initial-schema.json:/var/data/schema.json
     depends_on:
-      - kafka
+      - rabbitmq
 
   data_router:
     image: cdl-data-router:latest
@@ -49,15 +47,16 @@ services:
         - ENV=DEV
     command: /bin/data-router
     environment:
-      KAFKA_BROKERS: "kafka:9093"
-      KAFKA_TOPIC: "cdl.data.input"
-      KAFKA_GROUP_ID: "data_router"
-      KAFKA_ERROR_CHANNEL: "cdl.reports"
+      MESSAGE_QUEUE: "amqp"
+      AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      AMQP_CONSUMER_TAG: "data_router"
+      INPUT_TOPIC_OR_QUEUE: "cdl.data.input"
+      ERROR_TOPIC_OR_EXCHANGE: "cdl.reports"
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       CACHE_CAPACITY: "1000"
       RUST_LOG: info,data_router=trace
     depends_on:
-      - kafka
+      - rabbitmq
       - schema_registry
 
   postgres_command:
@@ -70,18 +69,18 @@ services:
         - ENV=DEV
     command: "/bin/command-service postgres"
     environment:
-      KAFKA_INPUT_GROUP_ID: "postgres_command"
-      KAFKA_INPUT_BROKERS: "kafka:9093"
-      KAFKA_INPUT_TOPIC: "cdl.document.input"
-      INGESTION_METHOD: KAFKA
+      COMMUNICATION_METHOD: "amqp"
+      AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      AMQP_CONSUMER_TAG: "postgres_command"
+      ORDERED_TOPICS_OR_QUEUES: "cdl.document.1.data"
+      UNORDERED_TOPICS_OR_QUEUES: "cdl.document.2.data"
       POSTGRES_USERNAME: postgres
       POSTGRES_PASSWORD: 1234
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DBNAME: postgres
       POSTGRES_SCHEMA: cdl
-      REPORT_BROKER: "kafka:9093"
-      REPORT_TOPIC: "cdl.reports"
+      REPORT_TOPIC_OR_EXCHANGE: "cdl.reports"
       RUST_LOG: info,command_service=trace
     depends_on:
       - postgres
@@ -98,13 +97,13 @@ services:
         - ENV=DEV
     command: "/bin/command-service victoria-metrics"
     environment:
-      KAFKA_INPUT_GROUP_ID: "victoria_command"
-      KAFKA_INPUT_BROKERS: "kafka:9093"
-      KAFKA_INPUT_TOPIC: "cdl.timeseries.input"
-      INGESTION_METHOD: KAFKA
+      COMMUNICATION_METHOD: "amqp"
+      AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      AMQP_CONSUMER_TAG: "victoria_command"
+      ORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.1.data"
+      UNORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.2.data"
       VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
-      REPORT_BROKER: "kafka:9093"
-      REPORT_TOPIC: "cdl.reports"
+      REPORT_TOPIC_OR_EXCHANGE: "cdl.reports"
       RUST_LOG: info,command_service=trace
     depends_on:
       - victoria_metrics
@@ -180,6 +179,7 @@ services:
       RUST_LOG: info,api=trace
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       QUERY_ROUTER_ADDR: "http://query_router:50103"
-      KAFKA_GROUP_ID: "cdl-api"
-      KAFKA_BROKERS: "kafka:9093"
-      REPORT_TOPIC: "cdl.reports"
+      MESSAGE_QUEUE: "amqp"
+      AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      AMQP_CONSUMER_TAG: "cdl-api"
+      REPORT_TOPIC_OR_QUEUE: "cdl.reports"

@@ -1,0 +1,194 @@
+{
+ "users": [
+    {
+      "name": "user",
+      "password_hash": "E4KaSlT3L4C7gsBJeCoDbl5VFu+60bBNNmBGAU/iGanplQPe",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": "administrator"
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "user",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
+  "queues": [
+    {
+      "name": "cdl.schema_registry.internal",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "cdl.data.input",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "cdl.reports",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "cdl.document.2.data",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "cdl.document.1.data",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "cdl.timeseries.1.data",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    },
+    {
+      "name": "cdl.timeseries.2.data",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
+    }
+  ],
+  "exchanges": [
+    {
+      "name": "cdl.data.input",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "cdl.reports",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "cdl.schema_registry.internal",
+      "vhost": "/",
+      "type": "fanout",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "cdl.document.data",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "cdl.timeseries.data",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    }
+  ],
+  "bindings": [
+    {
+      "source": "cdl.data.input",
+      "vhost": "/",
+      "destination": "cdl.data.input",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "cdl.reports",
+      "vhost": "/",
+      "destination": "cdl.reports",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "cdl.schema_registry.internal",
+      "vhost": "/",
+      "destination": "cdl.schema_registry.internal",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    },
+    {
+      "source": "cdl.document.data",
+      "vhost": "/",
+      "destination": "cdl.document.1.data",
+      "destination_type": "queue",
+      "routing_key": "*.*.*.*.*",
+      "arguments": {}
+    },
+    {
+      "source": "cdl.document.data",
+      "vhost": "/",
+      "destination": "cdl.document.2.data",
+      "destination_type": "queue",
+      "routing_key": "unordered",
+      "arguments": {}
+    },
+    {
+      "source": "cdl.timeseries.data",
+      "vhost": "/",
+      "destination": "cdl.timeseries.1.data",
+      "destination_type": "queue",
+      "routing_key": "*.*.*.*.*",
+      "arguments": {}
+    },
+    {
+      "source": "cdl.timeseries.data",
+      "vhost": "/",
+      "destination": "cdl.timeseries.2.data",
+      "destination_type": "queue",
+      "routing_key": "unordered",
+      "arguments": {}
+    }
+  ]
+}

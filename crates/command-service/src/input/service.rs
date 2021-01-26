@@ -1,5 +1,5 @@
 mod grpc;
-mod mesage_queue;
+mod message_queue;
 
 pub use grpc::GRPCInput;
-pub use mesage_queue::MessageQueueInput;
+pub use message_queue::MessageQueueInput;

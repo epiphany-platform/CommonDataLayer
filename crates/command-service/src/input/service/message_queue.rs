@@ -1,7 +1,7 @@
 use crate::output::OutputPlugin;
 use crate::{
-    communication::MessageRouter,
-    input::{Error, MessageQueueConfig},
+    communication::{config::MessageQueueConfig, MessageRouter},
+    input::Error,
 };
 use futures::stream::select_all;
 use futures::stream::StreamExt;
@@ -13,10 +13,7 @@ use utils::messaging_system::message::CommunicationMessage;
 use utils::messaging_system::Result;
 use utils::metrics::counter;
 use utils::task_limiter::TaskLimiter;
-use utils::{
-    message_types::BorrowedInsertMessage, messaging_system::consumer::BasicConsumeOptions,
-    parallel_task_queue::ParallelTaskQueue,
-};
+use utils::{message_types::BorrowedInsertMessage, parallel_task_queue::ParallelTaskQueue};
 
 pub struct MessageQueueInput<P: OutputPlugin> {
     consumer: Vec<CommonConsumer>,
@@ -31,41 +28,24 @@ impl<P: OutputPlugin> MessageQueueInput<P> {
         message_router: MessageRouter<P>,
     ) -> Result<Self, Error> {
         let mut consumers = Vec::new();
-        let ordered_options = Some(BasicConsumeOptions {
-            exclusive: true,
-            ..Default::default()
-        });
-        let unordered_options = Some(BasicConsumeOptions {
-            exclusive: false,
-            ..Default::default()
-        });
-        for queue_name in config.ordered_queue_names {
-            let consumer = CommonConsumer::new_rabbit(
-                &config.connection_string,
-                &config.consumer_tag,
-                &queue_name,
-                ordered_options,
-            )
-            .await
-            .map_err(Error::ConsumerCreationFailed)?;
+        for ordered in config.ordered_configs() {
+            let consumer = CommonConsumer::new(ordered)
+                .await
+                .map_err(Error::ConsumerCreationFailed)?;
             consumers.push(consumer);
         }
-        for queue_name in config.unordered_queue_names {
-            let consumer = CommonConsumer::new_rabbit(
-                &config.connection_string,
-                &config.consumer_tag,
-                &queue_name,
-                unordered_options,
-            )
-            .await
-            .map_err(Error::ConsumerCreationFailed)?;
+
+        for unordered in config.unordered_configs() {
+            let consumer = CommonConsumer::new(unordered)
+                .await
+                .map_err(Error::ConsumerCreationFailed)?;
             consumers.push(consumer);
         }
 
         Ok(Self {
             consumer: consumers,
             message_router,
-            task_limiter: TaskLimiter::new(config.task_limit),
+            task_limiter: TaskLimiter::new(config.task_limit()),
             task_queue: Arc::new(ParallelTaskQueue::default()),
         })
     }

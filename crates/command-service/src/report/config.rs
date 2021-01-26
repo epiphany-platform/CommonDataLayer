@@ -2,8 +2,10 @@ use structopt::StructOpt;
 
 #[derive(Clone, Debug, StructOpt)]
 pub struct ReportServiceConfig {
-    #[structopt(name = "report-broker", long = "report-broker", env = "REPORT_BROKER")]
-    pub broker: Option<String>,
-    #[structopt(name = "report-topic", long = "report-topic", env = "REPORT_TOPIC")]
-    pub topic: Option<String>,
+    #[structopt(
+        name = "report-topic-or-exchange",
+        long = "report-topic-or-exchange",
+        env = "REPORT_TOPIC_OR_EXCHANGE"
+    )]
+    pub topic_or_exchange: Option<String>,
 }
