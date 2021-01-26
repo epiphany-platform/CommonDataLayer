@@ -1,0 +1,6 @@
+[book]
+authors = ["Sam Mohr <samuel.mohr@hitachi-powergrids.com>"]
+language = "en"
+multilingual = false
+src = "book"
+title = "The Common Data Layer"
