@@ -75,3 +75,25 @@ eg.
 
 * Getting all schemas
 > `cargo run -p cdl-cli -- --registry-addr "http://localhost:50101" schema names`
+
+# Recipes
+
+## Druid timeseries env
+
+```
+docker-compose -f docker-compose.cdl.yml -f docker-compose.yml -f docker-compose.druid.yml up -d \
+    postgres \
+    zoo_kafka \
+    kafka \
+    zoo_druid \
+    coordinator \
+    broker \
+    historical \
+    router \
+    middlemanager \
+    schema_registry \
+    data_router \
+    druid_command \
+    druid_query \
+    query_router
+```

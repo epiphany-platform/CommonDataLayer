@@ -28,13 +28,13 @@ druid_emitter_logging_logLevel=debug
 
 druid_extensions_loadList=["druid-histogram", "druid-datasketches", "druid-lookups-cached-global", "postgresql-metadata-storage", "druid-kafka-indexing-service"]
 
-druid_zk_service_host=zookeeper
+druid_zk_service_host=zoo_druid
 
 druid_metadata_storage_host=
 druid_metadata_storage_type=postgresql
-druid_metadata_storage_connector_connectURI=jdbc:postgresql://postgres:5432/druid
-druid_metadata_storage_connector_user=druid
-druid_metadata_storage_connector_password=FoolishPassword
+druid_metadata_storage_connector_connectURI=jdbc:postgresql://postgres:5432/postgres
+druid_metadata_storage_connector_user=postgres
+druid_metadata_storage_connector_password=1234
 
 druid_coordinator_balancer_strategy=cachingCost
 

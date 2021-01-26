@@ -7,7 +7,7 @@ use log::error;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::ClientConfig;
 use serde::{Deserialize, Serialize};
-use serde_json::value::RawValue;
+use serde_json::Value;
 use std::time::Duration;
 use utils::message_types::BorrowedInsertMessage;
 use utils::metrics::counter;
@@ -17,16 +17,14 @@ mod config;
 mod error;
 
 #[derive(Deserialize)]
-struct TimeseriesInputMessage<'a> {
-    #[serde(borrow)]
-    fields: &'a RawValue,
+struct TimeseriesInputMessage {
+    fields: Value,
     ts: u64,
 }
 
 #[derive(Serialize)]
-struct DruidOutputMessage<'a> {
-    #[serde(borrow)]
-    fields: &'a RawValue,
+struct DruidOutputMessage {
+    fields: Value,
     ts: u64,
     object_id: Uuid,
     schema_id: Uuid,

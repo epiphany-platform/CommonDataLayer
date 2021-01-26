@@ -1,40 +1,21 @@
 version: "2.2"
 
-volumes:
-  metadata_data: {}
-  middle_var: {}
-  historical_var: {}
-  broker_var: {}
-  coordinator_var: {}
-  router_var: {}
-
-
 services:
-  postgres:
-    container_name: postgres
-    image: postgres:latest
-    volumes:
-      - metadata_data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_PASSWORD=FoolishPassword
-      - POSTGRES_USER=druid
-      - POSTGRES_DB=druid
+  postgres: {}
 
-  # Need 3.5 or later for container nodes
-  zookeeper:
-    container_name: zookeeper
-    image: zookeeper:3.5
+  zoo_druid:
+    image: library/zookeeper:3.4.9
     environment:
-      - ZOO_MY_ID=1
+      ZOO_MY_ID: 1
+      ZOO_PORT: 2181
+      ZOO_SERVERS: server.1=zoo_druid:2888:3888
 
   coordinator:
     image: apache/druid:0.20.0
-    container_name: coordinator
     volumes:
-      - ./storage:/opt/data
-      - coordinator_var:/opt/druid/var
+      - ./docker-volume/druid:/opt/data
     depends_on:
-      - zookeeper
+      - zoo_druid
       - postgres
     ports:
       - "8081:8081"
@@ -44,11 +25,8 @@ services:
 
   broker:
     image: apache/druid:0.20.0
-    container_name: broker
-    volumes:
-      - broker_var:/opt/druid/var
     depends_on:
-      - zookeeper
+      - zoo_druid
       - postgres
       - coordinator
     ports:
@@ -59,12 +37,10 @@ services:
 
   historical:
     image: apache/druid:0.20.0
-    container_name: historical
     volumes:
-      - ./storage:/opt/data
-      - historical_var:/opt/druid/var
+      - ./docker-volume/druid:/opt/data
     depends_on:
-      - zookeeper
+      - zoo_druid
       - postgres
       - coordinator
     ports:
@@ -75,12 +51,10 @@ services:
 
   middlemanager:
     image: apache/druid:0.20.0
-    container_name: middlemanager
     volumes:
-      - ./storage:/opt/data
-      - middle_var:/opt/druid/var
+      - ./docker-volume/druid:/opt/data
     depends_on:
-      - zookeeper
+      - zoo_druid
       - postgres
       - coordinator
     ports:
@@ -91,11 +65,8 @@ services:
 
   router:
     image: apache/druid:0.20.0
-    container_name: router
-    volumes:
-      - router_var:/opt/druid/var
     depends_on:
-      - zookeeper
+      - zoo_druid
       - postgres
       - coordinator
     ports:

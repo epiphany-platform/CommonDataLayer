@@ -4,10 +4,9 @@ use reqwest::Client;
 use rpc::query_service_ts::{
     query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
 };
-use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::{json, Value};
 use structopt::StructOpt;
-use tonic::{Code, Request, Response, Status};
+use tonic::{Request, Response, Status};
 use utils::metrics::counter;
 
 #[derive(Debug, StructOpt)]
@@ -42,18 +41,6 @@ pub struct DruidQuery {
     pool: Pool<DruidConnectionManager>,
     addr: String,
     table_name: String,
-}
-
-#[derive(Deserialize)]
-pub struct DruidValue {
-    pub timestamp: String,
-    pub result: DruidInnerValue,
-}
-
-#[derive(Deserialize)]
-pub struct DruidInnerValue {
-    pub object_id: String,
-    pub data: String,
 }
 
 impl DruidQuery {
@@ -99,15 +86,23 @@ impl QueryServiceTs for DruidQuery {
         &self,
         request: Request<Range>,
     ) -> Result<Response<TimeSeries>, Status> {
-        counter!("cdl.query-service.query-multiple.druid", 1);
+        counter!("cdl.query-service.query-by-range.druid", 1);
 
         let request = request.into_inner();
 
         let intervals = format!("{}/{}", request.start, request.end);
 
         let query = json!({
-            "queryType": "timeseries",
+            "queryType": "scan",
             "dataSource": &self.table_name,
+            "columns": [],
+            "filter": {
+                "type": "and",
+                "fields": [
+                    { "type": "selector", "dimension": "object_id", "value": &request.object_id },
+                    { "type": "selector", "dimension": "schema_id", "value": &request.schema_id },
+                ]
+            },
             "granularity": &request.step,
             "intervals": [ intervals ]
         });
@@ -121,8 +116,25 @@ impl QueryServiceTs for DruidQuery {
         &self,
         request: Request<SchemaId>,
     ) -> Result<Response<TimeSeries>, Status> {
+        counter!("cdl.query-service.query-by-schema.druid", 1);
+
+        let request = request.into_inner();
+
+        let query = json!({
+            "queryType": "scan",
+            "dataSource": &self.table_name,
+            "columns": [],
+            "filter": {
+                "type": "selector",
+                "dimension": "schema_id",
+                "value": &request.schema_id
+            },
+            "granularity": "none",
+            "intervals": [ "2000-01-01T00:00Z/3000-01-01T00:00Z" ]
+        });
+
         Ok(tonic::Response::new(TimeSeries {
-            timeseries: "".to_string(),
+            timeseries: self.query_db(&query).await?,
         }))
     }
 
