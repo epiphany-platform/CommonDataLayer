@@ -1,0 +1,15 @@
+name: Deploy the MDBook to GitHub Pages
+
+on:
+  push:
+    branches: [ develop ]
+    paths: [ book ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: XAMPPRocky/deploy-mdbook@v1.1.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
