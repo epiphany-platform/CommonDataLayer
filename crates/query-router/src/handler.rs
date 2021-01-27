@@ -139,11 +139,7 @@ pub async fn query_raw(
         (Body::Empty {}, _) => Err(Error::RawQueryMissingValue),
 
         (
-            Body::Range {
-                from: _,
-                to: _,
-                step: _,
-            },
+            Body::Range { .. },
             _,
         ) => Err(Error::WrongValueFormat),
     }?;
