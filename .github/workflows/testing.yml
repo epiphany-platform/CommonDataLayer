@@ -74,25 +74,25 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v2
 
-       - name: Install Rust
-         uses: actions-rs/toolchain@v1
-         with:
-           profile: minimal
-           override: true
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+         profile: minimal
+         override: true
 
-       - uses: actions/setup-python@v2
-         with:
-           python-version: '3.x'
-           architecture: 'x64'
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+          architecture: 'x64'
 
-       - name: Cache cargo target dir
-         uses: actions/cache@v2
-         with:
-           path: target
-           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+      - name: Cache cargo target dir
+        uses: actions/cache@v2
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
-       - name: Run tests
-         run: tests/run-tests.sh
+      - name: Run tests
+        run: tests/run-tests.sh
 
-       - name: Clear bloat
-         run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm
+      - name: Clear bloat
+        run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm
