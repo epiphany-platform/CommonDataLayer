@@ -29,7 +29,7 @@ Below are the example data required by data router:
 {
     "schemaId": <UUID>,
     "objectId": <UUID>,
-    orderGroupId: <Optional<UUID>>,
+    "orderGroupId": <Optional<UUID>>,
     "data": { "some_property": "object"}
 }
 

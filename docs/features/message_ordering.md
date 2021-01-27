@@ -15,7 +15,7 @@
   
 
 ## <a name="what_is"></a>What is message ordering 
-Message ordering is a guarantee that certain messages will be processed by CDL in the same order there were sent to the system. Proper ordering meter mostly to user applications which base their business logic on real time data where no approximation is allowed. 
+Message ordering is a guarantee that certain messages will be processed by CDL in the same order there were sent to the system. Proper ordering matter mostly to user applications which base their business logic on real-time data where no approximation is allowed. 
 
 ## <a name="why"></a>Why does it matter 
 Let's consider two use cases which will show us why order of received messages might/might not matter: 
