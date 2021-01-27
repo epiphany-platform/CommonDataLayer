@@ -2,18 +2,20 @@ use structopt::StructOpt;
 
 #[derive(StructOpt)]
 pub struct Config {
-    #[structopt(long = "schema-registry-addr", env = "SCHEMA_REGISTRY_ADDR")]
-    pub registry_addr: String,
-    #[structopt(long = "query-router-addr", env = "QUERY_ROUTER_ADDR")]
+    #[structopt(long, env)]
+    pub schema_registry_addr: String,
+    #[structopt(long, env)]
     pub query_router_addr: String,
-    #[structopt(long = "input-port", env = "INPUT_PORT")]
+    #[structopt(long, env)]
     pub input_port: u16,
 
     #[structopt(flatten)]
     pub kafka: KafkaConfig,
 
-    #[structopt(long = "report-topic", env = "REPORT_TOPIC")]
+    #[structopt(long, env)]
     pub report_topic: String,
+    #[structopt(long, env)]
+    pub data_router_topic: String,
 }
 
 #[derive(StructOpt)]
