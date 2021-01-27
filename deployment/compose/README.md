@@ -93,7 +93,7 @@ eg.
 ## Druid timeseries env
 
 ```
-docker-compose -f docker-compose.cdl.yml -f docker-compose.yml -f docker-compose.druid.yml up -d \
+docker-compose -f docker-compose.cdl-kafka.yml -f docker-compose.yml -f docker-compose.druid.yml up -d \
     postgres \
     zoo_kafka \
     kafka \

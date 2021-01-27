@@ -78,6 +78,20 @@ impl DruidQuery {
             ))
         })
     }
+
+    async fn query_raw(&self, query: String) -> Result<Vec<u8>, Status> {
+        let conn = self.connect().await?;
+        let request = conn.post(&self.addr).body(query);
+        let response = request.send().await.map_err(|err| {
+            Status::internal(format!("Error when querying DRUID with raw query: {}", err))
+        })?;
+
+        response
+            .bytes()
+            .await
+            .map_err(|err| Status::internal(format!("Couldn't retrieve respones bytes: {}", err)))
+            .map(|bytes| bytes.to_vec())
+    }
 }
 
 #[tonic::async_trait]
@@ -142,8 +156,12 @@ impl QueryServiceTs for DruidQuery {
         &self,
         request: Request<RawStatement>,
     ) -> Result<Response<ValueBytes>, Status> {
+        counter!("cdl.query-service.query-raw.druid", 1);
+
+        let request = request.into_inner();
+
         Ok(tonic::Response::new(ValueBytes {
-            value_bytes: vec![],
+            value_bytes: self.query_raw(request.raw_statement).await?,
         }))
     }
 }

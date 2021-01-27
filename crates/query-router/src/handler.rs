@@ -89,8 +89,6 @@ pub async fn query_multiple(
         .await
         .map_err(Error::ClientError)?;
 
-    // TODO: Timeseries don't support query_multiple, need to add check here
-
     Ok(warp::reply::with_header(
         serde_json::to_vec(&byte_map_to_json_map(values)?).map_err(Error::JsonError)?,
         CONTENT_TYPE,

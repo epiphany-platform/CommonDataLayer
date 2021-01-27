@@ -3,7 +3,7 @@
 # Please refer to README.md for instructions on how to run it.
 ###
 
-version: "3"
+version: "2.2"
 
 services:
   postgres:
