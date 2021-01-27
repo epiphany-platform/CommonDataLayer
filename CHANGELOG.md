@@ -3,8 +3,8 @@
 ## Unreleased 
 
 ### Breaking changes
-Removed document-storage
-Removed blob-store
+Archived document-storage crate
+Archived blob-store crate
 
 ### Features
 Added store type of schema in schema registry
