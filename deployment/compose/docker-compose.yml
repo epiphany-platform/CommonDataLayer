@@ -41,3 +41,13 @@ services:
     ports:
       - "8428:8428"
     command: -retentionPeriod 0 -search.latencyOffset 1s -search.maxLookback 50000m
+
+  rabbitmq:
+    image: library/rabbitmq:3.8.4-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_CONFIG_FILE: "/etc/cdl/rabbitmq"
+    volumes:
+      - ./setup/rabbitmq:/etc/cdl

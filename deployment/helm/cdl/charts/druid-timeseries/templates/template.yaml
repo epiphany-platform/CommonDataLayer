@@ -29,24 +29,31 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/command-service","druid"]
         env:
-        - name: KAFKA_INPUT_BROKERS
+        {{- if eq .Values.global.communicationMethod "kafka" }}
+        - name: COMMUNICATION_METHOD
+          value: "kafka"
+        - name: KAFKA_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
-        - name: KAFKA_INPUT_GROUP_ID
+        - name: KAFKA_GROUP_ID
           value: "cdl-druid-command-service"
-        - name: KAFKA_INPUT_TOPIC
-          value: {{ .Values.inputTopic }}
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "amqp"
+        - name: AMQP_CONNECTION_STRING
+          value: {{ .Values.global.amqpConnectionString }}
+        - name: AMQP_CONSUMER_TAG
+          value: "cdl-druid-command-service"
+        {{- end }}
+        - name: ORDERED_TOPICS_OR_QUEUES
+          value: {{ .Values.inputTopicOrQueue }}
         - name: DRUID_OUTPUT_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
         - name: DRUID_OUTPUT_TOPIC
           value: {{ .Values.outputTopic }}
+        - name: REPORT_TOPIC_OR_EXCHANGE
+          value: {{ .Values.global.reportTopicOrExchange }}
         - name: RUST_LOG
-          value: "info,command-service=debug"
-        - name: REPORT_BROKER
-          value: {{ .Values.global.kafkaBrokers }}
-        - name: REPORT_TOPIC
-          value: {{ .Values.global.reportTopic }}
-        - name: INGESTION_METHOD
-          value: kafka
+          value: "info,command_service=debug"
         ports:
         - containerPort: 51805
   # TODO: Probes

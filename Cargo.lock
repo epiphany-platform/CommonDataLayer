@@ -99,16 +99,23 @@ checksum = "afddf7f520a80dbf76e6f50a35bca42a2331ef227a28b3b6dc5c2e2338d114b1"
 name = "api"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "async-stream 0.3.0",
  "env_logger 0.8.2",
+ "futures",
  "juniper",
+ "juniper_graphql_ws",
  "juniper_warp",
  "log",
  "num-derive",
  "num-traits",
  "rpc",
+ "serde",
+ "serde_json",
  "structopt",
  "thiserror",
  "tokio 0.2.24",
+ "utils",
  "uuid",
  "warp",
 ]
@@ -1597,6 +1604,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "juniper_graphql_ws"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d958937ed703c7e8127f1726c4f849ecb865624973d5d5899923735373abdb50"
+dependencies = [
+ "juniper",
+ "juniper_subscriptions",
+ "serde",
+ "tokio 0.2.24",
+]
+
+[[package]]
+name = "juniper_subscriptions"
+version = "0.15.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a84690d9bdfd48113404447736cb1ae7534c00dca6a9a77666821f07ea36103d"
+dependencies = [
+ "futures",
+ "juniper",
+]
+
+[[package]]
 name = "juniper_warp"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1606,6 +1635,7 @@ dependencies = [
  "bytes 0.5.6",
  "futures",
  "juniper",
+ "juniper_graphql_ws",
  "serde",
  "serde_json",
  "thiserror",
@@ -4270,6 +4300,7 @@ dependencies = [
  "rdkafka",
  "serde",
  "serde_json",
+ "structopt",
  "test-case",
  "thiserror",
  "tokio 0.2.24",

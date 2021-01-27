@@ -134,6 +134,12 @@ def create_schema():
             'message': 'Kafka topic for data-router to route messages to',
         },
         {
+            'type': 'list',
+            'name': 'schema_type',
+            'choices': ['DocumentStorage', 'Timeseries'],
+            'message': 'Type of repository',
+        },
+        {
             'type': 'input',
             'name': 'schema_query',
             'default': 'http://postgres_query:50102',

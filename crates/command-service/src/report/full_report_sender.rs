@@ -1,4 +1,7 @@
-use crate::report::{Error, Reporter};
+use crate::{
+    communication::config::{CommunicationConfig, MessageQueueConfig},
+    report::{Error, Reporter},
+};
 use serde::Serialize;
 use serde_json::Value;
 use std::sync::Arc;
@@ -32,12 +35,24 @@ struct ReportBody<'a> {
 }
 
 impl FullReportSenderBase {
-    pub async fn new(brokers: String, topic: String, output_plugin: String) -> Result<Self, Error> {
+    pub async fn new(
+        communication_config: &CommunicationConfig,
+        topic_or_exchange: String,
+        output_plugin: String,
+    ) -> Result<Self, Error> {
+        let publisher = match communication_config {
+            CommunicationConfig::MessageQueue(MessageQueueConfig::Kafka { brokers, .. }) => {
+                CommonPublisher::new_kafka(brokers).await
+            }
+            CommunicationConfig::MessageQueue(MessageQueueConfig::Amqp {
+                connection_string,
+                ..
+            }) => CommonPublisher::new_amqp(connection_string).await,
+            CommunicationConfig::GRpc(_) => unreachable!(),
+        };
         Ok(Self {
-            producer: CommonPublisher::new_kafka(&brokers)
-                .await
-                .map_err(Error::ProducerCreation)?,
-            topic: Arc::new(topic),
+            producer: publisher.map_err(Error::ProducerCreation)?,
+            topic: Arc::new(topic_or_exchange),
             output_plugin: Arc::new(output_plugin),
         })
     }

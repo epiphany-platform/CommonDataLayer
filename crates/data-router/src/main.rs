@@ -1,5 +1,5 @@
 use anyhow::Context;
-use log::error;
+use log::{error, trace};
 use lru_cache::LruCache;
 use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
@@ -8,10 +8,9 @@ use std::{
     process,
     sync::{Arc, Mutex},
 };
-use structopt::StructOpt;
+use structopt::{clap::arg_enum, StructOpt};
 use tokio::pin;
 use tokio::stream::StreamExt;
-use utils::message_types::DataRouterInsertMessage;
 use utils::{
     abort_on_poison,
     message_types::BorrowedInsertMessage,
@@ -20,20 +19,37 @@ use utils::{
     },
     metrics::{self, counter},
 };
+use utils::{
+    message_types::DataRouterInsertMessage, messaging_system::consumer::CommonConsumerConfig,
+};
 use uuid::Uuid;
 
 const SERVICE_NAME: &str = "data-router";
 
+arg_enum! {
+    #[derive(Deserialize, Debug, Serialize)]
+    enum MessageQueueKind {
+        Kafka,
+        Amqp
+    }
+}
+
 #[derive(StructOpt, Deserialize, Debug, Serialize)]
 struct Config {
+    #[structopt(long, env, possible_values = &MessageQueueKind::variants(), case_insensitive = true)]
+    pub message_queue: MessageQueueKind,
     #[structopt(long, env)]
-    pub kafka_group_id: String,
+    pub kafka_brokers: Option<String>,
     #[structopt(long, env)]
-    pub kafka_topic: String,
+    pub kafka_group_id: Option<String>,
     #[structopt(long, env)]
-    pub kafka_brokers: String,
+    pub amqp_connection_string: Option<String>,
     #[structopt(long, env)]
-    pub kafka_error_channel: String,
+    pub amqp_consumer_tag: Option<String>,
+    #[structopt(long, env)]
+    pub input_topic_or_queue: String,
+    #[structopt(long, env)]
+    pub error_topic_or_exchange: String,
     #[structopt(long, env)]
     pub schema_registry_addr: String,
     #[structopt(long, env)]
@@ -46,35 +62,28 @@ async fn main() -> anyhow::Result<()> {
     let config: Config = Config::from_args();
     metrics::serve();
 
-    let consumer = CommonConsumer::new_kafka(
-        &config.kafka_group_id,
-        &config.kafka_brokers,
-        &[&config.kafka_topic],
-    )
-    .await?;
-    let producer = Arc::new(
-        CommonPublisher::new_kafka(&config.kafka_brokers)
-            .await
-            .unwrap(),
-    );
+    let consumer = new_consumer(&config, &config.input_topic_or_queue).await?;
+    let producer = Arc::new(new_producer(&config).await?);
+
     let cache = Arc::new(Mutex::new(LruCache::new(config.cache_capacity)));
     let consumer = consumer.leak();
     let message_stream = consumer.consume().await;
     pin!(message_stream);
 
-    let kafka_error_channel = Arc::new(config.kafka_error_channel);
+    let error_topic_or_exchange = Arc::new(config.error_topic_or_exchange);
     let schema_registry_addr = Arc::new(config.schema_registry_addr);
 
     while let Some(message) = message_stream.next().await {
         match message {
             Ok(message) => {
-                tokio::spawn(handle_message(
+                handle_message(
                     message,
                     cache.clone(),
                     producer.clone(),
-                    kafka_error_channel.clone(),
+                    error_topic_or_exchange.clone(),
                     schema_registry_addr.clone(),
-                ));
+                )
+                .await;
             }
             Err(error) => {
                 error!("Error fetching data from message queue {:?}", error);
@@ -85,11 +94,67 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+async fn new_producer(config: &Config) -> anyhow::Result<CommonPublisher> {
+    Ok(match config.message_queue {
+        MessageQueueKind::Kafka => {
+            let brokers = config
+                .kafka_brokers
+                .as_ref()
+                .context("kafka brokers were not specified")?;
+            CommonPublisher::new_kafka(brokers).await?
+        }
+        MessageQueueKind::Amqp => {
+            let connection_string = config
+                .amqp_connection_string
+                .as_ref()
+                .context("amqp connection string was not specified")?;
+            CommonPublisher::new_amqp(connection_string).await?
+        }
+    })
+}
+
+async fn new_consumer(config: &Config, topic_or_queue: &str) -> anyhow::Result<CommonConsumer> {
+    let config = match config.message_queue {
+        MessageQueueKind::Kafka => {
+            let brokers = config
+                .kafka_brokers
+                .as_ref()
+                .context("kafka brokers were not specified")?;
+            let group_id = config
+                .kafka_group_id
+                .as_ref()
+                .context("kafka group was not specified")?;
+            CommonConsumerConfig::Kafka {
+                brokers: &brokers,
+                group_id: &group_id,
+                topic: topic_or_queue,
+            }
+        }
+        MessageQueueKind::Amqp => {
+            let connection_string = config
+                .amqp_connection_string
+                .as_ref()
+                .context("amqp connection string was not specified")?;
+            let consumer_tag = config
+                .amqp_consumer_tag
+                .as_ref()
+                .context("amqp consumer tag was not specified")?;
+            CommonConsumerConfig::Amqp {
+                connection_string: &connection_string,
+                consumer_tag: &consumer_tag,
+                queue_name: topic_or_queue,
+                options: None,
+            }
+        }
+    };
+    Ok(CommonConsumer::new(config).await?)
+}
+
 async fn handle_message(
     message: Box<dyn CommunicationMessage>,
     cache: Arc<Mutex<LruCache<Uuid, String>>>,
     producer: Arc<CommonPublisher>,
-    kafka_error_channel: Arc<String>,
+    error_topic_or_exchange: Arc<String>,
     schema_registry_addr: Arc<String>,
 ) {
     let result: anyhow::Result<()> = async {
@@ -104,11 +169,16 @@ async fn handle_message(
         let payload = BorrowedInsertMessage {
             object_id: insert_message.object_id,
             schema_id: insert_message.schema_id,
+            order_group_id: insert_message.order_group_id,
             timestamp: current_timestamp(),
             data: insert_message.data,
         };
 
-        let key = payload.object_id.to_string();
+        let key = payload
+            .order_group_id
+            .map(|tag| tag.to_string().replace("-", "."))
+            .unwrap_or_else(|| "unordered".to_string());
+        trace!("send_message {:?} {:?} ", key, topic_name);
         send_message(
             producer.as_ref(),
             &topic_name,
@@ -126,7 +196,7 @@ async fn handle_message(
         error!("{:?}", error);
         send_message(
             producer.as_ref(),
-            &kafka_error_channel,
+            &error_topic_or_exchange,
             SERVICE_NAME,
             format!("{:?}", error).into(),
         )
