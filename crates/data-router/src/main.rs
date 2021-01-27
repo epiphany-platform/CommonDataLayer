@@ -3,7 +3,6 @@ use log::error;
 use lru_cache::LruCache;
 use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
-use std::time::{SystemTime, UNIX_EPOCH};
 use std::{
     process,
     sync::{Arc, Mutex},
@@ -11,7 +10,6 @@ use std::{
 use structopt::StructOpt;
 use tokio::pin;
 use tokio::stream::StreamExt;
-use utils::message_types::DataRouterInsertMessage;
 use utils::{
     abort_on_poison,
     message_types::BorrowedInsertMessage,
@@ -20,6 +18,7 @@ use utils::{
     },
     metrics::{self, counter},
 };
+use utils::{current_timestamp, message_types::DataRouterInsertMessage};
 use uuid::Uuid;
 
 const SERVICE_NAME: &str = "data-router";
@@ -183,11 +182,4 @@ async fn send_message(producer: &CommonPublisher, topic_name: &str, key: &str, p
         );
         process::abort();
     };
-}
-
-fn current_timestamp() -> i64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_millis() as i64
 }
