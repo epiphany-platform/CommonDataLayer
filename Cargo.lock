@@ -109,6 +109,7 @@ dependencies = [
  "log",
  "num-derive",
  "num-traits",
+ "reqwest",
  "rpc",
  "serde",
  "serde_json",
