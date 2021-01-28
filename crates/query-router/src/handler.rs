@@ -161,7 +161,7 @@ pub async fn query_raw(
     ))
 }
 
-fn byte_map_to_json_map(map: HashMap<String, Vec<u8>>) -> Result<Value, Error> {
+fn byte_map_to_json_map(map: HashMap<String, Vec<u8>>) -> Result<HashMap<String, Value>, Error> {
     map.into_iter()
         .map(|(object_id, value)| {
             Ok((
