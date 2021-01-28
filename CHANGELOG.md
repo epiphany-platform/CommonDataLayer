@@ -2,6 +2,8 @@
 
 ## Unreleased 
 
+## v0.2.0
+
 ### Breaking changes
 Archived document-storage crate
 Archived blob-store crate
