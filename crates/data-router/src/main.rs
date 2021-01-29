@@ -227,7 +227,6 @@ async fn route(
 
     let key = payload.object_id.to_string();
     send_message(producer, &topic_name, &key, serde_json::to_vec(&payload)?).await;
-    counter!("cdl.data-router.input-single-msg", 1);
     Ok(())
 }
 
@@ -270,7 +269,6 @@ async fn send_message(producer: &CommonPublisher, topic_name: &str, key: &str, p
             "Fatal error, delivery status for message not received.  Topic: `{}`, Key: `{}`, Payload len: `{}`, {:?}",
             topic_name, key, payload_len, delivery_status
         );
-        counter!("cdl.data-router.output-sendabort", 1);
         process::abort();
     };
     counter!("cdl.data-router.output-singleok", 1);
