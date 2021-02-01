@@ -11,18 +11,7 @@ LAST_SCHEMA_FILENAME = '.last_schema'
 DEFAULT_INSERT_MESSAGE = """{{
     "schemaId": "{0}",
     "objectId": "{1}",
-    "data": [
-        {{
-          "fields": {{
-            "a": 1,
-            "b": 3,
-            "c": true,
-            "d": 13.0,
-            "e": "Hello, world"
-          }},
-          "ts": 1611224750
-        }}
-    ]
+    "data": {{ "success": true }}
 }}"""
 
 
