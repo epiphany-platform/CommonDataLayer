@@ -14,10 +14,10 @@ def kafka_insert_data(brokers, topic, payload):
     producer.close()
 
 
-def registry_create_schema(url, name, topic, query, body):
+def registry_create_schema(url, name, topic, query, body, schema_type):
     with grpc.insecure_channel(url) as channel:
         stub = pb2_grpc.SchemaRegistryStub(channel)
-        resp = stub.AddSchema(pb2.NewSchema(id="", name=name, topic=topic, query_address=query, definition=body))
+        resp = stub.AddSchema(pb2.NewSchema(id="", name=name, topic=topic, query_address=query, definition=body, schema_type="DocumentStorage"))
         return resp.id
 
 

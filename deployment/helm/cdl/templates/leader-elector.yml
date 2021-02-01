@@ -59,6 +59,6 @@ spec:
         - name: SCHEMA_PORT
           value: "6400"
         - name: RUST_LOG
-          value: "info,leader-elector=debug"
+          value: "info,leader_elector=debug"
       imagePullSecrets:
         - name: {{ .Values.global.cdlImagePullSecrets }}

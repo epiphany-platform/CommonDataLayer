@@ -47,12 +47,12 @@ impl<'a> CommunicationMessage for KafkaCommunicationMessage<'a> {
     }
 }
 
-pub struct RabbitCommunicationMessage {
+pub struct AmqpCommunicationMessage {
     pub(super) channel: Channel,
     pub(super) delivery: Delivery,
 }
 #[async_trait]
-impl CommunicationMessage for RabbitCommunicationMessage {
+impl CommunicationMessage for AmqpCommunicationMessage {
     fn key(&self) -> Result<&str> {
         let key = self.delivery.routing_key.as_str();
         Ok(key)
