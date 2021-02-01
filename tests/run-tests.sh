@@ -16,4 +16,4 @@ pip3 install -r "${SCRIPT_DIR}/../requirements.txt"
 export WORKDIR=${SCRIPT_DIR}
 export PYTHONPATH=$PYTHONPATH:"${SCRIPT_DIR}/../crates/"
 
-python3 -m pytest "${SCRIPT_DIR}/query_router/test_endpoint_single.py" -vv
+python3 -m pytest "${SCRIPT_DIR}" -vv
