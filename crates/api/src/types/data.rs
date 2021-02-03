@@ -30,28 +30,3 @@ impl CdlObject {
         serde_json::to_string(&self.data).unwrap_or_default()
     }
 }
-
-// fn json_to_graphql_value(json: Value) -> juniper::Value {
-//     match json {
-//         Value::Null => juniper::Value::Null,
-//         Value::Number(num) => {
-//             if let Some(f) = num.as_f64() {
-//                 juniper::Value::scalar(f)
-//             } else if let Some(i) = num.as_i64() {
-//                 juniper::Value::scalar(i as i32)
-//             } else {
-//                 juniper::Value::scalar(num.as_u64().unwrap_or_default() as i32)
-//             }
-//         }
-//         Value::String(s) => juniper::Value::scalar(s),
-//         Value::Bool(b) => juniper::Value::scalar(b),
-//         Value::Array(arr) => {
-//             juniper::Value::List(arr.into_iter().map(json_to_graphql_value).collect())
-//         }
-//         Value::Object(obj) => juniper::Value::Object(
-//             obj.into_iter()
-//                 .map(|(key, value)| (key, json_to_graphql_value(value))
-//                 .collect(),
-//         ),
-//     }
-// }
