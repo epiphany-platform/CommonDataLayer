@@ -1,13 +1,12 @@
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use reqwest::Client;
-use rpc::query_service::{
-    query_service_server::QueryService, ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap,
+use rpc::query_service_ts::{
+    query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
 };
-use serde::{de::DeserializeOwned, Deserialize};
 use serde_json::{json, Value};
 use structopt::StructOpt;
-use tonic::{Code, Request, Response, Status};
+use tonic::{Request, Response, Status};
 use utils::metrics::counter;
 
 #[derive(Debug, StructOpt)]
@@ -44,18 +43,6 @@ pub struct DruidQuery {
     table_name: String,
 }
 
-#[derive(Deserialize)]
-pub struct DruidValue {
-    pub timestamp: String,
-    pub result: DruidInnerValue,
-}
-
-#[derive(Deserialize)]
-pub struct DruidInnerValue {
-    pub object_id: String,
-    pub data: String,
-}
-
 impl DruidQuery {
     pub async fn load(config: DruidConfig) -> anyhow::Result<Self> {
         let pool = Pool::builder()
@@ -77,93 +64,104 @@ impl DruidQuery {
             .map_err(|err| Status::internal(format!("Unable to connect to database: {}", err)))
     }
 
-    async fn query_db<T: DeserializeOwned>(&self, query: &Value) -> Result<T, Status> {
+    async fn query_db(&self, query: &Value) -> Result<String, Status> {
         let conn = self.connect().await?;
         let request = conn.post(&self.addr).json(query);
         let response = request.send().await.map_err(|err| {
             Status::internal(format!("Error requesting value from druid: {}", err))
         })?;
 
-        response.json().await.map_err(|err| {
+        response.text().await.map_err(|err| {
             Status::internal(format!(
                 "Failed to deserialize response from Druid: {}",
                 err
             ))
         })
     }
+
+    async fn query_raw(&self, query: String) -> Result<Vec<u8>, Status> {
+        let conn = self.connect().await?;
+        let request = conn.post(&self.addr).body(query);
+        let response = request.send().await.map_err(|err| {
+            Status::internal(format!("Error when querying DRUID with raw query: {}", err))
+        })?;
+
+        response
+            .bytes()
+            .await
+            .map_err(|err| Status::internal(format!("Couldn't retrieve respones bytes: {}", err)))
+            .map(|bytes| bytes.to_vec())
+    }
 }
 
 #[tonic::async_trait]
-impl QueryService for DruidQuery {
-    async fn query_multiple(
+impl QueryServiceTs for DruidQuery {
+    async fn query_by_range(
         &self,
-        request: Request<ObjectIds>,
-    ) -> Result<Response<ValueMap>, Status> {
-        counter!("cdl.query-service.query-multiple.druid", 1);
+        request: Request<Range>,
+    ) -> Result<Response<TimeSeries>, Status> {
+        counter!("cdl.query-service.query-by-range.druid", 1);
+
+        let request = request.into_inner();
+
+        let intervals = format!("{}/{}", request.start, request.end);
+
         let query = json!({
-            "queryType": "timeseries",
+            "queryType": "scan",
             "dataSource": &self.table_name,
-            "granularity": "all",
+            "columns": [],
             "filter": {
-                "type": "in",
-                "dimension": "objectId",
-                "values": request.into_inner().object_ids
+                "type": "and",
+                "fields": [
+                    { "type": "selector", "dimension": "object_id", "value": &request.object_id },
+                    { "type": "selector", "dimension": "schema_id", "value": &request.schema_id },
+                ]
             },
-            "aggregations": [
-                { "type": "stringLast", "name": "object_id", "fieldName": "objectId" },
-                { "type": "stringLast", "name": "data", "fieldName": "data" }
-            ],
-            "intervals": [ "2000-01-01T00:00:00.000/3000-01-01T00:00:00.000" ]
+            "granularity": &request.step,
+            "intervals": [ intervals ]
         });
 
-        let response: Vec<DruidValue> = self.query_db(&query).await?;
-        let values = response
-            .into_iter()
-            .map(|val| (val.result.object_id, val.result.data.into_bytes()))
-            .collect();
-
-        Ok(tonic::Response::new(ValueMap { values }))
+        Ok(tonic::Response::new(TimeSeries {
+            timeseries: self.query_db(&query).await?,
+        }))
     }
 
     async fn query_by_schema(
         &self,
         request: Request<SchemaId>,
-    ) -> Result<Response<ValueMap>, Status> {
+    ) -> Result<Response<TimeSeries>, Status> {
         counter!("cdl.query-service.query-by-schema.druid", 1);
+
+        let request = request.into_inner();
+
         let query = json!({
-            "queryType": "timeseries",
+            "queryType": "scan",
             "dataSource": &self.table_name,
-            "granularity": "all",
+            "columns": [],
             "filter": {
                 "type": "selector",
-                "dimension": "schemaId",
-                "value": request.into_inner().schema_id
+                "dimension": "schema_id",
+                "value": &request.schema_id
             },
-            "aggregations": [
-                { "type": "stringLast", "name": "object_id", "fieldName": "objectId" },
-                { "type": "stringLast", "name": "data", "fieldName": "data" }
-            ],
-            "intervals": [ "2000-01-01T00:00:00.000/3000-01-01T00:00:00.000" ]
+            "granularity": "none",
+            "intervals": [ "2000-01-01T00:00Z/3000-01-01T00:00Z" ]
         });
 
-        let response: Vec<DruidValue> = self.query_db(&query).await?;
-        let values = response
-            .into_iter()
-            .map(|val| (val.result.object_id, val.result.data.into_bytes()))
-            .collect();
-
-        Ok(tonic::Response::new(ValueMap { values }))
+        Ok(tonic::Response::new(TimeSeries {
+            timeseries: self.query_db(&query).await?,
+        }))
     }
 
     async fn query_raw(
         &self,
-        _request: Request<RawStatement>,
+        request: Request<RawStatement>,
     ) -> Result<Response<ValueBytes>, Status> {
         counter!("cdl.query-service.query-raw.druid", 1);
 
-        Err(Status::new(
-            Code::Unimplemented,
-            "query-service-druid does not support RAW requests yet",
-        ))
+        let request = request.into_inner();
+
+        Ok(tonic::Response::new(ValueBytes {
+            value_bytes: self.query_raw(request.raw_statement).await?,
+        }))
     }
 }

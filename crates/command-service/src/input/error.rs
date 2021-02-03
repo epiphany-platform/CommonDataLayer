@@ -7,25 +7,25 @@ use utils::messaging_system::Error as MSError;
 pub enum Error {
     #[error("Message payload deserialization failed: {0}")]
     PayloadDeserializationFailed(#[from] serde_json::Error),
-    #[error("Failed to create Kafka consumer `{0}`")]
+    #[error("Failed to create message queue consumer `{0}`")]
     ConsumerCreationFailed(MSError),
-    #[error("Failed to subscribe to kafka topics `{0}`")]
+    #[error("Failed to subscribe to: `{0}`")]
     FailedToSubscribe(MSError),
     #[error("Failed to acknowledge message `{0}`")]
     FailedToAcknowledge(MSError),
-    #[error("Kafka message is missing a key `{0}`")]
+    #[error("Message is missing a key `{0}`")]
     MissingKey(MSError),
     #[error("Failed to create GRPC server `{0}`")]
     ServerCreationFailed(#[from] tonic::transport::Error),
-    #[error("Kafka message has a non-UUID key: {0}")]
+    #[error("Message has a non-UUID key: {0}")]
     KeyNotValidUuid(uuid::Error),
-    #[error("Kafka message is missing a schema ID header")]
+    #[error("Message is missing a schema ID header")]
     MissingSchemaIdHeader,
-    #[error("Kafka message has an invalid schema ID header")]
+    #[error("Message has an invalid schema ID header")]
     InvalidSchemaIdHeader,
     #[error("Unable to parse key as valid UTF8 string `{0}`")]
     UnableToParseUTF8(Utf8Error),
-    #[error("Kafka message is missing payload `{0}")]
+    #[error("Message is missing payload `{0}")]
     MissingPayload(MSError),
     #[error("Failed to read message `{0}`")]
     FailedReadingMessage(MSError),

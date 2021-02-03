@@ -8,7 +8,7 @@ pub struct Schema {
     pub id: Uuid,
     /// The name is not required to be unique among all schemas (as `id` is the identifier)
     pub name: String,
-    /// Kafka topic to which data is inserted by data-router.
+    /// Message queue topic to which data is inserted by data-router.
     pub topic: String,
     /// Address of the query service responsible for retrieving data from DB
     pub query_address: String,
@@ -50,7 +50,7 @@ pub struct NewSchema {
     pub name: String,
     /// Address of the query service responsible for retrieving data from DB
     pub query_address: String,
-    /// Kafka topic to which data is inserted by data-router.
+    /// Message queue topic to which data is inserted by data-router.
     pub topic: String,
     /// Definition is stored as a JSON value and therefore needs to be valid JSON.
     pub definition: String,
@@ -84,7 +84,7 @@ pub struct UpdateSchema {
     pub name: Option<String>,
     /// Address of the query service responsible for retrieving data from DB
     pub query_address: Option<String>,
-    /// Kafka topic to which data is inserted by data-router.
+    /// Message queue topic to which data is inserted by data-router.
     pub topic: Option<String>,
     #[graphql(name = "type")]
     pub schema_type: Option<SchemaType>,

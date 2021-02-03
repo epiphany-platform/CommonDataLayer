@@ -20,7 +20,7 @@ impl Schema {
         &self.name
     }
 
-    /// Kafka topic to which data is inserted by data-router.
+    /// Message queue topic to which data is inserted by data-router.
     fn topic(&self) -> &str {
         &self.topic
     }

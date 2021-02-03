@@ -27,7 +27,7 @@ spec:
         command: ["/bin/document-storage"]
         env:
         - name: RUST_LOG
-          value: "info,document-storage=debug" 
+          value: "info,document-storage=debug"
         ports:
         - containerPort: 51805
         volumeMounts:
@@ -78,22 +78,22 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/command-service","sleigh"]
         env:
-        - name: KAFKA_INPUT_BROKERS
-          value: {{ .Values.global.kafkaBrokers }}
-        - name: KAFKA_INPUT_GROUP_ID
-          value: "cdl-sled-command-service"
-        - name: KAFKA_INPUT_TOPIC
+        - name: QUEUE_CONNECTION_STRING
+          value: {{ .Values.global.rabbitConnectionString }}
+        - name: QUEUE_CONSUMER_TAG
+          value: "cdl-postgres-command-service"
+        - name: ORDERED_QUEUE_NAMES
           value: {{ .Values.inputTopic }}
         - name: SLEIGH_OUTPUT_ADDR
-          value: "http://{{ .Release.Name }}-sled-db:58102"    
-        - name: RUST_LOG
-          value: "info,command-service=debug" 
+          value: "http://{{ .Release.Name }}-sled-db:58102"
         - name: REPORT_BROKER
           value: {{ .Values.global.kafkaBrokers }}
         - name: REPORT_TOPIC
           value: {{ .Values.global.reportTopic }}
         - name: INGESTION_METHOD
-          value: kafka
+          value: {{ .Values.ingestionMethod }}
+        - name: RUST_LOG
+          value: "info,command_service=debug"
         ports:
         - containerPort: 51805
   # TODO: Probes

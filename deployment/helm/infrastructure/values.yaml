@@ -6,7 +6,7 @@ rabbitmq:
     load-definition:
       load_definition.json: |
         {
-          "users": [
+        "users": [
             {
               "name": "user",
               "password_hash": "E4KaSlT3L4C7gsBJeCoDbl5VFu+60bBNNmBGAU/iGanplQPe",
@@ -30,7 +30,7 @@ rabbitmq:
           ],
           "queues": [
             {
-              "name": "cdl.document2.data",
+              "name": "cdl.schema_registry.internal",
               "vhost": "/",
               "durable": true,
               "auto_delete": false,
@@ -48,7 +48,7 @@ rabbitmq:
               }
             },
             {
-              "name": "cdl.document.data",
+              "name": "cdl.reports",
               "vhost": "/",
               "durable": true,
               "auto_delete": false,
@@ -57,7 +57,34 @@ rabbitmq:
               }
             },
             {
-              "name": "cdl.timeseries.data",
+              "name": "cdl.document.2.data",
+              "vhost": "/",
+              "durable": true,
+              "auto_delete": false,
+              "arguments": {
+                "x-queue-type": "classic"
+              }
+            },
+            {
+              "name": "cdl.document.1.data",
+              "vhost": "/",
+              "durable": true,
+              "auto_delete": false,
+              "arguments": {
+                "x-queue-type": "classic"
+              }
+            },
+            {
+              "name": "cdl.timeseries.1.data",
+              "vhost": "/",
+              "durable": true,
+              "auto_delete": false,
+              "arguments": {
+                "x-queue-type": "classic"
+              }
+            },
+            {
+              "name": "cdl.timeseries.2.data",
               "vhost": "/",
               "durable": true,
               "auto_delete": false,
@@ -68,7 +95,7 @@ rabbitmq:
           ],
           "exchanges": [
             {
-              "name": "cdl.events",
+              "name": "cdl.data.input",
               "vhost": "/",
               "type": "fanout",
               "durable": true,
@@ -77,15 +104,100 @@ rabbitmq:
               "arguments": {}
             },
             {
-              "name": "cdl.schema.replication",
+              "name": "cdl.reports",
               "vhost": "/",
               "type": "fanout",
               "durable": true,
               "auto_delete": false,
               "internal": false,
               "arguments": {}
+            },
+            {
+              "name": "cdl.schema_registry.internal",
+              "vhost": "/",
+              "type": "fanout",
+              "durable": true,
+              "auto_delete": false,
+              "internal": false,
+              "arguments": {}
+            },
+            {
+              "name": "cdl.document.data",
+              "vhost": "/",
+              "type": "topic",
+              "durable": true,
+              "auto_delete": false,
+              "internal": false,
+              "arguments": {}
+            },
+            {
+              "name": "cdl.timeseries.data",
+              "vhost": "/",
+              "type": "topic",
+              "durable": true,
+              "auto_delete": false,
+              "internal": false,
+              "arguments": {}
             }
           ],
+          "bindings": [
+            {
+              "source": "cdl.data.input",
+              "vhost": "/",
+              "destination": "cdl.data.input",
+              "destination_type": "queue",
+              "routing_key": "",
+              "arguments": {}
+            },
+            {
+              "source": "cdl.reports",
+              "vhost": "/",
+              "destination": "cdl.reports",
+              "destination_type": "queue",
+              "routing_key": "",
+              "arguments": {}
+            },
+            {
+              "source": "cdl.schema_registry.internal",
+              "vhost": "/",
+              "destination": "cdl.schema_registry.internal",
+              "destination_type": "queue",
+              "routing_key": "",
+              "arguments": {}
+            },
+            {
+              "source": "cdl.document.data",
+              "vhost": "/",
+              "destination": "cdl.document.1.data",
+              "destination_type": "queue",
+              "routing_key": "*.*.*.*.*",
+              "arguments": {}
+            },
+            {
+              "source": "cdl.document.data",
+              "vhost": "/",
+              "destination": "cdl.document.2.data",
+              "destination_type": "queue",
+              "routing_key": "unordered",
+              "arguments": {}
+            },
+            {
+              "source": "cdl.timeseries.data",
+              "vhost": "/",
+              "destination": "cdl.timeseries.1.data",
+              "destination_type": "queue",
+              "routing_key": "*.*.*.*.*",
+              "arguments": {}
+            },
+            {
+              "source": "cdl.timeseries.data",
+              "vhost": "/",
+              "destination": "cdl.timeseries.2.data",
+              "destination_type": "queue",
+              "routing_key": "unordered",
+              "arguments": {}
+            }
+          ]
         }
   loadDefinition:
     enabled: true

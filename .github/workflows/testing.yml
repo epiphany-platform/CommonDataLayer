@@ -77,8 +77,8 @@ jobs:
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
-          profile: minimal
-          override: true
+         profile: minimal
+         override: true
 
       - uses: actions/setup-python@v2
         with:

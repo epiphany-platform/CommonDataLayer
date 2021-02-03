@@ -14,6 +14,7 @@ pub async fn connect(addr: String) -> Result<QueryServiceTsClient<Channel>, Clie
 }
 
 pub async fn query_by_range(
+    schema_id: String,
     object_id: String,
     start: String,
     end: String,
@@ -23,6 +24,7 @@ pub async fn query_by_range(
     let mut conn = connect(addr).await?;
     let response = conn
         .query_by_range(Range {
+            schema_id,
             object_id,
             start,
             end,
