@@ -5,9 +5,8 @@ use anyhow::Result;
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
 use tokio::sync::Mutex;
-use utils::messaging_system::publisher::CommonPublisher;
 
-use crate::{config::Config, error::Error, events::EventStream, events::EventSubscriber};
+use crate::{config::Config, events::EventStream, events::EventSubscriber};
 
 #[derive(Clone)]
 pub struct Context {
@@ -58,12 +57,6 @@ impl Context {
                 Ok(stream)
             }
         }
-    }
-
-    pub async fn connect_to_data_router(&self) -> Result<CommonPublisher, Error> {
-        CommonPublisher::new_kafka(&self.config.kafka.brokers)
-            .await
-            .map_err(Error::KafkaError)
     }
 }
 

@@ -1,12 +1,9 @@
 use juniper::{graphql_object, FieldResult};
 use num_traits::ToPrimitive;
-use serde_json::value::RawValue;
-use utils::message_types::DataRouterInsertMessage;
 use uuid::Uuid;
 
 use crate::schema::context::Context;
 use crate::schema::utils::{get_schema, get_view};
-use crate::types::data::InputMessage;
 use crate::types::schema::*;
 
 pub struct Mutation;
@@ -150,59 +147,5 @@ impl Mutation {
         .await
         .map_err(rpc::error::registry_error)?;
         get_schema(&mut conn, id).await
-    }
-
-    async fn insert_message(context: &Context, message: InputMessage) -> FieldResult<bool> {
-        log::debug!(
-            "inserting single message with ID {} for schema {}",
-            message.object_id,
-            message.schema_id
-        );
-
-        let publisher = context.connect_to_data_router().await?;
-        let payload = serde_json::to_vec(&DataRouterInsertMessage {
-            object_id: message.object_id,
-            schema_id: message.schema_id,
-            data: &RawValue::from_string(message.payload)?,
-        })?;
-
-        publisher
-            .publish_message(
-                &context.config().data_router_topic,
-                &message.object_id.to_string(),
-                payload,
-            )
-            .await
-            .map_err(crate::error::Error::KafkaError)?;
-
-        Ok(true)
-    }
-
-    async fn insert_transaction(
-        context: &Context,
-        messages: Vec<InputMessage>,
-    ) -> FieldResult<bool> {
-        log::debug!("inserting transaction of {} messages", messages.len());
-
-        let publisher = context.connect_to_data_router().await?;
-
-        for message in messages {
-            let payload = serde_json::to_vec(&DataRouterInsertMessage {
-                object_id: message.object_id,
-                schema_id: message.schema_id,
-                data: &RawValue::from_string(message.payload)?,
-            })?;
-
-            publisher
-                .publish_message(
-                    &context.config().data_router_topic,
-                    &message.object_id.to_string(),
-                    payload,
-                )
-                .await
-                .map_err(crate::error::Error::KafkaError)?;
-        }
-
-        Ok(true)
     }
 }
