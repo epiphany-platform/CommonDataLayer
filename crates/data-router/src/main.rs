@@ -55,6 +55,8 @@ struct Config {
     pub schema_registry_addr: String,
     #[structopt(long, env)]
     pub cache_capacity: usize,
+    #[structopt(long, env)]
+    pub monotasking: bool,
 }
 
 #[tokio::main]
@@ -77,14 +79,19 @@ async fn main() -> anyhow::Result<()> {
     while let Some(message) = message_stream.next().await {
         match message {
             Ok(message) => {
-                handle_message(
+                let future = handle_message(
                     message,
                     cache.clone(),
                     producer.clone(),
                     error_topic_or_exchange.clone(),
                     schema_registry_addr.clone(),
-                )
-                .await;
+                );
+
+                if !config.monotasking {
+                    tokio::spawn(future);
+                } else {
+                    future.await;
+                }
             }
             Err(error) => {
                 error!("Error fetching data from message queue {:?}", error);
