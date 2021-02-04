@@ -101,9 +101,9 @@ impl CommonConsumer {
         &mut self,
     ) -> impl Stream<Item = Result<Box<dyn CommunicationMessage + '_>>> {
         try_stream! {
-        match self {
-            CommonConsumer::Kafka { consumer } => {
-                let mut message_stream = consumer.start();
+            match self {
+                CommonConsumer::Kafka { consumer } => {
+                    let mut message_stream = consumer.start();
                     while let Some(message) = message_stream.next().await {
                         let message = message?;
                         yield Box::new(KafkaCommunicationMessage{message,consumer:consumer.clone()}) as Box<dyn CommunicationMessage>;

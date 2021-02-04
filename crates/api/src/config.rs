@@ -3,8 +3,8 @@ use structopt::{clap::arg_enum, StructOpt};
 
 #[derive(StructOpt)]
 pub struct Config {
-    #[structopt(long = "schema-registry-addr", env = "SCHEMA_REGISTRY_ADDR")]
-    pub registry_addr: String,
+    #[structopt(long, env)]
+    pub schema_registry_addr: String,
     #[structopt(long, env)]
     pub query_router_addr: String,
     #[structopt(long, env)]
@@ -15,6 +15,8 @@ pub struct Config {
 
     #[structopt(long, env)]
     pub report_topic_or_queue: String,
+    #[structopt(long, env)]
+    pub data_router_topic_or_queue: String,
 }
 
 #[derive(StructOpt)]

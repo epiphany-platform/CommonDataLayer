@@ -1,15 +1,14 @@
 pub mod config;
-pub mod context;
 pub mod error;
 pub mod events;
-pub mod queries;
 pub mod schema;
+pub mod types;
 
 use std::sync::Arc;
 
 use config::Config;
-use context::Context;
 use futures::FutureExt;
+use schema::context::Context;
 use structopt::StructOpt;
 use warp::{http::Response, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
 
@@ -44,10 +43,10 @@ async fn main() {
         move || context.clone()
     });
 
-    let graphql_filter = juniper_warp::make_graphql_filter(crate::queries::schema(), state.boxed())
+    let graphql_filter = juniper_warp::make_graphql_filter(crate::schema::schema(), state.boxed())
         .with(cors.clone());
 
-    let root_node = Arc::new(crate::queries::schema());
+    let root_node = Arc::new(crate::schema::schema());
 
     let subscriptions = warp::path("subscriptions")
         .and(warp::ws())

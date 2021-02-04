@@ -88,6 +88,7 @@ impl<P: OutputPlugin> MessageQueueInput<P> {
 
     pub async fn listen(self) -> Result<(), Error> {
         let mut streams = Vec::new();
+        trace!("Number of consumers: {}", self.consumer.len());
         for consumer in self.consumer {
             let consumer = consumer.leak(); // Limits ability to change queues CS is listening on without restarting whole service
             let stream = consumer.consume().await;
@@ -100,6 +101,7 @@ impl<P: OutputPlugin> MessageQueueInput<P> {
 
         pin!(message_stream);
 
+        trace!("Listen on message stream");
         while let Some(message) = message_stream.next().await {
             let router = self.message_router.clone();
 
@@ -115,6 +117,9 @@ impl<P: OutputPlugin> MessageQueueInput<P> {
                 })
                 .await;
         }
+        trace!("Stream closed");
+
+        tokio::time::delay_for(tokio::time::Duration::from_secs(3)).await;
 
         Ok(())
     }
