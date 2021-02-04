@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
+use crate::error::{Error, Result};
+use crate::schema::context::Context;
 use crate::schema::utils::{get_schema, get_view};
+use crate::types::data::CdlObject;
 use crate::types::schema::*;
-use crate::{error::Error, schema::context::Context};
-use crate::{error::Result, types::data::CdlObject};
+
 use juniper::{graphql_object, FieldResult};
 use num_traits::FromPrimitive;
 use rpc::schema_registry::Empty;
@@ -22,7 +24,7 @@ impl Schema {
         &self.name
     }
 
-    /// Kafka topic to which data is inserted by data-router.
+    /// Message queue topic to which data is inserted by data-router.
     fn topic(&self) -> &str {
         &self.topic
     }

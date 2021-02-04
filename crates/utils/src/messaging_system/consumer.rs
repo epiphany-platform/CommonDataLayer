@@ -1,7 +1,8 @@
 use anyhow::Context;
 use async_stream::try_stream;
 use futures_util::stream::{Stream, StreamExt};
-use lapin::{options::BasicConsumeOptions, types::FieldTable};
+pub use lapin::options::BasicConsumeOptions;
+use lapin::types::FieldTable;
 use rdkafka::{
     consumer::{DefaultConsumerContext, StreamConsumer},
     ClientConfig,
@@ -10,24 +11,50 @@ use std::sync::Arc;
 use tokio_amqp::LapinTokioExt;
 
 use super::{
-    message::CommunicationMessage, message::KafkaCommunicationMessage,
-    message::RabbitCommunicationMessage, Result,
+    message::AmqpCommunicationMessage, message::CommunicationMessage,
+    message::KafkaCommunicationMessage, Result,
 };
+
+pub enum CommonConsumerConfig<'a> {
+    Kafka {
+        brokers: &'a str,
+        group_id: &'a str,
+        topic: &'a str,
+    },
+    Amqp {
+        connection_string: &'a str,
+        consumer_tag: &'a str,
+        queue_name: &'a str,
+        options: Option<BasicConsumeOptions>,
+    },
+}
 
 pub enum CommonConsumer {
     Kafka {
         consumer: Arc<StreamConsumer<DefaultConsumerContext>>,
     },
-    RabbitMq {
+    Amqp {
         consumer: lapin::Consumer,
     },
 }
 impl CommonConsumer {
-    pub async fn new_kafka(
-        group_id: &str,
-        brokers: &str,
-        topics: &[&str],
-    ) -> Result<CommonConsumer> {
+    pub async fn new(config: CommonConsumerConfig<'_>) -> Result<Self> {
+        match config {
+            CommonConsumerConfig::Kafka {
+                group_id,
+                brokers,
+                topic,
+            } => Self::new_kafka(group_id, brokers, &[topic]).await,
+            CommonConsumerConfig::Amqp {
+                connection_string,
+                consumer_tag,
+                queue_name,
+                options,
+            } => Self::new_amqp(connection_string, consumer_tag, queue_name, options).await,
+        }
+    }
+
+    async fn new_kafka(group_id: &str, brokers: &str, topics: &[&str]) -> Result<Self> {
         let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
             .set("group.id", &group_id)
             .set("bootstrap.servers", &brokers)
@@ -46,11 +73,13 @@ impl CommonConsumer {
         })
     }
 
-    pub async fn new_rabbit(
+    async fn new_amqp(
         connection_string: &str,
         consumer_tag: &str,
         queue_name: &str,
-    ) -> Result<CommonConsumer> {
+        consume_options: Option<BasicConsumeOptions>,
+    ) -> Result<Self> {
+        let consume_options = consume_options.unwrap_or_default();
         let connection = lapin::Connection::connect(
             connection_string,
             lapin::ConnectionProperties::default().with_tokio(),
@@ -61,31 +90,31 @@ impl CommonConsumer {
             .basic_consume(
                 queue_name,
                 consumer_tag,
-                BasicConsumeOptions::default(),
+                consume_options,
                 FieldTable::default(),
             )
             .await?;
-        Ok(CommonConsumer::RabbitMq { consumer })
+        Ok(CommonConsumer::Amqp { consumer })
     }
 
     pub async fn consume(
         &mut self,
     ) -> impl Stream<Item = Result<Box<dyn CommunicationMessage + '_>>> {
         try_stream! {
-        match self {
-            CommonConsumer::Kafka { consumer } => {
-                let mut message_stream = consumer.start();
+            match self {
+                CommonConsumer::Kafka { consumer } => {
+                    let mut message_stream = consumer.start();
                     while let Some(message) = message_stream.next().await {
                         let message = message?;
                         yield Box::new(KafkaCommunicationMessage{message,consumer:consumer.clone()}) as Box<dyn CommunicationMessage>;
                     }
                 }
-                CommonConsumer::RabbitMq {
+                CommonConsumer::Amqp {
                     consumer,
                 } => {
                     while let Some(message) = consumer.next().await {
                         let message = message?;
-                        yield Box::new(RabbitCommunicationMessage{channel:message.0, delivery:message.1})as Box<dyn CommunicationMessage>;
+                        yield Box::new(AmqpCommunicationMessage{channel:message.0, delivery:message.1})as Box<dyn CommunicationMessage>;
                     }
                 }
             }

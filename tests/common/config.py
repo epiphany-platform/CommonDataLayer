@@ -42,9 +42,9 @@ class KafkaInputConfig:
 
     def to_dict(self):
         return {
-            "KAFKA_INPUT_BROKERS": self.brokers,
-            "KAFKA_INPUT_GROUP_ID": self.group_id,
-            "KAFKA_INPUT_TOPIC": self.topic,
+            "KAFKA_BROKERS": self.brokers,
+            "KAFKA_GROUP_ID": self.group_id,
+            "UNORDERED_TOPICS_OR_QUEUES": self.topic,
         }
 
 
@@ -55,6 +55,5 @@ class KafkaReportConfig:
 
     def to_dict(self):
         return {
-            "REPORT_BROKER": self.brokers,
-            "REPORT_TOPIC": self.topic,
+            "REPORT_TOPIC_OR_EXCHANGE": self.topic,
         }

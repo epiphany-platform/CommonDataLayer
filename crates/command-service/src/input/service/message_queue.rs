@@ -1,42 +1,59 @@
 use crate::output::OutputPlugin;
 use crate::{
-    communication::MessageRouter,
-    input::{Error, KafkaConfig},
+    communication::{config::MessageQueueConfig, MessageRouter},
+    input::Error,
 };
+use futures::stream::select_all;
+use futures::stream::StreamExt;
 use log::{error, trace};
-use std::process;
+use std::{process, sync::Arc};
 use tokio::pin;
-use tokio::stream::StreamExt;
-use utils::message_types::BorrowedInsertMessage;
 use utils::messaging_system::consumer::CommonConsumer;
 use utils::messaging_system::message::CommunicationMessage;
 use utils::messaging_system::Result;
 use utils::metrics::counter;
 use utils::task_limiter::TaskLimiter;
+use utils::{message_types::BorrowedInsertMessage, parallel_task_queue::ParallelTaskQueue};
 
-pub struct KafkaInput<P: OutputPlugin> {
-    consumer: CommonConsumer,
+pub struct MessageQueueInput<P: OutputPlugin> {
+    consumer: Vec<CommonConsumer>,
     message_router: MessageRouter<P>,
     task_limiter: TaskLimiter,
+    task_queue: Arc<ParallelTaskQueue>,
 }
 
-impl<P: OutputPlugin> KafkaInput<P> {
-    pub async fn new(config: KafkaConfig, message_router: MessageRouter<P>) -> Result<Self, Error> {
-        let consumer =
-            CommonConsumer::new_kafka(&config.group_id, &config.brokers, &[&config.topic])
+impl<P: OutputPlugin> MessageQueueInput<P> {
+    pub async fn new(
+        config: MessageQueueConfig,
+        message_router: MessageRouter<P>,
+    ) -> Result<Self, Error> {
+        let mut consumers = Vec::new();
+        for ordered in config.ordered_configs() {
+            let consumer = CommonConsumer::new(ordered)
                 .await
                 .map_err(Error::ConsumerCreationFailed)?;
+            consumers.push(consumer);
+        }
+
+        for unordered in config.unordered_configs() {
+            let consumer = CommonConsumer::new(unordered)
+                .await
+                .map_err(Error::ConsumerCreationFailed)?;
+            consumers.push(consumer);
+        }
 
         Ok(Self {
-            consumer,
+            consumer: consumers,
             message_router,
-            task_limiter: TaskLimiter::new(config.task_limit),
+            task_limiter: TaskLimiter::new(config.task_limit()),
+            task_queue: Arc::new(ParallelTaskQueue::default()),
         })
     }
 
     async fn handle_message(
         router: MessageRouter<P>,
         message: Result<Box<dyn CommunicationMessage>>,
+        task_queue: Arc<ParallelTaskQueue>,
     ) -> Result<(), Error> {
         counter!("cdl.command-service.input-request", 1);
         let message = message.map_err(Error::FailedReadingMessage)?;
@@ -44,6 +61,10 @@ impl<P: OutputPlugin> KafkaInput<P> {
         let generic_message = Self::build_message(message.as_ref())?;
 
         trace!("Received message {:?}", generic_message);
+
+        let _guard = generic_message
+            .order_group_id
+            .map(async move |x| task_queue.acquire_permit(x.to_string()).await);
 
         router
             .handle_message(generic_message)
@@ -66,16 +87,25 @@ impl<P: OutputPlugin> KafkaInput<P> {
     }
 
     pub async fn listen(self) -> Result<(), Error> {
-        let consumer = self.consumer.leak();
-        let message_stream = consumer.consume().await;
+        let mut streams = Vec::new();
+        for consumer in self.consumer {
+            let consumer = consumer.leak(); // Limits ability to change queues CS is listening on without restarting whole service
+            let stream = consumer.consume().await;
+            streams.push(stream);
+        }
+        let message_stream = select_all(streams.into_iter().map(Box::pin));
+
         pin!(message_stream);
 
         while let Some(message) = message_stream.next().await {
             let router = self.message_router.clone();
 
+            let task_queue = self.task_queue.clone();
             self.task_limiter
                 .run(async move || {
-                    if let Err(err) = Self::handle_message(router, message).await {
+                    if let Err(err) =
+                        MessageQueueInput::handle_message(router, message, task_queue).await
+                    {
                         error!("Failed to handle message: {}", err);
                         process::abort();
                     }

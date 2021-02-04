@@ -4,6 +4,7 @@ use crate::report::{Error, ReportSender};
 use std::sync::Arc;
 use utils::message_types::BorrowedInsertMessage;
 
+pub mod config;
 pub mod resolution;
 
 pub struct MessageRouter<P: OutputPlugin> {

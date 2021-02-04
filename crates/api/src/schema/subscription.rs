@@ -13,9 +13,9 @@ pub struct Subscription;
 #[graphql_subscription(context = Context)]
 impl Subscription {
     async fn reports(context: &Context) -> ReportStream {
-        let topic = &context.config().report_topic;
+        let topic_or_queue = &context.config().report_topic_or_queue;
         let stream = context
-            .subscribe_on_kafka_topic(topic)
+            .subscribe_on_message_queue(topic_or_queue)
             .await?
             .try_filter_map(|ev| async move { Ok(ev.payload) })
             .and_then(

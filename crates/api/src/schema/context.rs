@@ -1,18 +1,22 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use anyhow::Result;
+use anyhow::{Context as _, Result};
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
 use tokio::sync::Mutex;
 use utils::messaging_system::publisher::CommonPublisher;
 
-use crate::{config::Config, error::Error, events::EventStream, events::EventSubscriber};
+use crate::{
+    config::{Config, MessageQueueConfig},
+    events::EventStream,
+    events::EventSubscriber,
+};
 
 #[derive(Clone)]
 pub struct Context {
     config: Arc<Config>,
-    kafka_events: Arc<Mutex<HashMap<String, EventSubscriber>>>,
+    mq_events: Arc<Mutex<HashMap<String, EventSubscriber>>>,
 }
 
 impl juniper::Context for Context {}
@@ -21,7 +25,7 @@ impl Context {
     pub fn new(config: Arc<Config>) -> Self {
         Context {
             config,
-            kafka_events: Default::default(),
+            mq_events: Default::default(),
         }
     }
 
@@ -36,34 +40,44 @@ impl Context {
         Ok(new_conn)
     }
 
-    pub async fn subscribe_on_kafka_topic(&self, topic: &str) -> Result<EventStream> {
-        log::debug!("subscribe on kafka topic {}", topic);
-        let mut event_map = self.kafka_events.lock().await;
+    pub async fn subscribe_on_message_queue(&self, topic: &str) -> Result<EventStream> {
+        log::debug!("subscribe on message queue: {}", topic);
+        let mut event_map = self.mq_events.lock().await;
         match event_map.get(topic) {
             Some(subscriber) => {
                 let stream = subscriber.subscribe();
                 Ok(stream)
             }
             None => {
-                let kafka_events = self.kafka_events.clone();
-                let (subscriber, stream) =
-                    EventSubscriber::new(&self.config.kafka, topic, move |topic| async move {
-                        log::warn!("Kafka stream has closed");
+                let kafka_events = self.mq_events.clone();
+                let (subscriber, stream) = EventSubscriber::new(
+                    self.config.message_queue.config()?,
+                    topic,
+                    move |topic| async move {
+                        log::warn!("Message queue stream has closed");
                         // Remove topic from hashmap so next time someone ask about this stream,
                         // it will be recreated
                         kafka_events.lock().await.remove(&topic);
-                    })
-                    .await?;
+                    },
+                )
+                .await?;
                 event_map.insert(topic.into(), subscriber);
                 Ok(stream)
             }
         }
     }
 
-    pub async fn connect_to_data_router(&self) -> Result<CommonPublisher, Error> {
-        CommonPublisher::new_kafka(&self.config.kafka.brokers)
-            .await
-            .map_err(Error::KafkaError)
+    pub async fn connect_to_data_router(&self) -> anyhow::Result<CommonPublisher> {
+        match self.config().message_queue.config()? {
+            MessageQueueConfig::Amqp {
+                connection_string, ..
+            } => CommonPublisher::new_amqp(&connection_string)
+                .await
+                .context("Unable to open RabbitMQ publisher for Data Router"),
+            MessageQueueConfig::Kafka { brokers, .. } => CommonPublisher::new_kafka(&brokers)
+                .await
+                .context("Unable to open Kafka publisher for Data Router"),
+        }
     }
 }
 

@@ -30,6 +30,7 @@ jobs:
           - query-service-ts
           - schema-registry
           - query-router
+          - api
     steps:
     - name: Checkout the repo
       uses: actions/checkout@v2

@@ -4,10 +4,10 @@ use serde_json::value::RawValue;
 use utils::message_types::DataRouterInsertMessage;
 use uuid::Uuid;
 
-use crate::schema::context::Context;
+use crate::error::Error;
 use crate::schema::utils::{get_schema, get_view};
-use crate::types::data::InputMessage;
 use crate::types::schema::*;
+use crate::{schema::context::Context, types::data::InputMessage};
 
 pub struct Mutation;
 
@@ -163,18 +163,18 @@ impl Mutation {
         let payload = serde_json::to_vec(&DataRouterInsertMessage {
             object_id: message.object_id,
             schema_id: message.schema_id,
+            order_group_id: None,
             data: &RawValue::from_string(message.payload)?,
         })?;
 
         publisher
             .publish_message(
-                &context.config().data_router_topic,
+                &context.config().data_router_topic_or_queue,
                 &message.object_id.to_string(),
                 payload,
             )
             .await
-            .map_err(crate::error::Error::KafkaError)?;
-
+            .map_err(Error::PublisherError)?;
         Ok(true)
     }
 
@@ -185,24 +185,25 @@ impl Mutation {
         log::debug!("inserting transaction of {} messages", messages.len());
 
         let publisher = context.connect_to_data_router().await?;
+        let order_group_id = Uuid::new_v4();
 
         for message in messages {
             let payload = serde_json::to_vec(&DataRouterInsertMessage {
                 object_id: message.object_id,
                 schema_id: message.schema_id,
+                order_group_id: Some(order_group_id),
                 data: &RawValue::from_string(message.payload)?,
             })?;
 
             publisher
                 .publish_message(
-                    &context.config().data_router_topic,
+                    &context.config().data_router_topic_or_queue,
                     &message.object_id.to_string(),
                     payload,
                 )
                 .await
-                .map_err(crate::error::Error::KafkaError)?;
+                .map_err(Error::PublisherError)?;
         }
-
         Ok(true)
     }
 }

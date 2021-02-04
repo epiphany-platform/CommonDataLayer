@@ -3,38 +3,37 @@
 /// Instead you listen on different task (See: `tokio::spawn` in `EventSubscriber::new`) and then send message to broadcast channel.
 /// Each websocket client has its own Receiver.
 /// Thanks to that we are not only reusing connection, but also limit dangerous `consumer.leak()` usage.
-use crate::config::KafkaConfig;
+use crate::config::MessageQueueConfig;
 use futures::task::{Context as FutCtx, Poll};
 use futures::{Future, Stream, StreamExt, TryStreamExt};
 use juniper::FieldResult;
 use std::pin::Pin;
 use tokio::sync::broadcast;
-use utils::messaging_system::consumer::CommonConsumer;
+use utils::messaging_system::consumer::{CommonConsumer, CommonConsumerConfig};
 use utils::messaging_system::Error;
 
-// TODO: Rename it to generic `Event` after adding support to RabbitMQ
-/// Owned generic message received from kafka.
+/// Owned generic message received from message queue.
 #[derive(Clone, Debug)]
-pub struct KafkaEvent {
+pub struct Event {
     pub key: Option<String>,
     pub payload: Option<String>,
 }
 
 /// Wrapper to prevent accidental sending data to channel. `Sender` is used only for subscription mechanism
-pub struct EventSubscriber(broadcast::Sender<Result<KafkaEvent, Error>>);
+pub struct EventSubscriber(broadcast::Sender<Result<Event, Error>>);
 
 // We are using Box<dyn> approach (recommended) by Tokio maintainers,
 // as unfortunately `broadcast::Receiver` doesn't implement `Stream` trait,
 // and it is hard to achieve it without major refactor. Therefore we are using `async_stream` as a loophole.
 pub struct EventStream {
-    inner: Pin<Box<dyn Stream<Item = FieldResult<KafkaEvent>> + Send + Sync>>,
+    inner: Pin<Box<dyn Stream<Item = FieldResult<Event>> + Send + Sync>>,
 }
 
 impl EventSubscriber {
     /// Connects to kafka and sends all messages to broadcast channel.
     pub async fn new<F, Fut>(
-        config: &KafkaConfig,
-        topic: &str,
+        config: MessageQueueConfig,
+        topic_or_queue: &str,
         on_close: F,
     ) -> Result<(Self, EventStream), anyhow::Error>
     where
@@ -43,18 +42,34 @@ impl EventSubscriber {
     {
         let (tx, rx) = broadcast::channel(32);
 
-        log::debug!("Create new consumer for topic: {}", topic);
+        log::debug!("Create new consumer for: {}", topic_or_queue);
 
-        let mut consumer =
-            CommonConsumer::new_kafka(&config.group_id, &config.brokers, &[topic]).await?;
+        let config = match &config {
+            MessageQueueConfig::Kafka { group_id, brokers } => CommonConsumerConfig::Kafka {
+                group_id: &group_id,
+                brokers: &brokers,
+                topic: topic_or_queue,
+            },
+            MessageQueueConfig::Amqp {
+                connection_string,
+                consumer_tag,
+            } => CommonConsumerConfig::Amqp {
+                connection_string: &connection_string,
+                consumer_tag: &consumer_tag,
+                queue_name: topic_or_queue,
+                options: None,
+            },
+        };
+
+        let mut consumer = CommonConsumer::new(config).await?;
 
         let sink = tx.clone();
-        let topic = String::from(topic);
+        let topic_or_queue = String::from(topic_or_queue);
         tokio::spawn(async move {
             let stream = consumer.consume().await.map_ok(move |msg| {
                 let key = msg.key().map(|s| s.to_string()).ok();
                 let payload = msg.payload().map(|s| s.to_string()).ok();
-                KafkaEvent { key, payload }
+                Event { key, payload }
             });
 
             tokio::pin!(stream);
@@ -63,7 +78,7 @@ impl EventSubscriber {
                 sink.send(item).ok();
             }
 
-            on_close(topic);
+            on_close(topic_or_queue);
         });
 
         Ok((Self(tx), EventStream::new(rx)))
@@ -76,7 +91,7 @@ impl EventSubscriber {
 }
 
 impl EventStream {
-    fn new(mut rx: broadcast::Receiver<Result<KafkaEvent, Error>>) -> Self {
+    fn new(mut rx: broadcast::Receiver<Result<Event, Error>>) -> Self {
         let stream = async_stream::try_stream! {
             loop {
                 let item = rx.recv().await??;
@@ -90,7 +105,7 @@ impl EventStream {
 }
 
 impl Stream for EventStream {
-    type Item = FieldResult<KafkaEvent>;
+    type Item = FieldResult<Event>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut FutCtx<'_>) -> Poll<Option<Self::Item>> {
         Pin::new(&mut self.inner).poll_next(cx)

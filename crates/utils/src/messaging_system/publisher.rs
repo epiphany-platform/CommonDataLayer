@@ -11,10 +11,10 @@ use super::Result;
 #[derive(Clone)]
 pub enum CommonPublisher {
     Kafka { producer: FutureProducer },
-    RabbitMq { channel: Channel },
+    Amqp { channel: Channel },
 }
 impl CommonPublisher {
-    pub async fn new_rabbit(connection_string: &str) -> Result<CommonPublisher> {
+    pub async fn new_amqp(connection_string: &str) -> Result<CommonPublisher> {
         let connection = lapin::Connection::connect(
             connection_string,
             lapin::ConnectionProperties::default().with_tokio(),
@@ -22,7 +22,7 @@ impl CommonPublisher {
         .await?;
         let channel = connection.create_channel().await?;
 
-        Ok(CommonPublisher::RabbitMq { channel })
+        Ok(CommonPublisher::Amqp { channel })
     }
 
     pub async fn new_kafka(brokers: &str) -> Result<CommonPublisher> {
@@ -55,14 +55,14 @@ impl CommonPublisher {
                 delivery_status.await.map_err(|x| x.0)?;
                 Ok(())
             }
-            CommonPublisher::RabbitMq { channel } => {
+            CommonPublisher::Amqp { channel } => {
                 channel
                     .basic_publish(
                         topic_or_exchange,
                         key,
                         BasicPublishOptions::default(),
                         payload,
-                        BasicProperties::default(),
+                        BasicProperties::default().with_delivery_mode(2), // persistent messages
                     )
                     .await?
                     .await?;
