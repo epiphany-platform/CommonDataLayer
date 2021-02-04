@@ -5,11 +5,11 @@ use kube::{
     api::{DeleteParams, ListParams, Meta, PatchParams},
     Api, Client,
 };
-use log::{info, warn};
+use log::{debug, info, warn};
 use serde::Deserialize;
 use std::{fs, time::Duration};
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub heartbeat_secs: u64,
     pub schema_app_name: String,
@@ -21,6 +21,8 @@ pub struct Config {
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let config = envy::from_env::<Config>().context("Env vars not set correctly")?;
+    debug!("Environment {:?}", config);
+
     let namespace = get_k8s_namespace();
     let schema_elector = LeaderElector {
         master_addr: format!("{}-master", config.schema_addr),

@@ -5,7 +5,7 @@ use command_service::output::{
 };
 use command_service::report::{FullReportSenderBase, ReportSender, ReportServiceConfig};
 use command_service::{args::Args, communication::config::CommunicationConfig, input::GRPCInput};
-use log::trace;
+use log::debug;
 use rpc::command_service::command_service_server::CommandServiceServer;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use structopt::StructOpt;
@@ -17,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let args: Args = Args::from_args();
 
-    trace!("Environment: {:?}", args);
+    debug!("Environment: {:?}", args);
 
     metrics::serve();
 
@@ -75,12 +75,14 @@ async fn start_services(
 
     match communication_config {
         CommunicationConfig::MessageQueue(communication_config) => {
+            debug!("Starting command service on a message-queue");
             MessageQueueInput::new(communication_config, message_router)
                 .await?
                 .listen()
                 .await?
         }
         CommunicationConfig::GRpc(communication_config) => {
+            debug!("Starting command service on a grpc");
             let input = GRPCInput::new(message_router);
             let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), communication_config.grpc_port);
             Server::builder()

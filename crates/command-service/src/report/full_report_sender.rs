@@ -2,6 +2,7 @@ use crate::{
     communication::config::{CommunicationConfig, MessageQueueConfig},
     report::{Error, Reporter},
 };
+use log::{debug, trace};
 use serde::Serialize;
 use serde_json::Value;
 use std::sync::Arc;
@@ -50,6 +51,12 @@ impl FullReportSenderBase {
             }) => CommonPublisher::new_amqp(connection_string).await,
             CommunicationConfig::GRpc(_) => unreachable!(),
         };
+
+        debug!(
+            "Initialized report service with notification sink at `{}`",
+            topic_or_exchange
+        );
+
         Ok(Self {
             producer: publisher.map_err(Error::ProducerCreation)?,
             topic: Arc::new(topic_or_exchange),
@@ -61,6 +68,8 @@ impl FullReportSenderBase {
 #[async_trait::async_trait]
 impl Reporter for FullReportSender {
     async fn report(self: Box<Self>, description: &str) -> Result<(), Error> {
+        trace!("Report for id `{}` - `{}`", self.msg.object_id, description);
+
         let payload = ReportBody {
             application: APPLICATION_NAME,
             output_plugin: self.output_plugin.as_str(),

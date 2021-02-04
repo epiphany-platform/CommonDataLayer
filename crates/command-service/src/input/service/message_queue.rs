@@ -93,6 +93,9 @@ impl<P: OutputPlugin> MessageQueueInput<P> {
             let stream = consumer.consume().await;
             streams.push(stream);
         }
+
+        trace!("Beginning to listen on {} stream(s)", streams.len());
+
         let message_stream = select_all(streams.into_iter().map(Box::pin));
 
         pin!(message_stream);

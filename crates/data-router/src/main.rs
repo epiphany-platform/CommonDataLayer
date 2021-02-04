@@ -1,5 +1,5 @@
 use anyhow::Context;
-use log::error;
+use log::{debug, error};
 use lru_cache::LruCache;
 use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
@@ -61,6 +61,9 @@ struct Config {
 async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let config: Config = Config::from_args();
+
+    debug!("Environment {:?}", config);
+
     metrics::serve();
 
     let consumer = new_consumer(&config, &config.input_topic_or_queue).await?;
@@ -125,6 +128,9 @@ async fn new_consumer(config: &Config, topic_or_queue: &str) -> anyhow::Result<C
                 .kafka_group_id
                 .as_ref()
                 .context("kafka group was not specified")?;
+
+            debug!("Initializing Kafka consumer");
+
             CommonConsumerConfig::Kafka {
                 brokers: &brokers,
                 group_id: &group_id,
@@ -140,6 +146,9 @@ async fn new_consumer(config: &Config, topic_or_queue: &str) -> anyhow::Result<C
                 .amqp_consumer_tag
                 .as_ref()
                 .context("amqp consumer tag was not specified")?;
+
+            debug!("Initializing Amqp consumer");
+
             CommonConsumerConfig::Amqp {
                 connection_string: &connection_string,
                 consumer_tag: &consumer_tag,
@@ -158,38 +167,58 @@ async fn handle_message(
     error_topic_or_exchange: Arc<String>,
     schema_registry_addr: Arc<String>,
 ) {
+    trace!("Received message `{:?}`", message.payload());
+
     counter!("cdl.data-router.input-msg", 1);
-    let result: anyhow::Result<()> = async {
+    let result = async {
         let json_something: Value =
             serde_json::from_str(message.payload()?).context("Payload deserialization failed")?;
         if json_something.is_array() {
+            trace!("Processing multimessage");
+
             let maybe_array: Vec<DataRouterInsertMessage> = serde_json::from_str(
                 message.payload()?,
             )
             .context("Payload deserialization failed, message is not a valid cdl message ")?;
+
+            let mut result = Ok(());
+
             for entry in maybe_array.iter() {
-                route(&cache, &entry, &producer, &schema_registry_addr)
+                let r = route(&cache, &entry, &producer, &schema_registry_addr)
                     .await
-                    .context("Tried to send message and failed")?;
+                    .context("Tried to send message and failed");
+
                 counter!("cdl.data-router.input-multimsg", 1);
+                counter!("cdl.data-router.processed", 1);
+
+                if r.is_err() {
+                    result = r;
+                }
             }
+
+            result
         } else {
+            trace!("Processing single message");
+
             let owned: DataRouterInsertMessage = serde_json::from_str::<DataRouterInsertMessage>(
                 message.payload()?,
             )
             .context("Payload deserialization failed, message is not a valid cdl message")?;
-            route(&cache, &owned, &producer, &schema_registry_addr)
+            let result = route(&cache, &owned, &producer, &schema_registry_addr)
                 .await
-                .context("Tried to send message and failed")?;
+                .context("Tried to send message and failed");
             counter!("cdl.data-router.input-singlemsg", 1);
+            counter!("cdl.data-router.processed", 1);
+
+            result
         }
-        Ok(())
     }
     .await;
 
     counter!("cdl.data-router.input-request", 1);
 
     if let Err(error) = result {
+        counter!("cdl.data-router.error", 1);
         error!("{:?}", error);
         send_message(
             producer.as_ref(),
@@ -198,9 +227,14 @@ async fn handle_message(
             format!("{:?}", error).into(),
         )
         .await;
+    } else {
+        counter!("cdl.data-router.success", 1);
     }
 
     let ack_result = message.ack().await;
+
+    trace!("Message acknowledged");
+
     if let Err(e) = ack_result {
         error!(
             "Fatal error, delivery status for message not received. {:?}",
@@ -241,6 +275,7 @@ async fn get_schema_topic(
         .get_mut(&schema_id)
         .cloned();
     if let Some(val) = recv_channel {
+        trace!("Retrieved topic for {} from cache", schema_id);
         return Ok(val);
     }
 
@@ -252,6 +287,8 @@ async fn get_schema_topic(
         .await?
         .into_inner()
         .topic;
+
+    trace!("Retrieved topic for {} from schema registry", schema_id);
     cache
         .lock()
         .unwrap_or_else(abort_on_poison)
