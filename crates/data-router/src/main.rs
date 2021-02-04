@@ -1,5 +1,5 @@
 use anyhow::Context;
-use log::{debug, error};
+use log::{debug, error, trace};
 use lru_cache::LruCache;
 use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
