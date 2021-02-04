@@ -162,6 +162,7 @@ impl Query {
         get_view(&mut conn, id).await
     }
 
+    /// Return a single object from the query router
     async fn object(object_id: Uuid, schema_id: Uuid, context: &Context) -> FieldResult<CdlObject> {
         let client = reqwest::Client::new();
 
@@ -184,6 +185,7 @@ impl Query {
         })
     }
 
+    /// Return a map of objects selected by ID from the query router
     async fn objects(
         object_ids: Vec<Uuid>,
         schema_id: Uuid,
@@ -214,6 +216,7 @@ impl Query {
             .collect::<Vec<CdlObject>>())
     }
 
+    /// Return a map of all objects (keyed by ID) in a schema from the query router
     async fn schema_objects(schema_id: Uuid, context: &Context) -> FieldResult<Vec<CdlObject>> {
         let client = reqwest::Client::new();
 

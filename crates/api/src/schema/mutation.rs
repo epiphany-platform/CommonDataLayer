@@ -5,9 +5,10 @@ use utils::message_types::DataRouterInsertMessage;
 use uuid::Uuid;
 
 use crate::error::Error;
+use crate::schema::context::Context;
 use crate::schema::utils::{get_schema, get_view};
+use crate::types::data::InputMessage;
 use crate::types::schema::*;
-use crate::{schema::context::Context, types::data::InputMessage};
 
 pub struct Mutation;
 
