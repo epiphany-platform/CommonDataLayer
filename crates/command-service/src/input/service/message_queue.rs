@@ -88,7 +88,7 @@ impl<P: OutputPlugin> MessageQueueInput<P> {
 
     pub async fn listen(self) -> Result<(), Error> {
         let mut streams = Vec::new();
-        trace!("Consumers: {}", self.consumer.len());
+        trace!("Number of consumers: {}", self.consumer.len());
         for consumer in self.consumer {
             let consumer = consumer.leak(); // Limits ability to change queues CS is listening on without restarting whole service
             let stream = consumer.consume().await;
