@@ -179,11 +179,8 @@ impl Mutation {
         Ok(true)
     }
 
-    async fn insert_transaction(
-        context: &Context,
-        messages: Vec<InputMessage>,
-    ) -> FieldResult<bool> {
-        log::debug!("inserting transaction of {} messages", messages.len());
+    async fn insert_batch(context: &Context, messages: Vec<InputMessage>) -> FieldResult<bool> {
+        log::debug!("inserting batch of {} messages", messages.len());
 
         let publisher = context.connect_to_data_router().await?;
         let order_group_id = Uuid::new_v4();
