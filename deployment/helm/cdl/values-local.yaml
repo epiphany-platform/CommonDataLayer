@@ -2,15 +2,17 @@ global:
   imageRepositoryPath: ""
   imageVersion: latest
   imagePullPolicy: IfNotPresent
+  communicationMethod: "kafka"
   kafkaBrokers:  infrastructure-kafka-headless
   cdlImagePullSecrets: services
-  reportTopic: cdl.errors
+  reportTopicOrExchange: cdl.errors
+  amqpConnectionString: "amqp://user:CHANGEME@infrastructure-rabbitmq:5672/%2f"
 
 dataRouter:
-  inputTopic: cdl.data.input
+  inputTopicOrQueue: cdl.data.input
+  multitasking: true
 
 schemaRegistry:
-  replicationTopics: cdl.schema.replication
   storageClass: standard
   storageSize: 3Gi
   port: 30150
@@ -28,22 +30,22 @@ postgres-document:
   postgresPort: 5432
   postgresDbname: CDL
   postgresSchema: public
-  ingestionMethod: kafka
-  inputTopic: cdl.document.data
+  inputTopicOrQueue: cdl.document.data
 
 sled-document:
   replicaCommandCount: 1
   replicaDbCount: 1
   maxDbSize: 3Gi
   storageClass: standard
-  inputTopic: cdl.document2.data
+  inputTopicOrQueue: cdl.document2.data
 
 druid-timeseries:
   replicaCommandCount: 1
-  inputTopic: cdl.timeseries.data
+  inputTopicOrQueue: cdl.timeseries.data
   outputTopic: cdl.timeseries.generic-druid
 
 victoria-metrics-timeseries:
   replicaCommandCount: 1
-  inputTopic: cdl.timeseries2.data
+  inputTopicOrQueue: cdl.timeseries2.data
+  ingestionMethod: MessageQueue
   outputURL: http://infrastructure-victoria-metrics-single-server:8428/

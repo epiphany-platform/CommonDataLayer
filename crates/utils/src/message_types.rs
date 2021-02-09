@@ -8,6 +8,7 @@ use uuid::Uuid;
 pub struct BorrowedInsertMessage<'a> {
     pub object_id: Uuid,
     pub schema_id: Uuid,
+    pub order_group_id: Option<Uuid>,
     pub timestamp: i64,
     #[serde(borrow)]
     pub data: &'a RawValue,
@@ -16,6 +17,7 @@ pub struct BorrowedInsertMessage<'a> {
 pub struct OwnedInsertMessage {
     pub object_id: Uuid,
     pub schema_id: Uuid,
+    pub order_group_id: Option<Uuid>,
     pub timestamp: i64,
     pub data: Value,
 }
@@ -25,6 +27,7 @@ impl BorrowedInsertMessage<'_> {
         OwnedInsertMessage {
             object_id: self.object_id,
             schema_id: self.schema_id,
+            order_group_id: self.order_group_id,
             timestamp: self.timestamp,
             data: serde_json::from_str(&self.data.get()).expect("RawValue wasn't valid json Value"),
         }
@@ -36,6 +39,7 @@ impl BorrowedInsertMessage<'_> {
 pub struct DataRouterInsertMessage<'a> {
     pub object_id: Uuid,
     pub schema_id: Uuid,
+    pub order_group_id: Option<Uuid>,
     #[serde(borrow)]
     pub data: &'a RawValue,
 }

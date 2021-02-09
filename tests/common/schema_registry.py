@@ -29,9 +29,11 @@ class SchemaRegistry:
 
         env.update(DB_NAME=self.db_name)
         env.update(REPLICATION_ROLE=self.replication_role)
+        env.update(REPLICATION_QUEUE='kafka')
         env.update(KAFKA_BROKERS=self.kafka_brokers)
         env.update(KAFKA_GROUP_ID=self.kafka_group_id)
-        env.update(KAFKA_TOPICS=self.kafka_topics)
+        env.update(REPLICATION_TOPIC_OR_QUEUE=self.kafka_topics)
+        env.update(REPLICATION_TOPIC_OR_EXCHANGE=self.kafka_topics)
         env.update(INPUT_PORT=self.input_port)
 
         self.svc = subprocess.Popen([EXE], env=env)

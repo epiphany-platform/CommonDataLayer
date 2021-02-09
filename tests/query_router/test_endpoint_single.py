@@ -33,8 +33,8 @@ def test_endpoint_single_timeseries(prepare_timeseries_env):
     # Line protocol requires timestamps in [ns]
     # Victoriametrics stores them internally in [ms]
     # but PromQL queries use "unix timestamps" which are in [s]
-    start = 1608216910
-    end = 1608216919
+    start = 1611835710
+    end = 1611835719
     step = 1
     req_body = {"from": str(start), "to": str(
         end), "step": str(step)}

@@ -1,9 +1,12 @@
 use crate::communication::resolution::Resolution;
 use crate::output::OutputPlugin;
 use crate::report::{Error, ReportSender};
+use log::trace;
 use std::sync::Arc;
 use utils::message_types::BorrowedInsertMessage;
+use utils::metrics::*;
 
+pub mod config;
 pub mod resolution;
 
 pub struct MessageRouter<P: OutputPlugin> {
@@ -33,17 +36,24 @@ impl<P: OutputPlugin> MessageRouter<P> {
 
         let status = self.output_plugin.handle_message(msg).await;
 
-        let description = match status {
-            Resolution::StorageLayerFailure { description } => description,
-            Resolution::CommandServiceFailure => "Internal service error".to_string(),
-            Resolution::UserFailure {
-                description,
-                context,
-            } => format!("{}; caused by `{}`", description, context),
-            Resolution::Success => "Success".to_string(),
-        };
+        trace!("Finished processing a message with resolution `{}`", status);
 
-        instance.report(&description).await?;
+        match status {
+            Resolution::StorageLayerFailure { .. } => {
+                counter!("cdl.command-service.post-process.storage-failure", 1);
+            }
+            Resolution::CommandServiceFailure => {
+                counter!("cdl.command-service.post-process.command-failure", 1);
+            }
+            Resolution::UserFailure { .. } => {
+                counter!("cdl.command-service.post-process.user-failure", 1);
+            }
+            Resolution::Success => {
+                counter!("cdl.command-service.post-process.success", 1);
+            }
+        }
+
+        instance.report(&status.to_string()).await?;
 
         Ok(())
     }

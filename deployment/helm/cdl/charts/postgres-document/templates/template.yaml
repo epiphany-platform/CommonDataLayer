@@ -28,14 +28,23 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/command-service","postgres"]
         env:
-        - name: KAFKA_INPUT_BROKERS
+        {{- if eq .Values.global.communicationMethod "kafka" }}
+        - name: COMMUNICATION_METHOD
+          value: "kafka"
+        - name: KAFKA_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
-        - name: KAFKA_INPUT_GROUP_ID
+        - name: KAFKA_GROUP_ID
           value: "cdl-postgres-command-service"
-        - name: KAFKA_INPUT_TOPIC
-          value: {{ .Values.inputTopic }}
-        - name: INGESTION_METHOD
-          value: {{ .Values.ingestionMethod }}
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "amqp"
+        - name: AMQP_CONNECTION_STRING
+          value: {{ .Values.global.amqpConnectionString }}
+        - name: AMQP_CONSUMER_TAG
+          value: "cdl-postgres-command-service"
+        {{- end }}
+        - name: ORDERED_TOPICS_OR_QUEUES
+          value: {{ .Values.inputTopicOrQueue }}
         - name: POSTGRES_USERNAME
           value: {{ .Values.postgresUsername }}
         - name: POSTGRES_PASSWORD
@@ -48,12 +57,10 @@ spec:
           value: {{ .Values.postgresDbname }}
         - name: POSTGRES_SCHEMA
           value: {{ .Values.postgresSchema }}
+        - name: REPORT_TOPIC_OR_EXCHANGE
+          value: {{ .Values.global.reportTopicOrExchange }}
         - name: RUST_LOG
-          value: "info,command-service=debug"
-        - name: REPORT_BROKER
-          value: {{ .Values.global.kafkaBrokers }}
-        - name: REPORT_TOPIC
-          value: {{ .Values.global.reportTopic }}
+          value: "info,command_service=debug"
         ports:
         - containerPort: 51805
       imagePullSecrets:

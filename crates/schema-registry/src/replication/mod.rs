@@ -57,16 +57,16 @@ pub struct ReplicationState {
     replication_role: ReplicationRole,
     stop_channel: Option<oneshot::Sender<()>>,
     master_replication_channel: Option<mpsc::Sender<ReplicationEvent>>,
-    kafka_config: KafkaConfig,
+    message_queue_config: MessageQueueConfig,
     db: Arc<SchemaDb>,
 }
 impl ReplicationState {
-    pub fn new(kafka_config: KafkaConfig, db: Arc<SchemaDb>) -> ReplicationState {
+    pub fn new(message_queue_config: MessageQueueConfig, db: Arc<SchemaDb>) -> ReplicationState {
         ReplicationState {
             replication_role: ReplicationRole::None,
             stop_channel: None,
             master_replication_channel: None,
-            kafka_config,
+            message_queue_config,
             db,
         }
     }
@@ -91,7 +91,7 @@ impl ReplicationState {
                 info!("Replicating as slave");
                 let (sender, receiver) = oneshot::channel::<()>();
                 self.stop_channel = Some(sender);
-                start_replication_slave(self.db.clone(), &self.kafka_config, receiver);
+                start_replication_slave(self.db.clone(), &self.message_queue_config, receiver);
             }
             ReplicationRole::None => info!("Replication disabled"),
         }
@@ -112,7 +112,7 @@ impl ReplicationState {
         let tokio_runtime = Handle::current();
         let (send, recv) = mpsc::channel::<ReplicationEvent>();
 
-        let config = self.kafka_config.clone();
+        let config = self.message_queue_config.clone();
         self.master_replication_channel = Some(send);
         thread::spawn(move || {
             master::replicate_db_events(config, recv, tokio_runtime, kill_signal)
@@ -122,17 +122,35 @@ impl ReplicationState {
 }
 
 #[derive(Clone, Debug)]
+pub struct MessageQueueConfig {
+    pub queue: MessageQueue,
+    pub topic_or_queue: String,
+    pub topic_or_exchange: String,
+}
+
+#[derive(Clone, Debug)]
+pub enum MessageQueue {
+    Kafka(KafkaConfig),
+    Amqp(AmqpConfig),
+}
+
+#[derive(Clone, Debug)]
 pub struct KafkaConfig {
     pub brokers: String,
     pub group_id: String,
-    pub topics: Vec<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct AmqpConfig {
+    pub connection_string: String,
+    pub consumer_tag: String,
 }
 
 fn start_replication_slave(
     db: Arc<SchemaDb>,
-    config: &KafkaConfig,
+    config: &MessageQueueConfig,
     kill_signal: oneshot::Receiver<()>,
 ) {
-    tokio::spawn(slave::consume_kafka_topic(config.clone(), db, kill_signal));
+    tokio::spawn(slave::consume_mq(config.clone(), db, kill_signal));
     info!("Replication started as slave node.");
 }

@@ -56,6 +56,7 @@ pub fn generate_messages(
 pub struct Message<'v> {
     object_id: Uuid,
     schema_id: Uuid,
+    order_group_id: Option<Uuid>,
     data: &'v Value,
 }
 
@@ -64,6 +65,7 @@ impl<'v> Message<'v> {
         Message {
             object_id: Uuid::new_v4(),
             schema_id,
+            order_group_id: Some(schema_id),
             data,
         }
     }

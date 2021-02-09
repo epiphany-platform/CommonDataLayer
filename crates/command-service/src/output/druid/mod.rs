@@ -6,13 +6,29 @@ use futures::stream::{self, StreamExt};
 use log::error;
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::ClientConfig;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
 use utils::message_types::BorrowedInsertMessage;
 use utils::metrics::counter;
+use uuid::Uuid;
 
 mod config;
 mod error;
+
+#[derive(Deserialize)]
+struct TimeseriesInputMessage {
+    fields: Value,
+    ts: u64,
+}
+
+#[derive(Serialize)]
+struct DruidOutputMessage {
+    fields: Value,
+    ts: u64,
+    object_id: Uuid,
+    schema_id: Uuid,
+}
 
 pub struct DruidOutputPlugin {
     producer: FutureProducer,
@@ -74,12 +90,20 @@ impl OutputPlugin for DruidOutputPlugin {
 }
 
 fn deserialize_payloads(msg: &BorrowedInsertMessage<'_>) -> Result<Vec<Vec<u8>>, Resolution> {
-    let result: Result<Vec<Value>, serde_json::Error> =
-        serde_json::from_str(&msg.data.get().to_string());
+    let result: Result<Vec<TimeseriesInputMessage>, serde_json::Error> =
+        serde_json::from_str(&msg.data.get());
     match result {
         Ok(values) => Ok(values
             .into_iter()
-            .map(|payload: Value| serde_json::to_vec(&payload).unwrap())
+            .map(|payload: TimeseriesInputMessage| {
+                serde_json::to_vec(&DruidOutputMessage {
+                    fields: payload.fields,
+                    ts: payload.ts,
+                    object_id: msg.object_id,
+                    schema_id: msg.schema_id,
+                })
+                .unwrap()
+            })
             .collect()),
         Err(err) => {
             let context = msg.data.to_string();

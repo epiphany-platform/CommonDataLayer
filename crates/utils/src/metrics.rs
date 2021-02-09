@@ -1,4 +1,5 @@
 use anyhow::Context;
+use log::debug;
 use metrics_runtime::Receiver;
 use std::net::{Ipv4Addr, SocketAddrV4};
 
@@ -22,6 +23,8 @@ async fn setup_metrics() -> anyhow::Result<()> {
         metrics_observer_prometheus::PrometheusBuilder::new(),
         SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), METRICS_PORT).into(),
     );
+
+    debug!("Initializing metrics at port {}", METRICS_PORT);
 
     metrics_exporter
         .async_run()
