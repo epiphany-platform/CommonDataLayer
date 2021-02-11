@@ -4225,6 +4225,7 @@ dependencies = [
  "tokio-amqp",
  "tonic",
  "uuid",
+ "vec_map",
 ]
 
 [[package]]

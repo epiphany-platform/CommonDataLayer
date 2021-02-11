@@ -11,8 +11,8 @@ use std::sync::Arc;
 use tokio_amqp::LapinTokioExt;
 
 use super::{
-    message::AmqpCommunicationMessage, message::CommunicationMessage,
-    message::KafkaCommunicationMessage, Result,
+    kafka_ack_queue::KafkaAckQueue, message::AmqpCommunicationMessage,
+    message::CommunicationMessage, message::KafkaCommunicationMessage, Result,
 };
 
 pub enum CommonConsumerConfig<'a> {
@@ -28,10 +28,10 @@ pub enum CommonConsumerConfig<'a> {
         options: Option<BasicConsumeOptions>,
     },
 }
-
 pub enum CommonConsumer {
     Kafka {
         consumer: Arc<StreamConsumer<DefaultConsumerContext>>,
+        ack_queue: Arc<KafkaAckQueue>,
     },
     Amqp {
         consumer: lapin::Consumer,
@@ -60,7 +60,8 @@ impl CommonConsumer {
             .set("bootstrap.servers", &brokers)
             .set("enable.partition.eof", "false")
             .set("session.timeout.ms", "6000")
-            .set("enable.auto.commit", "false")
+            .set("enable.auto.commit", "true")
+            .set("enable.auto.offset.store", "false")
             .set("auto.offset.reset", "earliest")
             .create()
             .context("Consumer creation failed")?;
@@ -70,6 +71,7 @@ impl CommonConsumer {
 
         Ok(CommonConsumer::Kafka {
             consumer: Arc::new(consumer),
+            ack_queue: Default::default(),
         })
     }
 
@@ -102,11 +104,12 @@ impl CommonConsumer {
     ) -> impl Stream<Item = Result<Box<dyn CommunicationMessage + '_>>> {
         try_stream! {
             match self {
-                CommonConsumer::Kafka { consumer } => {
+                CommonConsumer::Kafka { consumer, ack_queue} => {
                     let mut message_stream = consumer.start();
                     while let Some(message) = message_stream.next().await {
                         let message = message?;
-                        yield Box::new(KafkaCommunicationMessage{message,consumer:consumer.clone()}) as Box<dyn CommunicationMessage>;
+                        ack_queue.add(&message);
+                        yield Box::new(KafkaCommunicationMessage{message,consumer:consumer.clone(),ack_queue:ack_queue.clone()}) as Box<dyn CommunicationMessage>;
                     }
                 }
                 CommonConsumer::Amqp {
@@ -124,7 +127,7 @@ impl CommonConsumer {
     /// Leaks consumer to guarantee consumer never be dropped.
     /// Static consumer lifetime is required for consumed messages to be passed to spawned futures.
     ///
-    /// Use with causion as it can cause memory leaks.
+    /// Use with caution as it can cause memory leaks.
     pub fn leak(self) -> &'static mut CommonConsumer {
         Box::leak(Box::new(self))
     }

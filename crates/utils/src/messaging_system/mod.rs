@@ -1,6 +1,7 @@
 use thiserror::Error as DeriveError;
 
 pub mod consumer;
+mod kafka_ack_queue;
 pub mod message;
 pub mod publisher;
 

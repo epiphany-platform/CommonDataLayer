@@ -22,7 +22,6 @@ leaderElector:
 
 postgres-document:
   commandServiceReplicaCount: 1
-  postgresDbReplicaCount: 0
   postgresUsername: postgres
   postgresPassword: postgres
   postgresHost: 10.1.1.5
