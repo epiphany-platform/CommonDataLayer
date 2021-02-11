@@ -1,0 +1,45 @@
+###
+# This is example docker compose that sets up local developer environment.
+# Please refer to README.md for instructions on how to run it.
+###
+
+version: "2.2"
+
+services:
+  victoria_command:
+    image: cdl-command-service:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=command-service
+        - ENV=DEV
+    command: "/bin/command-service victoria-metrics"
+    environment:
+      COMMUNICATION_METHOD: "kafka"
+      KAFKA_GROUP_ID: "victoria_command"
+      KAFKA_BROKERS: "kafka:9093"
+      ORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.vm.1.data"
+      UNORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.vm.2.data"
+      VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
+      REPORT_TOPIC_OR_EXCHANGE: "cdl.reports"
+      RUST_LOG: info,command_service=trace
+
+  victoria_query:
+    image: cdl-query-service-ts:latest
+    command: "/bin/query-service-ts victoria"
+    ports:
+      - "50104:50104"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-service-ts
+    environment:
+      VICTORIA_QUERY_URL: "http://victoria_metrics:8428/api/v1"
+      INPUT_PORT: 50104
+      RUST_LOG: debug
+
+networks:
+  compose_default:
+    external: true

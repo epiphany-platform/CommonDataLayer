@@ -1,0 +1,56 @@
+###
+# This is example docker compose that sets up local developer environment.
+# Please refer to README.md for instructions on how to run it.
+###
+
+version: "2.2"
+
+services:
+  postgres_command:
+    image: cdl-command-service:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=command-service
+        - ENV=DEV
+    command: "/bin/command-service postgres"
+    environment:
+      COMMUNICATION_METHOD: "kafka"
+      KAFKA_GROUP_ID: "postgres_command"
+      KAFKA_BROKERS: "kafka:9093"
+      ORDERED_TOPICS_OR_QUEUES: "cdl.document.1.data"
+      UNORDERED_TOPICS_OR_QUEUES: "cdl.document.2.data"
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DBNAME: postgres
+      POSTGRES_SCHEMA: cdl
+      REPORT_TOPIC_OR_EXCHANGE: "cdl.reports"
+      RUST_LOG: info,command_service=trace
+
+  postgres_query:
+    image: cdl-query-service:latest
+    command: "/bin/query-service postgres"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-service
+        - ENV=DEV
+    ports:
+      - "50102:50102"
+    environment:
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DBNAME: postgres
+      POSTGRES_SCHEMA: cdl
+      INPUT_PORT: 50102
+      RUST_LOG: info,query_service=trace
+
+networks:
+  compose_default:
+    external: true

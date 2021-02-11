@@ -1,0 +1,49 @@
+###
+# This is example docker compose that sets up local developer environment.
+# Please refer to README.md for instructions on how to run it.
+###
+
+version: "2.2"
+
+services:
+  druid_command:
+    image: cdl-command-service:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=command-service
+        - ENV=DEV
+    command: "/bin/command-service druid"
+    environment:
+      COMMUNICATION_METHOD: "kafka"
+      KAFKA_GROUP_ID: "druid_command"
+      KAFKA_BROKERS: "kafka:9093"
+      ORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.druid.1.data"
+      UNORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.druid.2.data"
+      INGESTION_METHOD: KAFKA
+      DRUID_OUTPUT_BROKERS: "kafka:9093"
+      DRUID_OUTPUT_TOPIC: 'cdl.timeseries.internal.druid'
+      REPORT_BROKER: "kafka:9093"
+      REPORT_TOPIC: "cdl.reports"
+      RUST_LOG: info,command_service=trace
+
+  druid_query:
+    image: cdl-query-service-ts:latest
+    command: "/bin/query-service-ts druid"
+    ports:
+      - "50105:50105"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-service-ts
+    environment:
+      DRUID_QUERY_URL: "http://router:8888/druid/v2"
+      DRUID_TABLE_NAME: "cdl.timeseries.internal.druid"
+      INPUT_PORT: 50105
+      RUST_LOG: debug
+
+networks:
+  compose_default:
+    external: true
