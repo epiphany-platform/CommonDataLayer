@@ -1,3 +1,5 @@
+#![feature(async_closure)]
+
 use anyhow::Context;
 use log::{debug, error, trace};
 use lru_cache::LruCache;
@@ -5,7 +7,7 @@ use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
-    process,
+    panic, process,
     sync::{Arc, Mutex},
 };
 use structopt::{clap::arg_enum, StructOpt};
@@ -18,6 +20,7 @@ use utils::{
         consumer::CommonConsumer, message::CommunicationMessage, publisher::CommonPublisher,
     },
     metrics::{self, counter},
+    task_limiter::TaskLimiter,
 };
 use utils::{
     current_timestamp, message_types::DataRouterInsertMessage,
@@ -56,7 +59,13 @@ struct Config {
     #[structopt(long, env)]
     pub cache_capacity: usize,
     #[structopt(long, env)]
-    pub monotasking: bool,
+    pub monotasking: bool,#
+    [structopt(
+        long = "task-limit",
+        env = "TASK_LIMIT",
+        default_value = "128"
+    )]
+    pub task_limit: usize
 }
 
 #[tokio::main]
@@ -79,6 +88,8 @@ async fn main() -> anyhow::Result<()> {
     let error_topic_or_exchange = Arc::new(config.error_topic_or_exchange);
     let schema_registry_addr = Arc::new(config.schema_registry_addr);
 
+    let task_limiter = TaskLimiter::new(config.task_limit);
+
     while let Some(message) = message_stream.next().await {
         match message {
             Ok(message) => {
@@ -91,10 +102,15 @@ async fn main() -> anyhow::Result<()> {
                 );
 
                 if !config.monotasking {
-                    tokio::spawn(future);
+                    task_limiter
+                    .run(
+                        async move || future.await,
+                    )
+                    .await
                 } else {
                     future.await;
                 }
+                
             }
             Err(error) => {
                 error!("Error fetching data from message queue {:?}", error);
