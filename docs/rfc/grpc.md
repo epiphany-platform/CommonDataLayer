@@ -5,9 +5,9 @@ Title: GRPC communication method as an alternative to Kafka and RabbitMQ
 Author: Wojciech Polak
 Team: CDL
 Reviewer: CDLTeam
-Created on: 10/02/2021
-Last updated: 10/02/2021
-Tracking issue:
+Created on: 11/02/2021
+Last updated: 11/02/2021
+Tracking issue: https://github.com/epiphany-platform/CommonDataLayer/issues/68
 ```
 
 # Introduction
