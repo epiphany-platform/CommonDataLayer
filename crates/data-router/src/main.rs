@@ -7,7 +7,7 @@ use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
-    panic, process,
+    process,
     sync::{Arc, Mutex},
 };
 use structopt::{clap::arg_enum, StructOpt};
@@ -59,13 +59,9 @@ struct Config {
     #[structopt(long, env)]
     pub cache_capacity: usize,
     #[structopt(long, env)]
-    pub monotasking: bool,#
-    [structopt(
-        long = "task-limit",
-        env = "TASK_LIMIT",
-        default_value = "128"
-    )]
-    pub task_limit: usize
+    pub monotasking: bool,
+    #[structopt(long = "task-limit", env = "TASK_LIMIT", default_value = "128")]
+    pub task_limit: usize,
 }
 
 #[tokio::main]
@@ -102,15 +98,10 @@ async fn main() -> anyhow::Result<()> {
                 );
 
                 if !config.monotasking {
-                    task_limiter
-                    .run(
-                        async move || future.await,
-                    )
-                    .await
+                    task_limiter.run(async move || future.await).await
                 } else {
                     future.await;
                 }
-                
             }
             Err(error) => {
                 error!("Error fetching data from message queue {:?}", error);

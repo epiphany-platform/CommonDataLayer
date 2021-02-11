@@ -38,9 +38,7 @@ impl<'a> CommunicationMessage for KafkaCommunicationMessage<'a> {
             .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??)
     }
     async fn ack(&self) -> Result<()> {
-        self.ack_queue
-            .ack(&self.message, self.consumer.as_ref())
-            .await;
+        self.ack_queue.ack(&self.message, self.consumer.as_ref());
         Ok(())
     }
 }

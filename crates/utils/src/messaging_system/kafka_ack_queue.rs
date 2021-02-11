@@ -32,7 +32,7 @@ impl KafkaAckQueue {
 
         partition_queue.add(message);
     }
-    pub async fn ack(
+    pub fn ack(
         &self,
         message: &BorrowedMessage<'_>,
         consumer: &StreamConsumer<DefaultConsumerContext>,
