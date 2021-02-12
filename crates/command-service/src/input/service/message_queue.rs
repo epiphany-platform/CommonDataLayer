@@ -64,7 +64,7 @@ impl<P: OutputPlugin> MessageQueueInput<P> {
 
         let _guard = generic_message
             .order_group_id
-            .map( move |x | async move{ task_queue.acquire_permit(x.to_string()).await});
+            .map(move |x| async move { task_queue.acquire_permit(x.to_string()).await });
 
         router
             .handle_message(generic_message)

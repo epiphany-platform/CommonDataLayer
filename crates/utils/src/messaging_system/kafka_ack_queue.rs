@@ -18,17 +18,9 @@ impl KafkaAckQueue {
     pub fn add(&self, message: &BorrowedMessage) {
         let partition = message.partition() as usize;
         let mut queue = self.queue.lock().unwrap_or_else(abort_on_poison);
-        let partition_queue = match (*queue).get_mut(partition) {
-            Some(item) => item,
-            None => {
-                let value = KafkaPartitionAckQueue::new(
-                    message.topic().to_owned(),
-                    message.partition().to_owned(),
-                );
-                (*queue).insert(partition, value);
-                (*queue).get_mut(partition).unwrap()
-            }
-        };
+        let partition_queue = (*queue).entry(partition).or_insert_with(|| {
+            KafkaPartitionAckQueue::new(message.topic().to_owned(), message.partition().to_owned())
+        });
 
         partition_queue.add(message);
     }

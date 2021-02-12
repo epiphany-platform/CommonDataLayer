@@ -96,7 +96,7 @@ async fn main() -> anyhow::Result<()> {
                 );
 
                 if !config.monotasking {
-                    task_limiter.run(move || async move { future.await}).await
+                    task_limiter.run(move || async move { future.await }).await
                 } else {
                     future.await;
                 }
