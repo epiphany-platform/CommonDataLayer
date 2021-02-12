@@ -1,5 +1,7 @@
 import os
 import subprocess
+import time
+
 import requests
 
 EXE = os.getenv('QUERY_ROUTER_EXE') or 'query-router'
@@ -16,9 +18,12 @@ class QueryRouter:
 
         env.update(CACHE_CAPACITY=self.cache_capacity)
         env.update(INPUT_PORT=self.input_port)
+        env.update(METRICS_PORT="59103")
         env.update(SCHEMA_REGISTRY_ADDR=self.schema_registry_addr)
 
         self.svc = subprocess.Popen([EXE], env=env)
+        time.sleep(3)
+
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -35,3 +40,5 @@ class QueryRouter:
 
     def query_get_raw(self, schema_id, body):
         return requests.post(f"http://localhost:{self.input_port}/raw", body, headers={'SCHEMA_ID': schema_id})
+
+

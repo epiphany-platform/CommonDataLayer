@@ -1,5 +1,6 @@
 import os
 import subprocess
+import time
 
 from tests.common.config import VictoriaMetricsConfig
 
@@ -10,8 +11,9 @@ class QueryServiceTs:
     def __init__(self, input_port='50104', db_config=None):
         self.db_config = db_config
         self.input_port = input_port
+        self.svc = None
 
-    def __enter__(self):
+    def start(self):
         env = {}
 
         plugin = None
@@ -22,10 +24,14 @@ class QueryServiceTs:
             raise Exception('Unsupported database or no database at all')
 
         env.update(INPUT_PORT=self.input_port)
+        env.update(METRICS_PORT="59104")
         env.update(self.db_config.to_dict())
 
         self.svc = subprocess.Popen([EXE, plugin], env=env)
+
+        time.sleep(3)
+
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def stop(self):
         self.svc.kill()

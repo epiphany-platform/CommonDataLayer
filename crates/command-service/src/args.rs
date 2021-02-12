@@ -15,6 +15,9 @@ pub struct Args {
 
     #[structopt(flatten)]
     pub report_config: ReportServiceConfig,
+
+    #[structopt(default_value = "58105", env)]
+    pub metrics_port: u16,
 }
 
 arg_enum! {

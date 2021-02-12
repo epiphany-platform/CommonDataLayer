@@ -4,16 +4,16 @@
             "schema_id": "00000000-0000-0000-0000-000000000000"
         },
         "database_setup": [
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=120 1608216910000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=121 1608216911000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=122 1608216912000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=123 1608216913000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=124 1608216914000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=125 1608216915000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=126 1608216916000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=127 1608216917000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=128 1608216918000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=129 1608216919000000000"
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=120",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=121",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=122",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=123",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=124",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=125",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=126",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=127",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=128",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=129"
         ]
     },
     "expected": {

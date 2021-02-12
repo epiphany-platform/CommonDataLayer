@@ -1,6 +1,12 @@
 {
   "data": {
-    "query_for": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
+    "query_for": {
+      "schema_id": "a46a7fc0-0ca3-4852-affc-d589355524c5",
+      "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
+      "start": "1608216910",
+      "end": "1608216920",
+      "step": "1"
+    },
     "database_setup": [
       "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=120 $TIMESTAMP",
       "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=121 $TIMESTAMP",

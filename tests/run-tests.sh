@@ -13,7 +13,10 @@ export QUERY_SERVICE_TS_EXE="${SCRIPT_DIR}/../target/debug/query-service-ts"
 
 pip3 install -r "${SCRIPT_DIR}/../requirements.txt"
 
-export WORKDIR=${SCRIPT_DIR}
-export PYTHONPATH=$PYTHONPATH:"${SCRIPT_DIR}/../crates/"
+mkdir -p rpc/proto
+python3 -m grpc.tools.protoc -I"${SCRIPT_DIR}/../crates/" \
+  --python_out="${SCRIPT_DIR}" \
+  --grpc_python_out="${SCRIPT_DIR}" \
+  rpc/proto/schema_registry.proto rpc/proto/query_service.proto rpc/proto/query_service_ts.proto rpc/proto/command_service.proto
 
 python3 -m pytest "${SCRIPT_DIR}" -vv
