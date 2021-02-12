@@ -18,6 +18,7 @@ use utils::{
         consumer::CommonConsumer, message::CommunicationMessage, publisher::CommonPublisher,
     },
     metrics::{self, counter},
+    parallel_task_queue::ParallelTaskQueue,
     task_limiter::TaskLimiter,
 };
 use utils::{
@@ -56,9 +57,7 @@ struct Config {
     pub schema_registry_addr: String,
     #[structopt(long, env)]
     pub cache_capacity: usize,
-    #[structopt(long, env)]
-    pub monotasking: bool,
-    #[structopt(long = "task-limit", env = "TASK_LIMIT", default_value = "128")]
+    #[structopt(long, env, default_value = "128")]
     pub task_limit: usize,
 }
 
@@ -83,10 +82,18 @@ async fn main() -> anyhow::Result<()> {
     let schema_registry_addr = Arc::new(config.schema_registry_addr);
 
     let task_limiter = TaskLimiter::new(config.task_limit);
+    let task_queue = Arc::new(ParallelTaskQueue::default());
 
     while let Some(message) = message_stream.next().await {
         match message {
             Ok(message) => {
+                let task_queue = task_queue.clone();
+                let message_key = message
+                    .key()
+                    .ok()
+                    .filter(|x| !x.is_empty())
+                    .map(|x| x.to_owned());
+
                 let future = handle_message(
                     message,
                     cache.clone(),
@@ -94,12 +101,13 @@ async fn main() -> anyhow::Result<()> {
                     error_topic_or_exchange.clone(),
                     schema_registry_addr.clone(),
                 );
-
-                if !config.monotasking {
-                    task_limiter.run(move || async move { future.await }).await
-                } else {
-                    future.await;
-                }
+                task_limiter
+                    .run(move || async move {
+                        let _guard = message_key
+                            .map(move |x| async move { task_queue.acquire_permit(x).await });
+                        future.await
+                    })
+                    .await;
             }
             Err(error) => {
                 error!("Error fetching data from message queue {:?}", error);
