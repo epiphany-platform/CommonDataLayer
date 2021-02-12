@@ -1,5 +1,3 @@
-#![feature(async_closure)]
-
 use anyhow::Context;
 use log::{debug, error, trace};
 use lru_cache::LruCache;
@@ -98,7 +96,7 @@ async fn main() -> anyhow::Result<()> {
                 );
 
                 if !config.monotasking {
-                    task_limiter.run(async move || future.await).await
+                    task_limiter.run(move || async move { future.await}).await
                 } else {
                     future.await;
                 }

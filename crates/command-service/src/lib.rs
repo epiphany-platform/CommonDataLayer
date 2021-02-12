@@ -1,5 +1,3 @@
-#![feature(async_closure)]
-
 pub mod args;
 pub mod communication;
 pub mod input;
