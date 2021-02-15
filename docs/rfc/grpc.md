@@ -55,7 +55,7 @@ By saying `GRPC` in sync, we mean - it requires that each request returns a resp
 These features, unfortunately, are not common.
 `MQ` is heavily based on the `Stream` trait while `GRPC` uses `async-trait`.
 
-Unfortunately, using `Stream` in Kafka requires box leaking, which might be dangerous when left alone. The message is also wrapped into the `Box` to allow dynamic dispatch (to acknowledge either Kafka message or `RMQ` message).
+Unfortunately, because Kafka uses borrowed messages it requires box leaking, which might be dangerous when left alone. The message is also wrapped into the `Box` to allow dynamic dispatch (to acknowledge either Kafka message or `RMQ` message).
 
 ## Proposed solution
 
@@ -69,7 +69,9 @@ trait ConsumerHandler {
 
 Each service would implement that handler trait to receive messages from `MQ`/`GRPC`.
 
-We ditch here the `Stream` trait - unfortunately, while it is a powerful tool, we cannot use it for GRPC. It also means we remove dangerous box leaking.
+First of all, while we switch from `Stream` trait to `async trait`, we cannot simply remove `Box::leak`. We could do it when we limit the code to the ordered single-threaded solution, however that would create a hughe performance hit.
+
+Instead, we still need to rely on leaking because `tokio::spawn` (called inside of the transportation layer) requires `'static` lifetime. In the future we might be able to either ditch borrowed message and replace it with owned, or use proposed structured concurrency which would enable to spawn task with some non static lifetime (because we could guarantee that all tasks should finish before we drop the consumer).
 
 Second of all message is no longer wrapped in `Box` - instead, the user receives only **reference** to the dynamic object.
 
@@ -83,8 +85,9 @@ Internal implementation is quite simple. We keep `enum Consumer`, which accepts 
 Inside of method `async fn run(self)` we match consumer variant and either run simplest possible `while let Some()` loop for `MQ`, or initiate `GRPC` server.
 
 Per each received message (either from `MQ` or in `GRPC` server implementation), we can call `consumer_handler.handle(&msg)` and wait for the response. Simple as that.
+To enable better performance we would call this handler inside of `tokio::spawn`. What is worth mentioning, `MQ` acknowledges should be sent inside of the spawned task.
 
-It means that in the transportation layer for `MQ` all messages are processed in order (per partition in Kafka world). If one needs more performance - she can always use `tokio::spawn` **inside** of consumer handler and return the handle eagerly.
+`GRPC` is unordered by design, if client needs an ordering, it needs to send one request at the time - it is it's responsibility, not CDL.
 
 ### GRPC protocol schema
 
