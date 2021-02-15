@@ -13,19 +13,21 @@ TOPIC = "cdl.testing.command-service.postgres"
 def prepare(request):
     data, expected = load_case(request.param, 'command_service/postgres')
 
+    topic = f'{TOPIC}.{request.param}'
+
     # declare environment
-    kafka_config = KafkaInputConfig(TOPIC)
+    kafka_config = KafkaInputConfig(topic)
     postgres_config = PostgresConfig()
 
     # prepare environment
-    create_kafka_topic(kafka_config, TOPIC)
+    create_kafka_topic(kafka_config, topic)
     clear_data(postgres_config)
 
     with CommandService(kafka_config, db_config=postgres_config):
         yield data, expected, kafka_config, postgres_config
 
     # cleanup environment
-    delete_kafka_topic(kafka_config, TOPIC)
+    delete_kafka_topic(kafka_config, topic)
     clear_data(postgres_config)
 
 

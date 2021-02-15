@@ -11,6 +11,7 @@ def fetch_data(config: VictoriaMetricsConfig):
     json_lines = []
     for line in requests.get(export_url, 'match[]={__name__!=""}').text.splitlines():
         json_lines.append(json.loads(line))
+    json_lines.sort(key=lambda x: x['metric']['__name__'])
     return json_lines
 
 

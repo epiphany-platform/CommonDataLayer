@@ -51,19 +51,18 @@
   "expected": [
     {
       "metric": {
-        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c6_a",
-        "db": "a46a7fc0-0ca3-4852-affc-d589355524c6",
-        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c79"
+        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c0_x",
+        "db": "a46a7fc0-0ca3-4852-affc-d589355524c0",
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c70"
       },
       "values": [
-        1,
-        4
+        1
       ],
       "timestamps": [
-        123456789,
-        987654321
+        0
       ]
     },
+
     {
       "metric": {
         "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c5_w",
@@ -79,15 +78,17 @@
     },
     {
       "metric": {
-        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c0_x",
-        "db": "a46a7fc0-0ca3-4852-affc-d589355524c0",
-        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c70"
+        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c6_a",
+        "db": "a46a7fc0-0ca3-4852-affc-d589355524c6",
+        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c79"
       },
       "values": [
-        1
+        1,
+        4
       ],
       "timestamps": [
-        0
+        123456789,
+        987654321
       ]
     },
     {
