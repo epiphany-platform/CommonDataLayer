@@ -93,7 +93,11 @@ pub async fn main() -> anyhow::Result<()> {
     };
 
     status_endpoints::serve();
-    metrics::serve(config.metrics_port.unwrap_or_else(|| metrics::DEFAULT_PORT.parse().unwrap()));
+    metrics::serve(
+        config
+            .metrics_port
+            .unwrap_or_else(|| metrics::DEFAULT_PORT.parse().unwrap()),
+    );
 
     let data_store = SledDatastore::new(&config.db_name).map_err(RegistryError::ConnectionError)?;
     let registry = SchemaRegistryImpl::new(
