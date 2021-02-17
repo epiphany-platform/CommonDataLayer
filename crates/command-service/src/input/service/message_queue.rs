@@ -8,9 +8,9 @@ use futures::stream::StreamExt;
 use log::{error, trace};
 use std::{process, sync::Arc};
 use tokio::pin;
-use utils::messaging_system::{consumer::CommonConsumer, get_order_group_id};
 use utils::messaging_system::message::CommunicationMessage;
 use utils::messaging_system::Result;
+use utils::messaging_system::{consumer::CommonConsumer, get_order_group_id};
 use utils::metrics::counter;
 use utils::task_limiter::TaskLimiter;
 use utils::{message_types::BorrowedInsertMessage, parallel_task_queue::ParallelTaskQueue};
@@ -98,23 +98,22 @@ impl<P: OutputPlugin> MessageQueueInput<P> {
         trace!("Listen on message stream");
         while let Some(message) = message_stream.next().await {
             let router = self.message_router.clone();
-            
-            let message = message.map_err(Error::FailedReadingMessage).unwrap_or_else(
-                |err|{
+
+            let message = message
+                .map_err(Error::FailedReadingMessage)
+                .unwrap_or_else(|err| {
                     error!("Failed to read message: {}", err);
                     process::abort();
-                }
-            );
+                });
 
             let task_queue = self.task_queue.clone();
             self.task_limiter
                 .run(move || async move {
                     let order_group_id = get_order_group_id(message.as_ref());
-                    let _guard = order_group_id
-                        .map(move |x| async move { task_queue.acquire_permit(x.to_string()).await });
-                    if let Err(err) =
-                        MessageQueueInput::handle_message(router, message).await
-                    {
+                    let _guard = order_group_id.map(move |x| async move {
+                        task_queue.acquire_permit(x.to_string()).await
+                    });
+                    if let Err(err) = MessageQueueInput::handle_message(router, message).await {
                         error!("Failed to handle message: {}", err);
                         process::abort();
                     }

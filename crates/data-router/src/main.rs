@@ -11,7 +11,17 @@ use std::{
 use structopt::{clap::arg_enum, StructOpt};
 use tokio::pin;
 use tokio::stream::StreamExt;
-use utils::{abort_on_poison, message_types::BorrowedInsertMessage, messaging_system::{consumer::CommonConsumer, get_order_group_id, message::CommunicationMessage, publisher::CommonPublisher}, metrics::{self, counter}, parallel_task_queue::ParallelTaskQueue, task_limiter::TaskLimiter};
+use utils::{
+    abort_on_poison,
+    message_types::BorrowedInsertMessage,
+    messaging_system::{
+        consumer::CommonConsumer, get_order_group_id, message::CommunicationMessage,
+        publisher::CommonPublisher,
+    },
+    metrics::{self, counter},
+    parallel_task_queue::ParallelTaskQueue,
+    task_limiter::TaskLimiter,
+};
 use utils::{
     current_timestamp, message_types::DataRouterInsertMessage,
     messaging_system::consumer::CommonConsumerConfig,
@@ -195,9 +205,15 @@ async fn handle_message(
             let mut result = Ok(());
 
             for entry in maybe_array.iter() {
-                let r = route(&cache, &entry, &message_key, &producer, &schema_registry_addr)
-                    .await
-                    .context("Tried to send message and failed");
+                let r = route(
+                    &cache,
+                    &entry,
+                    &message_key,
+                    &producer,
+                    &schema_registry_addr,
+                )
+                .await
+                .context("Tried to send message and failed");
 
                 counter!("cdl.data-router.input-multimsg", 1);
                 counter!("cdl.data-router.processed", 1);
@@ -215,9 +231,15 @@ async fn handle_message(
                 message.payload()?,
             )
             .context("Payload deserialization failed, message is not a valid cdl message")?;
-            let result = route(&cache, &owned,&message_key, &producer, &schema_registry_addr)
-                .await
-                .context("Tried to send message and failed");
+            let result = route(
+                &cache,
+                &owned,
+                &message_key,
+                &producer,
+                &schema_registry_addr,
+            )
+            .await
+            .context("Tried to send message and failed");
             counter!("cdl.data-router.input-singlemsg", 1);
             counter!("cdl.data-router.processed", 1);
 
@@ -270,7 +292,13 @@ async fn route(
     };
     let topic_name = get_schema_topic(&cache, payload.schema_id, &schema_registry_addr).await?;
 
-    send_message(producer, &topic_name,message_key, serde_json::to_vec(&payload)?).await;
+    send_message(
+        producer,
+        &topic_name,
+        message_key,
+        serde_json::to_vec(&payload)?,
+    )
+    .await;
     Ok(())
 }
 

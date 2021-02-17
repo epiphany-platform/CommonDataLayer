@@ -48,8 +48,8 @@ impl From<tokio::task::JoinError> for Error {
 
 pub fn get_order_group_id(message: &dyn CommunicationMessage) -> Option<String> {
     message
-                   .key()
-                   .ok()
-                   .filter(|x| !x.is_empty())
-                   .map(|x| x.to_owned())
+        .key()
+        .ok()
+        .filter(|x| !x.is_empty())
+        .map(|x| x.to_owned())
 }

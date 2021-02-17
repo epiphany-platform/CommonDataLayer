@@ -168,11 +168,7 @@ impl Mutation {
         })?;
 
         publisher
-            .publish_message(
-                &context.config().data_router_topic_or_queue,
-                "",
-                payload,
-            )
+            .publish_message(&context.config().data_router_topic_or_queue, "", payload)
             .await
             .map_err(Error::PublisherError)?;
         Ok(true)
