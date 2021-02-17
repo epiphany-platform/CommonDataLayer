@@ -65,8 +65,7 @@ In CDL message ordering guarantees are defined on per message level. In CDL data
 ### <a name="kafka"></a>Communication through Apache Kafka 
 If you’re using Kafka as a message bus following requirements needs to be met for message ordering to work correctly: 
 - Kafka partitioning should be based on message key 
-- Message keys of data coming to CDL should be based on `order_group_id`(if set) to guarantee messages within same ordering group to be sent to same Kafka partition (so Kafka itself doesn't break the message order) 
-- Command service working with Kafka topics containing ordered messages should have config `THREADED_TASK_LIMIT` set to 1 (this may be lifted if [#180](https://github.com/epiphany-platform/CommonDataLayer/issues/180) gets implemented). 
+- Message keys of data coming to CDL should be set to `order_group_id` or left empty if message order is not important
 - Scaling data router and command service is possible up to number of Kafka partitions. If you need more service instances you must have enough Kafka partitions to feed them messages. 
 
 ### <a name="rabbit"></a>Communication through RabbitMQ 
@@ -78,6 +77,7 @@ If you’re using RabbitMQ as a message bus following requirements needs to be m
 - Configure command service instances: 
     - Unordered message queue can be passed to each command service instance 
     - Ordered message queue can be passed to single command service (exclusive consumer) 
+- Message keys of data coming to CDL should be set to `order_group_id` or left empty if message order is not important
 
 Unfortunately, that means that scaling command services can be done only manually (automatic scaling may be implemented by [#185](https://github.com/epiphany-platform/CommonDataLayer/issues/185)), instances which process only unordered messages can be scaled automatically. 
 
