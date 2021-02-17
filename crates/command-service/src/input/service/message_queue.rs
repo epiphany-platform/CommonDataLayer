@@ -64,7 +64,7 @@ impl<P: OutputPlugin> MessageQueueInput<P> {
 
         let _guard = generic_message
             .order_group_id
-            .map(async move |x| task_queue.acquire_permit(x.to_string()).await);
+            .map(move |x| async move { task_queue.acquire_permit(x.to_string()).await });
 
         router
             .handle_message(generic_message)
@@ -107,7 +107,7 @@ impl<P: OutputPlugin> MessageQueueInput<P> {
 
             let task_queue = self.task_queue.clone();
             self.task_limiter
-                .run(async move || {
+                .run(move || async move {
                     if let Err(err) =
                         MessageQueueInput::handle_message(router, message, task_queue).await
                     {

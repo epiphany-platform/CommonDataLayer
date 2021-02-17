@@ -112,7 +112,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-stream 0.3.0",
- "env_logger 0.8.2",
+ "env_logger 0.8.3",
  "futures",
  "juniper",
  "juniper_graphql_ws",
@@ -546,7 +546,7 @@ dependencies = [
  "async-trait",
  "bb8",
  "bb8-postgres",
- "env_logger 0.8.2",
+ "env_logger 0.8.3",
  "fnv",
  "futures",
  "log",
@@ -736,7 +736,7 @@ name = "data-router"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "env_logger 0.8.2",
+ "env_logger 0.8.3",
  "log",
  "lru-cache",
  "rpc",
@@ -753,7 +753,7 @@ name = "db-shrinker-postgres"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "env_logger 0.8.2",
+ "env_logger 0.8.3",
  "log",
  "postgres",
  "serde_json",
@@ -877,9 +877,9 @@ dependencies = [
 
 [[package]]
 name = "env_logger"
-version = "0.8.2"
+version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f26ecb66b4bdca6c1409b40fb255eefc2bd4f6d135dab3c3124f80ffa2a9661e"
+checksum = "17392a012ea30ef05a610aa97dfb49496e71c9f676b27879922ea5bdf60d9d3f"
 dependencies = [
  "atty",
  "humantime 2.0.1",
@@ -1691,7 +1691,7 @@ name = "leader-elector"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "env_logger 0.8.2",
+ "env_logger 0.8.3",
  "envy",
  "futures",
  "futures-util",
@@ -2610,7 +2610,7 @@ name = "query-router"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "env_logger 0.8.2",
+ "env_logger 0.8.3",
  "log",
  "lru-cache",
  "rpc",
@@ -2630,7 +2630,7 @@ dependencies = [
  "anyhow",
  "bb8",
  "bb8-postgres",
- "env_logger 0.8.2",
+ "env_logger 0.8.3",
  "log",
  "reqwest",
  "rpc",
@@ -2650,7 +2650,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bb8",
- "env_logger 0.8.2",
+ "env_logger 0.8.3",
  "log",
  "reqwest",
  "rpc",
@@ -3062,7 +3062,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "chrono",
- "env_logger 0.8.2",
+ "env_logger 0.8.3",
  "envy",
  "futures",
  "indradb-lib",
@@ -3219,9 +3219,9 @@ dependencies = [
 
 [[package]]
 name = "serde_yaml"
-version = "0.8.16"
+version = "0.8.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bdd2af560da3c1fdc02cb80965289254fc35dff869810061e2d8290ee48848ae"
+checksum = "15654ed4ab61726bf918a39cb8d98a2e2995b002387807fa6ba58fdf7f59bb23"
 dependencies = [
  "dtoa",
  "linked-hash-map",
@@ -4225,6 +4225,7 @@ dependencies = [
  "tokio-amqp",
  "tonic",
  "uuid",
+ "vec_map",
 ]
 
 [[package]]

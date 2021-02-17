@@ -22,7 +22,6 @@ leaderElector:
 
 postgres-document:
   commandServiceReplicaCount: 1
-  postgresDbReplicaCount: 1
   postgresConnectionString: "postgres://postgres:CHANGEME@infrastructure-postgresql/CDL"
   postgresUsername: postgres
   postgresPassword: CHANGEME
