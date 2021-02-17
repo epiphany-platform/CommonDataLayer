@@ -31,14 +31,6 @@ impl<P: OutputPlugin> GRPCInput<P> {
     fn build_message(message: &'_ InsertMessage) -> Result<BorrowedInsertMessage<'_>, Error> {
         let json = &message.data;
 
-        let order_group_id = match &message.order_group_id {
-            None => None,
-            Some(id) => Some(
-                id.parse::<Uuid>()
-                    .map_err(Error::not_valid_order_group_id)?,
-            ),
-        };
-
         let event = BorrowedInsertMessage {
             object_id: message
                 .object_id
@@ -48,7 +40,6 @@ impl<P: OutputPlugin> GRPCInput<P> {
                 .schema_id
                 .parse::<Uuid>()
                 .map_err(Error::not_valid_schema_id)?,
-            order_group_id,
             timestamp: message.timestamp,
             data: serde_json::from_slice(&json).map_err(Error::PayloadDeserializationFailed)?,
         };

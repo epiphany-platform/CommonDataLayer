@@ -11,16 +11,7 @@ use std::{
 use structopt::{clap::arg_enum, StructOpt};
 use tokio::pin;
 use tokio::stream::StreamExt;
-use utils::{
-    abort_on_poison,
-    message_types::BorrowedInsertMessage,
-    messaging_system::{
-        consumer::CommonConsumer, message::CommunicationMessage, publisher::CommonPublisher,
-    },
-    metrics::{self, counter},
-    parallel_task_queue::ParallelTaskQueue,
-    task_limiter::TaskLimiter,
-};
+use utils::{abort_on_poison, message_types::BorrowedInsertMessage, messaging_system::{consumer::CommonConsumer, get_order_group_id, message::CommunicationMessage, publisher::CommonPublisher}, metrics::{self, counter}, parallel_task_queue::ParallelTaskQueue, task_limiter::TaskLimiter};
 use utils::{
     current_timestamp, message_types::DataRouterInsertMessage,
     messaging_system::consumer::CommonConsumerConfig,
@@ -88,11 +79,7 @@ async fn main() -> anyhow::Result<()> {
         match message {
             Ok(message) => {
                 let task_queue = task_queue.clone();
-                let message_key = message
-                    .key()
-                    .ok()
-                    .filter(|x| !x.is_empty())
-                    .map(|x| x.to_owned());
+                let order_group_id = get_order_group_id(message.as_ref());
 
                 let future = handle_message(
                     message,
@@ -103,7 +90,7 @@ async fn main() -> anyhow::Result<()> {
                 );
                 task_limiter
                     .run(move || async move {
-                        let _guard = message_key
+                        let _guard = order_group_id
                             .map(move |x| async move { task_queue.acquire_permit(x).await });
                         future.await
                     })
@@ -192,6 +179,7 @@ async fn handle_message(
 ) {
     trace!("Received message `{:?}`", message.payload());
 
+    let message_key = get_order_group_id(message.as_ref()).unwrap_or_default();
     counter!("cdl.data-router.input-msg", 1);
     let result = async {
         let json_something: Value =
@@ -207,7 +195,7 @@ async fn handle_message(
             let mut result = Ok(());
 
             for entry in maybe_array.iter() {
-                let r = route(&cache, &entry, &producer, &schema_registry_addr)
+                let r = route(&cache, &entry, &message_key, &producer, &schema_registry_addr)
                     .await
                     .context("Tried to send message and failed");
 
@@ -227,7 +215,7 @@ async fn handle_message(
                 message.payload()?,
             )
             .context("Payload deserialization failed, message is not a valid cdl message")?;
-            let result = route(&cache, &owned, &producer, &schema_registry_addr)
+            let result = route(&cache, &owned,&message_key, &producer, &schema_registry_addr)
                 .await
                 .context("Tried to send message and failed");
             counter!("cdl.data-router.input-singlemsg", 1);
@@ -270,20 +258,19 @@ async fn handle_message(
 async fn route(
     cache: &Mutex<LruCache<Uuid, String>>,
     event: &DataRouterInsertMessage<'_>,
+    message_key: &str,
     producer: &CommonPublisher,
     schema_registry_addr: &str,
 ) -> anyhow::Result<()> {
     let payload = BorrowedInsertMessage {
         object_id: event.object_id,
-        order_group_id: event.order_group_id,
         schema_id: event.schema_id,
         timestamp: current_timestamp(),
         data: event.data,
     };
     let topic_name = get_schema_topic(&cache, payload.schema_id, &schema_registry_addr).await?;
 
-    let key = payload.object_id.to_string();
-    send_message(producer, &topic_name, &key, serde_json::to_vec(&payload)?).await;
+    send_message(producer, &topic_name,message_key, serde_json::to_vec(&payload)?).await;
     Ok(())
 }
 
