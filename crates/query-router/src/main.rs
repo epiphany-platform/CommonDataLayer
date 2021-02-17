@@ -17,7 +17,7 @@ struct Config {
     cache_capacity: usize,
     #[structopt(long, env = "INPUT_PORT")]
     input_port: u16,
-    #[structopt(default_value = "58105", env)]
+    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }
 

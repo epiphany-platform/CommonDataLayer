@@ -12,8 +12,8 @@ class CommandService:
         self.db_config = db_config
 
     def __enter__(self):
-        env = {}
-        env.update(self.kafka_input_config.to_dict())
+        env = self.kafka_input_config.to_dict()
+
         if self.kafka_report_config:
             env.update(self.kafka_report_config.to_dict())
         env.update({'COMMUNICATION_METHOD': 'kafka'})

@@ -14,8 +14,6 @@ class QueryServiceTs:
         self.svc = None
 
     def start(self):
-        env = {}
-
         plugin = None
         if type(self.db_config) is VictoriaMetricsConfig:
             plugin = 'victoria'
@@ -23,9 +21,9 @@ class QueryServiceTs:
         if not plugin:
             raise Exception('Unsupported database or no database at all')
 
+        env = self.db_config.to_dict()
         env.update(INPUT_PORT=self.input_port)
         env.update(METRICS_PORT="59104")
-        env.update(self.db_config.to_dict())
 
         self.svc = subprocess.Popen([EXE, plugin], env=env)
 

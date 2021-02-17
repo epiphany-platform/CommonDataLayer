@@ -26,17 +26,10 @@ class SchemaRegistry:
         self.svc = None
 
     def start(self):
-        env = {}
-
-        env.update(DB_NAME=self.db_name)
-        env.update(REPLICATION_ROLE=self.replication_role)
-        env.update(REPLICATION_QUEUE='kafka')
-        env.update(KAFKA_BROKERS=self.kafka_brokers)
-        env.update(KAFKA_GROUP_ID=self.kafka_group_id)
-        env.update(REPLICATION_TOPIC_OR_QUEUE=self.kafka_topics)
-        env.update(REPLICATION_TOPIC_OR_EXCHANGE=self.kafka_topics)
-        env.update(INPUT_PORT=self.input_port)
-        env.update(METRICS_PORT="59101")
+        env = {"DB_NAME": self.db_name, "REPLICATION_ROLE": self.replication_role, "REPLICATION_QUEUE": 'kafka',
+               "KAFKA_BROKERS": self.kafka_brokers, "KAFKA_GROUP_ID": self.kafka_group_id,
+               "REPLICATION_TOPIC_OR_QUEUE": self.kafka_topics, "REPLICATION_TOPIC_OR_EXCHANGE": self.kafka_topics,
+               "INPUT_PORT": self.input_port, "METRICS_PORT": "59101"}
 
         self.svc = subprocess.Popen([EXE], env=env)
         time.sleep(3)

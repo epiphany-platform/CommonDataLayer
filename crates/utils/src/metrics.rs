@@ -5,6 +5,8 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 
 pub use metrics::{counter, gauge, timing, value};
 
+pub const DEFAULT_PORT: &str = "58105";
+
 pub fn serve(port: u16) {
     tokio::spawn(setup_metrics(port));
 }

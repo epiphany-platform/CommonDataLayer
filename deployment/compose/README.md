@@ -27,15 +27,15 @@ Environment with infrastructure alone is started via:
 `docker-compose up -d`
 
 Adding new components happens through invoking `docker-compose` files containing parts of `CDL`.
-First, you must spin up `base` services, be it Kafka or RabbitMq, use:
+First, you must spin up `base` services, eg. for Kafka use:
 
-`docker-compose -f docker-compose.cdl.(kafka|rabbitmq).base.yml up -d`
+`docker-compose -f docker-compose.cdl.kafka.base.yml up -d`
 
 Then you can add repositories:
 
-`docker-compose -f docker-compose.cdl.(kafka|rabbitmq).(repository).yml up -d`
+`docker-compose -f docker-compose.cdl.kafka.postgres.yml up -d`
 
-Make sure that repository you've chosen matches `base`.
+Make sure that repository you've chosen matches `base`'s communication protocol.
 
 ### ./setup
 Directory contains setup scripts for `postgres`, `schema_registry`, etc..

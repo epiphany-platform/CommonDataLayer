@@ -57,7 +57,7 @@ struct Config {
     pub cache_capacity: usize,
     #[structopt(long, env)]
     pub monotasking: bool,
-    #[structopt(default_value = "58105", env)]
+    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }
 

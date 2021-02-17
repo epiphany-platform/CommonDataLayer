@@ -8,6 +8,7 @@ from tests.common import load_case, assert_json
 from tests.common.postgres import clear_data, insert_data
 
 DB_NAME = 'query-router'
+TOPIC = 'qr.test.multiple'
 
 
 @pytest.fixture(params=['multiple/non_existing', 'multiple/single_schema', 'multiple/multiple_schemas'])
@@ -15,7 +16,7 @@ def prepare(request, tmp_path):
     data, expected = load_case(request.param, 'query_router')
 
     # declare environment
-    kafka_input_config = KafkaInputConfig("localhost:9092")
+    kafka_input_config = KafkaInputConfig(TOPIC)
     postgres_config = PostgresConfig()
 
     qs = QueryService(db_config=postgres_config)

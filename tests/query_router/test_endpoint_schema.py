@@ -7,13 +7,14 @@ from tests.common.query_router import QueryRouter
 from tests.common.query_service import QueryService
 from tests.common.schema_registry import SchemaRegistry
 
+TOPIC = 'qr.test.schema'
 
 @pytest.fixture
 def prepare(tmp_path):
     data, expected = load_case('schema/query_ds', 'query_router')
 
     # declare environment
-    kafka_input_config = KafkaInputConfig("localhost:9092")
+    kafka_input_config = KafkaInputConfig(TOPIC)
     postgres_config = PostgresConfig()
 
     qs = QueryService(db_config=postgres_config)

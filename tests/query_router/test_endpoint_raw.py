@@ -11,13 +11,15 @@ from tests.common.query_service_ts import QueryServiceTs
 from tests.common.schema_registry import SchemaRegistry
 from tests.common.victoria_metrics import clear_data as vm_clear_data, insert_data as vm_insert_data
 
+TOPIC = 'qr.test.raw'
+
 
 @pytest.fixture
 def prepare_postgres(tmp_path):
     data, expected = load_case('raw/query_ds', 'query_router')
 
     # declare environment
-    kafka_input_config = KafkaInputConfig("localhost:9092")
+    kafka_input_config = KafkaInputConfig(TOPIC)
     postgres_config = PostgresConfig()
 
     qs = QueryService(db_config=postgres_config)
@@ -47,7 +49,7 @@ def prepare_victoria_metrics(tmp_path):
     data, expected = load_case('raw/query_ts', 'query_router')
 
     # declare environment
-    kafka_input_config = KafkaInputConfig("localhost:9092")
+    kafka_input_config = KafkaInputConfig(TOPIC)
     victoria_metrics_config = VictoriaMetricsConfig()
 
     qs = QueryServiceTs(db_config=victoria_metrics_config)

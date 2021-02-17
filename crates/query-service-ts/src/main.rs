@@ -13,7 +13,7 @@ pub struct Config {
     pub inner: ConfigType,
     #[structopt(long, env = "INPUT_PORT")]
     pub input_port: u16,
-    #[structopt(default_value = "58105", env)]
+    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }
 
