@@ -1,7 +1,7 @@
 # Front Matter
 
 ```
-Title: GRPC communication method as an alternative to Kafka and RabbitMQ
+Title: Alternative communication method to Kafka and RabbitMQ
 Author: Wojciech Polak
 Team: CDL
 Reviewer: CDLTeam
@@ -116,17 +116,42 @@ No client requires error reporting, and we are already sending logs. Therefore i
 
 Notifications are a bit more complicated. These are `CS` specific, and therefore, cannot be part of the transportation layer (transparent to the user code).
 
-We need to introduce `ReportSender` for GRPC - One cannot send the report to any `MQ`. One suggested way is to send the callback to some specified endpoint by sending a `POST` request. Another is to use elastic search or Postgres.
-i
+We need to introduce `ReportSender` for GRPC.
+An abstracted producer which sends reports to given sink. 
+
+One cannot send the report to any `MQ`. One suggested way is to send the callback to some specified endpoint by sending a `POST` request. Another is to use elastic search or Postgres.
+
 This issue is open for further discussion.
+
+## Alternative solutions
+### REST
+Instead of using GRPC we could use simple HTTP REST requests.
+
+#### Advantages
+* Simpler to implement
+* Do not need protocol schema
+* Based on HTTP - usable with service mesh
+* No mixed protobuf with pure JSON in payload - simpler to deserialize
+
+#### Disadvantages
+* Requires extra effort to switch from GRPC
+* Does not solve client code generation like GRPC
+
+## Conclusion
+
+GRPC seems to be easiest way to implement `MQ`-independence, however later we should re-evaluate REST and probably switch to it.
+What is worth noting, after we switch CDL to one, abstracted and unified transportation layer, further change from GRPC to REST should be relatively easier.
 
 # Test Plan
 
-TBD.
-
 There should be at least one end-to-end test checking if the whole pipeline works in an `MQ`-less environment.
+We should run exactly same tests as we have now but with different env variables. All tests designed for `MQ` environment should pass in `GRPC` environment.
 
 # Futher considerations
+
+## Schema Registry replication
+Replication featutre for Schema Registry needs major refactor (and probably replacement), therefore it is out of the scope of this change. Replication for `GRPC` should be deactivated.
+
 ## Impact on other teams
 
 Teams that are using `MQ` won't feel any difference. This refactor would allow other clients to use CDL.
