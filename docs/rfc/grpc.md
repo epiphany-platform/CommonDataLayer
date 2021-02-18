@@ -137,6 +137,29 @@ Instead of using GRPC we could use simple HTTP REST requests.
 * Requires extra effort to switch from GRPC
 * Does not solve client code generation like GRPC
 
+### Custom TCP
+Instead of relying on existing protocol, we could also create custom one based on TCP.
+
+#### Advantages
+* Full controll on design
+* Probably fastest method (if done right)
+
+#### Disadvantages
+* Requires a lot of effort with designing, testing and benchmarking,
+* Needs extra careful touch in areas regarding timeout connections, closed sockets etc.
+* Requires writing custom client libraries in popular languages: Java, Python, C#, JavaScript
+
+### ZeroMQ
+While we shouldn't replace Kafka nor RabbitMQ with zeroMQ, we can consider it for ReqResp.
+
+#### Advantages
+* Fast, marketed as "zero-abstraction"
+* Similar interface to other `MQ` - it could ease creating an abstraction
+
+#### Disadvantages
+* Rust client library lacks good example how to use it in `async-await` environment,
+* There are pinpointed problems with ZMQ listed by one of Rust client maintainers: https://github.com/jean-airoldie/libzmq-rs/issues/125#issuecomment-570551319
+
 ## Conclusion
 
 GRPC seems to be easiest way to implement `MQ`-independence, however later we should re-evaluate REST and probably switch to it.
