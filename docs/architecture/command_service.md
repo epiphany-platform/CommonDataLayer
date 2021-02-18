@@ -1,4 +1,6 @@
-# Command Service
+# Command Services
+Services that translate messages received from the [Data Router][data-router] into their respective database's format. Currently only one Command Service exists
+and is built in such way that it can support multiple databases (one at a time).
 
 ### Technical Description
 
@@ -40,3 +42,5 @@ DRUID_OUTPUT_TOPIC
 REPORT_BROKER
 REPORT_TOPIC
 ```
+
+[data-router]: data_router.md

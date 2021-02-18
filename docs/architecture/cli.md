@@ -1,4 +1,4 @@
-# Command Service
+# CLI
 
 ## Technical Description
 
@@ -9,10 +9,26 @@ For this tool to work, please make sure that the Schema Registry's gRPC server i
 Communication Methods:
 - GRPC
 
-## How to guide:
+## How to guide
+
+For the sake of concision, though you will probably be running `cargo run --bin cdl -- <options>`,
+this README will simply describe commands with the shorthand `cdl <options>`.
+
+_Note: This assumes you are running the common data layer locally for now. The ports for_
+_schema registry and the storage service are copied from the `docker-compose.yml` file, but_
+_if you are using different ports, you should provide those with the `--port` option._
 
 #### Manipulate Views
-Views are a WIP feature, currently not used widely beside some cases in development.
+To add a view under a schema already defined in the registry, run
+`cdl schema views -s <schema_name> add -n <view_name> -v <JMESPath_view>`. Views can only be added
+to schemas if they do not already exist on the schema; the `update` command can be used the same way
+as `add` to update existing schema views.
+
+_Make sure that views are valid [JMESPath](https://jmespath.org/) expressions._
+
+To list all views of a schema alphabetically, run `cdl schema views -s <schema_name> names`.
+
+To get a specific view on a schema, run `cdl schema views -s <schema_name> get -n <view_name>`.
 
 #### Manipulate Schemas
 

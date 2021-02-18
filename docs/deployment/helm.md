@@ -1,4 +1,4 @@
-# K8s local deployment
+# Helm
 For most use cases using docker-compose is a good way for local development. However some features can be developed/tested only inside Kubernetes cluster environments.
 ## Requirements
 - [docker][docker-www], [docker-compose][docker-compose-www]

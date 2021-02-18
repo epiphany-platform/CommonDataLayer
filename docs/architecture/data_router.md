@@ -75,4 +75,4 @@ Mind that GRPC uses HTTP2 as its transport protocol (L4), so SCHEMA_REGISTRY_ADD
 
 See an example [configuration][configuration] of deployment of data router and other services.
 
-[configuration]: ../deployment/compose/README.md
+[configuration]: ../deployment/docker-compose.md

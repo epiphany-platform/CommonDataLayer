@@ -1,4 +1,7 @@
 @startuml
+skinparam backgroundColor #FEFEFE
+skinparam transparent false
+
 actor "User (REST)" as REST
 participant "Query Router" as QR
 database "Schema Registry" as SR

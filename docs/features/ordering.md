@@ -1,4 +1,4 @@
-# Message ordering 
+# Message ordering
 
 ## Index
 - [What is message ordering](#what_is)
