@@ -60,6 +60,8 @@ struct Config {
     pub cache_capacity: usize,
     #[structopt(long, env, default_value = "128")]
     pub task_limit: usize,
+    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
+    pub metrics_port: u16,
 }
 
 #[tokio::main]
@@ -69,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
 
     debug!("Environment {:?}", config);
 
-    metrics::serve();
+    metrics::serve(config.metrics_port);
 
     let consumer = new_consumer(&config, &config.input_topic_or_queue).await?;
     let producer = Arc::new(new_producer(&config).await?);

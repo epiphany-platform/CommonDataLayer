@@ -1,36 +1,42 @@
+import grpc
 import pytest
 import json
-import time
 
-from tests.query_service_ts import prepare_env
-from tests.common import load_case
-from rpc.proto.query_service_ts_pb2 import SchemaId
+from tests.common import load_case, VictoriaMetricsConfig, strip_timestamp
+from tests.common.query_service_ts import QueryServiceTs
+from tests.common.victoria_metrics import clear_data, insert_data
+from tests.rpc.proto import query_service_ts_pb2_grpc
+from tests.rpc.proto.query_service_ts_pb2 import SchemaId
 
 
 @pytest.fixture(params=["schema/single", "schema/non_existing", "schema/invalid_schema_id"])
-def prepare(request, prepare_env):
-    db, stub = prepare_env
-    data, expected = load_case(request.param, "query_service_ts")
-    db.insert_test_data(data['database_setup'])
+def prepare(request):
+    data, expected = load_case(request.param, 'query_service_ts')
 
-    query = data["query_for"]
-    return db, stub, expected, query
+    # declare environment
+    victoria_metrics_config = VictoriaMetricsConfig()
+
+    # setup environment
+    qs = QueryServiceTs(db_config=victoria_metrics_config)
+    channel = grpc.insecure_channel(f"localhost:{qs.input_port}")
+    stub = query_service_ts_pb2_grpc.QueryServiceTsStub(channel)
+
+    clear_data(victoria_metrics_config)
+    insert_data(victoria_metrics_config, data['database_setup'])
+
+    qs.start()
+
+    yield stub, expected, data["query_for"]
+
+    # cleanup environment
+    qs.stop()
+
+    clear_data(victoria_metrics_config)
 
 
 def test_query_by_schema(prepare):
-    db, stub, expected, query = prepare
+    stub, expected, query = prepare
 
-    query_request = SchemaId(**query)
-    response = stub.QueryBySchema(query_request)
+    response = stub.QueryBySchema(SchemaId(**query))
 
-    assert_without_timestamp(json.loads(str(response.timeseries)), expected)
-
-
-# Instant query returns current timestamp instead of timestamp of data insert
-def assert_without_timestamp(lhs, rhs):
-    try:
-        rhs['data']['result'][0]['value'][0] = lhs['data']['result'][0]['value'][0]
-    except IndexError:
-        pass
-
-    assert lhs == rhs
+    assert strip_timestamp(json.loads(str(response.timeseries))) == expected

@@ -1,0 +1,93 @@
+###
+# This is example docker compose that sets up local developer environment.
+# Please refer to README.md for instructions on how to run it.
+###
+
+version: "2.2"
+
+services:
+  schema_registry:
+    image: cdl-schema-registry:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=schema-registry
+        - ENV=DEV
+    command: /bin/schema-registry
+    ports:
+      - "50101:50101"
+    environment:
+      DB_NAME: "/var/data/schema"
+      REPLICATION_ROLE: "master"
+      REPLICATION_QUEUE: "amqp"
+      AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      AMQP_CONSUMER_TAG: "schema_registry"
+      REPLICATION_TOPIC_OR_QUEUE: "cdl.schema_registry.internal"
+      REPLICATION_TOPIC_OR_EXCHANGE: "cdl.schema_registry.internal"
+      INPUT_PORT: "50101"
+      IMPORT_FILE: "/var/data/schema.json"
+      RUST_LOG: info,schema_registry=trace
+    volumes:
+      - ./setup/schema_registry/initial-schema.json:/var/data/schema.json
+
+  data_router:
+    image: cdl-data-router:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=data-router
+        - ENV=DEV
+    command: /bin/data-router
+    environment:
+      MESSAGE_QUEUE: "amqp"
+      AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      AMQP_CONSUMER_TAG: "data_router"
+      INPUT_TOPIC_OR_QUEUE: "cdl.data.input"
+      ERROR_TOPIC_OR_EXCHANGE: "cdl.reports"
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      CACHE_CAPACITY: "1000"
+      RUST_LOG: info,data_router=trace
+
+  query_router:
+    image: cdl-query-router:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-router
+        - ENV=DEV
+    command: "/bin/query-router"
+    ports:
+      - "50103:50103"
+    environment:
+      CACHE_CAPACITY: 1024
+      INPUT_PORT: 50103
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      RUST_LOG: info,query_router=trace
+
+  web_api:
+    image: cdl-api:latest
+    command: "/bin/api"
+    ports:
+      - "50106:50106"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=api
+    environment:
+      INPUT_PORT: 50106
+      RUST_LOG: info,api=trace
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      QUERY_ROUTER_ADDR: "http://query_router:50103"
+      MESSAGE_QUEUE: "amqp"
+      AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      AMQP_CONSUMER_TAG: "cdl-api"
+      REPORT_TOPIC_OR_QUEUE: "cdl.reports"
+      DATA_ROUTER_TOPIC_OR_QUEUE: "cdl.reports"
+
+networks:
+  compose_default:
+    external: true

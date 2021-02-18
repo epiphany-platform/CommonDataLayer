@@ -19,7 +19,7 @@ async fn main() -> anyhow::Result<()> {
 
     debug!("Environment: {:?}", args);
 
-    metrics::serve();
+    metrics::serve(args.metrics_port);
 
     let communication_config = args.communication_config()?;
 

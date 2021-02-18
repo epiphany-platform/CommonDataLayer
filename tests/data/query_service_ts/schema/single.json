@@ -4,16 +4,16 @@
             "schema_id": "a46a7fc0-0ca3-4852-affc-d589355524c5"
         },
         "database_setup": [
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=120 1611707410000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=121 1611707411000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=122 1611707412000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=123 1611707413000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=124 1611707414000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=125 1611707415000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=126 1611707416000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=127 1611707417000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=128 1611707418000000000",
-            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=129 1611707419000000000"
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=120",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=121",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=122",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=123",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=124",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=125",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=126",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=127",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=128",
+            "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=129"
         ]
     },
     "expected": {
@@ -27,7 +27,6 @@
                         "object_id": "6793227c-1b5a-413c-b310-1a86dc2d3c78"
                     },
                     "value": [
-                        1608216919,
                         "129"
                     ]
                 }
