@@ -1,4 +1,4 @@
-syntax = "proto3";
+syntax = "proto2";
 package command_service;
 
 service CommandService {
@@ -6,10 +6,11 @@ service CommandService {
 }
 
 message InsertMessage {
-  string object_id = 1;
-  string schema_id = 2;
-  int64 timestamp = 3;
-  bytes data = 4;
+  required string object_id = 1;
+  required string schema_id = 2;
+  optional string order_group_id = 3;
+  required int64 timestamp = 4;
+  required bytes data = 5;
 }
 
 message Empty {}

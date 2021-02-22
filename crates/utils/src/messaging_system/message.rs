@@ -2,14 +2,13 @@ use anyhow::Context;
 use async_trait::async_trait;
 use lapin::{message::Delivery, options::BasicAckOptions, Channel};
 use rdkafka::{
-    consumer::CommitMode,
     consumer::{DefaultConsumerContext, StreamConsumer},
     message::BorrowedMessage,
     Message,
 };
 use std::sync::Arc;
 
-use super::Result;
+use super::{kafka_ack_queue::KafkaAckQueue, Result};
 
 #[async_trait]
 pub trait CommunicationMessage: Send + Sync {
@@ -21,6 +20,7 @@ pub trait CommunicationMessage: Send + Sync {
 pub struct KafkaCommunicationMessage<'a> {
     pub(super) message: BorrowedMessage<'a>,
     pub(super) consumer: Arc<StreamConsumer<DefaultConsumerContext>>,
+    pub(super) ack_queue: Arc<KafkaAckQueue>,
 }
 #[async_trait]
 impl<'a> CommunicationMessage for KafkaCommunicationMessage<'a> {
@@ -38,11 +38,7 @@ impl<'a> CommunicationMessage for KafkaCommunicationMessage<'a> {
             .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??)
     }
     async fn ack(&self) -> Result<()> {
-        rdkafka::consumer::Consumer::commit_message(
-            self.consumer.as_ref(),
-            &self.message,
-            CommitMode::Async,
-        )?;
+        self.ack_queue.ack(&self.message, self.consumer.as_ref());
         Ok(())
     }
 }

@@ -1,6 +1,9 @@
 use thiserror::Error as DeriveError;
 
+use self::message::CommunicationMessage;
+
 pub mod consumer;
+mod kafka_ack_queue;
 pub mod message;
 pub mod publisher;
 
@@ -41,4 +44,12 @@ impl From<tokio::task::JoinError> for Error {
     fn from(error: tokio::task::JoinError) -> Self {
         Self::RuntimeError(error.to_string())
     }
+}
+
+pub fn get_order_group_id(message: &dyn CommunicationMessage) -> Option<String> {
+    message
+        .key()
+        .ok()
+        .filter(|x| !x.is_empty())
+        .map(|x| x.to_owned())
 }

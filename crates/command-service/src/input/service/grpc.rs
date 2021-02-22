@@ -3,6 +3,7 @@ use rpc::command_service::{command_service_server::CommandService, Empty, Insert
 
 use tonic::{Request, Response, Status};
 use utils::message_types::BorrowedInsertMessage;
+use uuid::Uuid;
 
 use crate::{communication::MessageRouter, input::Error, output::OutputPlugin};
 
@@ -29,8 +30,19 @@ impl<P: OutputPlugin> GRPCInput<P> {
 
     fn build_message(message: &'_ InsertMessage) -> Result<BorrowedInsertMessage<'_>, Error> {
         let json = &message.data;
-        let event: BorrowedInsertMessage =
-            serde_json::from_slice(&json).map_err(Error::PayloadDeserializationFailed)?;
+
+        let event = BorrowedInsertMessage {
+            object_id: message
+                .object_id
+                .parse::<Uuid>()
+                .map_err(Error::not_valid_object_id)?,
+            schema_id: message
+                .schema_id
+                .parse::<Uuid>()
+                .map_err(Error::not_valid_schema_id)?,
+            timestamp: message.timestamp,
+            data: serde_json::from_slice(&json).map_err(Error::PayloadDeserializationFailed)?,
+        };
 
         Ok(event)
     }

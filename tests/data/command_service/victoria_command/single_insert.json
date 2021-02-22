@@ -18,12 +18,12 @@
   "expected": [
     {
       "metric": {
-        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c5_b",
+        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c5_a",
         "db": "a46a7fc0-0ca3-4852-affc-d589355524c5",
         "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c78"
       },
       "values": [
-        2
+        1
       ],
       "timestamps": [
         123456789
@@ -31,12 +31,12 @@
     },
     {
       "metric": {
-        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c5_a",
+        "__name__": "a46a7fc0-0ca3-4852-affc-d589355524c5_b",
         "db": "a46a7fc0-0ca3-4852-affc-d589355524c5",
         "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c78"
       },
       "values": [
-        1
+        2
       ],
       "timestamps": [
         123456789

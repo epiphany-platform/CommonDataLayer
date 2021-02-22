@@ -1,8 +1,6 @@
+requests~=2.25.1
 psycopg2~=2.8.6
 pytest~=6.1.2
-kafka-python~=2.0.2
-testcontainers~=3.1.0
-requests~=2.25.0
-grpcio~=1.33.2
-grpcio-tools~=1.33.2
-protobuf~=3.14.0
+kafka-python~=2.0.0
+grpcio~=1.35.0
+grpcio-tools~=1.35.0

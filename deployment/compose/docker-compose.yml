@@ -6,12 +6,12 @@
 version: "2.2"
 
 services:
-  zoo_kafka:
+  zookeeper:
     image: library/zookeeper:3.4.9
     environment:
       ZOO_MY_ID: 1
       ZOO_PORT: 2181
-      ZOO_SERVERS: server.1=zoo_kafka:2888:3888
+      ZOO_SERVERS: server.1=zookeeper:2888:3888
 
   kafka:
     image: wurstmeister/kafka:2.13-2.6.0
@@ -24,9 +24,19 @@ services:
       KAFKA_LISTENERS: LISTENER_DOCKER_INTERNAL://:9093,LISTENER_DOCKER_EXTERNAL://:9092
       KAFKA_ADVERTISED_LISTENERS: LISTENER_DOCKER_INTERNAL://kafka:9093,LISTENER_DOCKER_EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092
       KAFKA_BROKER_ID: 1
-      KAFKA_ZOOKEEPER_CONNECT: zoo_kafka:2181
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_CREATE_TOPICS: >-
+        cdl.data.input:1:1,
+        cdl.reports:1:1,
+        cdl.timeseries.vm.1.data:1:1,
+        cdl.timeseries.vm.2.data:1:1,
+        cdl.timeseries.druid.1.data:1:1,
+        cdl.timeseries.druid.2.data:1:1,
+        cdl.timeseries.internal.druid:1:1,
+        cdl.document.1.data:1:1,
+        cdl.document.2.data:1:1
     depends_on:
-      - zoo_kafka
+      - zookeeper
 
   postgres:
     image: postgres:latest
@@ -35,6 +45,8 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: "1234"
+    volumes:
+      - ./setup/postgres:/docker-entrypoint-initdb.d
 
   victoria_metrics:
     image: victoriametrics/victoria-metrics:latest
@@ -51,3 +63,66 @@ services:
       RABBITMQ_CONFIG_FILE: "/etc/cdl/rabbitmq"
     volumes:
       - ./setup/rabbitmq:/etc/cdl
+
+  druid_coordinator:
+    image: apache/druid:0.20.0
+    depends_on:
+      - zookeeper
+      - postgres
+    ports:
+      - "8081:8081"
+    command: coordinator
+    env_file:
+      - druid.env
+
+  druid_broker:
+    image: apache/druid:0.20.0
+    depends_on:
+      - zookeeper
+      - postgres
+      - druid_coordinator
+    ports:
+      - "8082:8082"
+    command: broker
+    env_file:
+      - druid.env
+
+  druid_historical:
+    image: apache/druid:0.20.0
+    depends_on:
+      - zookeeper
+      - postgres
+      - druid_coordinator
+    ports:
+      - "8083:8083"
+    command: historical
+    env_file:
+      - druid.env
+
+  druid_middlemanager:
+    image: apache/druid:0.20.0
+    depends_on:
+      - zookeeper
+      - postgres
+      - druid_coordinator
+    ports:
+      - "8091:8091"
+    command: middleManager
+    env_file:
+      - druid.env
+
+  druid_router:
+    image: apache/druid:0.20.0
+    depends_on:
+      - zookeeper
+      - postgres
+      - druid_coordinator
+    ports:
+      - "8888:8888"
+    command: router
+    env_file:
+      - druid.env
+
+networks:
+  default:
+    driver: bridge

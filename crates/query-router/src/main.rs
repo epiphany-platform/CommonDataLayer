@@ -17,6 +17,8 @@ struct Config {
     cache_capacity: usize,
     #[structopt(long, env = "INPUT_PORT")]
     input_port: u16,
+    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
+    pub metrics_port: u16,
 }
 
 #[tokio::main]
@@ -25,7 +27,7 @@ async fn main() {
 
     let config = Config::from_args();
 
-    metrics::serve();
+    metrics::serve(config.metrics_port);
 
     let schema_registry_cache = Arc::new(SchemaRegistryCache::new(
         config.schema_registry_addr,

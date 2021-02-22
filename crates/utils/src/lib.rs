@@ -1,3 +1,5 @@
+#![feature(linked_list_cursors)]
+
 use log::error;
 use std::{
     process,

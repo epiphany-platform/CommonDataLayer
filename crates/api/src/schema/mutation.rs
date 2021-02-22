@@ -164,16 +164,11 @@ impl Mutation {
         let payload = serde_json::to_vec(&DataRouterInsertMessage {
             object_id: message.object_id,
             schema_id: message.schema_id,
-            order_group_id: None,
             data: &RawValue::from_string(message.payload)?,
         })?;
 
         publisher
-            .publish_message(
-                &context.config().data_router_topic_or_queue,
-                &message.object_id.to_string(),
-                payload,
-            )
+            .publish_message(&context.config().data_router_topic_or_queue, "", payload)
             .await
             .map_err(Error::PublisherError)?;
         Ok(true)
@@ -183,20 +178,19 @@ impl Mutation {
         log::debug!("inserting batch of {} messages", messages.len());
 
         let publisher = context.connect_to_data_router().await?;
-        let order_group_id = Uuid::new_v4();
+        let order_group_id = Uuid::new_v4().to_string();
 
         for message in messages {
             let payload = serde_json::to_vec(&DataRouterInsertMessage {
                 object_id: message.object_id,
                 schema_id: message.schema_id,
-                order_group_id: Some(order_group_id),
                 data: &RawValue::from_string(message.payload)?,
             })?;
 
             publisher
                 .publish_message(
                     &context.config().data_router_topic_or_queue,
-                    &message.object_id.to_string(),
+                    &order_group_id,
                     payload,
                 )
                 .await
