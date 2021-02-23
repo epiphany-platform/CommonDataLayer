@@ -1,7 +1,7 @@
 # Admin Web Panel
 
 This is the management portal for the CDL, useful for updating
-configuration, manipulating data, and viewing performance data.
+configuration, manipulating data.
 
 
 ## Setup

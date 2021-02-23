@@ -62,7 +62,7 @@ Errors are written to `cdl.reports` fanout exchange and can be read via `cdl.rep
 
 To access postgres you must have some postgresql client installed.
 
-For command line it's best to refer to your OS package manager (`homebrew` on OSX, `apt-get` on Ubuntu, `choco` on Windows).
+For command line it's best to refer to your OS package manager (`homebrew` on OSX, `apt` on Ubuntu, `choco` on Windows).
 
 `psql -U postgres --password -h localhost`
 the password is `1234`

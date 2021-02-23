@@ -2,7 +2,8 @@
 
 ### Technical Description
 
-The Query Router (`QR`), is responsible for finding specific query service. Since messages can be stored in any available repository, data router acts as a single entry point to multi-repo system. Query Router first queries SR, then basing on received config, finds out specific QS that, hopefully, should be able to respond to specific query. Logic of that process is based on repo_type and query-service address stored with schema itself.
+The Query Router (`QR`), is responsible for forwarding requests to specific query services. In CDL messages can be stored in any available repository, data router acts as a single entry point to multi-repo system and query router allows that data to be fetched easily.
+Query Router first queries SR, then basing on received config, finds out specific QS that, hopefully, should be able to respond to specific query. Logic of that process is based on repo_type and query-service address stored with schema itself.
 
 
 ### Communication

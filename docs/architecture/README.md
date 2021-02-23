@@ -37,7 +37,7 @@ Crate Name              | Purpose
 ## Retrieval Layer
 Crate Name              | Purpose
 ------------------------|--------
-[query-router]            | Route incoming requests to query service given a schema and object id
+[query-router]            | Route incoming requests to query service based on schema id
 
 ## Additional crates
 Crate Name              | Purpose
@@ -49,7 +49,7 @@ utils                   | A collection of utilities used throughout the Common D
 
 Directory       | Purpose
 ----------------|--------
-deploy/helm     | helm charts for remote deployment
+deploy/helm     | helm charts for kubernetes deployment
 deploy/compose  | sample deployment guide for docker
 benchmarking    | scripts and scaffolding data for benchmarking
 tests           | component tests

@@ -65,8 +65,5 @@ An example of a CDL view might be:
 }
 ```
 
-[indradb]: https://github.com/indradb/indradb
-[sled]: https://sled.rs/
 [jmespath]: https://jmespath.org/
 [json schema]: https://json-schema.org/
-[cdl cli]: architecture/cli.md
