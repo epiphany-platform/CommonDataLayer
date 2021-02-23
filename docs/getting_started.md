@@ -134,3 +134,4 @@ See [k8s_local_deployment.md][deployment]
 [proto]: https://github.com/epiphany-platform/CommonDataLayer/tree/develop/crates/rpc/proto
 [query-service]: ./architecture/query_service.md
 [schema-registry]: ./architecture/schema_registry.md
+[message-ordering]: ./features/ordering.md
