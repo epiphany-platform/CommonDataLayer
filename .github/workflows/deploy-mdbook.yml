@@ -24,17 +24,22 @@ jobs:
         with:
           mdbook-version: '0.4.6'
 
-      - run: curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --git Michael-F-Bryan/mdbook-linkcheck
-      - run: sudo apt-get install -y plantuml build-essential
+      - name: Setup linkcheck
+        run: curl -LSfs https://japaric.github.io/trust/install.sh | sh -s -- --git Michael-F-Bryan/mdbook-linkcheck
 
-      - uses: actions-rs/install@v0.1
+      - name: Setup plantuml dependencies
+        run: sudo apt-get install -y plantuml build-essential
+
+      - name: Setup plantuml
+        uses: actions-rs/install@v0.1
         with:
           crate: mdbook-plantuml
 
-      - run: mdbook build
+      - name: Build book
+        run: mdbook build
 
-      - name: Deploy
+      - name: Deploy to Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./target/book
+          publish_dir: ./target/book/html
