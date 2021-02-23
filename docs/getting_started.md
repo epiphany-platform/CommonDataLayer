@@ -68,7 +68,8 @@ Here is the sample JSON schema format that the CDL anticipates and ultimatley wi
 
 ## Insert Data
 
-Data can be inserted into the system by data being written to Kafka or ingested through RabbitMQ. Data must be in JSON format with the following fields: `schemaId`, `objectId` and `data` to be routed through the CDL.
+Data can be inserted into the system by data being written to Kafka or ingested through RabbitMQ. Data must be in JSON format with the following fields: `schemaId`, `objectId` and `data` to be routed through the CDL. 
+It's worth noting that CDL doesn't rely on message key unless [message ordering][message-ordering] feature is enabled. However in order to keep system more performant it's advised to pass NULL as message key or evenly distributed strings.
 
 Below is an example of the what input data would look like. Both ID fields are UUIDs.
 ```
@@ -133,3 +134,4 @@ See [k8s_local_deployment.md][deployment]
 [query-service]: query_service.md
 [data-router]: data_router.md
 [proto]: ../crates/rpc/proto
+[message-ordering]: ./features/message_ordering.md

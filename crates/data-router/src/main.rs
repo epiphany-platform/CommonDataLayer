@@ -15,9 +15,11 @@ use utils::{
     abort_on_poison,
     message_types::BorrowedInsertMessage,
     messaging_system::{
-        consumer::CommonConsumer, message::CommunicationMessage, publisher::CommonPublisher,
+        consumer::CommonConsumer, get_order_group_id, message::CommunicationMessage,
+        publisher::CommonPublisher,
     },
     metrics::{self, counter},
+    parallel_task_queue::ParallelTaskQueue,
     task_limiter::TaskLimiter,
 };
 use utils::{
@@ -56,9 +58,7 @@ struct Config {
     pub schema_registry_addr: String,
     #[structopt(long, env)]
     pub cache_capacity: usize,
-    #[structopt(long, env)]
-    pub monotasking: bool,
-    #[structopt(long = "task-limit", env = "TASK_LIMIT", default_value = "128")]
+    #[structopt(long, env, default_value = "128")]
     pub task_limit: usize,
     #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
@@ -85,10 +85,14 @@ async fn main() -> anyhow::Result<()> {
     let schema_registry_addr = Arc::new(config.schema_registry_addr);
 
     let task_limiter = TaskLimiter::new(config.task_limit);
+    let task_queue = Arc::new(ParallelTaskQueue::default());
 
     while let Some(message) = message_stream.next().await {
         match message {
             Ok(message) => {
+                let task_queue = task_queue.clone();
+                let order_group_id = get_order_group_id(message.as_ref());
+
                 let future = handle_message(
                     message,
                     cache.clone(),
@@ -96,12 +100,13 @@ async fn main() -> anyhow::Result<()> {
                     error_topic_or_exchange.clone(),
                     schema_registry_addr.clone(),
                 );
-
-                if !config.monotasking {
-                    task_limiter.run(move || async move { future.await }).await
-                } else {
-                    future.await;
-                }
+                task_limiter
+                    .run(move || async move {
+                        let _guard = order_group_id
+                            .map(move |x| async move { task_queue.acquire_permit(x).await });
+                        future.await
+                    })
+                    .await;
             }
             Err(error) => {
                 error!("Error fetching data from message queue {:?}", error);
@@ -186,6 +191,7 @@ async fn handle_message(
 ) {
     trace!("Received message `{:?}`", message.payload());
 
+    let message_key = get_order_group_id(message.as_ref()).unwrap_or_default();
     counter!("cdl.data-router.input-msg", 1);
     let result = async {
         let json_something: Value =
@@ -201,9 +207,15 @@ async fn handle_message(
             let mut result = Ok(());
 
             for entry in maybe_array.iter() {
-                let r = route(&cache, &entry, &producer, &schema_registry_addr)
-                    .await
-                    .context("Tried to send message and failed");
+                let r = route(
+                    &cache,
+                    &entry,
+                    &message_key,
+                    &producer,
+                    &schema_registry_addr,
+                )
+                .await
+                .context("Tried to send message and failed");
 
                 counter!("cdl.data-router.input-multimsg", 1);
                 counter!("cdl.data-router.processed", 1);
@@ -221,9 +233,15 @@ async fn handle_message(
                 message.payload()?,
             )
             .context("Payload deserialization failed, message is not a valid cdl message")?;
-            let result = route(&cache, &owned, &producer, &schema_registry_addr)
-                .await
-                .context("Tried to send message and failed");
+            let result = route(
+                &cache,
+                &owned,
+                &message_key,
+                &producer,
+                &schema_registry_addr,
+            )
+            .await
+            .context("Tried to send message and failed");
             counter!("cdl.data-router.input-singlemsg", 1);
             counter!("cdl.data-router.processed", 1);
 
@@ -264,20 +282,25 @@ async fn handle_message(
 async fn route(
     cache: &Mutex<LruCache<Uuid, String>>,
     event: &DataRouterInsertMessage<'_>,
+    message_key: &str,
     producer: &CommonPublisher,
     schema_registry_addr: &str,
 ) -> anyhow::Result<()> {
     let payload = BorrowedInsertMessage {
         object_id: event.object_id,
-        order_group_id: event.order_group_id,
         schema_id: event.schema_id,
         timestamp: current_timestamp(),
         data: event.data,
     };
     let topic_name = get_schema_topic(&cache, payload.schema_id, &schema_registry_addr).await?;
 
-    let key = payload.object_id.to_string();
-    send_message(producer, &topic_name, &key, serde_json::to_vec(&payload)?).await;
+    send_message(
+        producer,
+        &topic_name,
+        message_key,
+        serde_json::to_vec(&payload)?,
+    )
+    .await;
     Ok(())
 }
 

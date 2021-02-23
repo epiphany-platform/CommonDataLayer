@@ -13,7 +13,6 @@ api:
 
 dataRouter:
   inputTopicOrQueue: cdl.data.input
-  multitasking: true
 
 leaderElector:
   heartbeatTime: 2

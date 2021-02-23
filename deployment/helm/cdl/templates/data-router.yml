@@ -28,8 +28,6 @@ spec:
           value: "{{ .Values.dataRouter.inputTopicOrQueue }}"
         - name: ERROR_TOPIC_OR_EXCHANGE
           value: "{{ .Values.global.reportTopicOrExchange }}"
-        - name: MONOTASKING
-          value: "{{ eq .Values.dataRouter.multitasking false | default false }}"
         {{- if eq .Values.global.communicationMethod "kafka" }}
         - name: MESSAGE_QUEUE
           value: "kafka"
