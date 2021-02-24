@@ -27,11 +27,12 @@ Crate Name              | Purpose
 [data-router]             | Route incoming data from and through MQ for consumption by the specific Command Service
 
 ## Storage Layer
+Storage layer, which is sometimes called "repository".
 
 Crate Name              | Purpose
 ------------------------|--------
-[query-service]           | Wrap each individual repository for retrieval of data
-[command-service]         | Intake data from a MQ and storage, in specific repository
+[query-service]           | Wrap each individual database for retrieval of data
+[command-service]         | Intake data from a MQ and storage, in specific database
 [db-shrinker-storage]     | A service to remove older data from storage
 
 ## Retrieval Layer
