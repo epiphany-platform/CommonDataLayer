@@ -1,0 +1,36 @@
+## Guidelines
+* Besides early features, every feature should have at least one RFC, usually named CDLF-xxxxx-rfc-xx.md available in the `doc/rfc` folder in the develop branch
+* `name or description` field demonstrates only brief info about the feature itself, to learn more, please follow to the RFC in question.
+* Generally, the state of the feature looks should follow these guidelines:
+  - `[discussion/idea/request]->[TechSpec/RFC] and optionally [PoC] -> [RC] -> [Ready]`
+  - Documentation and PoC can be done in parallel
+  - `RC` means that the feature is waiting for the release
+  - `Ready` means that the feature is tested, merged and released
+  - Features in `TechSpec` phase can have missing or broken document links, since documentation is usually waiting for pull request or have additional comments pending.
+
+## Feature List
+| Feature ID    | name or description								|State    |CDL version| latest RFC |
+|---------------|---------------------------------------------------|---------|-----------|------------|
+| CDLF-00001-00 | Basic Document Repository                         |Retired  |0.0.1      | N/A        |
+| CDLF-00002-00 | Basic Binary Repository                           |Ready    |0.0.1      | N/A
+| CDLF-00003-00 | Basic Timeseries Repository                       |Retired  |0.0.1      | N/A
+| CDLF-00004-00 | Query Service and Query Routing                   |Ready    |0.0.1      | N/A
+| CDLF-00005-00 | Query Service: Postgres                           |Ready    |0.0.2      | N/A
+| CDLF-00006-00 | Automatic Query Destination                       |Ready    |0.0.2      | N/A
+| CDLF-00007-00 | System Metrics Support                            |Ready    |0.0.2      | N/A
+| CDLF-00008-00 | Victoria Metrics Support                          |Ready    |0.0.3      | N/A
+| CDLF-00009-00 | CIM v1 Message Batching                           |TechSpec |-----      | N/A
+| CDLF-0000A-00 | CIM v1 Message Ordering                           |RC       |0.0.9      | [DOC](https://github.com/epiphany-platform/CommonDataLayer/tree/develop/docs/features/message_ordering.md)
+| CDLF-0000B-00 | Access Groups                                     |TechSpec |-----      |
+| CDLF-0000C-00 | Full GRPC communication support                   |PoC      |-----      | [RFC](https://github.com/epiphany-platform/CommonDataLayer/blob/develop/docs/rfc/CDLF-0000C-00-rfc-01.md)
+| CDLF-0000D-00 | Service Mesh (istio)                              |PoC      |-----      | N/A
+| CDLF-0000E-00 | CIM MessagePack Format                            |TechSpec |-----      | [RFC](https://github.com/epiphany-platform/CommonDataLayer/tree/develop/docs/rfc/docs/rfc/CDLF-0000E-00-rfc-01.md)
+| CDLF-0000F-00 | Configuration Service                             |TechSpec |-----      | [RFC](https://github.com/epiphany-platform/CommonDataLayer/blob/develop/docs/rfc/CDLF-0000F-00-rfc-01.md)
+| CDLF-00010-00 | Protocol Versioning                               |TechSpec |-----      | [RFC](https://github.com/epiphany-platform/CommonDataLayer/blob/develop/docs/rfc/CDLF-00010-00-rfc-01.md)
+| CDLF-00011-00 | Basic Materialization                             |TechSpec |-----      | [RFC](https://github.com/epiphany-platform/CommonDataLayer/blob/develop/docs/rfc/CDLF-00011-00-rfc-01.md)
+
+
+
+## References:
+[CDL RFC folder](https://github.com/epiphany-platform/CommonDataLayer/tree/develop/docs/rfc)
+[1]:https://github.com/epiphany-platform/CommonDataLayer/tree/develop/docs/rfc/
