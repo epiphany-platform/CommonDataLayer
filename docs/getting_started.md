@@ -121,16 +121,16 @@ cargo run --bin query_router -- \
 
 ## Deployment
 
-See [k8s_local_deployment.md][deployment]
+See [chapter in the book][deployment]
 
 
 [command-service]: ./architecture/command_service.md
 [data-router]: ./architecture/data_router.md
-[deployment]: ./deployment/helm.md
+[deployment]: ./deployment/index.md
 [docker-desktop]: https://docs.docker.com/desktop/
 [grpc]: https://grpc.io/docs/what-is-grpc/introduction/
 [installation]: https://www.rust-lang.org/tools/install
-[local-setup]: deployment/docker-compose.md
+[local-setup]: deployment/local/index.md
 [proto]: https://github.com/epiphany-platform/CommonDataLayer/tree/develop/crates/rpc/proto
 [query-service]: ./architecture/query_service.md
 [schema-registry]: ./architecture/schema_registry.md
