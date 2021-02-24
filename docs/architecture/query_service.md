@@ -41,5 +41,5 @@ See an example [configuration][configuration] of deployment of data router and o
 
 [grpc]: https://grpc.io/docs/what-is-grpc/introduction/
 [schema-registry]: schema_registry.md
-[configuration]: ../deployment/docker-compose.md
+[configuration]: ../deployment/README.md
 [proto]: https://github.com/epiphany-platform/CommonDataLayer/tree/develop/crates/rpc/proto

@@ -8,4 +8,4 @@ CDL provides two different User Interfaces:
 
 
 [CLI]: ./cli.md
-[Admin Web Panel]: ./frontend.md
+[Admin Web Panel]: ./web_admin.md

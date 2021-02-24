@@ -16,7 +16,7 @@
 - [Architecture](architecture/README.md)
     - [Management Layer](architecture/management.md)
         - [CLI](architecture/cli.md)
-        - [Admin Web Panel](architecture/frontend.md)
+        - [Admin Web Panel](architecture/web_admin.md)
     - [GraphQL API](architecture/api.md)
     - [Configuration Layer](architecture/configuration.md)
         - [Schema Registry](architecture/schema_registry.md)

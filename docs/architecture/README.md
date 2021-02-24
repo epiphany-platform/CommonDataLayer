@@ -10,10 +10,10 @@ The CDL consists of five layers, each horizontally scalable and replaceable.
 Crate Name | Purpose
 -----------|---------
 [cdl-cli]    | Provides a command-line interface for managing schemas in the schema registry and storing and retrieving data
-[frontend]   | Admin Web Panel - provides GUI interface for managing schemas and storing and retrieving data
+[web-admin]   | Admin Web Panel - provides GUI interface for managing schemas and storing and retrieving data
 
 ## GraphQL API
-[API] - used as a backend service for frontend, provides unified interface to manage CDL.
+[API] - used as a backend service for web-admin, provides unified interface to manage CDL.
 
 ## Configuration Layer
 Crate Name              | Purpose
@@ -57,7 +57,7 @@ examples        | examplary client of cdl
 docs            | cdl documentation
 
 [cdl-cli]: cli.md
-[frontend]: frontend.md
+[web-admin]: web_admin.md
 [API]: api.md
 [schema-registry]: schema_registry.md
 [leader-elector]: leader_elector.md
