@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-postgres-query-service
+  labels:
+    app: {{ .Release.Name }}-postgres-query-service
+    repository.type: document
+    repository.name: postgres
+spec:
+  replicas: {{ .Values.queryServiceReplicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-postgres-query-service
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-postgres-query-service
+        repository.type: document
+        repository.name: postgres
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51805'
+        prometheus.io/path: '/metrics'
+    spec:
+      containers:
+      - name: cdl-postgres-query-service
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-query-service:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["/bin/query-service","postgres"]
+        env:
+        - name: POSTGRES_USERNAME
+          value: {{ .Values.postgresUsername }}
+        - name: POSTGRES_PASSWORD
+          value: {{ .Values.postgresPassword }}
+        - name: POSTGRES_HOST
+          value: {{ .Values.postgresHost }}
+        - name: POSTGRES_PORT
+          value: "{{ .Values.postgresPort }}"
+        - name: POSTGRES_DBNAME
+          value: {{ .Values.postgresDbname }}
+        - name: POSTGRES_SCHEMA
+          value: {{ .Values.postgresSchema }}
+        - name: INPUT_PORT
+          value: "6400"
+        - name: RUST_LOG
+          value: "info,query_service=debug"
+        ports:
+        - containerPort: 51805
+      imagePullSecrets:
+      - name: {{ .Values.global.cdlImagePullSecrets }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-postgres-query-service
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-postgres-query-service
+  ports:
+    - port: 6400
+      targetPort: 6400

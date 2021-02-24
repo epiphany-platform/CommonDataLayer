@@ -20,18 +20,8 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        crate:
-          - command-service
-          - data-router
-          - leader-elector
-          - query-service
-          - query-service-ts
-          - schema-registry
-          - query-router
-          - api
     steps:
+
     - name: Checkout the repo
       uses: actions/checkout@v2
 
@@ -45,11 +35,23 @@ jobs:
       id: get_version
       run: echo ::set-output name=VERSION::$(echo $GITHUB_REF | cut -d / -f 3)
 
-    - name: Build and push
+    - name: Build and push crates
       run: |
-        docker build . --build-arg BIN=${{ matrix.crate }} -t epiphanyplatform/cdl-${{ matrix.crate }}:${{ steps.get_version.outputs.VERSION }}
-        docker tag epiphanyplatform/cdl-${{ matrix.crate }}:${{ steps.get_version.outputs.VERSION }} epiphanyplatform/cdl-${{ matrix.crate }}:latest
-        docker push epiphanyplatform/cdl-${{ matrix.crate }}:${{ steps.get_version.outputs.VERSION }}
-        docker push epiphanyplatform/cdl-${{ matrix.crate}}:latest
+        crates=(command-service data-router leader-elector query-service query-service-ts schema-registry query-router api)
+        for crate in "${crates[@]}"
+        do
+        docker build . --build-arg BIN=$crate -t epiphanyplatform/cdl-$crate:${{ steps.get_version.outputs.VERSION }}
+        docker tag epiphanyplatform/cdl-$crate:${{ steps.get_version.outputs.VERSION }} epiphanyplatform/cdl-$crate:latest
+        docker push epiphanyplatform/cdl-$crate:${{ steps.get_version.outputs.VERSION }}
+        docker push epiphanyplatform/cdl-$crate:latest
+        done
       env:
         DOCKER_BUILDKIT: 1
+
+    - name: Build and push web-admin
+      run: |
+        cd web-admin
+        docker build . -t epiphanyplatform/cdl-web-admin:${{ steps.get_version.outputs.VERSION }}
+        docker tag epiphanyplatform/cdl-web-admin:${{ steps.get_version.outputs.VERSION }} epiphanyplatform/cdl-web-admin:latest
+        docker push epiphanyplatform/cdl-web-admin:${{ steps.get_version.outputs.VERSION }}
+        docker push epiphanyplatform/cdl-web-admin:latest

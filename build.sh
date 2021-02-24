@@ -15,10 +15,14 @@ do
 	docker build -t ${CDL_REPOSITORY_PATH}cdl-${i}:${CDL_VERSION:-latest} --build-arg BIN=${i} --build-arg ENV=${ENV:-PROD} .
 done
 
+cd web-admin
+docker build -t ${CDL_REPOSITORY_PATH}cdl-web-admin:${CDL_VERSION:-latest} .
+
 if [[ ! -z "$CDL_PUSH" ]]
 then
 	for i in "${array[@]}"
 	do
 		docker push ${CDL_REPOSITORY_PATH}cdl-${i}:${CDL_VERSION:-latest}
 	done
+	docker push ${CDL_REPOSITORY_PATH}cdl-web-admin:${CDL_VERSION:-latest}
 fi
