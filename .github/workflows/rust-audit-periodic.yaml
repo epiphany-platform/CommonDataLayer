@@ -10,7 +10,7 @@ jobs:
       matrix:
         branch:
           - main
-          - devel
+          - develop
     steps:
       - uses: actions/checkout@v2
         with:
