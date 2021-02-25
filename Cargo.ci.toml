@@ -1,0 +1,13 @@
+[workspace]
+members = [
+  "benchmarking",
+  "crates/*"
+]
+
+[profile.dev]
+debug = false
+incremental = false
+
+[profile.release]
+lto = true
+codegen-units = 1

@@ -40,3 +40,21 @@ FROM alpine
 
 ARG BIN
 COPY --from=cargo-build /usr/src/cdl/output/$BIN /bin/
+
+
+
+# -----------------
+# CI related
+# -----------------
+FROM alpine as cache-export
+RUN --mount=type=cache,mode=0755,target=/usr/src/cdl/target \
+    --mount=type=cache,mode=0755,target=/root/.cargo/registry \
+    tar cfz cache_target.tar.gz -C /usr/src/cdl/target . && \
+    tar cfz cache_registry.tar.gz -C /root/.cargo/registry .
+
+FROM local/cache as cache-import
+RUN --mount=type=cache,mode=0755,target=/usr/src/cdl/target \
+    --mount=type=cache,mode=0755,target=/root/.cargo/registry \
+    tar xfz cache_target.tar.gz -C /usr/src/cdl/target && \
+    tar xfz cache_registry.tar.gz -C /root/.cargo/registry
+
