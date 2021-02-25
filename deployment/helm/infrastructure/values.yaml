@@ -30,7 +30,7 @@ rabbitmq:
           ],
           "queues": [
             {
-              "name": "cdl.schema_registry.internal",
+              "name": "CDL_SCHEMA_SYNCHRO",
               "vhost": "/",
               "durable": true,
               "auto_delete": false,
@@ -66,7 +66,7 @@ rabbitmq:
               }
             },
             {
-              "name": "cdl.document.1.data",
+              "name": "cdl.document.data",
               "vhost": "/",
               "durable": true,
               "auto_delete": false,
@@ -75,7 +75,7 @@ rabbitmq:
               }
             },
             {
-              "name": "cdl.timeseries.1.data",
+              "name": "cdl.timeseries.data",
               "vhost": "/",
               "durable": true,
               "auto_delete": false,
@@ -84,7 +84,7 @@ rabbitmq:
               }
             },
             {
-              "name": "cdl.timeseries.2.data",
+              "name": "cdl.timeseries2.data",
               "vhost": "/",
               "durable": true,
               "auto_delete": false,
@@ -113,7 +113,7 @@ rabbitmq:
               "arguments": {}
             },
             {
-              "name": "cdl.schema_registry.internal",
+              "name": "CDL_SCHEMA_SYNCHRO",
               "vhost": "/",
               "type": "fanout",
               "durable": true,
@@ -158,9 +158,9 @@ rabbitmq:
               "arguments": {}
             },
             {
-              "source": "cdl.schema_registry.internal",
+              "source": "CDL_SCHEMA_SYNCHRO",
               "vhost": "/",
-              "destination": "cdl.schema_registry.internal",
+              "destination": "CDL_SCHEMA_SYNCHRO",
               "destination_type": "queue",
               "routing_key": "",
               "arguments": {}
@@ -168,7 +168,7 @@ rabbitmq:
             {
               "source": "cdl.document.data",
               "vhost": "/",
-              "destination": "cdl.document.1.data",
+              "destination": "cdl.document.data",
               "destination_type": "queue",
               "routing_key": "*.*.*.*.*",
               "arguments": {}
@@ -184,7 +184,7 @@ rabbitmq:
             {
               "source": "cdl.timeseries.data",
               "vhost": "/",
-              "destination": "cdl.timeseries.1.data",
+              "destination": "cdl.timeseries.data",
               "destination_type": "queue",
               "routing_key": "*.*.*.*.*",
               "arguments": {}
@@ -192,7 +192,7 @@ rabbitmq:
             {
               "source": "cdl.timeseries.data",
               "vhost": "/",
-              "destination": "cdl.timeseries.2.data",
+              "destination": "cdl.timeseries.data",
               "destination_type": "queue",
               "routing_key": "unordered",
               "arguments": {}
