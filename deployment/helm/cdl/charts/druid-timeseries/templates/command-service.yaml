@@ -8,7 +8,7 @@ metadata:
     repository.type: timeseries
     repository.name: druid
 spec:
-  replicas: {{ .Values.replicaCommandCount }}
+  replicas: {{ .Values.commandServiceReplicaCount }}
   selector:
     matchLabels:
       app: {{ .Release.Name }}-druid-command-service

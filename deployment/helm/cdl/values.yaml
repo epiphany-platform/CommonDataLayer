@@ -40,7 +40,7 @@ postgres-document:
   inputTopicOrQueue: cdl.document.data
 
 druid-timeseries:
-  replicaCommandCount: 0
+  commandServiceReplicaCount: 0
   queryServiceReplicaCount: 0
   inputTopicOrQueue: cdl.timeseries.data
   outputTopic: cdl.timeseries.generic-druid
@@ -48,7 +48,7 @@ druid-timeseries:
   tableName: CDL
 
 victoria-metrics-timeseries:
-  replicaCommandCount: 0
+  commandServiceReplicaCount: 0
   queryServiceReplicaCount: 0
   inputTopicOrQueue: cdl.timeseries2.data
   outputURL: http://infrastructure-victoria-metrics-single-server:8428/
