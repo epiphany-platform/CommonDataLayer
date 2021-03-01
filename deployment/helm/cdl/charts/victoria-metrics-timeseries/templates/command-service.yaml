@@ -8,7 +8,7 @@ metadata:
     repository.type: timeseries
     repository.name: victoria-metrics
 spec:
-  replicas: {{ .Values.replicaCommandCount }}
+  replicas: {{ .Values.commandServiceReplicaCount }}
   selector:
     matchLabels:
       app: {{ .Release.Name }}-victoria-metrics-command-service
