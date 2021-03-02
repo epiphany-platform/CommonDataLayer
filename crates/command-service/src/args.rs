@@ -4,6 +4,7 @@ use crate::report::ReportServiceConfig;
 use structopt::clap::arg_enum;
 use structopt::StructOpt;
 use thiserror::Error;
+use url::Url;
 use utils::metrics;
 
 #[derive(Clone, Debug, StructOpt)]
@@ -43,9 +44,11 @@ pub struct CommunicationArgs {
     pub amqp_connection_string: Option<String>,
     #[structopt(long, env)]
     pub amqp_consumer_tag: Option<String>,
-
     #[structopt(long = "rpc-input-port", env = "RPC_PORT")]
     pub grpc_port: Option<u16>,
+    #[structopt(long, env)]
+    pub report_endpoint_url: Option<Url>,
+
     #[structopt(long, env)]
     pub ordered_topics_or_queues: Option<String>,
     #[structopt(long, env)]
@@ -136,6 +139,10 @@ impl Args {
                 grpc_port: communication_args
                     .grpc_port
                     .ok_or(MissingConfigError("GRPC port"))?,
+                report_endpoint_url: communication_args
+                    .clone()
+                    .report_endpoint_url
+                    .ok_or(MissingConfigError("Report endpoint url"))?,
             },
         })
     }

@@ -19,6 +19,9 @@ pub enum Error {
 
     #[error("GRPC communication method is not supported")]
     GrpcNotSupported,
+
+    #[error("GRPC server returned status: {0}")]
+    GrpcStatusCode(String),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -51,6 +54,17 @@ impl From<std::str::Utf8Error> for Error {
 impl From<tokio::task::JoinError> for Error {
     fn from(error: tokio::task::JoinError) -> Self {
         Self::RuntimeError(error.to_string())
+    }
+}
+impl From<reqwest::Error> for Error {
+    fn from(error: reqwest::Error) -> Self {
+        Self::CommunicationError(error.to_string())
+    }
+}
+
+impl From<rpc::error::ClientError> for Error {
+    fn from(error: rpc::error::ClientError) -> Self {
+        Self::CommunicationError(error.to_string())
     }
 }
 

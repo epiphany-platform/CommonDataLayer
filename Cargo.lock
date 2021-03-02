@@ -746,6 +746,7 @@ dependencies = [
  "serde_json",
  "structopt",
  "tokio 0.2.24",
+ "url",
  "utils",
  "uuid",
 ]
@@ -4185,6 +4186,7 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
+ "serde",
 ]
 
 [[package]]
@@ -4216,6 +4218,7 @@ dependencies = [
  "metrics-observer-prometheus",
  "metrics-runtime",
  "rdkafka",
+ "reqwest",
  "rpc",
  "serde",
  "serde_json",
@@ -4225,6 +4228,7 @@ dependencies = [
  "tokio 0.2.24",
  "tokio-amqp",
  "tonic",
+ "url",
  "uuid",
  "vec_map",
 ]

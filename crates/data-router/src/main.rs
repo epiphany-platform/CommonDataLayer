@@ -6,6 +6,7 @@ use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{
+    net::{Ipv4Addr, SocketAddrV4},
     process,
     sync::{Arc, Mutex},
 };
@@ -29,20 +30,19 @@ use utils::{
 };
 use uuid::Uuid;
 
-const SERVICE_NAME: &str = "data-router";
-
 arg_enum! {
     #[derive(Deserialize, Debug, Serialize)]
-    enum MessageQueueKind {
+    enum CommunicationMethod {
         Kafka,
-        Amqp
+        Amqp,
+        Grpc
     }
 }
 
 #[derive(StructOpt, Deserialize, Debug, Serialize)]
 struct Config {
-    #[structopt(long, env, possible_values = &MessageQueueKind::variants(), case_insensitive = true)]
-    pub message_queue: MessageQueueKind,
+    #[structopt(long, env, possible_values = &CommunicationMethod::variants(), case_insensitive = true)]
+    pub communication_method: CommunicationMethod,
     #[structopt(long, env)]
     pub kafka_brokers: Option<String>,
     #[structopt(long, env)]
@@ -52,9 +52,7 @@ struct Config {
     #[structopt(long, env)]
     pub amqp_consumer_tag: Option<String>,
     #[structopt(long, env)]
-    pub input_topic_or_queue: String,
-    #[structopt(long, env)]
-    pub error_topic_or_exchange: String,
+    pub input_topic_or_queue: Option<String>,
     #[structopt(long, env)]
     pub schema_registry_addr: String,
     #[structopt(long, env)]
@@ -63,6 +61,8 @@ struct Config {
     pub task_limit: usize,
     #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
+    #[structopt(long, env)]
+    pub grpc_port: Option<u16>,
 }
 
 #[tokio::main]
@@ -74,12 +74,11 @@ async fn main() -> anyhow::Result<()> {
 
     metrics::serve(config.metrics_port);
 
-    let consumer = new_consumer(&config, &config.input_topic_or_queue).await?;
+    let consumer = new_consumer(&config).await?;
     let producer = Arc::new(new_producer(&config).await?);
 
     let cache = Arc::new(Mutex::new(LruCache::new(config.cache_capacity)));
 
-    let error_topic_or_exchange = Arc::new(config.error_topic_or_exchange);
     let schema_registry_addr = Arc::new(config.schema_registry_addr);
 
     let task_limiter = TaskLimiter::new(config.task_limit);
@@ -90,7 +89,6 @@ async fn main() -> anyhow::Result<()> {
             Handler {
                 cache,
                 producer,
-                error_topic_or_exchange,
                 schema_registry_addr,
                 task_queue,
             },
@@ -106,7 +104,6 @@ async fn main() -> anyhow::Result<()> {
 struct Handler {
     cache: Arc<Mutex<LruCache<Uuid, String>>>,
     producer: Arc<CommonPublisher>,
-    error_topic_or_exchange: Arc<String>,
     schema_registry_addr: Arc<String>,
     task_queue: Arc<ParallelTaskQueue>,
 }
@@ -183,14 +180,6 @@ impl ParConsumerHandler for Handler {
 
         if let Err(error) = result {
             counter!("cdl.data-router.error", 1);
-            //TODO: Remove it.
-            send_message(
-                self.producer.as_ref(),
-                &self.error_topic_or_exchange,
-                SERVICE_NAME,
-                format!("{:?}", error).into(),
-            )
-            .await;
 
             return Err(error);
         } else {
@@ -202,27 +191,32 @@ impl ParConsumerHandler for Handler {
 }
 
 async fn new_producer(config: &Config) -> anyhow::Result<CommonPublisher> {
-    Ok(match config.message_queue {
-        MessageQueueKind::Kafka => {
+    Ok(match config.communication_method {
+        CommunicationMethod::Kafka => {
             let brokers = config
                 .kafka_brokers
                 .as_ref()
                 .context("kafka brokers were not specified")?;
             CommonPublisher::new_kafka(brokers).await?
         }
-        MessageQueueKind::Amqp => {
+        CommunicationMethod::Amqp => {
             let connection_string = config
                 .amqp_connection_string
                 .as_ref()
                 .context("amqp connection string was not specified")?;
             CommonPublisher::new_amqp(connection_string).await?
         }
+        CommunicationMethod::Grpc => CommonPublisher::new_grpc("command_service").await?,
     })
 }
 
-async fn new_consumer(config: &Config, topic_or_queue: &str) -> anyhow::Result<CommonConsumer> {
-    let config = match config.message_queue {
-        MessageQueueKind::Kafka => {
+async fn new_consumer(config: &Config) -> anyhow::Result<CommonConsumer> {
+    let config = match config.communication_method {
+        CommunicationMethod::Kafka => {
+            let topic = config
+                .input_topic_or_queue
+                .as_ref()
+                .context("kafka topic was not specified")?;
             let brokers = config
                 .kafka_brokers
                 .as_ref()
@@ -237,10 +231,14 @@ async fn new_consumer(config: &Config, topic_or_queue: &str) -> anyhow::Result<C
             CommonConsumerConfig::Kafka {
                 brokers: &brokers,
                 group_id: &group_id,
-                topic: topic_or_queue,
+                topic,
             }
         }
-        MessageQueueKind::Amqp => {
+        CommunicationMethod::Amqp => {
+            let queue_name = config
+                .input_topic_or_queue
+                .as_ref()
+                .context("amqp queue name was not specified")?;
             let connection_string = config
                 .amqp_connection_string
                 .as_ref()
@@ -255,9 +253,18 @@ async fn new_consumer(config: &Config, topic_or_queue: &str) -> anyhow::Result<C
             CommonConsumerConfig::Amqp {
                 connection_string: &connection_string,
                 consumer_tag: &consumer_tag,
-                queue_name: topic_or_queue,
+                queue_name,
                 options: None,
             }
+        }
+        CommunicationMethod::Grpc => {
+            let port = config
+                .grpc_port
+                .clone()
+                .context("grpc port was not specified")?;
+
+            let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
+            CommonConsumerConfig::Grpc { addr }
         }
     };
     Ok(CommonConsumer::new(config).await?)

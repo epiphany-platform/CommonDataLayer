@@ -1,4 +1,5 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
+use url::Url;
 
 use utils::messaging_system::consumer::{BasicConsumeOptions, CommonConsumerConfig};
 
@@ -20,6 +21,7 @@ pub enum CommunicationConfig {
     Grpc {
         grpc_port: u16,
         task_limit: usize,
+        report_endpoint_url: Url,
     },
 }
 

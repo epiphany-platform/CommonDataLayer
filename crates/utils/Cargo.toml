@@ -24,12 +24,14 @@ lazy_static = "1.4"
 log         = "0.4"
 metrics     = { version = "0.12", features = ["std"] }
 rdkafka     = { version = "0.24", features = ["cmake-build"] }
+reqwest     = { version = "0.10", features = ["json"] }
 serde       = { version = "1.0", features = ["derive"] }
 serde_json  = { version = "1.0", features = ["raw_value"] }
 structopt   = "0.3"
 thiserror   = "1.0"
 tokio       = { version = "0.2", features = ["rt-core"] }
 tokio-amqp  = "0.1"
+url         = "2.2"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 vec_map     = "0.8"
 async-stream            = "0.3"

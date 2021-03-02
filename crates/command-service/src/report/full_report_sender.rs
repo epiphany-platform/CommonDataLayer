@@ -46,7 +46,10 @@ impl FullReportSenderBase {
             CommunicationConfig::Amqp {
                 connection_string, ..
             } => CommonPublisher::new_amqp(connection_string).await,
-            CommunicationConfig::Grpc { .. } => unreachable!(),
+            CommunicationConfig::Grpc {
+                report_endpoint_url,
+                ..
+            } => CommonPublisher::new_rest(report_endpoint_url.clone()).await,
         };
 
         debug!(
