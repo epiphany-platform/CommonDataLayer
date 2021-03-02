@@ -9,6 +9,7 @@ use super::Result;
 pub enum MetadataFetcher {
     Kafka { producer: BaseProducer },
     Amqp { connection: lapin::Connection },
+    Grpc { service: &'static str },
 }
 
 impl MetadataFetcher {
@@ -30,6 +31,10 @@ impl MetadataFetcher {
         .context("Metadata fetcher creation failed")?;
 
         Ok(Self::Amqp { connection })
+    }
+
+    pub async fn new_grpc(service: &'static str) -> Result<Self> {
+        Ok(Self::Grpc { service })
     }
 
     pub async fn topic_or_exchange_exists(&self, topic_or_exchange: &str) -> Result<bool> {
@@ -81,6 +86,10 @@ impl MetadataFetcher {
                     .iter()
                     .map(|topic| topic.name())
                     .any(|name| name == topic_or_exchange))
+            }
+            MetadataFetcher::Grpc { service } => {
+                let client = rpc::generic::connect(owned_topic_or_exchange, service).await;
+                Ok(client.is_ok())
             }
         }
     }

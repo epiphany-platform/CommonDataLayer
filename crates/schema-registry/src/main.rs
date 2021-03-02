@@ -5,8 +5,8 @@ use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
 use schema_registry::{
     error::RegistryError,
     replication::AmqpConfig,
-    replication::MessageQueue,
-    replication::{KafkaConfig, MessageQueueConfig, ReplicationRole},
+    replication::CommunicationMethod,
+    replication::{CommunicationMethodConfig, KafkaConfig, ReplicationRole},
     rpc::SchemaRegistryImpl,
 };
 use serde::Deserialize;
@@ -17,12 +17,12 @@ use std::path::PathBuf;
 use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
 
-enum MessageQueueType {
+enum CommunicationMethodType {
     Kafka,
     Amqp,
 }
 
-impl<'de> Deserialize<'de> for MessageQueueType {
+impl<'de> Deserialize<'de> for CommunicationMethodType {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -48,7 +48,7 @@ struct Config {
     pub db_name: String,
     pub replication_role: ReplicationRole,
 
-    pub replication_queue: MessageQueueType,
+    pub replication_queue: CommunicationMethodType,
     pub kafka_brokers: Option<String>,
     pub kafka_group_id: Option<String>,
     pub amqp_connection_string: Option<String>,
@@ -68,21 +68,21 @@ struct Config {
 pub async fn main() -> anyhow::Result<()> {
     env_logger::init();
     let config = envy::from_env::<Config>().context("Env vars not set correctly")?;
-    let replication_config = MessageQueueConfig {
+    let replication_config = CommunicationMethodConfig {
         queue: match config.replication_queue {
-            MessageQueueType::Kafka => {
+            CommunicationMethodType::Kafka => {
                 let brokers = config.kafka_brokers.context("Missing kafka brokers")?;
                 let group_id = config.kafka_group_id.context("Missing kafka group")?;
-                MessageQueue::Kafka(KafkaConfig { brokers, group_id })
+                CommunicationMethod::Kafka(KafkaConfig { brokers, group_id })
             }
-            MessageQueueType::Amqp => {
+            CommunicationMethodType::Amqp => {
                 let connection_string = config
                     .amqp_connection_string
                     .context("Missing amqp connection string")?;
                 let consumer_tag = config
                     .amqp_consumer_tag
                     .context("Missing amqp consumer tag")?;
-                MessageQueue::Amqp(AmqpConfig {
+                CommunicationMethod::Amqp(AmqpConfig {
                     connection_string,
                     consumer_tag,
                 })

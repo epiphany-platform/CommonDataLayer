@@ -1,4 +1,4 @@
-use super::{MessageQueue, MessageQueueConfig, ReplicationEvent};
+use super::{CommunicationMethod, CommunicationMethodConfig, ReplicationEvent};
 use log::{error, info};
 use std::{
     process,
@@ -8,14 +8,15 @@ use tokio::{runtime::Handle, sync::oneshot};
 use utils::messaging_system::publisher::CommonPublisher;
 
 pub async fn replicate_db_events(
-    config: MessageQueueConfig,
+    config: CommunicationMethodConfig,
     recv: mpsc::Receiver<ReplicationEvent>,
     tokio_runtime: Handle,
     mut kill_signal: oneshot::Receiver<()>,
 ) {
     let producer = match &config.queue {
-        MessageQueue::Kafka(kafka) => CommonPublisher::new_kafka(&kafka.brokers).await,
-        MessageQueue::Amqp(amqp) => CommonPublisher::new_amqp(&amqp.connection_string).await,
+        CommunicationMethod::Kafka(kafka) => CommonPublisher::new_kafka(&kafka.brokers).await,
+        CommunicationMethod::Amqp(amqp) => CommonPublisher::new_amqp(&amqp.connection_string).await,
+        CommunicationMethod::Grpc => return,
     }
     .unwrap_or_else(|_e| {
         error!("Fatal error, synchronization channel cannot be created.");

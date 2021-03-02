@@ -1,4 +1,4 @@
-use super::{MessageQueue, MessageQueueConfig, ReplicationEvent};
+use super::{CommunicationMethod, CommunicationMethodConfig, ReplicationEvent};
 use crate::db::SchemaDb;
 use anyhow::Context;
 use async_trait::async_trait;
@@ -31,22 +31,23 @@ impl ConsumerHandler for Handler {
 }
 
 pub async fn consume_mq(
-    config: MessageQueueConfig,
+    config: CommunicationMethodConfig,
     db: Arc<SchemaDb>,
     kill_signal: Receiver<()>,
 ) -> anyhow::Result<()> {
     let config = match &config.queue {
-        MessageQueue::Kafka(kafka) => CommonConsumerConfig::Kafka {
+        CommunicationMethod::Kafka(kafka) => CommonConsumerConfig::Kafka {
             group_id: &kafka.group_id,
             brokers: &kafka.brokers,
             topic: &config.topic_or_queue,
         },
-        MessageQueue::Amqp(amqp) => CommonConsumerConfig::Amqp {
+        CommunicationMethod::Amqp(amqp) => CommonConsumerConfig::Amqp {
             connection_string: &amqp.connection_string,
             consumer_tag: &amqp.consumer_tag,
             queue_name: &config.topic_or_queue,
             options: None,
         },
+        CommunicationMethod::Grpc => return Ok(()),
     };
     let consumer = CommonConsumer::new(config).await.unwrap_or_else(|err| {
         error!(

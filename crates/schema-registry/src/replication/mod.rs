@@ -57,11 +57,14 @@ pub struct ReplicationState {
     replication_role: ReplicationRole,
     stop_channel: Option<oneshot::Sender<()>>,
     master_replication_channel: Option<mpsc::Sender<ReplicationEvent>>,
-    message_queue_config: MessageQueueConfig,
+    message_queue_config: CommunicationMethodConfig,
     db: Arc<SchemaDb>,
 }
 impl ReplicationState {
-    pub fn new(message_queue_config: MessageQueueConfig, db: Arc<SchemaDb>) -> ReplicationState {
+    pub fn new(
+        message_queue_config: CommunicationMethodConfig,
+        db: Arc<SchemaDb>,
+    ) -> ReplicationState {
         ReplicationState {
             replication_role: ReplicationRole::None,
             stop_channel: None,
@@ -122,16 +125,17 @@ impl ReplicationState {
 }
 
 #[derive(Clone, Debug)]
-pub struct MessageQueueConfig {
-    pub queue: MessageQueue,
+pub struct CommunicationMethodConfig {
+    pub queue: CommunicationMethod,
     pub topic_or_queue: String,
     pub topic_or_exchange: String,
 }
 
 #[derive(Clone, Debug)]
-pub enum MessageQueue {
+pub enum CommunicationMethod {
     Kafka(KafkaConfig),
     Amqp(AmqpConfig),
+    Grpc,
 }
 
 #[derive(Clone, Debug)]
@@ -148,7 +152,7 @@ pub struct AmqpConfig {
 
 fn start_replication_slave(
     db: Arc<SchemaDb>,
-    config: &MessageQueueConfig,
+    config: &CommunicationMethodConfig,
     kill_signal: oneshot::Receiver<()>,
 ) {
     tokio::spawn(slave::consume_mq(config.clone(), db, kill_signal));

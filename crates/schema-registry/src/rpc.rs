@@ -1,8 +1,8 @@
 use crate::{
     db::SchemaDb,
     error::RegistryError,
-    replication::MessageQueue,
-    replication::MessageQueueConfig,
+    replication::CommunicationMethod,
+    replication::CommunicationMethodConfig,
     replication::{ReplicationEvent, ReplicationRole, ReplicationState},
     types::DbExport,
     types::ViewUpdate,
@@ -36,13 +36,16 @@ impl SchemaRegistryImpl {
     pub async fn new(
         db: SledDatastore,
         replication_role: ReplicationRole,
-        message_queue_config: MessageQueueConfig,
+        message_queue_config: CommunicationMethodConfig,
         pod_name: Option<String>,
     ) -> Result<Self> {
         let child_db = Arc::new(SchemaDb { db });
         let mq_metadata = Arc::new(match &message_queue_config.queue {
-            MessageQueue::Kafka(kafka) => MetadataFetcher::new_kafka(&kafka.brokers).await?,
-            MessageQueue::Amqp(amqp) => MetadataFetcher::new_amqp(&amqp.connection_string).await?,
+            CommunicationMethod::Kafka(kafka) => MetadataFetcher::new_kafka(&kafka.brokers).await?,
+            CommunicationMethod::Amqp(amqp) => {
+                MetadataFetcher::new_amqp(&amqp.connection_string).await?
+            }
+            CommunicationMethod::Grpc => MetadataFetcher::new_grpc("command_service").await?,
         });
         let schema_registry = Self {
             db: child_db.clone(),
