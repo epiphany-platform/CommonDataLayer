@@ -39,6 +39,8 @@ RUN --mount=type=cache,mode=0755,target=/root/.cargo/registry \
     --mount=type=cache,mode=0755,target=/usr/src/cdl/target \
     if [ "$ENV" = "DEV" ]; \
     then CARGO_ARGS="--out-dir=output -Z unstable-options"; \
+    elif [ "$ENV" = "CI" ]; \
+    then CARGO_ARGS="--out-dir=output -Z unstable-options --profile ci"; \
     else CARGO_ARGS="--out-dir=output -Z unstable-options --release"; \
     fi && \
     LIB_LDFLAGS=-L/usr/lib/x86_64-linux-gnu CFLAGS=-I/usr/local/musl/include CC=musl-gcc CXX=g++ \

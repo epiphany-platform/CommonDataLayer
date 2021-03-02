@@ -1,8 +1,15 @@
+cargo-features = ["named-profiles"]
+
 [workspace]
 members = [
   "benchmarking",
   "crates/*"
 ]
+
+[profile.ci]
+inherits = "dev"
+debug = false
+incremental = false
 
 [profile.release]
 lto = true

@@ -24,8 +24,6 @@ jobs:
           cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - name: deploy infrastructure
         run: helm install --values ./deployment/helm/infrastructure/values.yaml infrastructure ./deployment/helm/infrastructure
-      - name: Change cargo profile settings
-        run: cp Cargo.ci.toml Cargo.toml
 
       - name: Get Date
         id: get-date
@@ -48,7 +46,7 @@ jobs:
         if: steps.cache.outputs.cache-hit == 'true'
         run: DOCKER_BUILDKIT=1 docker build --no-cache --target cache-import .
       - name: build cdl images
-        run: DOCKER_BUILDKIT=1 ENV=DEV ./build.sh
+        run: DOCKER_BUILDKIT=1 ENV=CI ./build.sh
       - name: Build cache
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
