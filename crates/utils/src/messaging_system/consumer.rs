@@ -1,4 +1,3 @@
-use crate::task_limiter::TaskLimiter;
 use anyhow::Context;
 use async_trait::async_trait;
 use futures_util::TryStreamExt;
@@ -8,47 +7,16 @@ use rdkafka::{
     consumer::{DefaultConsumerContext, StreamConsumer},
     ClientConfig,
 };
-use rpc::generic as proto;
-use rpc::generic::generic_rpc_server::GenericRpc;
-use rpc::generic::generic_rpc_server::GenericRpcServer;
-use std::{net::SocketAddrV4, sync::Arc};
 use tokio_amqp::LapinTokioExt;
 
 use super::{
     kafka_ack_queue::KafkaAckQueue, message::AmqpCommunicationMessage,
-    message::CommunicationMessage, message::KafkaCommunicationMessage, Error, Result,
+    message::CommunicationMessage, message::KafkaCommunicationMessage, Result,
 };
 
 #[async_trait]
 pub trait ConsumerHandler {
     async fn handle<'a>(&'a mut self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()>;
-}
-
-#[async_trait]
-pub trait ParConsumerHandler: Send + Sync + 'static {
-    async fn handle<'a>(&'a self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()>;
-}
-
-struct GenericRpcImpl<T> {
-    handler: Arc<T>,
-}
-
-#[tonic::async_trait]
-impl<T> GenericRpc for GenericRpcImpl<T>
-where
-    T: ParConsumerHandler,
-{
-    async fn handle(
-        &self,
-        request: tonic::Request<proto::Message>,
-    ) -> Result<tonic::Response<proto::Empty>, tonic::Status> {
-        let msg = request.into_inner();
-
-        match self.handler.handle(&msg).await {
-            Ok(_) => Ok(tonic::Response::new(proto::Empty {})),
-            Err(err) => Err(tonic::Status::internal(err.to_string())),
-        }
-    }
 }
 
 pub enum CommonConsumerConfig<'a> {
@@ -63,9 +31,6 @@ pub enum CommonConsumerConfig<'a> {
         queue_name: &'a str,
         options: Option<BasicConsumeOptions>,
     },
-    Grpc {
-        addr: SocketAddrV4,
-    },
 }
 pub enum CommonConsumer {
     Kafka {
@@ -74,9 +39,6 @@ pub enum CommonConsumer {
     },
     Amqp {
         consumer: lapin::Consumer,
-    },
-    Grpc {
-        addr: SocketAddrV4,
     },
 }
 impl CommonConsumer {
@@ -93,7 +55,6 @@ impl CommonConsumer {
                 queue_name,
                 options,
             } => Self::new_amqp(connection_string, consumer_tag, queue_name, options).await,
-            CommonConsumerConfig::Grpc { addr } => Ok(Self::Grpc { addr }),
         }
     }
 
@@ -181,92 +142,6 @@ impl CommonConsumer {
                         }
                     }
                 }
-            }
-            CommonConsumer::Grpc { .. } => {
-                // Use par_run instead
-                return Err(Error::GrpcNotSupported);
-            }
-        }
-        Ok(())
-    }
-
-    /// Process messages in parallel
-    /// # Memory safety
-    /// This method leaks kafka consumer
-    /// # Error handling
-    /// ## Kafka & AMQP
-    /// Program exits on first unhandled message. I may cause crash-loop.
-    /// ## GRPC
-    /// Program returns 500 code and tries to handle further messages.
-    pub async fn par_run(
-        self,
-        handler: impl ParConsumerHandler,
-        task_limiter: TaskLimiter,
-    ) -> Result<()> {
-        let handler = Arc::new(handler);
-        match self {
-            CommonConsumer::Kafka {
-                consumer,
-                ack_queue,
-            } => {
-                let consumer = Box::leak(Box::new(Arc::new(consumer)));
-                let ack_queue = Arc::new(ack_queue);
-                let mut message_stream = consumer.start();
-                while let Some(message) = message_stream.try_next().await? {
-                    ack_queue.add(&message);
-                    let ack_queue = ack_queue.clone();
-                    let handler = handler.clone();
-                    let consumer = consumer.clone();
-                    task_limiter
-                        .run(move || async move {
-                            let message = KafkaCommunicationMessage { message };
-
-                            match handler.handle(&message).await {
-                                Ok(_) => {
-                                    ack_queue.ack(&message.message, consumer.as_ref());
-                                }
-                                Err(e) => {
-                                    log::error!("Couldn't process message: {:?}", e);
-                                    std::process::abort();
-                                }
-                            }
-                        })
-                        .await;
-                }
-            }
-            CommonConsumer::Amqp { mut consumer } => {
-                while let Some((channel, delivery)) = consumer.try_next().await? {
-                    let handler = handler.clone();
-                    task_limiter
-                        .run(move || async move {
-                            let message = AmqpCommunicationMessage { delivery };
-                            match handler.handle(&message).await {
-                                Ok(_) => {
-                                    if let Err(e) = channel
-                                        .basic_ack(
-                                            message.delivery.delivery_tag,
-                                            Default::default(),
-                                        )
-                                        .await
-                                    {
-                                        log::error!("Couldn't ack message: {:?}", e);
-                                        std::process::abort();
-                                    }
-                                }
-                                Err(e) => {
-                                    log::error!("Couldn't process message: {:?}", e);
-                                    std::process::abort();
-                                }
-                            }
-                        })
-                        .await;
-                }
-            }
-            CommonConsumer::Grpc { addr } => {
-                tonic::transport::Server::builder()
-                    .add_service(GenericRpcServer::new(GenericRpcImpl { handler }))
-                    .serve(addr.into())
-                    .await?;
             }
         }
         Ok(())

@@ -3,6 +3,7 @@ use crate::{
     types::storage::vertices::View,
     types::ViewUpdate,
     types::{NewSchema, NewSchemaVersion},
+    AmqpConfig, KafkaConfig,
 };
 use log::info;
 use rpc::schema_registry::types::SchemaType;
@@ -57,12 +58,12 @@ pub struct ReplicationState {
     replication_role: ReplicationRole,
     stop_channel: Option<oneshot::Sender<()>>,
     master_replication_channel: Option<mpsc::Sender<ReplicationEvent>>,
-    message_queue_config: CommunicationMethodConfig,
+    message_queue_config: ReplicationMethodConfig,
     db: Arc<SchemaDb>,
 }
 impl ReplicationState {
     pub fn new(
-        message_queue_config: CommunicationMethodConfig,
+        message_queue_config: ReplicationMethodConfig,
         db: Arc<SchemaDb>,
     ) -> ReplicationState {
         ReplicationState {
@@ -125,7 +126,7 @@ impl ReplicationState {
 }
 
 #[derive(Clone, Debug)]
-pub struct CommunicationMethodConfig {
+pub struct ReplicationMethodConfig {
     pub queue: CommunicationMethod,
     pub topic_or_queue: String,
     pub topic_or_exchange: String,
@@ -135,24 +136,11 @@ pub struct CommunicationMethodConfig {
 pub enum CommunicationMethod {
     Kafka(KafkaConfig),
     Amqp(AmqpConfig),
-    Grpc,
-}
-
-#[derive(Clone, Debug)]
-pub struct KafkaConfig {
-    pub brokers: String,
-    pub group_id: String,
-}
-
-#[derive(Clone, Debug)]
-pub struct AmqpConfig {
-    pub connection_string: String,
-    pub consumer_tag: String,
 }
 
 fn start_replication_slave(
     db: Arc<SchemaDb>,
-    config: &CommunicationMethodConfig,
+    config: &ReplicationMethodConfig,
     kill_signal: oneshot::Receiver<()>,
 ) {
     tokio::spawn(slave::consume_mq(config.clone(), db, kill_signal));

@@ -5,6 +5,7 @@ use self::message::CommunicationMessage;
 pub mod consumer;
 mod kafka_ack_queue;
 pub mod message;
+pub mod parallel_consumer;
 pub mod publisher;
 
 pub mod metadata_fetcher;
@@ -16,9 +17,6 @@ pub enum Error {
 
     #[error("Error during joining blocking task \"{0}\"")]
     RuntimeError(String),
-
-    #[error("GRPC communication method is not supported")]
-    GrpcNotSupported,
 
     #[error("GRPC server returned status: {0}")]
     GrpcStatusCode(String),

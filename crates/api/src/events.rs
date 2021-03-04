@@ -9,7 +9,7 @@ use futures::task::{Context as FutCtx, Poll};
 use futures::{Future, Stream};
 use juniper::FieldResult;
 use std::pin::Pin;
-use tokio::sync::broadcast;
+use tokio::sync::broadcast::{self, Sender};
 use utils::messaging_system::{
     consumer::{CommonConsumer, CommonConsumerConfig, ConsumerHandler},
     message::CommunicationMessage,
@@ -22,10 +22,8 @@ pub struct Event {
     pub payload: Option<String>,
 }
 
-type Sender<T = Event> = broadcast::Sender<T>;
-
 /// Wrapper to prevent accidental sending data to channel. `Sender` is used only for subscription mechanism
-pub struct EventSubscriber(Sender);
+pub struct EventSubscriber(Sender<Event>);
 
 // We are using Box<dyn> approach (recommended) by Tokio maintainers,
 // as unfortunately `broadcast::Receiver` doesn't implement `Stream` trait,
@@ -35,7 +33,7 @@ pub struct EventStream {
 }
 
 struct Handler {
-    sink: Sender,
+    sink: Sender<Event>,
 }
 
 #[async_trait]

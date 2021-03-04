@@ -4,10 +4,10 @@ use indradb::SledDatastore;
 use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
 use schema_registry::{
     error::RegistryError,
-    replication::AmqpConfig,
     replication::CommunicationMethod,
-    replication::{CommunicationMethodConfig, KafkaConfig, ReplicationRole},
+    replication::{ReplicationMethodConfig, ReplicationRole},
     rpc::SchemaRegistryImpl,
+    AmqpConfig, CommunicationMethodConfig, KafkaConfig,
 };
 use serde::Deserialize;
 use std::fs::File;
@@ -20,6 +20,7 @@ use utils::{metrics, status_endpoints};
 enum CommunicationMethodType {
     Kafka,
     Amqp,
+    Grpc,
 }
 
 impl<'de> Deserialize<'de> for CommunicationMethodType {
@@ -31,6 +32,7 @@ impl<'de> Deserialize<'de> for CommunicationMethodType {
         let mqt = match s.as_str() {
             "kafka" => Self::Kafka,
             "amqp" => Self::Amqp,
+            "grpc" => Self::Grpc,
             other => {
                 return Err(serde::de::Error::custom(format!(
                     "Invalid message queue type: `{}`",
@@ -48,7 +50,7 @@ struct Config {
     pub db_name: String,
     pub replication_role: ReplicationRole,
 
-    pub replication_queue: CommunicationMethodType,
+    pub communication_method: CommunicationMethodType,
     pub kafka_brokers: Option<String>,
     pub kafka_group_id: Option<String>,
     pub amqp_connection_string: Option<String>,
@@ -64,33 +66,83 @@ struct Config {
     pub metrics_port: Option<u16>,
 }
 
-#[tokio::main]
-pub async fn main() -> anyhow::Result<()> {
-    env_logger::init();
-    let config = envy::from_env::<Config>().context("Env vars not set correctly")?;
-    let replication_config = CommunicationMethodConfig {
-        queue: match config.replication_queue {
+fn communication_config(config: &Config) -> anyhow::Result<CommunicationMethodConfig> {
+    let config = match config.communication_method {
+        CommunicationMethodType::Kafka => {
+            let brokers = config
+                .kafka_brokers
+                .clone()
+                .context("Missing kafka brokers")?;
+            let group_id = config
+                .kafka_group_id
+                .clone()
+                .context("Missing kafka group")?;
+            CommunicationMethodConfig::Kafka(KafkaConfig { brokers, group_id })
+        }
+        CommunicationMethodType::Amqp => {
+            let connection_string = config
+                .amqp_connection_string
+                .clone()
+                .context("Missing amqp connection string")?;
+            let consumer_tag = config
+                .amqp_consumer_tag
+                .clone()
+                .context("Missing amqp consumer tag")?;
+            CommunicationMethodConfig::Amqp(AmqpConfig {
+                connection_string,
+                consumer_tag,
+            })
+        }
+        CommunicationMethodType::Grpc => CommunicationMethodConfig::Grpc,
+    };
+    Ok(config)
+}
+
+fn replication_config(config: &Config) -> anyhow::Result<Option<ReplicationMethodConfig>> {
+    let replication_config = ReplicationMethodConfig {
+        queue: match config.communication_method {
             CommunicationMethodType::Kafka => {
-                let brokers = config.kafka_brokers.context("Missing kafka brokers")?;
-                let group_id = config.kafka_group_id.context("Missing kafka group")?;
+                let brokers = config
+                    .kafka_brokers
+                    .clone()
+                    .context("Missing kafka brokers")?;
+                let group_id = config
+                    .kafka_group_id
+                    .clone()
+                    .context("Missing kafka group")?;
                 CommunicationMethod::Kafka(KafkaConfig { brokers, group_id })
             }
             CommunicationMethodType::Amqp => {
                 let connection_string = config
                     .amqp_connection_string
+                    .clone()
                     .context("Missing amqp connection string")?;
                 let consumer_tag = config
                     .amqp_consumer_tag
+                    .clone()
                     .context("Missing amqp consumer tag")?;
                 CommunicationMethod::Amqp(AmqpConfig {
                     connection_string,
                     consumer_tag,
                 })
             }
+            CommunicationMethodType::Grpc => {
+                return Ok(None);
+            }
         },
-        topic_or_exchange: config.replication_topic_or_exchange,
-        topic_or_queue: config.replication_topic_or_queue,
+        topic_or_exchange: config.replication_topic_or_exchange.clone(),
+        topic_or_queue: config.replication_topic_or_queue.clone(),
     };
+    Ok(Some(replication_config))
+}
+
+#[tokio::main]
+pub async fn main() -> anyhow::Result<()> {
+    env_logger::init();
+    let config = envy::from_env::<Config>().context("Env vars not set correctly")?;
+
+    let communication_config = communication_config(&config)?;
+    let replication_config = replication_config(&config)?;
 
     status_endpoints::serve();
     metrics::serve(
@@ -103,6 +155,7 @@ pub async fn main() -> anyhow::Result<()> {
     let registry = SchemaRegistryImpl::new(
         data_store,
         config.replication_role,
+        communication_config,
         replication_config,
         config.pod_name,
     )

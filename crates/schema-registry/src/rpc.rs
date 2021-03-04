@@ -1,13 +1,12 @@
 use crate::{
     db::SchemaDb,
     error::RegistryError,
-    replication::CommunicationMethod,
-    replication::CommunicationMethodConfig,
+    replication::ReplicationMethodConfig,
     replication::{ReplicationEvent, ReplicationRole, ReplicationState},
     types::DbExport,
     types::ViewUpdate,
     types::{NewSchema, NewSchemaVersion, VersionedUuid},
-    View,
+    CommunicationMethodConfig, View,
 };
 use anyhow::Context;
 use indradb::SledDatastore;
@@ -28,7 +27,7 @@ use uuid::Uuid;
 pub struct SchemaRegistryImpl {
     pub db: Arc<SchemaDb>,
     pub mq_metadata: Arc<MetadataFetcher>,
-    pub replication: Arc<Mutex<ReplicationState>>,
+    pub replication: Option<Arc<Mutex<ReplicationState>>>,
     pub pod_name: Option<String>,
 }
 
@@ -36,24 +35,29 @@ impl SchemaRegistryImpl {
     pub async fn new(
         db: SledDatastore,
         replication_role: ReplicationRole,
-        message_queue_config: CommunicationMethodConfig,
+        communication_config: CommunicationMethodConfig,
+        replication_config: Option<ReplicationMethodConfig>,
         pod_name: Option<String>,
     ) -> Result<Self> {
         let child_db = Arc::new(SchemaDb { db });
-        let mq_metadata = Arc::new(match &message_queue_config.queue {
-            CommunicationMethod::Kafka(kafka) => MetadataFetcher::new_kafka(&kafka.brokers).await?,
-            CommunicationMethod::Amqp(amqp) => {
+        let mq_metadata = Arc::new(match &communication_config {
+            CommunicationMethodConfig::Kafka(kafka) => {
+                MetadataFetcher::new_kafka(&kafka.brokers).await?
+            }
+            CommunicationMethodConfig::Amqp(amqp) => {
                 MetadataFetcher::new_amqp(&amqp.connection_string).await?
             }
-            CommunicationMethod::Grpc => MetadataFetcher::new_grpc("command_service").await?,
+            CommunicationMethodConfig::Grpc => MetadataFetcher::new_grpc("command_service").await?,
         });
         let schema_registry = Self {
             db: child_db.clone(),
             mq_metadata,
-            replication: Arc::new(Mutex::new(ReplicationState::new(
-                message_queue_config,
-                child_db,
-            ))),
+            replication: replication_config.map(|replication_config| {
+                Arc::new(Mutex::new(ReplicationState::new(
+                    replication_config,
+                    child_db,
+                )))
+            }),
             pod_name,
         };
         schema_registry.set_replication_role(replication_role);
@@ -61,17 +65,21 @@ impl SchemaRegistryImpl {
     }
 
     pub fn set_replication_role(&self, role: ReplicationRole) {
-        self.replication
-            .lock()
-            .unwrap_or_else(abort_on_poison)
-            .set_role(role);
+        if let Some(replication) = self.replication.as_ref() {
+            replication
+                .lock()
+                .unwrap_or_else(abort_on_poison)
+                .set_role(role);
+        }
     }
 
     fn replicate_message(&self, event: ReplicationEvent) {
-        self.replication
-            .lock()
-            .unwrap_or_else(abort_on_poison)
-            .replicate_message(event)
+        if let Some(replication) = self.replication.as_ref() {
+            replication
+                .lock()
+                .unwrap_or_else(abort_on_poison)
+                .replicate_message(event)
+        }
     }
 
     pub fn export_all(&self) -> anyhow::Result<DbExport> {
@@ -418,10 +426,12 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         _request: Request<Empty>,
     ) -> Result<Response<PodName>, Status> {
-        self.replication
-            .lock()
-            .unwrap_or_else(abort_on_poison)
-            .set_role(ReplicationRole::Master);
+        if let Some(replication) = self.replication.as_ref() {
+            replication
+                .lock()
+                .unwrap_or_else(abort_on_poison)
+                .set_role(ReplicationRole::Master);
+        }
 
         Ok(Response::new(PodName {
             name: self.pod_name.clone().unwrap_or_default(),

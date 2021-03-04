@@ -1,5 +1,5 @@
 use command_service::communication::MessageRouter;
-use command_service::input::{Error, MessageQueueInput};
+use command_service::input::{Error, Service};
 use command_service::output::{
     DruidOutputPlugin, OutputArgs, OutputPlugin, PostgresOutputPlugin, VictoriaMetricsOutputPlugin,
 };
@@ -71,7 +71,7 @@ async fn start_services(
     let message_router = MessageRouter::new(report_service, output);
 
     debug!("Starting command service on a message-queue");
-    MessageQueueInput::new(communication_config, message_router)
+    Service::new(communication_config, message_router)
         .await?
         .listen()
         .await?;

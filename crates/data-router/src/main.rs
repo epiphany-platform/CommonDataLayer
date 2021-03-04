@@ -15,19 +15,18 @@ use utils::{
     abort_on_poison,
     message_types::BorrowedInsertMessage,
     messaging_system::{
-        consumer::{CommonConsumer, ParConsumerHandler},
         get_order_group_id,
         message::CommunicationMessage,
+        parallel_consumer::{
+            ParallelCommonConsumer, ParallelCommonConsumerConfig, ParallelConsumerHandler,
+        },
         publisher::CommonPublisher,
     },
     metrics::{self, counter},
     parallel_task_queue::ParallelTaskQueue,
     task_limiter::TaskLimiter,
 };
-use utils::{
-    current_timestamp, message_types::DataRouterInsertMessage,
-    messaging_system::consumer::CommonConsumerConfig,
-};
+use utils::{current_timestamp, message_types::DataRouterInsertMessage};
 use uuid::Uuid;
 
 arg_enum! {
@@ -81,19 +80,15 @@ async fn main() -> anyhow::Result<()> {
 
     let schema_registry_addr = Arc::new(config.schema_registry_addr);
 
-    let task_limiter = TaskLimiter::new(config.task_limit);
     let task_queue = Arc::new(ParallelTaskQueue::default());
 
     consumer
-        .par_run(
-            Handler {
-                cache,
-                producer,
-                schema_registry_addr,
-                task_queue,
-            },
-            task_limiter,
-        )
+        .par_run(Handler {
+            cache,
+            producer,
+            schema_registry_addr,
+            task_queue,
+        })
         .await?;
 
     tokio::time::delay_for(tokio::time::Duration::from_secs(3)).await;
@@ -109,7 +104,7 @@ struct Handler {
 }
 
 #[async_trait]
-impl ParConsumerHandler for Handler {
+impl ParallelConsumerHandler for Handler {
     async fn handle<'a>(&'a self, message: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
         let order_group_id = get_order_group_id(message);
         let _guard =
@@ -210,7 +205,7 @@ async fn new_producer(config: &Config) -> anyhow::Result<CommonPublisher> {
     })
 }
 
-async fn new_consumer(config: &Config) -> anyhow::Result<CommonConsumer> {
+async fn new_consumer(config: &Config) -> anyhow::Result<ParallelCommonConsumer> {
     let config = match config.communication_method {
         CommunicationMethod::Kafka => {
             let topic = config
@@ -228,9 +223,10 @@ async fn new_consumer(config: &Config) -> anyhow::Result<CommonConsumer> {
 
             debug!("Initializing Kafka consumer");
 
-            CommonConsumerConfig::Kafka {
+            ParallelCommonConsumerConfig::Kafka {
                 brokers: &brokers,
                 group_id: &group_id,
+                task_limiter: TaskLimiter::new(config.task_limit),
                 topic,
             }
         }
@@ -250,8 +246,9 @@ async fn new_consumer(config: &Config) -> anyhow::Result<CommonConsumer> {
 
             debug!("Initializing Amqp consumer");
 
-            CommonConsumerConfig::Amqp {
+            ParallelCommonConsumerConfig::Amqp {
                 connection_string: &connection_string,
+                task_limiter: TaskLimiter::new(config.task_limit),
                 consumer_tag: &consumer_tag,
                 queue_name,
                 options: None,
@@ -264,10 +261,10 @@ async fn new_consumer(config: &Config) -> anyhow::Result<CommonConsumer> {
                 .context("grpc port was not specified")?;
 
             let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
-            CommonConsumerConfig::Grpc { addr }
+            ParallelCommonConsumerConfig::Grpc { addr }
         }
     };
-    Ok(CommonConsumer::new(config).await?)
+    Ok(ParallelCommonConsumer::new(config).await?)
 }
 
 async fn route(

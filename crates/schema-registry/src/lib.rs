@@ -14,6 +14,24 @@ pub mod rpc;
 pub mod schema;
 pub mod types;
 
+pub enum CommunicationMethodConfig {
+    Kafka(KafkaConfig),
+    Amqp(AmqpConfig),
+    Grpc,
+}
+
+#[derive(Clone, Debug)]
+pub struct KafkaConfig {
+    pub brokers: String,
+    pub group_id: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct AmqpConfig {
+    pub connection_string: String,
+    pub consumer_tag: String,
+}
+
 pub async fn validate_data_with_schema(
     schema_id: Uuid,
     json: &Value,

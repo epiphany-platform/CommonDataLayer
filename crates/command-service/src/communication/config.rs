@@ -1,7 +1,12 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
 use url::Url;
 
-use utils::messaging_system::consumer::{BasicConsumeOptions, CommonConsumerConfig};
+use utils::{
+    messaging_system::{
+        consumer::BasicConsumeOptions, parallel_consumer::ParallelCommonConsumerConfig,
+    },
+    task_limiter::TaskLimiter,
+};
 
 pub enum CommunicationConfig {
     Kafka {
@@ -26,52 +31,48 @@ pub enum CommunicationConfig {
 }
 
 impl CommunicationConfig {
-    pub fn task_limit(&self) -> usize {
-        match self {
-            CommunicationConfig::Kafka { task_limit, .. } => *task_limit,
-            CommunicationConfig::Amqp { task_limit, .. } => *task_limit,
-            CommunicationConfig::Grpc { task_limit, .. } => *task_limit,
-        }
-    }
-
     pub fn ordered_configs<'a>(
         &'a self,
-    ) -> Box<dyn Iterator<Item = CommonConsumerConfig<'a>> + 'a> {
+    ) -> Box<dyn Iterator<Item = ParallelCommonConsumerConfig<'a>> + 'a> {
         match self {
             CommunicationConfig::Kafka {
                 brokers,
                 group_id,
                 ordered_topics,
+                task_limit,
                 ..
             } => {
-                let iter = ordered_topics
-                    .iter()
-                    .map(move |topic| CommonConsumerConfig::Kafka {
-                        brokers: &brokers,
-                        group_id: &group_id,
-                        topic,
-                    });
+                let iter =
+                    ordered_topics
+                        .iter()
+                        .map(move |topic| ParallelCommonConsumerConfig::Kafka {
+                            brokers: &brokers,
+                            group_id: &group_id,
+                            task_limiter: TaskLimiter::new(*task_limit),
+                            topic,
+                        });
                 Box::new(iter)
             }
             CommunicationConfig::Amqp {
                 consumer_tag,
                 connection_string,
                 ordered_queue_names,
+                task_limit,
                 ..
             } => {
                 let options = Some(BasicConsumeOptions {
                     exclusive: true,
                     ..Default::default()
                 });
-                let iter =
-                    ordered_queue_names
-                        .iter()
-                        .map(move |queue_name| CommonConsumerConfig::Amqp {
-                            connection_string: &connection_string,
-                            consumer_tag: &consumer_tag,
-                            queue_name,
-                            options,
-                        });
+                let iter = ordered_queue_names.iter().map(move |queue_name| {
+                    ParallelCommonConsumerConfig::Amqp {
+                        connection_string: &connection_string,
+                        consumer_tag: &consumer_tag,
+                        queue_name,
+                        options,
+                        task_limiter: TaskLimiter::new(*task_limit),
+                    }
+                });
                 Box::new(iter)
             }
             CommunicationConfig::Grpc { .. } => Box::new(std::iter::empty()),
@@ -80,27 +81,31 @@ impl CommunicationConfig {
 
     pub fn unordered_configs<'a>(
         &'a self,
-    ) -> Box<dyn Iterator<Item = CommonConsumerConfig<'a>> + 'a> {
+    ) -> Box<dyn Iterator<Item = ParallelCommonConsumerConfig<'a>> + 'a> {
         match self {
             CommunicationConfig::Kafka {
                 brokers,
                 group_id,
                 unordered_topics,
+                task_limit,
                 ..
             } => {
-                let iter = unordered_topics
-                    .iter()
-                    .map(move |topic| CommonConsumerConfig::Kafka {
-                        brokers: &brokers,
-                        group_id: &group_id,
-                        topic,
-                    });
+                let iter =
+                    unordered_topics
+                        .iter()
+                        .map(move |topic| ParallelCommonConsumerConfig::Kafka {
+                            brokers: &brokers,
+                            group_id: &group_id,
+                            topic,
+                            task_limiter: TaskLimiter::new(*task_limit),
+                        });
                 Box::new(iter)
             }
             CommunicationConfig::Amqp {
                 consumer_tag,
                 connection_string,
                 unordered_queue_names,
+                task_limit,
                 ..
             } => {
                 let options = Some(BasicConsumeOptions {
@@ -108,18 +113,19 @@ impl CommunicationConfig {
                     ..Default::default()
                 });
                 let iter = unordered_queue_names.iter().map(move |queue_name| {
-                    CommonConsumerConfig::Amqp {
+                    ParallelCommonConsumerConfig::Amqp {
                         connection_string: &connection_string,
                         consumer_tag: &consumer_tag,
                         queue_name,
                         options,
+                        task_limiter: TaskLimiter::new(*task_limit),
                     }
                 });
                 Box::new(iter)
             }
             CommunicationConfig::Grpc { grpc_port, .. } => {
                 let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), *grpc_port);
-                let iter = std::iter::once(CommonConsumerConfig::Grpc { addr });
+                let iter = std::iter::once(ParallelCommonConsumerConfig::Grpc { addr });
                 Box::new(iter)
             }
         }
