@@ -26,7 +26,7 @@ class SchemaRegistry:
         self.svc = None
 
     def start(self):
-        env = {"DB_NAME": self.db_name, "REPLICATION_ROLE": self.replication_role, "REPLICATION_QUEUE": 'kafka',
+        env = {"DB_NAME": self.db_name, "REPLICATION_ROLE": self.replication_role, "COMMUNICATION_METHOD": 'kafka',
                "KAFKA_BROKERS": self.kafka_brokers, "KAFKA_GROUP_ID": self.kafka_group_id,
                "REPLICATION_TOPIC_OR_QUEUE": self.kafka_topics, "REPLICATION_TOPIC_OR_EXCHANGE": self.kafka_topics,
                "INPUT_PORT": self.input_port, "METRICS_PORT": "59101"}

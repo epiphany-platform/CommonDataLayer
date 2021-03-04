@@ -32,7 +32,7 @@ spec:
         - name: REPLICATION_ROLE
           value: "slave"
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: REPLICATION_QUEUE
+        - name: COMMUNICATION_METHOD
           value: "kafka"
         - name: KAFKA_BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
@@ -41,7 +41,7 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         {{- else }}
-        - name: REPLICATION_QUEUE
+        - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: "{{ .Values.global.amqpConnectionString }}"

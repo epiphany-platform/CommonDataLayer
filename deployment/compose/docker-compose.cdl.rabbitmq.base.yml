@@ -20,7 +20,7 @@ services:
     environment:
       DB_NAME: "/var/data/schema"
       REPLICATION_ROLE: "master"
-      REPLICATION_QUEUE: "amqp"
+      COMMUNICATION_METHOD: "amqp"
       AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
       AMQP_CONSUMER_TAG: "schema_registry"
       REPLICATION_TOPIC_OR_QUEUE: "cdl.schema_registry.internal"

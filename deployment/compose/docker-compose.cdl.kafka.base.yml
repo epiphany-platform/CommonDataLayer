@@ -20,7 +20,7 @@ services:
     environment:
       DB_NAME: "/var/data/schema"
       REPLICATION_ROLE: "master"
-      REPLICATION_QUEUE: "kafka"
+      COMMUNICATION_METHOD: "kafka"
       KAFKA_BROKERS: "kafka:9093"
       KAFKA_GROUP_ID: "schema_registry"
       REPLICATION_TOPIC_OR_QUEUE: "cdl.schema_registry.internal"
