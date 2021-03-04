@@ -5,7 +5,7 @@ use std::{
     sync::{mpsc, Arc},
 };
 use tokio::{runtime::Handle, sync::oneshot};
-use utils::messaging_system::publisher::CommonPublisher;
+use utils::communication::publisher::CommonPublisher;
 
 pub async fn replicate_db_events(
     config: ReplicationMethodConfig,

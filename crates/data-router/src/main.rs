@@ -13,8 +13,7 @@ use std::{
 use structopt::{clap::arg_enum, StructOpt};
 use utils::{
     abort_on_poison,
-    message_types::BorrowedInsertMessage,
-    messaging_system::{
+    communication::{
         get_order_group_id,
         message::CommunicationMessage,
         parallel_consumer::{
@@ -22,6 +21,7 @@ use utils::{
         },
         publisher::CommonPublisher,
     },
+    message_types::BorrowedInsertMessage,
     metrics::{self, counter},
     parallel_task_queue::ParallelTaskQueue,
     task_limiter::TaskLimiter,

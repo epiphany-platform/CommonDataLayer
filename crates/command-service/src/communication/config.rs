@@ -2,7 +2,7 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 use url::Url;
 
 use utils::{
-    messaging_system::{
+    communication::{
         consumer::BasicConsumeOptions, parallel_consumer::ParallelCommonConsumerConfig,
     },
     task_limiter::TaskLimiter,

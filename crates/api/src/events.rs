@@ -10,7 +10,7 @@ use futures::{Future, Stream};
 use juniper::FieldResult;
 use std::pin::Pin;
 use tokio::sync::broadcast::{self, Sender};
-use utils::messaging_system::{
+use utils::communication::{
     consumer::{CommonConsumer, CommonConsumerConfig, ConsumerHandler},
     message::CommunicationMessage,
 };

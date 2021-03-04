@@ -5,7 +5,7 @@ use anyhow::{Context as _, Result};
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
 use tokio::sync::Mutex;
-use utils::messaging_system::publisher::CommonPublisher;
+use utils::communication::publisher::CommonPublisher;
 
 use crate::{
     config::{Config, MessageQueueConfig},

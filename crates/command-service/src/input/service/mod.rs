@@ -7,11 +7,11 @@ use async_trait::async_trait;
 use futures::future::try_join_all;
 use log::{error, trace};
 use std::{process, sync::Arc};
-use utils::messaging_system::get_order_group_id;
-use utils::messaging_system::{
+use utils::communication::get_order_group_id;
+use utils::communication::{
     message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,
 };
-use utils::messaging_system::{parallel_consumer::ParallelCommonConsumer, Result};
+use utils::communication::{parallel_consumer::ParallelCommonConsumer, Result};
 use utils::metrics::counter;
 use utils::{message_types::BorrowedInsertMessage, parallel_task_queue::ParallelTaskQueue};
 

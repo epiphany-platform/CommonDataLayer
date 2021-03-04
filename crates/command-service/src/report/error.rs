@@ -1,5 +1,5 @@
 use thiserror::Error as DeriveError;
-use utils::messaging_system::Error as MSError;
+use utils::communication::Error as MSError;
 
 #[derive(Debug, DeriveError)]
 pub enum Error {

@@ -20,8 +20,8 @@ use semver::VersionReq;
 use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Status};
-use utils::messaging_system::metadata_fetcher::MetadataFetcher;
-use utils::{abort_on_poison, messaging_system::Result};
+use utils::communication::metadata_fetcher::MetadataFetcher;
+use utils::{abort_on_poison, communication::Result};
 use uuid::Uuid;
 
 pub struct SchemaRegistryImpl {

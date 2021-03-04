@@ -6,8 +6,8 @@ use log::{debug, trace};
 use serde::Serialize;
 use serde_json::Value;
 use std::sync::Arc;
+use utils::communication::publisher::CommonPublisher;
 use utils::message_types::OwnedInsertMessage;
-use utils::messaging_system::publisher::CommonPublisher;
 use uuid::Uuid;
 
 const APPLICATION_NAME: &str = "Command Service";

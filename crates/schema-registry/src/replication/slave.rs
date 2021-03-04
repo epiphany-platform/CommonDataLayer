@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use log::{error, trace};
 use std::{process, sync::Arc};
 use tokio::sync::oneshot::Receiver;
-use utils::messaging_system::{
+use utils::communication::{
     consumer::CommonConsumer,
     consumer::{CommonConsumerConfig, ConsumerHandler},
     message::CommunicationMessage,

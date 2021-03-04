@@ -1,4 +1,4 @@
-use utils::messaging_system::Error as MessagingError;
+use utils::communication::Error as MessagingError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
