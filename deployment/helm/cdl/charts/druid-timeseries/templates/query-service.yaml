@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-druid-query-service
+  labels:
+    app: {{ .Release.Name }}-druid-query-service
+    repository.type: timeseries
+    repository.name: druid
+spec:
+  replicas: {{ .Values.queryServiceReplicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-druid-query-service
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-druid-query-service
+        repository.type: timeseries
+        repository.name: druid
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51805'
+        prometheus.io/path: '/metrics'
+    spec:
+      containers:
+      - name: cdl-druid-query-service
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-query-service-ts:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["/bin/query-service-ts","druid"]
+        env:
+        - name: DRUID_QUERY_URL
+          value: {{ .Values.queryURL }}
+        - name: DRUID_TABLE_NAME
+          value: {{ .Values.tableName }}
+        - name: INPUT_PORT
+          value: "6400"
+        - name: RUST_LOG
+          value: "info,query_service_ts=debug"
+        ports:
+        - containerPort: 51805
+      imagePullSecrets:
+      - name: {{ .Values.global.cdlImagePullSecrets }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-druid-query-service
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-druid-query-service
+  ports:
+    - port: 6400
+      targetPort: 6400

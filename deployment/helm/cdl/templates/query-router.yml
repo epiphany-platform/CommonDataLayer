@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-query-router
+  labels:
+    app: {{ .Release.Name }}-query-router
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-query-router
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-query-router
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51805'
+        prometheus.io/path: '/metrics'
+    spec:
+      containers:
+      - name: cdl-query-router
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-query-router:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["/bin/query-router"]
+        env:
+        - name: SCHEMA_REGISTRY_ADDR
+          value: "http://{{ .Release.Name }}-schema-registry:6400"
+        - name: CACHE_CAPACITY
+          value: "500"
+        - name: INPUT_PORT
+          value: "6401"
+        - name: RUST_LOG
+          value: "info,query_router=debug"
+        ports:
+        - containerPort: 51805
+      imagePullSecrets:
+        - name: {{ .Values.global.cdlImagePullSecrets }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-query-router
+spec:
+  type: NodePort
+  selector:
+    app: {{ .Release.Name }}-query-router
+  ports:
+    - port: 6401
+      targetPort: 6401
+      nodePort: {{ .Values.queryRouter.port }}
+

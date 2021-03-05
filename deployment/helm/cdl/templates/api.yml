@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-api
+  labels:
+    app: {{ .Release.Name }}-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-api
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-api
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51805'
+        prometheus.io/path: '/metrics'
+    spec:
+      containers:
+      - name: cdl-api
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-api:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["/bin/api"]
+        env:
+        - name: SCHEMA_REGISTRY_ADDR
+          value: "http://{{ .Release.Name }}-schema-registry:6400"
+        - name: QUERY_ROUTER_ADDR
+          value: "http://{{ .Release.Name }}-query-router:6401"
+        - name: INPUT_PORT
+          value: "6402"
+        - name: REPORT_TOPIC_OR_QUEUE
+          value: "{{ .Values.global.reportTopicOrExchange }}"
+        - name: DATA_ROUTER_TOPIC_OR_QUEUE
+          value: "{{ .Values.dataRouter.inputTopicOrQueue }}"
+        {{- if eq .Values.global.communicationMethod "kafka" }}
+        - name: MESSAGE_QUEUE
+          value: "kafka"
+        - name: KAFKA_BROKERS
+          value: "{{ .Values.global.kafkaBrokers }}"
+        - name: KAFKA_GROUP_ID
+          value: "api"
+        {{- else }}
+        - name: MESSAGE_QUEUE
+          value: "amqp"
+        - name: AMQP_CONNECTION_STRING
+          value: "{{ .Values.global.amqpConnectionString }}"
+        - name: AMQP_CONSUMER_TAG
+          value: "api"
+        {{- end }}
+        - name: RUST_LOG
+          value: "info,api=debug"
+        ports:
+        - containerPort: 51805
+      imagePullSecrets:
+        - name: {{ .Values.global.cdlImagePullSecrets }}
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-api
+spec:
+  type: NodePort
+  selector:
+    app: {{ .Release.Name }}-api
+  ports:
+    - port: 6402
+      targetPort: 6402
+      nodePort: {{ .Values.api.port }}
+

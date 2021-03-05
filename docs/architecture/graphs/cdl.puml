@@ -1,0 +1,93 @@
+@startuml
+skinparam linetype polyline
+skinparam backgroundColor #FEFEFE
+skinparam transparent false
+
+interface "Schema Registry" as SRDoc
+interface "Schema Registry" as SRTS
+
+cloud {
+  [External System]
+}
+
+frame "Management Layer" {
+    [CLI]
+    [Admin Web Panel]
+}
+
+[API]
+
+frame "Ingestion Layer" {
+  API -left--. [Data Router]
+  [Data Router] -left--. SRDoc
+}
+
+frame "Configuration Layer" {
+  [Schema Registry] -down--. API
+  [Leader Elector] -left--. [Schema Registry]
+}
+
+frame "Storage Layer" {
+    node "Repository Doc" {
+      [Command Service Doc]
+
+      database "Postgres" {
+        [Document Data]
+      }
+
+      [DB Shrinker Storage]
+
+      [Query Service Doc]
+    }
+
+    node "Repository TS" {
+      [Command Service TS]
+
+      database "Victoria Metrics" {
+        [Timeseries Data]
+      }
+
+      [Query Service TS]
+    }
+
+    node "Repository Blob" {
+      [Command Service Blob]
+
+      database "Sled DB" {
+        [Blob Data]
+      }
+
+      [Query Service Blob]
+    }
+
+
+    () "any number of repositories (Document/Timeseries/Blob)" as ANY
+}
+
+frame "Retrieval Layer" {
+  [Query Router] -right-. SRTS
+}
+
+cloud {
+  actor User
+}
+
+[Admin Web Panel] -down-> [API] : GraphQL
+[External System] -down-> [Data Router] : MQ
+[Data Router] -down--> [Command Service Doc] : MQ
+[Data Router] -down-> [Command Service TS] : MQ
+[Data Router] -down--> [Command Service Blob] : MQ
+[Data Router] -down-> ANY : MQ
+[Command Service Doc] -down-> [Document Data] : SQL
+[Command Service TS] -down-> [Timeseries Data] : REST
+[Command Service Blob] -down-> [Blob Data] : REST
+[DB Shrinker Storage] -down-> [Document Data] : SQL
+[Query Service Doc] -up-> [Document Data] : SQL
+[Query Service TS] -up-> [Timeseries Data] : REST
+[Query Service Blob] -up-> [Blob Data] : REST
+[Query Router] -up--> [Query Service Doc] : gRPC
+[Query Router] -up-> [Query Service TS] : gRPC
+[Query Router] -up--> [Query Service Blob] : gRPC
+[Query Router] -up-> ANY : gRPC
+User -up-> [Query Router] : REST
+@enduml

@@ -1,0 +1,62 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-druid-command-service
+  labels:
+    app: {{ .Release.Name }}-druid-command-service
+    repository.type: timeseries
+    repository.name: druid
+spec:
+  replicas: {{ .Values.commandServiceReplicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-druid-command-service
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-druid-command-service
+        repository.type: timeseries
+        repository.name: druid
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51805'
+        prometheus.io/path: '/metrics'
+    spec:
+      containers:
+      - name: {{ .Release.Name }}-druid-command-service
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-command-service:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["/bin/command-service","druid"]
+        env:
+        {{- if eq .Values.global.communicationMethod "kafka" }}
+        - name: COMMUNICATION_METHOD
+          value: "kafka"
+        - name: KAFKA_BROKERS
+          value: {{ .Values.global.kafkaBrokers }}
+        - name: KAFKA_GROUP_ID
+          value: "cdl-druid-command-service"
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "amqp"
+        - name: AMQP_CONNECTION_STRING
+          value: {{ .Values.global.amqpConnectionString }}
+        - name: AMQP_CONSUMER_TAG
+          value: "cdl-druid-command-service"
+        {{- end }}
+        - name: ORDERED_TOPICS_OR_QUEUES
+          value: {{ .Values.inputTopicOrQueue }}
+        - name: DRUID_OUTPUT_BROKERS
+          value: {{ .Values.global.kafkaBrokers }}
+        - name: DRUID_OUTPUT_TOPIC
+          value: {{ .Values.outputTopic }}
+        - name: REPORT_TOPIC_OR_EXCHANGE
+          value: {{ .Values.global.reportTopicOrExchange }}
+        - name: RUST_LOG
+          value: "info,command_service=debug"
+        ports:
+        - containerPort: 51805
+  # TODO: Probes
+      imagePullSecrets:
+      - name: {{ .Values.global.cdlImagePullSecrets }}
+
