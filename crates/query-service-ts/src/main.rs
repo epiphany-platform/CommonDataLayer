@@ -13,6 +13,8 @@ pub struct Config {
     pub inner: ConfigType,
     #[structopt(long, env = "INPUT_PORT")]
     pub input_port: u16,
+    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
+    pub metrics_port: u16,
 }
 
 #[derive(StructOpt)]
@@ -36,7 +38,7 @@ async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Resul
 async fn main() -> anyhow::Result<()> {
     let config: Config = Config::from_args();
     env_logger::init();
-    metrics::serve();
+    metrics::serve(config.metrics_port);
 
     match config.inner {
         ConfigType::Victoria(victoria_config) => {

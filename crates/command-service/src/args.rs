@@ -4,6 +4,7 @@ use crate::report::ReportServiceConfig;
 use structopt::clap::arg_enum;
 use structopt::StructOpt;
 use thiserror::Error;
+use utils::metrics;
 
 #[derive(Clone, Debug, StructOpt)]
 pub struct Args {
@@ -15,6 +16,9 @@ pub struct Args {
 
     #[structopt(flatten)]
     pub report_config: ReportServiceConfig,
+
+    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
+    pub metrics_port: u16,
 }
 
 arg_enum! {

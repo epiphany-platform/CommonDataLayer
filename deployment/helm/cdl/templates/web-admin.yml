@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-web-admin
+  labels:
+    app: {{ .Release.Name }}-web-admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-web-admin
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-web-admin
+    spec:
+      containers:
+      - name: cdl-web-admin
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-web-admin:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        ports:
+        - containerPort: 80
+      imagePullSecrets:
+        - name: {{ .Values.global.cdlImagePullSecrets }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-web-admin
+spec:
+  type: NodePort
+  selector:
+    app: {{ .Release.Name }}-web-admin
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: {{ .Values.webAdmin.port }}

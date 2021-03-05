@@ -36,12 +36,14 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
 
       - name: Cache cargo target dir
         uses: actions/cache@v2.1.4
         with:
           path: target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-build-target-
 
       - name: Clippy
         run: find . | grep "\.rs$" | grep -v "\./target/" | xargs touch ; cargo clippy --locked --all-features -- -D warnings
@@ -74,6 +76,9 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v2
 
+      - name: Start environment via docker-compose
+        run: docker-compose -f deployment/compose/docker-compose.yml up -d postgres kafka victoria_metrics
+
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -92,7 +97,11 @@ jobs:
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Run tests
-        run: tests/run-tests.sh
+        run: ./run-tests.sh
+        working-directory: ./tests/
 
       - name: Clear bloat
         run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm
+
+      - name: Stop environment
+        run: docker-compose -f deployment/compose/docker-compose.yml down

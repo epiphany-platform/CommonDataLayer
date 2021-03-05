@@ -8,20 +8,29 @@ global:
   reportTopicOrExchange: cdl.errors
   amqpConnectionString: "amqp://user:CHANGEME@infrastructure-rabbitmq:5672/%2f"
 
+api:
+  port: 30152
+
 dataRouter:
   inputTopicOrQueue: cdl.data.input
-  multitasking: true
-
-schemaRegistry:
-  storageClass: standard
-  storageSize: 3Gi
-  port: 30150
 
 leaderElector:
   heartbeatTime: 2
 
+queryRouter:
+  port: 30153
+
+schemaRegistry:
+  storageClass:
+  storageSize: 3Gi
+  port: 30150
+
+webAdmin:
+  port: 30151
+
 postgres-document:
   commandServiceReplicaCount: 1
+  queryServiceReplicaCount: 1
   postgresConnectionString: "postgres://postgres:CHANGEME@infrastructure-postgresql/CDL"
   postgresUsername: postgres
   postgresPassword: CHANGEME
@@ -31,20 +40,17 @@ postgres-document:
   postgresSchema: public
   inputTopicOrQueue: cdl.document.data
 
-sled-document:
-  replicaCommandCount: 1
-  replicaDbCount: 1
-  maxDbSize: 3Gi
-  storageClass: standard
-  inputTopicOrQueue: cdl.document2.data
-
 druid-timeseries:
-  replicaCommandCount: 1
+  commandServiceReplicaCount: 1
+  queryServiceReplicaCount: 1
   inputTopicOrQueue: cdl.timeseries.data
   outputTopic: cdl.timeseries.generic-druid
+  queryURL: http://infrastructure-druid-broker:8082/
+  tableName: CDL
 
 victoria-metrics-timeseries:
-  replicaCommandCount: 1
+  commandServiceReplicaCount: 1
+  queryServiceReplicaCount: 1
   inputTopicOrQueue: cdl.timeseries2.data
   ingestionMethod: MessageQueue
   outputURL: http://infrastructure-victoria-metrics-single-server:8428/

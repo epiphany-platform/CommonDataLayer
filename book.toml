@@ -1,6 +1,17 @@
 [book]
-authors = ["Sam Mohr <samuel.mohr@hitachi-powergrids.com>"]
+authors = ["CDL Team"]
 language = "en"
 multilingual = false
-src = "book"
+src = "docs"
 title = "The Common Data Layer"
+
+[build]
+build-dir = "target/book"
+
+[output.html]
+git-repository-url = "https://github.com/epiphany-platform/CommonDataLayer"
+
+[output.linkcheck]
+warning-policy = "error"
+
+[preprocessor.plantuml]

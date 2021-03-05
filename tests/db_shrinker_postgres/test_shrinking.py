@@ -1,30 +1,33 @@
 import pytest
 
 from tests.common import load_case
-from tests.common.cdl_env import cdl_env
 from tests.common.config import PostgresConfig
 from tests.common.db_shrinker_postgres import DbShrinkerPostgres
-from tests.common.postgres import fetch_data_table, insert_test_data, connect_to_postgres
+from tests.common.postgres import clear_data, insert_data, fetch_data
 
 
 @pytest.fixture(params=['field_added', 'field_deleted', 'partial_update', 'simple_override'])
 def shrinking(request):
-    with cdl_env('../deployment/compose', postgres_config=PostgresConfig()) as env:
-        db = connect_to_postgres(env.postgres_config)
-        data, expected = load_case(request.param, 'db_shrinker_postgres')
+    data, expected = load_case(request.param, 'db_shrinker_postgres')
 
-        insert_test_data(db, data)
+    postgres_config=PostgresConfig()
 
-        yield db, env.postgres_config, expected
+    # prepare environment
+    clear_data(postgres_config)
 
-        db.close()
+    insert_data(postgres_config, data)
+
+    yield postgres_config, expected
+
+    # cleanup environment
+    clear_data(postgres_config)
 
 
 def test_shrinking(shrinking):
-    db, postgres_config, expected = shrinking
+    postgres_config, expected = shrinking
 
     DbShrinkerPostgres(postgres_config).run()
 
-    actual = fetch_data_table(db)
+    actual = fetch_data(postgres_config)
 
     assert actual == expected

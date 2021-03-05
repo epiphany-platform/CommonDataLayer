@@ -6,30 +6,24 @@ from time import sleep
 from tests.common.config import VictoriaMetricsConfig
 
 
-class VictoriaMetrics:
-    def __init__(self, victoria_metrics_config: VictoriaMetricsConfig):
-        self.config = victoria_metrics_config
+def fetch_data(config: VictoriaMetricsConfig):
+    export_url = urljoin(config.database_url, "api/v1/export")
+    json_lines = []
+    for line in requests.get(export_url, 'match[]={__name__!=""}').text.splitlines():
+        json_lines.append(json.loads(line))
+    json_lines.sort(key=lambda x: x['metric']['__name__'])
+    return json_lines
 
-    def fetch_data_table(self):
-        export_url = urljoin(self.config.database_url, "api/v1/export")
-        json_lines = []
-        for line in requests.get(export_url, 'match[]={__name__!=""}').text.splitlines():
-            json_lines.append(json.loads(line))
-        return json_lines
 
-    def clear_data_base(self):
-        delete_url = urljoin(self.config.database_url,
-                             "api/v1/admin/tsdb/delete_series")
-        requests.post(delete_url, data={"match[]": '{__name__!=""}'})
+def clear_data(config: VictoriaMetricsConfig):
+    delete_url = urljoin(config.database_url,
+                         "api/v1/admin/tsdb/delete_series")
+    requests.post(delete_url, data={"match[]": '{__name__!=""}'})
 
-    def is_db_alive(self):
-        result = requests.get(self.config.database_url)
-        result.raise_for_status()
-        return result.ok
 
-    def insert_test_data(self, data):
-        insert_url = urljoin(self.config.database_url,
-                             "write")
-        for line in data:
-            requests.post(insert_url, line)
-        sleep(2)  # Ensure that 'search.latencyOffset' passed
+def insert_data(config: VictoriaMetricsConfig, data):
+    insert_url = urljoin(config.database_url,
+                         "write")
+    for line in data:
+        requests.post(insert_url, line)
+    sleep(2)  # Ensure that 'search.latencyOffset' passed

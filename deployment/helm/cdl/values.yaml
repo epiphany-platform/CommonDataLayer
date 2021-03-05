@@ -8,20 +8,29 @@ global:
   cdlImagePullSecrets: services
   reportTopicOrExchange: cdl.errors
 
+api:
+  port: 30152
+
 dataRouter:
   inputTopicOrQueue: cdl.data.input
-  multitasking: true
+
+leaderElector:
+  heartbeatTime: 2
+
+queryRouter:
+  port: 30153
 
 schemaRegistry:
   storageClass: standard
   storageSize: 3Gi
   port: 30150
 
-leaderElector:
-  heartbeatTime: 2
+webAdmin:
+  port: 30151
 
 postgres-document:
   commandServiceReplicaCount: 1
+  queryServiceReplicaCount: 1
   postgresUsername: postgres
   postgresPassword: postgres
   postgresHost: 10.1.1.5
@@ -30,19 +39,16 @@ postgres-document:
   postgresSchema: public
   inputTopicOrQueue: cdl.document.data
 
-sled-document:
-  replicaCommandCount: 0
-  replicaDbCount: 0
-  maxDbSize: 3Gi
-  storageClass: azurefile
-  inputTopicOrQueue: cdl.document2.data
-
 druid-timeseries:
-  replicaCommandCount: 1
+  commandServiceReplicaCount: 0
+  queryServiceReplicaCount: 0
   inputTopicOrQueue: cdl.timeseries.data
   outputTopic: cdl.timeseries.generic-druid
+  queryURL:
+  tableName: CDL
 
 victoria-metrics-timeseries:
-  replicaCommandCount: 1
+  commandServiceReplicaCount: 0
+  queryServiceReplicaCount: 0
   inputTopicOrQueue: cdl.timeseries2.data
   outputURL: http://infrastructure-victoria-metrics-single-server:8428/

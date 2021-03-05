@@ -3,13 +3,41 @@ name: Deploy the MDBook to GitHub Pages
 on:
   push:
     branches: [ develop ]
-    paths: [ book ]
-
 jobs:
-  build:
+  deploy-mdbook:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - uses: XAMPPRocky/deploy-mdbook@v1.1.0
+
+      - run: sudo apt-get update
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          profile: minimal
+          override: true
+
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v1
+        with:
+          mdbook-version: '0.4.6'
+
+      - name: Setup linkcheck
+        run: ./.github/scripts/install-executable-from-git.sh --git Michael-F-Bryan/mdbook-linkcheck --archive-type .zip --exec-name mdbook-linkcheck
+
+      - name: Setup plantuml dependencies
+        run: sudo apt-get install -y plantuml build-essential
+
+      - name: Setup plantuml
+        uses: actions-rs/install@v0.1
+        with:
+          crate: mdbook-plantuml
+
+      - name: Build book
+        run: mdbook build
+
+      - name: Deploy to Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./target/book/html

@@ -2,16 +2,16 @@
   "data": {
     "query_for": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
     "database_setup": [
-      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=120 1611835710000000000",
-      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=121 1611835711000000000",
-      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=122 1611835712000000000",
-      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=123 1611835713000000000",
-      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=124 1611835714000000000",
-      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=125 1611835715000000000",
-      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=126 1611835716000000000",
-      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=127 1611835717000000000",
-      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=128 1611835718000000000",
-      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=129 1611835719000000000"
+      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=120 $TIMESTAMP",
+      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=121 $TIMESTAMP",
+      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=122 $TIMESTAMP",
+      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=123 $TIMESTAMP",
+      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=124 $TIMESTAMP",
+      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=125 $TIMESTAMP",
+      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=126 $TIMESTAMP",
+      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=127 $TIMESTAMP",
+      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=128 $TIMESTAMP",
+      "a46a7fc0-0ca3-4852-affc-d589355524c5,object_id=6793227c-1b5a-413c-b310-1a86dc2d3c78 test=129 $TIMESTAMP"
     ]
   },
   "expected": {
@@ -24,43 +24,43 @@
           },
           "values": [
             [
-              1611835710,
+              0,
               "120"
             ],
             [
-              1611835711,
+              0,
               "121"
             ],
             [
-              1611835712,
+              0,
               "122"
             ],
             [
-              1611835713,
+              0,
               "123"
             ],
             [
-              1611835714,
+              0,
               "124"
             ],
             [
-              1611835715,
+              0,
               "125"
             ],
             [
-              1611835716,
+              0,
               "126"
             ],
             [
-              1611835717,
+              0,
               "127"
             ],
             [
-              1611835718,
+              0,
               "128"
             ],
             [
-              1611835719,
+              0,
               "129"
             ]
           ]
