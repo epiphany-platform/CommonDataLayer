@@ -1,0 +1,84 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - "develop"
+  pull_request:
+
+
+jobs:
+  component-testing:
+    name: Test modules
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: install k8s
+        run: |
+          curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE=777 sh -s - --docker
+          cat /etc/rancher/k3s/k3s.yaml
+          mkdir -p ~/.kube
+          cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+      - name: deploy infrastructure
+        run: helm install --values ./deployment/helm/infrastructure/values.yaml infrastructure ./deployment/helm/infrastructure
+
+      - name: Get Date
+        id: get-date
+        run: |
+          echo "::set-output name=date::$(/bin/date -u "+%Y%m")"
+      - name: Cache cargo directories
+        uses: actions/cache@v2.1.4
+        id: cache
+        with:
+          path: |
+            ./cache_img
+          key: ${{ runner.os }}-docker-${{ steps.get-date.outputs.date }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-docker-${{ steps.get-date.outputs.date }}-
+      - name: Import cache image
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: |
+          docker load -i cache_img
+          docker tag $(docker images | awk '{print $3}'  | awk 'NR==2') local/cache
+      - name: Restore cache
+        if: steps.cache.outputs.cache-hit == 'true'
+        run: DOCKER_BUILDKIT=1 docker build --no-cache --target cache-import .
+      - name: build cdl images
+        run: DOCKER_BUILDKIT=1 ENV=CI ./build.sh
+      - name: Build cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          DOCKER_BUILDKIT=1 docker build -t local/cache --no-cache --target cache-export .
+          docker save local/cache:latest > cache_img
+      - name: add kafka topics
+        run: |
+          topics=(cdl.data.input CDL_SCHEMA_SYNCHRO cdl.document.data cdl.timeseries.data cdl.timeseries.generic-druid cdl.timeseries2.data)
+          for topic in "${topics[@]}"
+          do
+          kubectl exec infrastructure-kafka-0 /bin/bash -- /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic $topic --bootstrap-server localhost:9092
+          done
+      - name: deploy cdl kafka
+        run: helm install --values ./deployment/helm/cdl/values-local.yaml cdl ./deployment/helm/cdl
+      - name: wait
+        run: sleep 20
+      - name: check if pods are running
+        run: |
+          kubectl get pods
+          [[ -z `kubectl get pods --field-selector=status.phase!=Running` ]]
+      - name: uninstall cdl kafka
+        run: helm uninstall cdl
+      - name: wait
+        run: sleep 30
+
+      - name: depoly cdl rabbitmq
+        run: helm install --values ./deployment/helm/cdl/values-local.yaml --set global.communicationMethod=amqp cdl ./deployment/helm/cdl
+      - name: wait
+        run: sleep 20
+      - name: check if pods are running
+        run: |
+          kubectl get pods
+          [[ -z `kubectl get pods --field-selector=status.phase!=Running` ]]
+      - name: uninstall cdl rabbitmq
+        run: helm uninstall cdl
