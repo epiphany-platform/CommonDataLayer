@@ -105,7 +105,7 @@ impl CommonConsumer {
 
     /// Process messages in order. Cannot be used with Grpc.
     /// # Error handling
-    /// Program exits on first unhandled message. I may cause crash-loop.
+    /// Function returns and error on first unhandled message.
     pub async fn run(self, mut handler: impl ConsumerHandler) -> Result<()> {
         match self {
             CommonConsumer::Kafka {
@@ -121,8 +121,7 @@ impl CommonConsumer {
                             ack_queue.ack(&message.message, &consumer);
                         }
                         Err(e) => {
-                            log::error!("Couldn't process message: {:?}", e);
-                            std::process::abort();
+                            return Err(e.into());
                         }
                     }
                 }
@@ -137,8 +136,7 @@ impl CommonConsumer {
                                 .await?;
                         }
                         Err(e) => {
-                            log::error!("Couldn't process message: {:?}", e);
-                            std::process::abort();
+                            return Err(e.into());
                         }
                     }
                 }
