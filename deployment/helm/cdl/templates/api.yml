@@ -32,17 +32,17 @@ spec:
           value: "6402"
         - name: REPORT_SOURCE
           value: "{{ .Values.global.reportDestination }}"
-        - name: DATA_ROUTER_SOURCE
+        - name: INSERT_DESTINATION
           value: "{{ .Values.dataRouter.inputSource }}"
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: MESSAGE_QUEUE
+        - name: COMMUNICATION_METHOD
           value: "kafka"
         - name: KAFKA_BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
         - name: KAFKA_GROUP_ID
           value: "api"
         {{- else }}
-        - name: MESSAGE_QUEUE
+        - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: "{{ .Values.global.amqpConnectionString }}"

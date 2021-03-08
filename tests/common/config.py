@@ -44,7 +44,7 @@ class KafkaInputConfig:
         return {
             "KAFKA_BROKERS": self.brokers,
             "KAFKA_GROUP_ID": self.group_id,
-            "UNORDERED_TOPICS_OR_QUEUES": self.topic,
+            "UNORDERED_SOURCES": self.topic,
         }
 
 

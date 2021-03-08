@@ -50,9 +50,9 @@ pub struct CommunicationArgs {
     pub report_endpoint_url: Option<Url>,
 
     #[structopt(long, env)]
-    pub ordered_topics_or_queues: Option<String>,
+    pub ordered_sources: Option<String>,
     #[structopt(long, env)]
-    pub unordered_topics_or_queues: Option<String>,
+    pub unordered_sources: Option<String>,
 
     #[structopt(
         long = "threaded-task-limit",
@@ -72,16 +72,16 @@ impl Args {
         let communication_args = &self.communication_args;
         Ok(match communication_args.communication_method {
             CommunicationMethod::Amqp | CommunicationMethod::Kafka => {
-                let ordered_topics_or_queues: Vec<_> = communication_args
-                    .ordered_topics_or_queues
+                let ordered_sources: Vec<_> = communication_args
+                    .ordered_sources
                     .clone()
                     .unwrap_or_default()
                     .split(',')
                     .filter(|queue_name| !queue_name.is_empty())
                     .map(String::from)
                     .collect();
-                let unordered_topics_or_queues: Vec<_> = communication_args
-                    .unordered_topics_or_queues
+                let unordered_sources: Vec<_> = communication_args
+                    .unordered_sources
                     .clone()
                     .unwrap_or_default()
                     .split(',')
@@ -91,7 +91,7 @@ impl Args {
 
                 let task_limit = communication_args.task_limit;
 
-                if ordered_topics_or_queues.is_empty() && unordered_topics_or_queues.is_empty() {
+                if ordered_sources.is_empty() && unordered_sources.is_empty() {
                     return Err(MissingConfigError("Queue names"));
                 }
 
@@ -109,8 +109,8 @@ impl Args {
                         CommunicationConfig::Amqp {
                             connection_string,
                             consumer_tag,
-                            ordered_queue_names: ordered_topics_or_queues,
-                            unordered_queue_names: unordered_topics_or_queues,
+                            ordered_queue_names: ordered_sources,
+                            unordered_queue_names: unordered_sources,
                             task_limit,
                         }
                     }
@@ -126,8 +126,8 @@ impl Args {
                         CommunicationConfig::Kafka {
                             brokers,
                             group_id,
-                            ordered_topics: ordered_topics_or_queues,
-                            unordered_topics: unordered_topics_or_queues,
+                            ordered_topics: ordered_sources,
+                            unordered_topics: unordered_sources,
                             task_limit,
                         }
                     }

@@ -110,7 +110,11 @@ impl ParallelConsumerHandler for Handler {
         let _guard =
             order_group_id.map(move |x| async move { self.task_queue.acquire_permit(x).await });
 
-        trace!("Received message `{:?}`", message.payload());
+        trace!(
+            "Received message ({:?}) `{:?}`",
+            message.key(),
+            message.payload()
+        );
 
         let message_key = get_order_group_id(message).unwrap_or_default();
         counter!("cdl.data-router.input-msg", 1);

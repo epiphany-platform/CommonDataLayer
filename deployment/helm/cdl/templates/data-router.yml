@@ -26,17 +26,15 @@ spec:
         env:
         - name: INPUT_SOURCE
           value: "{{ .Values.dataRouter.inputSource }}"
-        - name: ERROR_DESTINATION
-          value: "{{ .Values.global.reportDestination }}"
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: MESSAGE_QUEUE
+        - name: COMMUNICATION_METHOD
           value: "kafka"
         - name: KAFKA_BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
         - name: KAFKA_GROUP_ID
           value: "data-router"
         {{- else }}
-        - name: MESSAGE_QUEUE
+        - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: "{{ .Values.global.amqpConnectionString }}"

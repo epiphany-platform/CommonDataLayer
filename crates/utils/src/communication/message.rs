@@ -43,10 +43,10 @@ impl CommunicationMessage for AmqpCommunicationMessage {
 
 impl CommunicationMessage for rpc::generic::Message {
     fn payload(&self) -> Result<&str> {
-        Ok(&self.key)
+        Ok(std::str::from_utf8(&self.payload)?)
     }
 
     fn key(&self) -> Result<&str> {
-        Ok(std::str::from_utf8(&self.payload)?)
+        Ok(&self.key)
     }
 }

@@ -16,7 +16,7 @@ pub struct Config {
     #[structopt(long, env)]
     pub report_source: String,
     #[structopt(long, env)]
-    pub data_router_source: String,
+    pub insert_destination: String,
 }
 
 #[derive(StructOpt)]

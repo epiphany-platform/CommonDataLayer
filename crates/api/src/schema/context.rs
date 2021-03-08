@@ -67,21 +67,21 @@ impl Context {
         }
     }
 
-    pub async fn connect_to_data_router(&self) -> anyhow::Result<CommonPublisher> {
+    pub async fn connect_to_ingestion_sink(&self) -> anyhow::Result<CommonPublisher> {
         match self.config().communication_method.config()? {
             CommunicationMethodConfig::Amqp {
                 connection_string, ..
             } => CommonPublisher::new_amqp(&connection_string)
                 .await
-                .context("Unable to open RabbitMQ publisher for Data Router"),
+                .context("Unable to open RabbitMQ publisher for Ingestion Sink"),
             CommunicationMethodConfig::Kafka { brokers, .. } => {
                 CommonPublisher::new_kafka(&brokers)
                     .await
-                    .context("Unable to open Kafka publisher for Data Router")
+                    .context("Unable to open Kafka publisher for Ingestion Sink")
             }
-            CommunicationMethodConfig::Grpc => CommonPublisher::new_grpc("data-router")
+            CommunicationMethodConfig::Grpc => CommonPublisher::new_grpc("ingestion-sink")
                 .await
-                .context("Unable to create GRPC publisher for Data Router"),
+                .context("Unable to create GRPC publisher for Ingestion Sink"),
         }
     }
 }
