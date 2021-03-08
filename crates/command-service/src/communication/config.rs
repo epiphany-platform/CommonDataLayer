@@ -25,7 +25,6 @@ pub enum CommunicationConfig {
     },
     Grpc {
         grpc_port: u16,
-        task_limit: usize,
         report_endpoint_url: Url,
     },
 }

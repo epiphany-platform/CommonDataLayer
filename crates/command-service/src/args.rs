@@ -135,7 +135,6 @@ impl Args {
                 }
             }
             CommunicationMethod::GRpc => CommunicationConfig::Grpc {
-                task_limit: communication_args.task_limit,
                 grpc_port: communication_args
                     .grpc_port
                     .ok_or(MissingConfigError("GRPC port"))?,
