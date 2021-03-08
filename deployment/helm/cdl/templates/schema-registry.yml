@@ -40,7 +40,7 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        {{- else }}
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
         - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
@@ -49,6 +49,9 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "grpc"
         {{- end }}
         - name: REPLICATION_SOURCE
           value: "{{ .Release.Name | upper }}_SCHEMA_SYNCHRO"

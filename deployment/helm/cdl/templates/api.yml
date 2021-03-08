@@ -41,13 +41,16 @@ spec:
           value: "{{ .Values.global.kafkaBrokers }}"
         - name: KAFKA_GROUP_ID
           value: "api"
-        {{- else }}
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
         - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: "{{ .Values.global.amqpConnectionString }}"
         - name: AMQP_CONSUMER_TAG
           value: "api"
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "grpc"
         {{- end }}
         - name: RUST_LOG
           value: "info,api=debug"

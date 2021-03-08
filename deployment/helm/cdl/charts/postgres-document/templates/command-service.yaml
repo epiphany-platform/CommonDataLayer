@@ -35,15 +35,20 @@ spec:
           value: {{ .Values.global.kafkaBrokers }}
         - name: KAFKA_GROUP_ID
           value: "cdl-postgres-command-service"
-        {{- else }}
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
         - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: {{ .Values.global.amqpConnectionString }}
         - name: AMQP_CONSUMER_TAG
           value: "cdl-postgres-command-service"
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "grpc"
+        - name: GRPC_PORT
+          value: "6400"
         {{- end }}
-        - name: ORDERED_TOPICS_OR_QUEUES
+        - name: ORDERED_SOURCES
           value: {{ .Values.inputSource }}
         - name: POSTGRES_USERNAME
           value: {{ .Values.postgresUsername }}

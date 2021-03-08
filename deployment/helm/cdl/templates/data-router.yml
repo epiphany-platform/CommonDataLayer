@@ -33,13 +33,18 @@ spec:
           value: "{{ .Values.global.kafkaBrokers }}"
         - name: KAFKA_GROUP_ID
           value: "data-router"
-        {{- else }}
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
         - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: "{{ .Values.global.amqpConnectionString }}"
         - name: AMQP_CONSUMER_TAG
           value: "data-router"
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "grpc"
+        - name: GRPC_PORT
+          value: "6402"
         {{- end }}
         - name: SCHEMA_REGISTRY_ADDR
           value: "http://{{ .Release.Name }}-schema-registry:6400"
