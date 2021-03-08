@@ -160,7 +160,7 @@ impl Mutation {
             message.schema_id
         );
 
-        let publisher = context.connect_to_ingestion_sink().await?;
+        let publisher = context.connect_to_cdl_input().await?;
         let payload = serde_json::to_vec(&DataRouterInsertMessage {
             object_id: message.object_id,
             schema_id: message.schema_id,
@@ -177,7 +177,7 @@ impl Mutation {
     async fn insert_batch(context: &Context, messages: Vec<InputMessage>) -> FieldResult<bool> {
         log::debug!("inserting batch of {} messages", messages.len());
 
-        let publisher = context.connect_to_ingestion_sink().await?;
+        let publisher = context.connect_to_cdl_input().await?;
         let order_group_id = Uuid::new_v4().to_string();
 
         for message in messages {

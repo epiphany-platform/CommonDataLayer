@@ -67,7 +67,7 @@ impl Context {
         }
     }
 
-    pub async fn connect_to_ingestion_sink(&self) -> anyhow::Result<CommonPublisher> {
+    pub async fn connect_to_cdl_input(&self) -> anyhow::Result<CommonPublisher> {
         match self.config().communication_method.config()? {
             CommunicationMethodConfig::Amqp {
                 connection_string, ..
