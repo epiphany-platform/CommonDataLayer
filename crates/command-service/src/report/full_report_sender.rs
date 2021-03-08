@@ -15,13 +15,13 @@ const APPLICATION_NAME: &str = "Command Service";
 #[derive(Clone)]
 pub struct FullReportSenderBase {
     pub producer: CommonPublisher,
-    pub topic: Arc<String>,
+    pub destination: Arc<String>,
     pub output_plugin: Arc<String>,
 }
 
 pub struct FullReportSender {
     pub producer: CommonPublisher,
-    pub topic: Arc<String>,
+    pub destination: Arc<String>,
     pub output_plugin: Arc<String>,
     pub msg: OwnedInsertMessage,
 }
@@ -38,7 +38,7 @@ struct ReportBody<'a> {
 impl FullReportSenderBase {
     pub async fn new(
         communication_config: &CommunicationConfig,
-        topic_or_exchange: String,
+        destination: String,
         output_plugin: String,
     ) -> Result<Self, Error> {
         let publisher = match communication_config {
@@ -54,12 +54,12 @@ impl FullReportSenderBase {
 
         debug!(
             "Initialized report service with notification sink at `{}`",
-            topic_or_exchange
+            destination
         );
 
         Ok(Self {
             producer: publisher.map_err(Error::ProducerCreation)?,
-            topic: Arc::new(topic_or_exchange),
+            destination: Arc::new(destination),
             output_plugin: Arc::new(output_plugin),
         })
     }
@@ -80,7 +80,7 @@ impl Reporter for FullReportSender {
 
         self.producer
             .publish_message(
-                self.topic.as_str(),
+                self.destination.as_str(),
                 "command_service.status",
                 serde_json::to_vec(&payload).map_err(Error::FailedToProduceErrorMessage)?,
             )

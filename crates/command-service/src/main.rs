@@ -55,11 +55,11 @@ async fn start_services(
     report_config: ReportServiceConfig,
     output: impl OutputPlugin,
 ) -> Result<(), Error> {
-    let report_service = match report_config.topic_or_exchange {
-        Some(topic_or_exchange) => ReportSender::Full(
+    let report_service = match report_config.destination {
+        Some(destination) => ReportSender::Full(
             FullReportSenderBase::new(
                 &communication_config,
-                topic_or_exchange,
+                destination,
                 output.name().to_string(),
             )
             .await

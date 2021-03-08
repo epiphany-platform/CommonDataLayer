@@ -23,14 +23,14 @@ lazy_static! {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct Schema {
     pub name: String,
-    pub kafka_topic: String,
+    pub insert_destination: String,
     pub query_address: String,
     pub schema_type: SchemaType,
 }
 
 impl Schema {
     pub const NAME: &'static str = "SCHEMA_NAME";
-    pub const TOPIC_NAME: &'static str = "SCHEMA_TOPIC_NAME";
+    pub const INSERT_DESTINATION: &'static str = "SCHEMA_INSERT_DESTINATION";
     pub const QUERY_ADDRESS: &'static str = "SCHEMA_QUERY_ADDRESS";
     pub const SCHEMA_TYPE: &'static str = "SCHEMA_TYPE";
 }
@@ -41,7 +41,10 @@ impl Vertex for Schema {
             properties.vertex.id,
             Self {
                 name: extract_vertex_property(&mut properties, Self::NAME)?,
-                kafka_topic: extract_vertex_property(&mut properties, Self::TOPIC_NAME)?,
+                insert_destination: extract_vertex_property(
+                    &mut properties,
+                    Self::INSERT_DESTINATION,
+                )?,
                 query_address: extract_vertex_property(&mut properties, Self::QUERY_ADDRESS)?,
                 schema_type: extract_vertex_property(&mut properties, Self::SCHEMA_TYPE)?,
             },
@@ -51,7 +54,10 @@ impl Vertex for Schema {
     fn into_properties<'a>(self) -> Vec<(&'a str, Value)> {
         vec![
             (Self::NAME, Value::String(self.name)),
-            (Self::TOPIC_NAME, Value::String(self.kafka_topic)),
+            (
+                Self::INSERT_DESTINATION,
+                Value::String(self.insert_destination),
+            ),
             (Self::QUERY_ADDRESS, Value::String(self.query_address)),
             (
                 Self::SCHEMA_TYPE,

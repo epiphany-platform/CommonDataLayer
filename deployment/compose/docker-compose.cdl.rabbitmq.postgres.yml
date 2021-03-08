@@ -27,7 +27,7 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_DBNAME: postgres
       POSTGRES_SCHEMA: cdl
-      REPORT_TOPIC_OR_EXCHANGE: "cdl.reports"
+      REPORT_DESTINATION: "cdl.reports"
       RUST_LOG: info,command_service=trace
 
   postgres_query:

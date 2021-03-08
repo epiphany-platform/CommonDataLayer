@@ -168,7 +168,7 @@ impl Mutation {
         })?;
 
         publisher
-            .publish_message(&context.config().data_router_topic_or_queue, "", payload)
+            .publish_message(&context.config().data_router_source, "", payload)
             .await
             .map_err(Error::PublisherError)?;
         Ok(true)
@@ -189,7 +189,7 @@ impl Mutation {
 
             publisher
                 .publish_message(
-                    &context.config().data_router_topic_or_queue,
+                    &context.config().data_router_source,
                     &order_group_id,
                     payload,
                 )

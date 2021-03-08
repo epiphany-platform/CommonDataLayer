@@ -55,5 +55,5 @@ class KafkaReportConfig:
 
     def to_dict(self):
         return {
-            "REPORT_TOPIC_OR_EXCHANGE": self.topic,
+            "REPORT_DESTINATION": self.topic,
         }

@@ -56,8 +56,8 @@ struct Config {
     pub amqp_connection_string: Option<String>,
     pub amqp_consumer_tag: Option<String>,
 
-    pub replication_topic_or_queue: String,
-    pub replication_topic_or_exchange: String,
+    pub replication_source: String,
+    pub replication_destination: String,
 
     pub pod_name: Option<String>,
     pub export_dir: Option<PathBuf>,
@@ -130,8 +130,8 @@ fn replication_config(config: &Config) -> anyhow::Result<Option<ReplicationMetho
                 return Ok(None);
             }
         },
-        topic_or_exchange: config.replication_topic_or_exchange.clone(),
-        topic_or_queue: config.replication_topic_or_queue.clone(),
+        destination: config.replication_destination.clone(),
+        source: config.replication_source.clone(),
     };
     Ok(Some(replication_config))
 }

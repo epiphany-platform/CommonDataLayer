@@ -50,9 +50,9 @@ spec:
             fieldRef:
               fieldPath: metadata.name
         {{- end }}
-        - name: REPLICATION_TOPIC_OR_QUEUE
+        - name: REPLICATION_SOURCE
           value: "{{ .Release.Name | upper }}_SCHEMA_SYNCHRO"
-        - name: REPLICATION_TOPIC_OR_EXCHANGE
+        - name: REPLICATION_DESTINATION
           value: "{{ .Release.Name | upper }}_SCHEMA_SYNCHRO"
         - name: POD_NAME
           valueFrom:

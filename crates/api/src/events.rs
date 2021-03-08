@@ -3,7 +3,7 @@
 /// Instead you listen on different task (See: `tokio::spawn` in `EventSubscriber::new`) and then send message to broadcast channel.
 /// Each websocket client has its own Receiver.
 /// Thanks to that we are not only reusing connection, but also limit dangerous `consumer.leak()` usage.
-use crate::config::MessageQueueConfig;
+use crate::config::CommunicationMethodConfig;
 use async_trait::async_trait;
 use futures::task::{Context as FutCtx, Poll};
 use futures::{Future, Stream};
@@ -50,8 +50,8 @@ impl ConsumerHandler for Handler {
 impl EventSubscriber {
     /// Connects to kafka and sends all messages to broadcast channel.
     pub async fn new<F, Fut>(
-        config: MessageQueueConfig,
-        topic_or_queue: &str,
+        config: CommunicationMethodConfig,
+        source: &str,
         on_close: F,
     ) -> Result<(Self, EventStream), anyhow::Error>
     where
@@ -60,33 +60,36 @@ impl EventSubscriber {
     {
         let (tx, rx) = broadcast::channel(32);
 
-        log::debug!("Create new consumer for: {}", topic_or_queue);
+        log::debug!("Create new consumer for: {}", source);
 
         let config = match &config {
-            MessageQueueConfig::Kafka { group_id, brokers } => CommonConsumerConfig::Kafka {
+            CommunicationMethodConfig::Kafka { group_id, brokers } => CommonConsumerConfig::Kafka {
                 group_id: &group_id,
                 brokers: &brokers,
-                topic: topic_or_queue,
+                topic: source,
             },
-            MessageQueueConfig::Amqp {
+            CommunicationMethodConfig::Amqp {
                 connection_string,
                 consumer_tag,
             } => CommonConsumerConfig::Amqp {
                 connection_string: &connection_string,
                 consumer_tag: &consumer_tag,
-                queue_name: topic_or_queue,
+                queue_name: source,
                 options: None,
             },
+            CommunicationMethodConfig::Grpc => {
+                anyhow::bail!("GRPC communication method does not support event subscription")
+            }
         };
 
         let consumer = CommonConsumer::new(config).await?;
 
         let sink = tx.clone();
-        let topic_or_queue = String::from(topic_or_queue);
+        let source = String::from(source);
         tokio::spawn(async move {
             consumer.run(Handler { sink }).await.ok();
 
-            on_close(topic_or_queue);
+            on_close(source);
         });
 
         Ok((Self(tx), EventStream::new(rx)))

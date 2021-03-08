@@ -33,15 +33,14 @@ pub async fn replicate_db_events(
             return;
         };
 
-        tokio_runtime.enter(|| {
-            send_messages_to_kafka(producer.clone(), config.topic_or_exchange.clone(), event)
-        });
+        tokio_runtime
+            .enter(|| send_messages_to_kafka(producer.clone(), config.destination.clone(), event));
     }
 }
 
 fn send_messages_to_kafka(
     producer: Arc<CommonPublisher>,
-    topic_or_exchange: String,
+    destination: String,
     event: ReplicationEvent,
 ) {
     let key = match &event {
@@ -55,7 +54,7 @@ fn send_messages_to_kafka(
     let serialized_key = key.to_string();
     tokio::spawn(async move {
         let delivery_status = producer.publish_message(
-            &topic_or_exchange,
+            &destination,
             &serialized_key,
             serialized.as_bytes().to_vec(),
         );

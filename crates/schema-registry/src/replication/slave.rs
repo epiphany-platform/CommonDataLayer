@@ -39,12 +39,12 @@ pub async fn consume_mq(
         CommunicationMethod::Kafka(kafka) => CommonConsumerConfig::Kafka {
             group_id: &kafka.group_id,
             brokers: &kafka.brokers,
-            topic: &config.topic_or_queue,
+            topic: &config.source,
         },
         CommunicationMethod::Amqp(amqp) => CommonConsumerConfig::Amqp {
             connection_string: &amqp.connection_string,
             consumer_tag: &amqp.consumer_tag,
-            queue_name: &config.topic_or_queue,
+            queue_name: &config.source,
             options: None,
         },
     };

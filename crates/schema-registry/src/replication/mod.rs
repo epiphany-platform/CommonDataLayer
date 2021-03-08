@@ -128,8 +128,8 @@ impl ReplicationState {
 #[derive(Clone, Debug)]
 pub struct ReplicationMethodConfig {
     pub queue: CommunicationMethod,
-    pub topic_or_queue: String,
-    pub topic_or_exchange: String,
+    pub source: String,
+    pub destination: String,
 }
 
 #[derive(Clone, Debug)]

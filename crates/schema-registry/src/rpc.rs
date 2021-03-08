@@ -109,17 +109,17 @@ impl SchemaRegistry for SchemaRegistryImpl {
             name: request.name,
             definition: parse_json(&request.definition)?,
             query_address: request.query_address,
-            kafka_topic: request.topic,
+            insert_destination: request.topic,
             schema_type,
         };
 
         if !self
             .mq_metadata
-            .topic_or_exchange_exists(&new_schema.kafka_topic)
+            .destination_exists(&new_schema.insert_destination)
             .await
             .map_err(RegistryError::from)?
         {
-            return Err(RegistryError::NoTopic(new_schema.kafka_topic).into());
+            return Err(RegistryError::NoTopic(new_schema.insert_destination).into());
         }
 
         let new_id = self.db.add_schema(new_schema.clone(), schema_id)?;
@@ -161,14 +161,14 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
 
-        if let Some(topic) = request.topic.as_ref() {
+        if let Some(destination) = request.topic.as_ref() {
             if !self
                 .mq_metadata
-                .topic_or_exchange_exists(&topic)
+                .destination_exists(&destination)
                 .await
                 .map_err(RegistryError::from)?
             {
-                return Err(RegistryError::NoTopic(topic.clone()).into());
+                return Err(RegistryError::NoTopic(destination.clone()).into());
             }
         }
 
@@ -273,7 +273,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
         let schema = Schema {
             name: schema.name,
-            topic: schema.kafka_topic,
+            topic: schema.insert_destination,
             query_address: schema.query_address,
             schema_type: schema.schema_type as i32,
         };
@@ -354,7 +354,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
                         schema_id.to_string(),
                         Schema {
                             name: schema.name,
-                            topic: schema.kafka_topic,
+                            topic: schema.insert_destination,
                             query_address: schema.query_address,
                             schema_type: schema.schema_type as i32,
                         },

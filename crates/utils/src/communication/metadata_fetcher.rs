@@ -37,8 +37,8 @@ impl MetadataFetcher {
         Ok(Self::Grpc { service })
     }
 
-    pub async fn topic_or_exchange_exists(&self, topic_or_exchange: &str) -> Result<bool> {
-        let owned_topic_or_exchange = String::from(topic_or_exchange);
+    pub async fn destination_exists(&self, destination: &str) -> Result<bool> {
+        let owned_destination = String::from(destination);
 
         match self {
             MetadataFetcher::Amqp { connection } => {
@@ -48,7 +48,7 @@ impl MetadataFetcher {
                     .context("Metadata fetcher AMQP channel creation failed")?;
                 let result = channel
                     .exchange_declare(
-                        topic_or_exchange,
+                        destination,
                         lapin::ExchangeKind::Topic,
                         lapin::options::ExchangeDeclareOptions {
                             passive: true,
@@ -77,7 +77,7 @@ impl MetadataFetcher {
                 let producer = producer.clone();
                 let metadata = tokio::task::spawn_blocking(move || {
                     let client = producer.client();
-                    client.fetch_metadata(Some(&owned_topic_or_exchange), Duration::from_secs(5))
+                    client.fetch_metadata(Some(&owned_destination), Duration::from_secs(5))
                 })
                 .await??;
 
@@ -85,10 +85,10 @@ impl MetadataFetcher {
                     .topics()
                     .iter()
                     .map(|topic| topic.name())
-                    .any(|name| name == topic_or_exchange))
+                    .any(|name| name == destination))
             }
             MetadataFetcher::Grpc { service } => {
-                let client = rpc::generic::connect(owned_topic_or_exchange, service).await;
+                let client = rpc::generic::connect(owned_destination, service).await;
                 Ok(client.is_ok())
             }
         }

@@ -55,16 +55,14 @@ impl CommonPublisher {
 
     pub async fn publish_message(
         &self,
-        topic_or_exchange: &str,
+        destination: &str,
         key: &str,
         payload: Vec<u8>,
     ) -> Result<()> {
         match self {
             CommonPublisher::Kafka { producer } => {
                 let delivery_status = producer.send(
-                    FutureRecord::to(topic_or_exchange)
-                        .payload(&payload)
-                        .key(key),
+                    FutureRecord::to(destination).payload(&payload).key(key),
                     Duration::from_secs(5),
                 );
                 delivery_status.await.map_err(|x| x.0)?;
@@ -73,7 +71,7 @@ impl CommonPublisher {
             CommonPublisher::Amqp { channel } => {
                 channel
                     .basic_publish(
-                        topic_or_exchange,
+                        destination,
                         key,
                         BasicPublishOptions::default(),
                         payload,
@@ -84,14 +82,14 @@ impl CommonPublisher {
                 Ok(())
             }
             CommonPublisher::Rest { url, client } => {
-                let url = url.join(&format!("{}/{}", topic_or_exchange, key)).unwrap();
+                let url = url.join(&format!("{}/{}", destination, key)).unwrap();
 
                 client.post(url).body(payload).send().await?;
 
                 Ok(())
             }
             CommonPublisher::Grpc { service } => {
-                let addr = topic_or_exchange.into();
+                let addr = destination.into();
                 let mut client = rpc::generic::connect(addr, service).await?;
                 let response = client
                     .handle(rpc::generic::Message {

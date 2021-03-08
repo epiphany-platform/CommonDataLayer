@@ -45,11 +45,11 @@ spec:
           value: "cdl-victoria-command-service"
         {{- end }}
         - name: ORDERED_TOPICS_OR_QUEUES
-          value: {{ .Values.inputTopicOrQueue }}
+          value: {{ .Values.inputSource }}
         - name: VICTORIA_METRICS_OUTPUT_URL
           value: {{ .Values.outputURL }}
-        - name: REPORT_TOPIC_OR_EXCHANGE
-          value: {{ .Values.global.reportTopicOrExchange }}
+        - name: REPORT_DESTINATION
+          value: {{ .Values.global.reportDestination }}
         - name: RUST_LOG
           value: "info,command_service=debug"
         ports:

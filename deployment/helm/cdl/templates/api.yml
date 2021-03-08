@@ -30,10 +30,10 @@ spec:
           value: "http://{{ .Release.Name }}-query-router:6401"
         - name: INPUT_PORT
           value: "6402"
-        - name: REPORT_TOPIC_OR_QUEUE
-          value: "{{ .Values.global.reportTopicOrExchange }}"
-        - name: DATA_ROUTER_TOPIC_OR_QUEUE
-          value: "{{ .Values.dataRouter.inputTopicOrQueue }}"
+        - name: REPORT_SOURCE
+          value: "{{ .Values.global.reportDestination }}"
+        - name: DATA_ROUTER_SOURCE
+          value: "{{ .Values.dataRouter.inputSource }}"
         {{- if eq .Values.global.communicationMethod "kafka" }}
         - name: MESSAGE_QUEUE
           value: "kafka"

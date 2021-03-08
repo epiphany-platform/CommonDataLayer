@@ -24,10 +24,10 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/data-router"]
         env:
-        - name: INPUT_TOPIC_OR_QUEUE
-          value: "{{ .Values.dataRouter.inputTopicOrQueue }}"
-        - name: ERROR_TOPIC_OR_EXCHANGE
-          value: "{{ .Values.global.reportTopicOrExchange }}"
+        - name: INPUT_SOURCE
+          value: "{{ .Values.dataRouter.inputSource }}"
+        - name: ERROR_DESTINATION
+          value: "{{ .Values.global.reportDestination }}"
         {{- if eq .Values.global.communicationMethod "kafka" }}
         - name: MESSAGE_QUEUE
           value: "kafka"

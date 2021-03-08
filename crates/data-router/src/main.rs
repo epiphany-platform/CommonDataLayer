@@ -51,7 +51,7 @@ struct Config {
     #[structopt(long, env)]
     pub amqp_consumer_tag: Option<String>,
     #[structopt(long, env)]
-    pub input_topic_or_queue: Option<String>,
+    pub input_source: Option<String>,
     #[structopt(long, env)]
     pub schema_registry_addr: String,
     #[structopt(long, env)]
@@ -209,7 +209,7 @@ async fn new_consumer(config: &Config) -> anyhow::Result<ParallelCommonConsumer>
     let config = match config.communication_method {
         CommunicationMethod::Kafka => {
             let topic = config
-                .input_topic_or_queue
+                .input_source
                 .as_ref()
                 .context("kafka topic was not specified")?;
             let brokers = config
@@ -232,7 +232,7 @@ async fn new_consumer(config: &Config) -> anyhow::Result<ParallelCommonConsumer>
         }
         CommunicationMethod::Amqp => {
             let queue_name = config
-                .input_topic_or_queue
+                .input_source
                 .as_ref()
                 .context("amqp queue name was not specified")?;
             let connection_string = config

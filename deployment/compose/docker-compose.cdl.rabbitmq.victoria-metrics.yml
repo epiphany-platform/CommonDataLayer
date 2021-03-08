@@ -22,7 +22,7 @@ services:
       ORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.1.data"
       UNORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.2.data"
       VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
-      REPORT_TOPIC_OR_EXCHANGE: "cdl.reports"
+      REPORT_DESTINATION: "cdl.reports"
       RUST_LOG: info,command_service=trace
 
   victoria_query:

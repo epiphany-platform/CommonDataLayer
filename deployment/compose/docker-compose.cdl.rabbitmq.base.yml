@@ -23,8 +23,8 @@ services:
       COMMUNICATION_METHOD: "amqp"
       AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
       AMQP_CONSUMER_TAG: "schema_registry"
-      REPLICATION_TOPIC_OR_QUEUE: "cdl.schema_registry.internal"
-      REPLICATION_TOPIC_OR_EXCHANGE: "cdl.schema_registry.internal"
+      REPLICATION_SOURCE: "cdl.schema_registry.internal"
+      REPLICATION_DESTINATION: "cdl.schema_registry.internal"
       INPUT_PORT: "50101"
       IMPORT_FILE: "/var/data/schema.json"
       RUST_LOG: info,schema_registry=trace
@@ -44,8 +44,8 @@ services:
       MESSAGE_QUEUE: "amqp"
       AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
       AMQP_CONSUMER_TAG: "data_router"
-      INPUT_TOPIC_OR_QUEUE: "cdl.data.input"
-      ERROR_TOPIC_OR_EXCHANGE: "cdl.reports"
+      INPUT_SOURCE: "cdl.data.input"
+      ERROR_DESTINATION: "cdl.reports"
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       CACHE_CAPACITY: "1000"
       RUST_LOG: info,data_router=trace
@@ -85,8 +85,8 @@ services:
       MESSAGE_QUEUE: "amqp"
       AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
       AMQP_CONSUMER_TAG: "cdl-api"
-      REPORT_TOPIC_OR_QUEUE: "cdl.reports"
-      DATA_ROUTER_TOPIC_OR_QUEUE: "cdl.reports"
+      REPORT_SOURCE: "cdl.reports"
+      DATA_ROUTER_SOURCE: "cdl.reports"
 
 networks:
   compose_default:

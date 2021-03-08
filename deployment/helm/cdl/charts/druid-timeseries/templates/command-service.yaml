@@ -45,13 +45,13 @@ spec:
           value: "cdl-druid-command-service"
         {{- end }}
         - name: ORDERED_TOPICS_OR_QUEUES
-          value: {{ .Values.inputTopicOrQueue }}
+          value: {{ .Values.inputSource }}
         - name: DRUID_OUTPUT_BROKERS
           value: {{ .Values.global.kafkaBrokers }}
         - name: DRUID_OUTPUT_TOPIC
           value: {{ .Values.outputTopic }}
-        - name: REPORT_TOPIC_OR_EXCHANGE
-          value: {{ .Values.global.reportTopicOrExchange }}
+        - name: REPORT_DESTINATION
+          value: {{ .Values.global.reportDestination }}
         - name: RUST_LOG
           value: "info,command_service=debug"
         ports:
