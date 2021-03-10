@@ -5,10 +5,10 @@ use anyhow::{Context as _, Result};
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
 use tokio::sync::Mutex;
-use utils::messaging_system::publisher::CommonPublisher;
+use utils::communication::publisher::CommonPublisher;
 
 use crate::{
-    config::{Config, MessageQueueConfig},
+    config::{CommunicationMethodConfig, Config},
     events::EventStream,
     events::EventSubscriber,
 };
@@ -40,7 +40,7 @@ impl Context {
         Ok(new_conn)
     }
 
-    pub async fn subscribe_on_message_queue(&self, topic: &str) -> Result<EventStream> {
+    pub async fn subscribe_on_communication_method(&self, topic: &str) -> Result<EventStream> {
         log::debug!("subscribe on message queue: {}", topic);
         let mut event_map = self.mq_events.lock().await;
         match event_map.get(topic) {
@@ -51,7 +51,7 @@ impl Context {
             None => {
                 let kafka_events = self.mq_events.clone();
                 let (subscriber, stream) = EventSubscriber::new(
-                    self.config.message_queue.config()?,
+                    self.config.communication_method.config()?,
                     topic,
                     move |topic| async move {
                         log::warn!("Message queue stream has closed");
@@ -67,16 +67,21 @@ impl Context {
         }
     }
 
-    pub async fn connect_to_data_router(&self) -> anyhow::Result<CommonPublisher> {
-        match self.config().message_queue.config()? {
-            MessageQueueConfig::Amqp {
+    pub async fn connect_to_cdl_input(&self) -> anyhow::Result<CommonPublisher> {
+        match self.config().communication_method.config()? {
+            CommunicationMethodConfig::Amqp {
                 connection_string, ..
             } => CommonPublisher::new_amqp(&connection_string)
                 .await
-                .context("Unable to open RabbitMQ publisher for Data Router"),
-            MessageQueueConfig::Kafka { brokers, .. } => CommonPublisher::new_kafka(&brokers)
+                .context("Unable to open RabbitMQ publisher for Ingestion Sink"),
+            CommunicationMethodConfig::Kafka { brokers, .. } => {
+                CommonPublisher::new_kafka(&brokers)
+                    .await
+                    .context("Unable to open Kafka publisher for Ingestion Sink")
+            }
+            CommunicationMethodConfig::Grpc => CommonPublisher::new_grpc("ingestion-sink")
                 .await
-                .context("Unable to open Kafka publisher for Data Router"),
+                .context("Unable to create GRPC publisher for Ingestion Sink"),
         }
     }
 }

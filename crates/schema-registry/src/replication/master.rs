@@ -1,21 +1,21 @@
-use super::{MessageQueue, MessageQueueConfig, ReplicationEvent};
+use super::{CommunicationMethod, ReplicationEvent, ReplicationMethodConfig};
 use log::{error, info};
 use std::{
     process,
     sync::{mpsc, Arc},
 };
 use tokio::{runtime::Handle, sync::oneshot};
-use utils::messaging_system::publisher::CommonPublisher;
+use utils::communication::publisher::CommonPublisher;
 
 pub async fn replicate_db_events(
-    config: MessageQueueConfig,
+    config: ReplicationMethodConfig,
     recv: mpsc::Receiver<ReplicationEvent>,
     tokio_runtime: Handle,
     mut kill_signal: oneshot::Receiver<()>,
 ) {
     let producer = match &config.queue {
-        MessageQueue::Kafka(kafka) => CommonPublisher::new_kafka(&kafka.brokers).await,
-        MessageQueue::Amqp(amqp) => CommonPublisher::new_amqp(&amqp.connection_string).await,
+        CommunicationMethod::Kafka(kafka) => CommonPublisher::new_kafka(&kafka.brokers).await,
+        CommunicationMethod::Amqp(amqp) => CommonPublisher::new_amqp(&amqp.connection_string).await,
     }
     .unwrap_or_else(|_e| {
         error!("Fatal error, synchronization channel cannot be created.");
@@ -33,15 +33,14 @@ pub async fn replicate_db_events(
             return;
         };
 
-        tokio_runtime.enter(|| {
-            send_messages_to_kafka(producer.clone(), config.topic_or_exchange.clone(), event)
-        });
+        tokio_runtime
+            .enter(|| send_messages_to_kafka(producer.clone(), config.destination.clone(), event));
     }
 }
 
 fn send_messages_to_kafka(
     producer: Arc<CommonPublisher>,
-    topic_or_exchange: String,
+    destination: String,
     event: ReplicationEvent,
 ) {
     let key = match &event {
@@ -55,7 +54,7 @@ fn send_messages_to_kafka(
     let serialized_key = key.to_string();
     tokio::spawn(async move {
         let delivery_status = producer.publish_message(
-            &topic_or_exchange,
+            &destination,
             &serialized_key,
             serialized.as_bytes().to_vec(),
         );

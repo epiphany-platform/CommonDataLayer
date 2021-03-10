@@ -6,13 +6,13 @@ global:
   kafkaBrokers: 10.1.5.4:9092
   amqpConnectionString: "amqp://rabbitmq:rabbitmq@10.1.1.4:5672/%2f"
   cdlImagePullSecrets: services
-  reportTopicOrExchange: cdl.errors
+  reportDestination: cdl.errors
 
 api:
   port: 30152
 
 dataRouter:
-  inputTopicOrQueue: cdl.data.input
+  inputSource: cdl.data.input
 
 leaderElector:
   heartbeatTime: 2
@@ -37,12 +37,12 @@ postgres-document:
   postgresPort: 5432
   postgresDbname: cdldb
   postgresSchema: public
-  inputTopicOrQueue: cdl.document.data
+  inputSource: cdl.document.data
 
 druid-timeseries:
   commandServiceReplicaCount: 0
   queryServiceReplicaCount: 0
-  inputTopicOrQueue: cdl.timeseries.data
+  inputSource: cdl.timeseries.data
   outputTopic: cdl.timeseries.generic-druid
   queryURL:
   tableName: CDL
@@ -50,5 +50,5 @@ druid-timeseries:
 victoria-metrics-timeseries:
   commandServiceReplicaCount: 0
   queryServiceReplicaCount: 0
-  inputTopicOrQueue: cdl.timeseries2.data
+  inputSource: cdl.timeseries2.data
   outputURL: http://infrastructure-victoria-metrics-single-server:8428/

@@ -1,0 +1,14 @@
+syntax = "proto2";
+
+package generic_rpc;
+
+service GenericRPC {
+  rpc Handle(Message) returns (Empty);
+}
+
+message Message {
+  required string key = 1;
+  required bytes payload = 2;
+}
+
+message Empty {}

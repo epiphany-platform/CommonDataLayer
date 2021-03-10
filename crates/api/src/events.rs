@@ -3,14 +3,17 @@
 /// Instead you listen on different task (See: `tokio::spawn` in `EventSubscriber::new`) and then send message to broadcast channel.
 /// Each websocket client has its own Receiver.
 /// Thanks to that we are not only reusing connection, but also limit dangerous `consumer.leak()` usage.
-use crate::config::MessageQueueConfig;
+use crate::config::CommunicationMethodConfig;
+use async_trait::async_trait;
 use futures::task::{Context as FutCtx, Poll};
-use futures::{Future, Stream, StreamExt, TryStreamExt};
+use futures::{Future, Stream};
 use juniper::FieldResult;
 use std::pin::Pin;
-use tokio::sync::broadcast;
-use utils::messaging_system::consumer::{CommonConsumer, CommonConsumerConfig};
-use utils::messaging_system::Error;
+use tokio::sync::broadcast::{self, Sender};
+use utils::communication::{
+    consumer::{CommonConsumer, CommonConsumerConfig, ConsumerHandler},
+    message::CommunicationMessage,
+};
 
 /// Owned generic message received from message queue.
 #[derive(Clone, Debug)]
@@ -20,7 +23,7 @@ pub struct Event {
 }
 
 /// Wrapper to prevent accidental sending data to channel. `Sender` is used only for subscription mechanism
-pub struct EventSubscriber(broadcast::Sender<Result<Event, Error>>);
+pub struct EventSubscriber(Sender<Event>);
 
 // We are using Box<dyn> approach (recommended) by Tokio maintainers,
 // as unfortunately `broadcast::Receiver` doesn't implement `Stream` trait,
@@ -29,11 +32,26 @@ pub struct EventStream {
     inner: Pin<Box<dyn Stream<Item = FieldResult<Event>> + Send + Sync>>,
 }
 
+struct Handler {
+    sink: Sender<Event>,
+}
+
+#[async_trait]
+impl ConsumerHandler for Handler {
+    async fn handle<'a>(&'a mut self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
+        let key = msg.key().map(|s| s.to_string()).ok();
+        let payload = msg.payload().map(|s| s.to_string()).ok();
+        let event = Event { key, payload };
+        self.sink.send(event).ok();
+        Ok(())
+    }
+}
+
 impl EventSubscriber {
     /// Connects to kafka and sends all messages to broadcast channel.
     pub async fn new<F, Fut>(
-        config: MessageQueueConfig,
-        topic_or_queue: &str,
+        config: CommunicationMethodConfig,
+        source: &str,
         on_close: F,
     ) -> Result<(Self, EventStream), anyhow::Error>
     where
@@ -42,43 +60,36 @@ impl EventSubscriber {
     {
         let (tx, rx) = broadcast::channel(32);
 
-        log::debug!("Create new consumer for: {}", topic_or_queue);
+        log::debug!("Create new consumer for: {}", source);
 
         let config = match &config {
-            MessageQueueConfig::Kafka { group_id, brokers } => CommonConsumerConfig::Kafka {
+            CommunicationMethodConfig::Kafka { group_id, brokers } => CommonConsumerConfig::Kafka {
                 group_id: &group_id,
                 brokers: &brokers,
-                topic: topic_or_queue,
+                topic: source,
             },
-            MessageQueueConfig::Amqp {
+            CommunicationMethodConfig::Amqp {
                 connection_string,
                 consumer_tag,
             } => CommonConsumerConfig::Amqp {
                 connection_string: &connection_string,
                 consumer_tag: &consumer_tag,
-                queue_name: topic_or_queue,
+                queue_name: source,
                 options: None,
             },
+            CommunicationMethodConfig::Grpc => {
+                anyhow::bail!("GRPC communication method does not support event subscription")
+            }
         };
 
-        let mut consumer = CommonConsumer::new(config).await?;
+        let consumer = CommonConsumer::new(config).await?;
 
         let sink = tx.clone();
-        let topic_or_queue = String::from(topic_or_queue);
+        let source = String::from(source);
         tokio::spawn(async move {
-            let stream = consumer.consume().await.map_ok(move |msg| {
-                let key = msg.key().map(|s| s.to_string()).ok();
-                let payload = msg.payload().map(|s| s.to_string()).ok();
-                Event { key, payload }
-            });
+            consumer.run(Handler { sink }).await.ok();
 
-            tokio::pin!(stream);
-
-            while let Some(item) = stream.next().await {
-                sink.send(item).ok();
-            }
-
-            on_close(topic_or_queue);
+            on_close(source);
         });
 
         Ok((Self(tx), EventStream::new(rx)))
@@ -91,10 +102,10 @@ impl EventSubscriber {
 }
 
 impl EventStream {
-    fn new(mut rx: broadcast::Receiver<Result<Event, Error>>) -> Self {
+    fn new(mut rx: broadcast::Receiver<Event>) -> Self {
         let stream = async_stream::try_stream! {
             loop {
-                let item = rx.recv().await??;
+                let item = rx.recv().await?;
                 yield item;
             }
         };

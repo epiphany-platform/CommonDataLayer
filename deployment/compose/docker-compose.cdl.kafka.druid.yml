@@ -19,8 +19,8 @@ services:
       COMMUNICATION_METHOD: "kafka"
       KAFKA_GROUP_ID: "druid_command"
       KAFKA_BROKERS: "kafka:9093"
-      ORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.druid.1.data"
-      UNORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.druid.2.data"
+      ORDERED_SOURCES: "cdl.timeseries.druid.1.data"
+      UNORDERED_SOURCES: "cdl.timeseries.druid.2.data"
       INGESTION_METHOD: KAFKA
       DRUID_OUTPUT_BROKERS: "kafka:9093"
       DRUID_OUTPUT_TOPIC: 'cdl.timeseries.internal.druid'
@@ -32,7 +32,7 @@ services:
     image: cdl-query-service-ts:latest
     command: "/bin/query-service-ts druid"
     ports:
-      - "50105:50105"
+      - "50205:50205"
     build:
       context: ../..
       dockerfile: Dockerfile
@@ -41,7 +41,7 @@ services:
     environment:
       DRUID_QUERY_URL: "http://router:8888/druid/v2"
       DRUID_TABLE_NAME: "cdl.timeseries.internal.druid"
-      INPUT_PORT: 50105
+      INPUT_PORT: 50205
       RUST_LOG: debug
 
 networks:

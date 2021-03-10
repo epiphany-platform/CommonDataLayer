@@ -20,7 +20,7 @@ echo "python3 -m grpc.tools.protoc -I'../crates/' ..."
 python3 -m grpc.tools.protoc -I"../crates/" \
   --python_out="." \
   --grpc_python_out="." \
-  rpc/proto/schema_registry.proto rpc/proto/query_service.proto rpc/proto/query_service_ts.proto rpc/proto/command_service.proto
+  rpc/proto/schema_registry.proto rpc/proto/query_service.proto rpc/proto/query_service_ts.proto rpc/proto/generic.proto
 
 touch "rpc/proto/__init__.py"
 touch "rpc/__init__.py"
