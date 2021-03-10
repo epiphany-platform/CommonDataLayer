@@ -13,6 +13,7 @@
     - [TODO]()
 - [Features](features/index.md)
     - [Message ordering](features/ordering.md)
+- [Versioning](versioning.md)
 - [Protocol schema](protocol.md)
 - [Benchmarks](benchmarks.md)
 - [Architecture](architecture/index.md)
