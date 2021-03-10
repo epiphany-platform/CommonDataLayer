@@ -5,21 +5,30 @@ use self::message::CommunicationMessage;
 pub mod consumer;
 mod kafka_ack_queue;
 pub mod message;
+pub mod parallel_consumer;
 pub mod publisher;
 
 pub mod metadata_fetcher;
 
 #[derive(Clone, Debug, DeriveError)]
 pub enum Error {
-    #[error("Error during communication via message queue \"{0}\"")]
+    #[error("Error during communication \"{0}\"")]
     CommunicationError(String),
 
     #[error("Error during joining blocking task \"{0}\"")]
     RuntimeError(String),
+
+    #[error("GRPC server returned status: {0}")]
+    GrpcStatusCode(String),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+impl From<tonic::transport::Error> for Error {
+    fn from(error: tonic::transport::Error) -> Self {
+        Self::CommunicationError(error.to_string())
+    }
+}
 impl From<rdkafka::error::KafkaError> for Error {
     fn from(error: rdkafka::error::KafkaError) -> Self {
         Self::CommunicationError(error.to_string())
@@ -43,6 +52,17 @@ impl From<std::str::Utf8Error> for Error {
 impl From<tokio::task::JoinError> for Error {
     fn from(error: tokio::task::JoinError) -> Self {
         Self::RuntimeError(error.to_string())
+    }
+}
+impl From<reqwest::Error> for Error {
+    fn from(error: reqwest::Error) -> Self {
+        Self::CommunicationError(error.to_string())
+    }
+}
+
+impl From<rpc::error::ClientError> for Error {
+    fn from(error: rpc::error::ClientError) -> Self {
+        Self::CommunicationError(error.to_string())
     }
 }
 

@@ -57,8 +57,8 @@ impl From<jsonschema::CompilationError> for RegistryError {
     }
 }
 
-impl From<utils::messaging_system::Error> for RegistryError {
-    fn from(error: utils::messaging_system::Error) -> Self {
+impl From<utils::communication::Error> for RegistryError {
+    fn from(error: utils::communication::Error) -> Self {
         Self::MQError(error.to_string())
     }
 }

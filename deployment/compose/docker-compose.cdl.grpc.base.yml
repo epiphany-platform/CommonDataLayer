@@ -20,11 +20,9 @@ services:
     environment:
       DB_NAME: "/var/data/schema"
       REPLICATION_ROLE: "master"
-      COMMUNICATION_METHOD: "kafka"
-      KAFKA_BROKERS: "kafka:9093"
-      KAFKA_GROUP_ID: "schema_registry"
-      REPLICATION_SOURCE: "cdl.schema_registry.internal"
-      REPLICATION_DESTINATION: "cdl.schema_registry.internal"
+      COMMUNICATION_METHOD: "grpc"
+      REPLICATION_SOURCE: "none"
+      REPLICATION_DESTINATION: "none"
       INPUT_PORT: "50101"
       IMPORT_FILE: "/var/data/schema.json"
       RUST_LOG: info,schema_registry=trace
@@ -40,11 +38,11 @@ services:
         - BIN=data-router
         - ENV=DEV
     command: /bin/data-router
+    ports:
+      - "50102:50102"
     environment:
-      COMMUNICATION_METHOD: "kafka"
-      KAFKA_BROKERS: "kafka:9093"
-      KAFKA_GROUP_ID: "data_router"
-      INPUT_SOURCE: "cdl.data.input"
+      COMMUNICATION_METHOD: "grpc"
+      GRPC_PORT: "50102"
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       CACHE_CAPACITY: "1000"
       RUST_LOG: info,data_router=trace
@@ -81,11 +79,8 @@ services:
       RUST_LOG: info,api=trace
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       QUERY_ROUTER_ADDR: "http://query_router:50103"
-      COMMUNICATION_METHOD: "kafka"
-      KAFKA_BROKERS: "kafka:9093"
-      KAFKA_GROUP_ID: "cdl-api"
-      REPORT_SOURCE: "cdl.reports"
-      INSERT_DESTINATION: "cdl.reports"
+      COMMUNICATION_METHOD: "grpc"
+      INSERT_DESTINATION: "http://data_router:50102"
 
 networks:
   compose_default:

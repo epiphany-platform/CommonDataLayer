@@ -19,17 +19,17 @@ services:
       COMMUNICATION_METHOD: "amqp"
       AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
       AMQP_CONSUMER_TAG: "victoria_command"
-      ORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.1.data"
-      UNORDERED_TOPICS_OR_QUEUES: "cdl.timeseries.2.data"
+      ORDERED_SOURCES: "cdl.timeseries.1.data"
+      UNORDERED_SOURCES: "cdl.timeseries.2.data"
       VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
-      REPORT_TOPIC_OR_EXCHANGE: "cdl.reports"
+      REPORT_DESTINATION: "cdl.reports"
       RUST_LOG: info,command_service=trace
 
   victoria_query:
     image: cdl-query-service-ts:latest
     command: "/bin/query-service-ts victoria"
     ports:
-      - "50104:50104"
+      - "50203:50203"
     build:
       context: ../..
       dockerfile: Dockerfile
@@ -37,7 +37,7 @@ services:
         - BIN=query-service-ts
     environment:
       VICTORIA_QUERY_URL: "http://victoria_metrics:8428/api/v1"
-      INPUT_PORT: 50104
+      INPUT_PORT: 50203
       RUST_LOG: debug
 
 networks:

@@ -13,9 +13,9 @@ pub struct Subscription;
 #[graphql_subscription(context = Context)]
 impl Subscription {
     async fn reports(context: &Context) -> ReportStream {
-        let topic_or_queue = &context.config().report_topic_or_queue;
+        let source = &context.config().report_source;
         let stream = context
-            .subscribe_on_message_queue(topic_or_queue)
+            .subscribe_on_communication_method(source)
             .await?
             .try_filter_map(|ev| async move { Ok(ev.payload) })
             .and_then(

@@ -30,7 +30,7 @@ impl ReportSender {
         match self {
             ReportSender::Full(config) => Box::new(FullReportSender {
                 producer: config.producer,
-                topic: config.topic,
+                destination: config.destination,
                 output_plugin: config.output_plugin,
                 msg: msg.to_owned(),
             }),

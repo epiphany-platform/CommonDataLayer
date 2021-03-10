@@ -24,24 +24,27 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/data-router"]
         env:
-        - name: INPUT_TOPIC_OR_QUEUE
-          value: "{{ .Values.dataRouter.inputTopicOrQueue }}"
-        - name: ERROR_TOPIC_OR_EXCHANGE
-          value: "{{ .Values.global.reportTopicOrExchange }}"
+        - name: INPUT_SOURCE
+          value: "{{ .Values.dataRouter.inputSource }}"
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: MESSAGE_QUEUE
+        - name: COMMUNICATION_METHOD
           value: "kafka"
         - name: KAFKA_BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
         - name: KAFKA_GROUP_ID
           value: "data-router"
-        {{- else }}
-        - name: MESSAGE_QUEUE
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
+        - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: "{{ .Values.global.amqpConnectionString }}"
         - name: AMQP_CONSUMER_TAG
           value: "data-router"
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "grpc"
+        - name: GRPC_PORT
+          value: "6402"
         {{- end }}
         - name: SCHEMA_REGISTRY_ADDR
           value: "http://{{ .Release.Name }}-schema-registry:6400"

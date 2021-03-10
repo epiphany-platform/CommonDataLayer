@@ -16,13 +16,10 @@ services:
         - ENV=DEV
     command: "/bin/command-service victoria-metrics"
     environment:
-      COMMUNICATION_METHOD: "kafka"
-      KAFKA_GROUP_ID: "victoria_command"
-      KAFKA_BROKERS: "kafka:9093"
-      ORDERED_SOURCES: "cdl.timeseries.vm.1.data"
-      UNORDERED_SOURCES: "cdl.timeseries.vm.2.data"
+      COMMUNICATION_METHOD: "grpc"
+      GRPC_PORT: "50204"
       VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
-      REPORT_DESTINATION: "cdl.reports"
+      REPORT_DESTINATION: "http://api:50104"
       RUST_LOG: info,command_service=trace
 
   victoria_query:

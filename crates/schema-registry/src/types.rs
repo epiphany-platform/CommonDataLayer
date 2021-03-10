@@ -25,7 +25,7 @@ pub struct ViewUpdate {
 pub struct NewSchema {
     pub name: String,
     pub definition: Value,
-    pub kafka_topic: String,
+    pub insert_destination: String,
     pub query_address: String,
     pub schema_type: SchemaType,
 }
@@ -35,14 +35,14 @@ impl NewSchema {
         let Self {
             name,
             definition,
-            kafka_topic,
+            insert_destination,
             query_address,
             schema_type,
         } = self;
         (
             vertices::Schema {
                 name,
-                kafka_topic,
+                insert_destination,
                 query_address,
                 schema_type,
             },
