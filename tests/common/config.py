@@ -44,7 +44,7 @@ class KafkaInputConfig:
         return {
             "KAFKA_BROKERS": self.brokers,
             "KAFKA_GROUP_ID": self.group_id,
-            "UNORDERED_TOPICS_OR_QUEUES": self.topic,
+            "UNORDERED_SOURCES": self.topic,
         }
 
 
@@ -55,5 +55,5 @@ class KafkaReportConfig:
 
     def to_dict(self):
         return {
-            "REPORT_TOPIC_OR_EXCHANGE": self.topic,
+            "REPORT_DESTINATION": self.topic,
         }

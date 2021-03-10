@@ -38,13 +38,13 @@
     "schemas": {
         "2cfad3c7-411a-11eb-8000-000000000000": {
             "schema_type": "DocumentStorage",
-            "query_address": "http://postgres_query:50102",
+            "query_address": "http://postgres_query:50201",
             "kafka_topic": "cdl.document.data",
             "name": "new schema"
         },
         "a5e0c7e2-412c-11eb-8000-000000000000": {
             "schema_type": "DocumentStorage",
-            "query_address": "http://postgres_query:50102",
+            "query_address": "http://postgres_query:50201",
             "kafka_topic": "cdl.document.data",
             "name": "second schema"
         }

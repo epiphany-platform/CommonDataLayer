@@ -1,13 +1,12 @@
 use crate::{
     db::SchemaDb,
     error::RegistryError,
-    replication::MessageQueue,
-    replication::MessageQueueConfig,
+    replication::ReplicationMethodConfig,
     replication::{ReplicationEvent, ReplicationRole, ReplicationState},
     types::DbExport,
     types::ViewUpdate,
     types::{NewSchema, NewSchemaVersion, VersionedUuid},
-    View,
+    CommunicationMethodConfig, View,
 };
 use anyhow::Context;
 use indradb::SledDatastore;
@@ -21,14 +20,14 @@ use semver::VersionReq;
 use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tonic::{Request, Response, Status};
-use utils::messaging_system::metadata_fetcher::MetadataFetcher;
-use utils::{abort_on_poison, messaging_system::Result};
+use utils::communication::metadata_fetcher::MetadataFetcher;
+use utils::{abort_on_poison, communication::Result};
 use uuid::Uuid;
 
 pub struct SchemaRegistryImpl {
     pub db: Arc<SchemaDb>,
     pub mq_metadata: Arc<MetadataFetcher>,
-    pub replication: Arc<Mutex<ReplicationState>>,
+    pub replication: Option<Arc<Mutex<ReplicationState>>>,
     pub pod_name: Option<String>,
 }
 
@@ -36,21 +35,29 @@ impl SchemaRegistryImpl {
     pub async fn new(
         db: SledDatastore,
         replication_role: ReplicationRole,
-        message_queue_config: MessageQueueConfig,
+        communication_config: CommunicationMethodConfig,
+        replication_config: Option<ReplicationMethodConfig>,
         pod_name: Option<String>,
     ) -> Result<Self> {
         let child_db = Arc::new(SchemaDb { db });
-        let mq_metadata = Arc::new(match &message_queue_config.queue {
-            MessageQueue::Kafka(kafka) => MetadataFetcher::new_kafka(&kafka.brokers).await?,
-            MessageQueue::Amqp(amqp) => MetadataFetcher::new_amqp(&amqp.connection_string).await?,
+        let mq_metadata = Arc::new(match &communication_config {
+            CommunicationMethodConfig::Kafka(kafka) => {
+                MetadataFetcher::new_kafka(&kafka.brokers).await?
+            }
+            CommunicationMethodConfig::Amqp(amqp) => {
+                MetadataFetcher::new_amqp(&amqp.connection_string).await?
+            }
+            CommunicationMethodConfig::Grpc => MetadataFetcher::new_grpc("command_service").await?,
         });
         let schema_registry = Self {
             db: child_db.clone(),
             mq_metadata,
-            replication: Arc::new(Mutex::new(ReplicationState::new(
-                message_queue_config,
-                child_db,
-            ))),
+            replication: replication_config.map(|replication_config| {
+                Arc::new(Mutex::new(ReplicationState::new(
+                    replication_config,
+                    child_db,
+                )))
+            }),
             pod_name,
         };
         schema_registry.set_replication_role(replication_role);
@@ -58,17 +65,21 @@ impl SchemaRegistryImpl {
     }
 
     pub fn set_replication_role(&self, role: ReplicationRole) {
-        self.replication
-            .lock()
-            .unwrap_or_else(abort_on_poison)
-            .set_role(role);
+        if let Some(replication) = self.replication.as_ref() {
+            replication
+                .lock()
+                .unwrap_or_else(abort_on_poison)
+                .set_role(role);
+        }
     }
 
     fn replicate_message(&self, event: ReplicationEvent) {
-        self.replication
-            .lock()
-            .unwrap_or_else(abort_on_poison)
-            .replicate_message(event)
+        if let Some(replication) = self.replication.as_ref() {
+            replication
+                .lock()
+                .unwrap_or_else(abort_on_poison)
+                .replicate_message(event)
+        }
     }
 
     pub fn export_all(&self) -> anyhow::Result<DbExport> {
@@ -98,17 +109,17 @@ impl SchemaRegistry for SchemaRegistryImpl {
             name: request.name,
             definition: parse_json(&request.definition)?,
             query_address: request.query_address,
-            kafka_topic: request.topic,
+            insert_destination: request.topic,
             schema_type,
         };
 
         if !self
             .mq_metadata
-            .topic_or_exchange_exists(&new_schema.kafka_topic)
+            .destination_exists(&new_schema.insert_destination)
             .await
             .map_err(RegistryError::from)?
         {
-            return Err(RegistryError::NoTopic(new_schema.kafka_topic).into());
+            return Err(RegistryError::NoTopic(new_schema.insert_destination).into());
         }
 
         let new_id = self.db.add_schema(new_schema.clone(), schema_id)?;
@@ -150,14 +161,14 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
 
-        if let Some(topic) = request.topic.as_ref() {
+        if let Some(destination) = request.topic.as_ref() {
             if !self
                 .mq_metadata
-                .topic_or_exchange_exists(&topic)
+                .destination_exists(&destination)
                 .await
                 .map_err(RegistryError::from)?
             {
-                return Err(RegistryError::NoTopic(topic.clone()).into());
+                return Err(RegistryError::NoTopic(destination.clone()).into());
             }
         }
 
@@ -262,7 +273,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
         let schema = Schema {
             name: schema.name,
-            topic: schema.kafka_topic,
+            topic: schema.insert_destination,
             query_address: schema.query_address,
             schema_type: schema.schema_type as i32,
         };
@@ -343,7 +354,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
                         schema_id.to_string(),
                         Schema {
                             name: schema.name,
-                            topic: schema.kafka_topic,
+                            topic: schema.insert_destination,
                             query_address: schema.query_address,
                             schema_type: schema.schema_type as i32,
                         },
@@ -415,10 +426,12 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         _request: Request<Empty>,
     ) -> Result<Response<PodName>, Status> {
-        self.replication
-            .lock()
-            .unwrap_or_else(abort_on_poison)
-            .set_role(ReplicationRole::Master);
+        if let Some(replication) = self.replication.as_ref() {
+            replication
+                .lock()
+                .unwrap_or_else(abort_on_poison)
+                .set_role(ReplicationRole::Master);
+        }
 
         Ok(Response::new(PodName {
             name: self.pod_name.clone().unwrap_or_default(),
