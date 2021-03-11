@@ -52,9 +52,9 @@ Egest methods (supported repositories):
 | DRUID_OUTPUT_TOPIC   | Kafka topic       | `cdl.timeseries.internal.druid` | yes       |         |
 
 #### Victoria Metrics Configuration
-| Name                        | Short Description | Example                        | Mandatory | Default |
-|-----------------------------|-------------------|--------------------------------|-----------|---------|
-| VICTORIA_METRICS_OUTPUT_URL | URL to the VM     | `http://victoria_metrics:8428` | yes       |         |
+| Name                        | Short Description           | Example                        | Mandatory | Default |
+|-----------------------------|-----------------------------|--------------------------------|-----------|---------|
+| VICTORIA_METRICS_OUTPUT_URL | Address of Victoria Metrics | `http://victoria_metrics:8428` | yes       |         |
 
 #### Kafka Configuration 
 *(if `COMMUNICATION_METHOD` equals `kafka`)*

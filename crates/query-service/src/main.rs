@@ -9,8 +9,10 @@ use utils::metrics;
 pub struct Config {
     #[structopt(subcommand)]
     pub inner: ConfigType,
+    /// Port to listen on
     #[structopt(long, env)]
     pub input_port: u16,
+    /// Port to listen on for Prometheus requests
     #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }

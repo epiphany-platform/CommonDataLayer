@@ -26,7 +26,7 @@ Communication methods (supported repositores):
 | COMMUNICATION_METHOD | The method to communicate with external services                                                                 | `kafka` / `amqp` / `grpc`     | yes       |         |
 | REPLICATION_ROLE     | (deprecated)                                                                                                     | `master` / `slave` / `none`   | yes       |         |
 | DB_NAME              | Database name                                                                                                    | `schema-registry`             | yes       |         |
-| POD_NAME             | (deprecated) used to promote to `master`                                                                         | `schema1`                     | no        |         |
+| POD_NAME             | (deprecated) used to promote to `master` role                                                                    | `schema1`                     | no        |         |
 | EXPORT_DIR           | Directory to save state of the database. The state is saved in newly created folder with timestamp               | `/var/db`                     | no        |         |
 | IMPORT_FILE          | JSON file from which SR should load initial state. If the state already exists this env variable will be ignored | `/var/db/initial-schema.json` | no        |         |
 | METRICS_PORT         | Port to listen on for Prometheus requests                                                                        | 58105                         | no        | 58105   |

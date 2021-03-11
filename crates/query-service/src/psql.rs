@@ -15,16 +15,22 @@ use uuid::Uuid;
 
 #[derive(Debug, StructOpt)]
 pub struct PsqlConfig {
+    /// Postgres username
     #[structopt(long, env = "POSTGRES_USERNAME")]
     username: String,
+    /// Postgres password
     #[structopt(long, env = "POSTGRES_PASSWORD")]
     password: String,
+    /// Host of the postgres server
     #[structopt(long, env = "POSTGRES_HOST")]
     host: String,
+    /// Port on which postgres server listens
     #[structopt(long, env = "POSTGRES_PORT", default_value = "5432")]
     port: u16,
+    /// Database name
     #[structopt(long, env = "POSTGRES_DBNAME")]
     dbname: String,
+    /// SQL schema available for service
     #[structopt(long, env = "POSTGRES_SCHEMA", default_value = "public")]
     schema: String,
 }
