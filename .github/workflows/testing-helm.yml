@@ -62,7 +62,7 @@ jobs:
       - name: deploy cdl kafka
         run: helm install --values ./deployment/helm/cdl/values-local.yaml cdl ./deployment/helm/cdl
       - name: wait
-        run: sleep 20
+        run: sleep 30
       - name: check if pods are running
         run: |
           kubectl get pods
@@ -75,7 +75,7 @@ jobs:
       - name: depoly cdl rabbitmq
         run: helm install --values ./deployment/helm/cdl/values-local.yaml --set global.communicationMethod=amqp cdl ./deployment/helm/cdl
       - name: wait
-        run: sleep 20
+        run: sleep 30
       - name: check if pods are running
         run: |
           kubectl get pods
