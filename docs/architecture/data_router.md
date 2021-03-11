@@ -69,7 +69,7 @@ To configure the Data Router, set the following environment variables:
 | SCHEMA_REGISTRY_ADDR | Address of schema registry gRPC API              | http://schema_registry:50101 | yes                             |         |
 | CACHE_CAPACITY       | How many entries the cache can hold              | 1024                         | yes                             |         |
 | TASK_LIMIT           | Max requests handled in parallel                 | 128                          | yes                             | 128     |
-| METRICS_PORT         | Port to send metrics data to Prometheus over     | 58105                        | no                              | 58105   |
+| METRICS_PORT         | Port to listen on for Prometheus requests        | 58105                        | no                              | 58105   |
 | RUST_LOG             | Log level                                        | `trace`                      | no                              |         |
 
 #### Kafka Configuration 

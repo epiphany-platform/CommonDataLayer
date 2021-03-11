@@ -26,11 +26,11 @@ Communication protocols:
 
 ### Configuration (Environment Variables)
 
-| Name         | Short Description                            | Example | Mandatory | Default |
-|--------------|----------------------------------------------|---------|-----------|---------|
-| INPUT_PORT   | Port to listen on                            | 50103   | yes       |         |
-| METRICS_PORT | Port to send metrics data to Prometheus over | 58105   | no        | 58105   |
-| RUST_LOG     | Log level                                    | `trace` | no        |         |
+| Name         | Short Description                         | Example | Mandatory | Default |
+|--------------|-------------------------------------------|---------|-----------|---------|
+| INPUT_PORT   | Port to listen on                         | 50103   | yes       |         |
+| METRICS_PORT | Port to listen on for Prometheus requests | 58105   | no        | 58105   |
+| RUST_LOG     | Log level                                 | `trace` | no        |         |
 
 #### Postgres Configuration
 
