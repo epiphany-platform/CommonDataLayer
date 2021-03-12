@@ -29,13 +29,13 @@ Because our schema-registry in docker-compose is automatically initialized with 
 ### Configuration (Environment Variables)
 
 
-| Name                 | Short Description                                | Example                      | Mandatory | Default |
-|----------------------|--------------------------------------------------|------------------------------|-----------|---------|
-| INPUT_PORT           | Port to listen on                                | 50103                        | yes       |         |
-| SCHEMA_REGISTRY_ADDR | Address of schema registry gRPC API              | http://schema_registry:50101 | yes       |         |
-| QUERY_ROUTER_ADDR    | Address of query router gRPC API                 | http://query_router:50101    | yes       |         |
-| COMMUNICATION_METHOD | The method to communicate with external services | `kafka` / `amqp` / `grpc`    | yes       |         |
-| RUST_LOG             | Log level                                        | `trace`                      | no        |         |
+| Name                 | Short Description                                  | Example                      | Mandatory | Default |
+|----------------------|----------------------------------------------------|------------------------------|-----------|---------|
+| INPUT_PORT           | Port to listen on                                  | 50103                        | yes       |         |
+| SCHEMA_REGISTRY_ADDR | Address of schema registry gRPC API                | http://schema_registry:50101 | yes       |         |
+| QUERY_ROUTER_ADDR    | Address of query router gRPC API                   | http://query_router:50101    | yes       |         |
+| COMMUNICATION_METHOD | The method of communication with external services | `kafka` / `amqp` / `grpc`    | yes       |         |
+| RUST_LOG             | Log level                                          | `trace`                      | no        |         |
 
 #### Kafka Configuration
 *(if `COMMUNICATION_METHOD` equals `kafka`)*

@@ -34,7 +34,7 @@ arg_enum! {
 
 #[derive(Clone, Debug, StructOpt)]
 pub struct CommunicationArgs {
-    /// The method to communicate with external services
+    /// The method of communication with external services
     #[structopt(long, env = "COMMUNICATION_METHOD", possible_values = &CommunicationMethod::variants(), case_insensitive = true)]
     pub communication_method: CommunicationMethod,
 

@@ -39,7 +39,7 @@ struct Config {
     #[structopt(long, env = "REPLICATION_ROLE", possible_values = &ReplicationRole::variants(), case_insensitive = true)]
     pub replication_role: ReplicationRole,
 
-    /// The method to communicate with external services.
+    /// The method of communication with external services.
     #[structopt(long, env = "COMMUNICATION_METHOD", possible_values = &CommunicationMethodType::variants(), case_insensitive = true)]
     pub communication_method: CommunicationMethodType,
     /// Address of Kafka brokers

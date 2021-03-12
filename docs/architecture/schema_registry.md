@@ -23,7 +23,7 @@ Communication methods (supported repositores):
 | Name                 | Short Description                                                                                                | Example                       | Mandatory | Default |
 |----------------------|------------------------------------------------------------------------------------------------------------------|-------------------------------|-----------|---------|
 | INPUT_PORT           | Port to listen on                                                                                                | 50103                         | yes       |         |
-| COMMUNICATION_METHOD | The method to communicate with external services                                                                 | `kafka` / `amqp` / `grpc`     | yes       |         |
+| COMMUNICATION_METHOD | The method of communication with external services                                                               | `kafka` / `amqp` / `grpc`     | yes       |         |
 | REPLICATION_ROLE     | (deprecated)                                                                                                     | `master` / `slave` / `none`   | yes       |         |
 | DB_NAME              | Database name                                                                                                    | `schema-registry`             | yes       |         |
 | POD_NAME             | (deprecated) used to promote to `master` role                                                                    | `schema1`                     | no        |         |

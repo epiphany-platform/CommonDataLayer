@@ -40,7 +40,7 @@ arg_enum! {
 
 #[derive(StructOpt, Deserialize, Debug, Serialize)]
 struct Config {
-    /// The method to communicate with external services
+    /// The method of communication with external services
     #[structopt(long, env, possible_values = &CommunicationMethod::variants(), case_insensitive = true)]
     pub communication_method: CommunicationMethod,
     /// Address of Kafka brokers

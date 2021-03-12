@@ -62,15 +62,15 @@ Please mind that internally, each message will get its own timestamp, with which
 To configure the Data Router, set the following environment variables:
 
 
-| Name                 | Short Description                                | Example                      | Mandatory                       | Default |
-|----------------------|--------------------------------------------------|------------------------------|---------------------------------|---------|
-| COMMUNICATION_METHOD | The method to communicate with external services | `kafka` / `amqp` / `grpc`    | yes                             |         |
-| INPUT_SOURCE         | Kafka topic or AMQP queue                        | `cdl.data.input`             | no, when `grpc` has been chosen |         |
-| SCHEMA_REGISTRY_ADDR | Address of schema registry gRPC API              | http://schema_registry:50101 | yes                             |         |
-| CACHE_CAPACITY       | How many entries the cache can hold              | 1024                         | yes                             |         |
-| TASK_LIMIT           | Max requests handled in parallel                 | 128                          | yes                             | 128     |
-| METRICS_PORT         | Port to listen on for Prometheus requests        | 58105                        | no                              | 58105   |
-| RUST_LOG             | Log level                                        | `trace`                      | no                              |         |
+| Name                 | Short Description                                  | Example                      | Mandatory                       | Default |
+|----------------------|----------------------------------------------------|------------------------------|---------------------------------|---------|
+| COMMUNICATION_METHOD | The method of communication with external services | `kafka` / `amqp` / `grpc`    | yes                             |         |
+| INPUT_SOURCE         | Kafka topic or AMQP queue                          | `cdl.data.input`             | no, when `grpc` has been chosen |         |
+| SCHEMA_REGISTRY_ADDR | Address of schema registry gRPC API                | http://schema_registry:50101 | yes                             |         |
+| CACHE_CAPACITY       | How many entries the cache can hold                | 1024                         | yes                             |         |
+| TASK_LIMIT           | Max requests handled in parallel                   | 128                          | yes                             | 128     |
+| METRICS_PORT         | Port to listen on for Prometheus requests          | 58105                        | no                              | 58105   |
+| RUST_LOG             | Log level                                          | `trace`                      | no                              |         |
 
 #### Kafka Configuration 
 *(if `COMMUNICATION_METHOD` equals `kafka`)*

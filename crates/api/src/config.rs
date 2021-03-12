@@ -26,7 +26,7 @@ pub struct Config {
 
 #[derive(StructOpt)]
 pub struct CommunicationMethodArgs {
-    /// The method to communicate with external services
+    /// The method of communication with external services
     #[structopt(long, env, possible_values = &CommunicationMethod::variants(), case_insensitive = true)]
     communication_method: CommunicationMethod,
     /// Address to Kafka brokers

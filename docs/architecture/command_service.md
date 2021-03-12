@@ -28,7 +28,7 @@ Egest methods (supported repositories):
 
 | Name                 | Short Description                                                                               | Example                   | Mandatory | Default |
 |----------------------|-------------------------------------------------------------------------------------------------|---------------------------|-----------|---------|
-| COMMUNICATION_METHOD | The method to communicate with external services                                                | `kafka` / `amqp` / `grpc` | yes       |         |
+| COMMUNICATION_METHOD | The method of communication with external services                                              | `kafka` / `amqp` / `grpc` | yes       |         |
 | REPORT_DESTINATION   | Kafka topic/AMQP exchange/callback URL to send notifications to (reporting disabled when empty) | `cdl.notifications`       | no        |         |
 | METRICS_PORT         | Port to listen on for Prometheus requests                                                       | 58105                     | no        | 58105   |
 | RUST_LOG             | Log level                                                                                       | `trace`                   | no        |         |
