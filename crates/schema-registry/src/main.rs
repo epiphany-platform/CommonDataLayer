@@ -9,60 +9,70 @@ use schema_registry::{
     rpc::SchemaRegistryImpl,
     AmqpConfig, CommunicationMethodConfig, KafkaConfig,
 };
-use serde::Deserialize;
 use std::fs::File;
 use std::io::Write;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
+use structopt::clap::arg_enum;
+use structopt::StructOpt;
 use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
 
-enum CommunicationMethodType {
-    Kafka,
-    Amqp,
-    Grpc,
-}
-
-impl<'de> Deserialize<'de> for CommunicationMethodType {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?.to_lowercase();
-        let mqt = match s.as_str() {
-            "kafka" => Self::Kafka,
-            "amqp" => Self::Amqp,
-            "grpc" => Self::Grpc,
-            other => {
-                return Err(serde::de::Error::custom(format!(
-                    "Invalid message queue type: `{}`",
-                    other
-                )));
-            }
-        };
-        Ok(mqt)
+arg_enum! {
+    #[derive(Clone, Debug)]
+    pub enum CommunicationMethodType {
+        Amqp,
+        Kafka,
+        GRpc,
     }
 }
 
-#[derive(Deserialize)]
+#[derive(StructOpt)]
 struct Config {
+    /// Port to listen on
+    #[structopt(long, env)]
     pub input_port: u16,
+    /// Database name
+    #[structopt(long, env)]
     pub db_name: String,
+    /// (deprecated)
+    #[structopt(long, env = "REPLICATION_ROLE", possible_values = &ReplicationRole::variants(), case_insensitive = true)]
     pub replication_role: ReplicationRole,
 
+    /// The method of communication with external services.
+    #[structopt(long, env = "COMMUNICATION_METHOD", possible_values = &CommunicationMethodType::variants(), case_insensitive = true)]
     pub communication_method: CommunicationMethodType,
+    /// Address of Kafka brokers
+    #[structopt(long, env)]
     pub kafka_brokers: Option<String>,
+    /// Group ID of the consumer
+    #[structopt(long, env)]
     pub kafka_group_id: Option<String>,
+    /// Connection URL to AMQP server
+    #[structopt(long, env)]
     pub amqp_connection_string: Option<String>,
+    /// Consumer tag
+    #[structopt(long, env)]
     pub amqp_consumer_tag: Option<String>,
 
+    /// Kafka topic/AMQP queue
+    #[structopt(long, env)]
     pub replication_source: String,
+    /// Kafka topic/AMQP exchange
+    #[structopt(long, env)]
     pub replication_destination: String,
 
+    /// (deprecated) used to promote to `master` role
+    #[structopt(long, env)]
     pub pod_name: Option<String>,
+    /// Directory to save state of the database. The state is saved in newly created folder with timestamp
+    #[structopt(long, env)]
     pub export_dir: Option<PathBuf>,
+    /// JSON file from which SR should load initial state. If the state already exists this env variable witll be ignored
+    #[structopt(long, env)]
     pub import_file: Option<PathBuf>,
-
+    /// Port to listen on for Prometheus requests
+    #[structopt(long, env)]
     pub metrics_port: Option<u16>,
 }
 
@@ -93,7 +103,7 @@ fn communication_config(config: &Config) -> anyhow::Result<CommunicationMethodCo
                 consumer_tag,
             })
         }
-        CommunicationMethodType::Grpc => CommunicationMethodConfig::Grpc,
+        CommunicationMethodType::GRpc => CommunicationMethodConfig::Grpc,
     };
     Ok(config)
 }
@@ -126,7 +136,7 @@ fn replication_config(config: &Config) -> anyhow::Result<Option<ReplicationMetho
                     consumer_tag,
                 })
             }
-            CommunicationMethodType::Grpc => {
+            CommunicationMethodType::GRpc => {
                 return Ok(None);
             }
         },
@@ -139,7 +149,7 @@ fn replication_config(config: &Config) -> anyhow::Result<Option<ReplicationMetho
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     env_logger::init();
-    let config = envy::from_env::<Config>().context("Env vars not set correctly")?;
+    let config = Config::from_args();
 
     let communication_config = communication_config(&config)?;
     let replication_config = replication_config(&config)?;

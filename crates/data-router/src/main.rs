@@ -40,26 +40,37 @@ arg_enum! {
 
 #[derive(StructOpt, Deserialize, Debug, Serialize)]
 struct Config {
+    /// The method of communication with external services
     #[structopt(long, env, possible_values = &CommunicationMethod::variants(), case_insensitive = true)]
     pub communication_method: CommunicationMethod,
+    /// Address of Kafka brokers
     #[structopt(long, env)]
     pub kafka_brokers: Option<String>,
+    /// Group ID of the consumer
     #[structopt(long, env)]
     pub kafka_group_id: Option<String>,
+    /// Connection URL to AMQP Server
     #[structopt(long, env)]
     pub amqp_connection_string: Option<String>,
+    /// Consumer tag
     #[structopt(long, env)]
     pub amqp_consumer_tag: Option<String>,
+    /// Kafka topic or AMQP queue
     #[structopt(long, env)]
     pub input_source: Option<String>,
+    /// Address of schema registry gRPC API
     #[structopt(long, env)]
     pub schema_registry_addr: String,
+    /// How many entries the cache can hold
     #[structopt(long, env)]
     pub cache_capacity: usize,
+    /// Max requests handled in parallel
     #[structopt(long, env, default_value = "128")]
     pub task_limit: usize,
+    /// Port to listen on for Prometheus requests
     #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
+    /// Port to listen on when communication method is `grpc`
     #[structopt(long, env)]
     pub grpc_port: Option<u16>,
 }

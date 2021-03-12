@@ -57,19 +57,43 @@ Otherwise, messages will be split into sub-batches containing messages with the 
 Please mind that internally, each message will get its own timestamp, with which data started being processed by CDL. This information is invisible for user.
 
 
-### Configuration
+### Configuration (Environment Variables)
 
-To configure data router, set following environment variables. `INPUT_ADDR` and `INPUT_QUEUE` is related to the incoming data in the router. `KAFKA_BROKERS`, `KAFKA_ERROR_CHANNEL` are related to messages being routed through Kafka to the corresponding command service.
+To configure the Data Router, set the following environment variables:
 
 
-```
-INPUT_ADDR
-INPUT_QUEUE
-KAFKA_BROKERS
-KAFKA_ERROR_CHANNEL
-SCHEMA_REGISTRY_ADDR
-CACHE_CAPACITY
-```
+| Name                 | Short Description                                  | Example                      | Mandatory                       | Default |
+|----------------------|----------------------------------------------------|------------------------------|---------------------------------|---------|
+| COMMUNICATION_METHOD | The method of communication with external services | `kafka` / `amqp` / `grpc`    | yes                             |         |
+| INPUT_SOURCE         | Kafka topic or AMQP queue                          | `cdl.data.input`             | no, when `grpc` has been chosen |         |
+| SCHEMA_REGISTRY_ADDR | Address of schema registry gRPC API                | http://schema_registry:50101 | yes                             |         |
+| CACHE_CAPACITY       | How many entries the cache can hold                | 1024                         | yes                             |         |
+| TASK_LIMIT           | Max requests handled in parallel                   | 128                          | yes                             | 128     |
+| METRICS_PORT         | Port to listen on for Prometheus requests          | 58105                        | no                              | 58105   |
+| RUST_LOG             | Log level                                          | `trace`                      | no                              |         |
+
+#### Kafka Configuration 
+*(if `COMMUNICATION_METHOD` equals `kafka`)*
+
+| Name           | Short Description        | Example       | Mandatory | Default |
+|----------------|--------------------------|---------------|-----------|---------|
+| KAFKA_BROKERS  | Address of Kafka brokers | `kafka:9093`  | yes       |         |
+| KAFKA_GROUP_ID | Group ID of the consumer | `data_router` | yes       |         |
+
+#### AMQP Configuration 
+*(if `COMMUNICATION_METHOD` equals `amqp`)*
+
+| Name                   | Short Description             | Example                                  | Mandatory | Default |
+|------------------------|-------------------------------|------------------------------------------|-----------|---------|
+| AMQP_CONNECTION_STRING | Connection URL to AMQP Server | `amqp://user:CHANGEME@rabbitmq:5672/%2f` | yes       |         |
+| AMQP_CONSUMER_TAG      | Consumer tag                  | `data_router`                            | yes       |         |
+
+#### gRPC Configuration 
+*(if `COMMUNICATION_METHOD` equals `grpc`)*
+
+| Name      | Short Description | Example | Mandatory | Default |
+|-----------|-------------------|---------|-----------|---------|
+| GRPC_PORT | Port to listen on | 50103   | yes       |         |
 
 Mind that GRPC uses HTTP2 as its transport protocol (L4), so SCHEMA_REGISTRY_ADDR must be provided as `http://ip_or_name:port`
 

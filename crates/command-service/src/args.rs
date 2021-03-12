@@ -18,6 +18,7 @@ pub struct Args {
     #[structopt(flatten)]
     pub report_config: ReportServiceConfig,
 
+    /// Port to listen on for Prometheus requests
     #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }
@@ -33,33 +34,42 @@ arg_enum! {
 
 #[derive(Clone, Debug, StructOpt)]
 pub struct CommunicationArgs {
+    /// The method of communication with external services
     #[structopt(long, env = "COMMUNICATION_METHOD", possible_values = &CommunicationMethod::variants(), case_insensitive = true)]
     pub communication_method: CommunicationMethod,
 
+    /// Address of Kafka brokers
     #[structopt(long, env)]
     pub kafka_brokers: Option<String>,
+    /// Group ID of the Kafka consumer
     #[structopt(long, env)]
     pub kafka_group_id: Option<String>,
+    /// Connection URL to AMQP server
     #[structopt(long, env)]
     pub amqp_connection_string: Option<String>,
+    /// AMQP consumer tag
     #[structopt(long, env)]
     pub amqp_consumer_tag: Option<String>,
+    /// Port to listen on
     #[structopt(long = "rpc-input-port", env = "RPC_PORT")]
     pub grpc_port: Option<u16>,
+    /// URL to send notifications to. Used with `grpc` communication method
     #[structopt(long, env)]
     pub report_endpoint_url: Option<Url>,
 
+    /// Kafka topics/AMQP queues with ordered messages. Ignored with `grpc` communication method
     #[structopt(long, env)]
     pub ordered_sources: Option<String>,
+    /// Kafka topics/AMQP queues with unordered messages. Ignored with `grpc` communication method
     #[structopt(long, env)]
     pub unordered_sources: Option<String>,
 
+    /// Max requests handled in parallel
     #[structopt(
         long = "threaded-task-limit",
         env = "THREADED_TASK_LIMIT",
         default_value = "32"
     )]
-    /// Amount of tasks that can be spawned, and process data input, at one given time
     pub task_limit: usize,
 }
 
