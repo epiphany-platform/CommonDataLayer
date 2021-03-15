@@ -55,7 +55,7 @@ pub async fn consume_mq(
         );
         process::abort();
     });
-    consumer.run(Handler { db, kill_signal }).await?;
+    consumer.run(Handler { kill_signal, db }).await?;
 
     Ok(())
 }

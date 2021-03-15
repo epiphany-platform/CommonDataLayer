@@ -125,8 +125,7 @@ impl PsqlQuery {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(serde_json::to_vec(&data)
-            .map_err(|e| format!("Error serializing data to json: {}", e))?)
+        serde_json::to_vec(&data).map_err(|e| format!("Error serializing data to json: {}", e))
     }
 }
 
