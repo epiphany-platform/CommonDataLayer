@@ -18,7 +18,7 @@ pub struct Config {
 
     /// Kafka topic/AMQP queue on which API listens for notifications
     #[structopt(long, env)]
-    pub report_source: String,
+    pub report_source: Option<String>,
     /// Kafka topic/AMQP exchange/gRPC service address to which API inserts new objects
     #[structopt(long, env)]
     pub insert_destination: String,

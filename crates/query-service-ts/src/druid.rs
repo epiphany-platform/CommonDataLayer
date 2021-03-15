@@ -96,6 +96,7 @@ impl DruidQuery {
 
 #[tonic::async_trait]
 impl QueryServiceTs for DruidQuery {
+    #[tracing::instrument(skip(self))]
     async fn query_by_range(
         &self,
         request: Request<Range>,
@@ -126,6 +127,7 @@ impl QueryServiceTs for DruidQuery {
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn query_by_schema(
         &self,
         request: Request<SchemaId>,
@@ -152,6 +154,7 @@ impl QueryServiceTs for DruidQuery {
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn query_raw(
         &self,
         request: Request<RawStatement>,

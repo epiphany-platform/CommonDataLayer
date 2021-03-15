@@ -3,7 +3,6 @@ use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::{Config, NoTls};
 use bb8_postgres::{bb8, PostgresConnectionManager};
 use itertools::Itertools;
-use log::*;
 use rpc::edge_registry::edge_registry_server::EdgeRegistry;
 use rpc::edge_registry::{
     Edge, Empty, ObjectIdQuery, ObjectRelations, RelationDetails, RelationId, RelationIdQuery,
@@ -15,6 +14,7 @@ use std::str::FromStr;
 use std::{fmt, time};
 use structopt::StructOpt;
 use tonic::{Request, Response, Status};
+use tracing::{debug, error, trace};
 use utils::communication::consumer::{CommonConsumerConfig, ConsumerHandler};
 use utils::communication::message::CommunicationMessage;
 use utils::metrics::{self, counter};
@@ -154,6 +154,7 @@ impl EdgeRegistryImpl {
         Ok(conn)
     }
 
+    #[tracing::instrument(skip(self))]
     async fn add_relation_impl(
         &self,
         parent_schema_id: Uuid,
@@ -173,6 +174,7 @@ impl EdgeRegistryImpl {
         Ok(row.get(0).context("Critical error, missing rows")?.get(0))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get_relation_impl(
         &self,
         relation_id: &Uuid,
@@ -191,6 +193,7 @@ impl EdgeRegistryImpl {
             .map(|row| row.get::<_, Uuid>(0)))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get_schema_relations_impl(
         &self,
         schema_id: &Uuid,
@@ -208,6 +211,7 @@ impl EdgeRegistryImpl {
             .map(|row| (row.get(0), row.get(1))))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn list_relations_impl(
         &self,
     ) -> anyhow::Result<impl Iterator<Item = (Uuid, Uuid, Uuid)>> {
@@ -224,6 +228,7 @@ impl EdgeRegistryImpl {
             .map(|row| (row.get(0), row.get(1), row.get(2))))
     }
 
+    #[tracing::instrument(skip(self, relations))]
     async fn add_edges_impl(
         &self,
         relations: impl IntoIterator<Item = AddEdgesMessage>,
@@ -250,6 +255,7 @@ impl EdgeRegistryImpl {
         Ok(())
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get_edge_impl(
         &self,
         relation_id: Uuid,
@@ -269,6 +275,7 @@ impl EdgeRegistryImpl {
         )
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get_edges_impl(
         &self,
         object_id: Uuid,

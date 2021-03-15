@@ -5,7 +5,6 @@ use crate::{
     types::{NewSchema, NewSchemaVersion},
     AmqpConfig, KafkaConfig,
 };
-use log::info;
 use rpc::schema_registry::types::SchemaType;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -14,6 +13,7 @@ use std::{
 };
 use structopt::clap::arg_enum;
 use tokio::{runtime::Handle, sync::oneshot};
+use tracing::info;
 use uuid::Uuid;
 
 mod master;

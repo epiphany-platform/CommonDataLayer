@@ -8,8 +8,8 @@ use bb8_postgres::tokio_postgres::{Config, NoTls};
 use bb8_postgres::PostgresConnectionManager;
 pub use config::PostgresOutputConfig;
 pub use error::Error;
-use log::{error, trace};
 use serde_json::Value;
+use tracing::{error, trace};
 use utils::message_types::BorrowedInsertMessage;
 use utils::{metrics::counter, psql::validate_schema};
 

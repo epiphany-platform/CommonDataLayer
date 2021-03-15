@@ -1,19 +1,18 @@
 use edge_registry::{EdgeRegistryImpl, RegistryConfig};
-use log::*;
 use rpc::edge_registry::edge_registry_server::EdgeRegistryServer;
 use std::process;
 use structopt::StructOpt;
 use tonic::transport::Server;
+use tracing::{debug, error, info};
 use utils::communication::consumer::CommonConsumer;
 use utils::{metrics, status_endpoints};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
+    utils::tracing::init();
 
     let config = RegistryConfig::from_args();
-
-    env_logger::init();
 
     debug!("Environment: {:?}", config);
 

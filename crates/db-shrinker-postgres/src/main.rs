@@ -4,7 +4,7 @@ use serde_json::Value as JsonValue;
 use structopt::StructOpt;
 use uuid::Uuid;
 
-use log::{debug, info, trace};
+use tracing::{debug, info, trace};
 
 #[derive(Debug, Clone, StructOpt)]
 struct Opts {
@@ -27,7 +27,7 @@ struct Opts {
 fn main() -> anyhow::Result<()> {
     let opts = Opts::from_args();
 
-    env_logger::init();
+    utils::tracing::init();
 
     info!("Running shrinker on PSQL with {:?}", opts);
 

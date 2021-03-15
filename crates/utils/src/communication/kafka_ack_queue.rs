@@ -1,11 +1,11 @@
 use std::{cmp::max, collections::LinkedList, sync::Mutex};
 
-use log::trace;
 use rdkafka::{
     consumer::{DefaultConsumerContext, StreamConsumer},
     message::BorrowedMessage,
     Message, Offset, TopicPartitionList,
 };
+use tracing::trace;
 use vec_map::VecMap;
 
 use crate::abort_on_poison;

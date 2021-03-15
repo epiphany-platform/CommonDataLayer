@@ -7,7 +7,7 @@ use crate::error::Error;
 use crate::types::schema::*;
 
 pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<View> {
-    log::debug!("get view: {:?}", id);
+    tracing::debug!("get view: {:?}", id);
     let view = conn
         .get_view(rpc::schema_registry::Id { id: id.to_string() })
         .await
@@ -23,7 +23,7 @@ pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Vi
 }
 
 pub async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Schema> {
-    log::debug!("get schema: {:?}", id);
+    tracing::debug!("get schema: {:?}", id);
     let schema = conn
         .get_schema_metadata(rpc::schema_registry::Id { id: id.to_string() })
         .await
@@ -39,7 +39,7 @@ pub async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<
             .ok_or(Error::InvalidSchemaType(schema.schema_type))?,
     };
 
-    log::debug!("schema: {:?}", schema);
+    tracing::debug!("schema: {:?}", schema);
 
     Ok(schema)
 }

@@ -2,9 +2,9 @@ use super::{CommunicationMethod, ReplicationEvent, ReplicationMethodConfig};
 use crate::db::SchemaDb;
 use anyhow::Context;
 use async_trait::async_trait;
-use log::{error, trace};
 use std::{process, sync::Arc};
 use tokio::sync::oneshot::Receiver;
+use tracing::{error, trace};
 use utils::communication::{
     consumer::CommonConsumer,
     consumer::{CommonConsumerConfig, ConsumerHandler},
