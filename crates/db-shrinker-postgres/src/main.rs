@@ -1,5 +1,3 @@
-#![feature(iterator_fold_self)]
-
 use anyhow::Context;
 use postgres::{Client, Config, NoTls, Row};
 use serde_json::Value as JsonValue;
@@ -109,7 +107,7 @@ fn shrink_by_id(client: &mut Client, object_id: Uuid) -> anyhow::Result<()> {
 fn minimize_document(rows: impl IntoIterator<Item = Row>) -> Option<JsonValue> {
     rows.into_iter()
         .map(|row| row.get::<_, JsonValue>(1))
-        .fold_first(|mut acc, next| {
+        .reduce(|mut acc, next| {
             merge(&mut acc, next);
             acc
         })

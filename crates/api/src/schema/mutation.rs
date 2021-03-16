@@ -46,8 +46,8 @@ impl Mutation {
         Ok(Schema {
             id,
             name,
-            query_address,
             topic,
+            query_address,
             schema_type,
         })
     }
