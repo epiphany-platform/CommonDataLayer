@@ -232,6 +232,7 @@ impl EdgeRegistryImpl {
         let conn = self.connect().await?;
 
         for relation in relations {
+            trace!("Adding {} edges in `{}`", relation.child_object_ids.len(), relation.relation_id);
             for child_object_id in relation.child_object_ids {
                 conn
                     .query(
@@ -428,7 +429,7 @@ impl EdgeRegistry for EdgeRegistryImpl {
             edges.len().try_into().unwrap()
         );
         trace!(
-            "Received `add_edges` message with {} edges to add",
+            "Received `add_edges` message with {} relations",
             edges.len()
         );
 
@@ -510,7 +511,7 @@ impl ConsumerHandler for EdgeRegistryImpl {
             edges.len().try_into().unwrap()
         );
 
-        trace!("Consuming `add_edges` with {} entries", edges.len());
+        trace!("Consuming `add_edges` with {} relations", edges.len());
 
         self.add_edges_impl(edges).await?;
 

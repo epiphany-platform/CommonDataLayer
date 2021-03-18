@@ -85,6 +85,10 @@ services:
       POSTGRES_DBNAME: postgres
       POSTGRES_SCHEMA: cdl
       COMMUNICATION_PORT: 50110
+      METHOD: kafka
+      MQ_HOST: "kafka:9093"
+      MQ_TAG: edge-registry
+      MQ_SOURCE: "cdl.edge.input"
       RUST_LOG: info,edge_registry=trace
 
   web_api:
