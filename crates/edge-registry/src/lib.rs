@@ -232,7 +232,11 @@ impl EdgeRegistryImpl {
         let conn = self.connect().await?;
 
         for relation in relations {
-            trace!("Adding {} edges in `{}`", relation.child_object_ids.len(), relation.relation_id);
+            trace!(
+                "Adding {} edges in `{}`",
+                relation.child_object_ids.len(),
+                relation.relation_id
+            );
             for child_object_id in relation.child_object_ids {
                 conn
                     .query(
