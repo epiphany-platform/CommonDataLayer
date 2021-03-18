@@ -43,7 +43,7 @@ spec:
             {{- if eq .Values.global.communicationMethod "kafka" }}
             - name: MQ_HOST
               value: {{ .Values.global.kafkaBrokers }}
-            {{- else if eq .Values.global.communicationMethod "kafka" }}
+            {{- else if eq .Values.global.communicationMethod "amqp" }}
             - name: MQ_HOST
               value: {{ .Values.global.amqpConnectionString }}
             {{- end }}
