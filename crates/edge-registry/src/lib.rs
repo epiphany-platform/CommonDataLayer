@@ -289,7 +289,11 @@ impl EdgeRegistry for EdgeRegistryImpl {
     ) -> Result<Response<RelationId>, Status> {
         let request = request.into_inner();
 
-        trace!("Received `add_relation` message with parent_id `{}` and child_id `{}`", request.parent_schema_id, request.child_schema_id);
+        trace!(
+            "Received `add_relation` message with parent_id `{}` and child_id `{}`",
+            request.parent_schema_id,
+            request.child_schema_id
+        );
 
         let parent_schema_id = Uuid::from_str(&request.parent_schema_id)
             .map_err(|_| Status::invalid_argument("parent_schema_id"))?;
@@ -312,7 +316,11 @@ impl EdgeRegistry for EdgeRegistryImpl {
     ) -> Result<Response<RelationResponse>, Status> {
         let request = request.into_inner();
 
-        trace!("Received `get_relation` message with relation_id `{}` and parent_id `{}`", request.relation_id, request.parent_schema_id);
+        trace!(
+            "Received `get_relation` message with relation_id `{}` and parent_id `{}`",
+            request.relation_id,
+            request.parent_schema_id
+        );
 
         let relation_id = Uuid::from_str(&request.relation_id)
             .map_err(|_| Status::invalid_argument("relation_id"))?;
@@ -335,7 +343,10 @@ impl EdgeRegistry for EdgeRegistryImpl {
     ) -> Result<Response<RelationList>, Status> {
         let request = request.into_inner();
 
-        trace!("Received `get_schema_relations` message with schema_id `{}`", request.schema_id);
+        trace!(
+            "Received `get_schema_relations` message with schema_id `{}`",
+            request.schema_id
+        );
 
         let schema_id = Uuid::from_str(&request.schema_id)
             .map_err(|_| Status::invalid_argument("schema_id"))?;
@@ -407,14 +418,19 @@ impl EdgeRegistry for EdgeRegistryImpl {
             .collect::<anyhow::Result<Vec<AddEdgesMessage>>>()
             .map_err(|err| {
                 debug!("Failed deserializing `add_edges` query. {:?}", err);
-                Status::invalid_argument("Failed to deserialize query. Check if all uuids are in correct format.")
+                Status::invalid_argument(
+                    "Failed to deserialize query. Check if all uuids are in correct format.",
+                )
             })?;
 
         counter!(
             "cdl.edge-registry.add-edges.count",
             edges.len().try_into().unwrap()
         );
-        trace!("Received `add_edges` message with {} edges to add", edges.len());
+        trace!(
+            "Received `add_edges` message with {} edges to add",
+            edges.len()
+        );
 
         self.add_edges_impl(edges)
             .await
@@ -426,7 +442,11 @@ impl EdgeRegistry for EdgeRegistryImpl {
     async fn get_edge(&self, request: Request<RelationIdQuery>) -> Result<Response<Edge>, Status> {
         let request = request.into_inner();
 
-        trace!("Received `get_edge` message with relation_id `{}` and parent_id `{}`", request.relation_id, request.parent_object_id);
+        trace!(
+            "Received `get_edge` message with relation_id `{}` and parent_id `{}`",
+            request.relation_id,
+            request.parent_object_id
+        );
 
         let relation_id = Uuid::from_str(&request.relation_id)
             .map_err(|_| Status::invalid_argument("relation_id"))?;
@@ -451,7 +471,10 @@ impl EdgeRegistry for EdgeRegistryImpl {
     ) -> Result<Response<ObjectRelations>, Status> {
         let request = request.into_inner();
 
-        trace!("Received `get_edge` message with object_id `{}`", request.object_id);
+        trace!(
+            "Received `get_edge` message with object_id `{}`",
+            request.object_id
+        );
 
         let object_id = Uuid::from_str(&request.object_id)
             .map_err(|_| Status::invalid_argument("object_id"))?;
