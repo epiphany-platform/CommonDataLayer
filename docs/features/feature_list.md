@@ -29,6 +29,7 @@
 | CDLF-00010-00 | Protocol Versioning                               |TechSpec |-----      | [RFC](https://github.com/epiphany-platform/CommonDataLayer/blob/develop/docs/rfc/CDLF-00010-00-rfc-01.md)
 | CDLF-00011-00 | Basic Materialization                             |TechSpec |-----      | [RFC](https://github.com/epiphany-platform/CommonDataLayer/blob/develop/docs/rfc/CDLF-00011-00-rfc-01.md)
 | CDLF-00012-00 | Edge repository                                   |RFC      |-----      | [RFC](https://github.com/epiphany-platform/CommonDataLayer/blob/develop/docs/rfc/CDLF-00012-00-rfc-01.md)
+| CDLF-00013-00 | Materialized views                                        |RFC      |-----      | [RFC](https://github.com/epiphany-platform/CommonDataLayer/blob/develop/docs/rfc/CDLF-00013-00-rfc-01.md)
 
 
 
