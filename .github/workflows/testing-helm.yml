@@ -42,9 +42,11 @@ jobs:
         run: |
           docker load -i cache_img
           docker tag $(docker images | awk '{print $3}'  | awk 'NR==2') local/cache
+        continue-on-error: true
       - name: Restore cache
         if: steps.cache.outputs.cache-hit == 'true'
         run: DOCKER_BUILDKIT=1 docker build --no-cache --target cache-import .
+        continue-on-error: true
       - name: build cdl images
         run: DOCKER_BUILDKIT=1 ENV=CI ./build.sh
       - name: Build cache
