@@ -2,7 +2,11 @@
 #![feature(box_syntax)]
 
 use log::error;
-use std::{process, sync::PoisonError, time::{SystemTime, UNIX_EPOCH}, panic};
+use std::{
+    panic, process,
+    sync::PoisonError,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 pub mod communication;
 pub mod message_types;
