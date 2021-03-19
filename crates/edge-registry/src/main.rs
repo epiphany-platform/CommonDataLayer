@@ -9,6 +9,8 @@ use utils::{metrics, status_endpoints};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    utils::set_aborting_panic_hook();
+
     let config = RegistryConfig::from_args();
 
     env_logger::init();

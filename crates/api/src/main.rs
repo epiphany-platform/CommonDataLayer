@@ -17,6 +17,8 @@ const SEC_WEBSOCKET_PROTOCOL_VALUE: &str = "graphql-ws";
 
 #[tokio::main]
 async fn main() {
+    utils::set_aborting_panic_hook();
+
     env_logger::init();
     let config = Arc::new(Config::from_args());
 

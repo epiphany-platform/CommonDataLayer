@@ -19,6 +19,8 @@ pub struct Config {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    utils::set_aborting_panic_hook();
+
     env_logger::init();
     let config = envy::from_env::<Config>().context("Env vars not set correctly")?;
     debug!("Environment {:?}", config);
