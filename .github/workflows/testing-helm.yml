@@ -82,3 +82,4 @@ jobs:
           [[ -z `kubectl get pods --field-selector=status.phase!=Running` ]]
       - name: uninstall cdl rabbitmq
         run: helm uninstall cdl
+
