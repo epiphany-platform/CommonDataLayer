@@ -17,7 +17,8 @@ pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Vi
     Ok(View {
         id,
         name: view.name,
-        expression: view.jmespath,
+        materializer_addr: view.materializer_addr,
+        fields: view.fields,
     })
 }
 

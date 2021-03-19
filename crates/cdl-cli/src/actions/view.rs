@@ -10,7 +10,10 @@ pub async fn get_view(view_id: Uuid, registry_addr: String) -> anyhow::Result<()
         .await?
         .into_inner();
 
-    println!("Name: {}, JMESPath: {}", view.name, view.jmespath);
+    println!(
+        "Name: {}, Materializer Address: {}",
+        view.name, view.materializer_addr
+    );
 
     Ok(())
 }
@@ -18,15 +21,17 @@ pub async fn get_view(view_id: Uuid, registry_addr: String) -> anyhow::Result<()
 pub async fn add_view_to_schema(
     schema_id: Uuid,
     name: String,
-    jmespath: String,
+    materializer_addr: String,
     registry_addr: String,
+    fields: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let view = NewSchemaView {
         view_id: "".into(),
         schema_id: schema_id.to_string(),
         name: name.clone(),
-        jmespath,
+        materializer_addr,
+        fields,
     };
 
     let response = client.add_view_to_schema(view).await?;
@@ -44,21 +49,23 @@ pub async fn add_view_to_schema(
 pub async fn update_view(
     view_id: Uuid,
     name: Option<String>,
-    jmespath: Option<String>,
+    materializer_addr: Option<String>,
+    fields: Option<String>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let view = UpdatedView {
         id: view_id.to_string(),
         name,
-        jmespath,
+        materializer_addr,
+        fields,
     };
 
     let old_view = client.update_view(view).await?.into_inner();
 
     println!(
-        "Old Name: {}, Old JMESPath: {}",
-        old_view.name, old_view.jmespath
+        "Old Name: {}, Old Materializer_Addr: {}",
+        old_view.name, old_view.materializer_addr
     );
 
     Ok(())

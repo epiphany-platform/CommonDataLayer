@@ -1,6 +1,6 @@
 #![feature(drain_filter)]
 
-use ::rpc::schema_registry::{Empty, Id, ValueToValidate};
+use ::rpc::schema_registry::{Empty, ValueToValidate};
 use error::RegistryClientError;
 use serde_json::Value;
 use tonic::Request;
@@ -50,25 +50,6 @@ pub async fn validate_data_with_schema(
     } else {
         Err(RegistryClientError::InvalidData(errors))
     }
-}
-
-pub async fn get_view_of_data(
-    view_id: Uuid,
-    data: &Value,
-    schema_registry_addr: String,
-) -> Result<Value, RegistryClientError> {
-    let mut client = ::rpc::schema_registry::connect(schema_registry_addr).await?;
-    let request = Request::new(Id {
-        id: view_id.to_string(),
-    });
-    let view = client.get_view(request).await?.into_inner();
-
-    let path = jmespatch::compile(&view.jmespath).map_err(RegistryClientError::JmespathError)?;
-    let mapped = path
-        .search(data)
-        .map_err(RegistryClientError::JmespathError)?;
-
-    serde_json::to_value(&mapped).map_err(|_err| RegistryClientError::JmespathReturnedMalformedJson)
 }
 
 pub async fn promote_to_master(storage_addr: String) -> Result<String, RegistryClientError> {

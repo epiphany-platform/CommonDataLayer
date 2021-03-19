@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use indradb::{Type, VertexProperties};
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
@@ -17,6 +19,7 @@ lazy_static! {
     static ref SCHEMA_VERTEX_TYPE: Type = Type::new("SCHEMA").unwrap();
     static ref SCHEMA_DEFINITION_VERTEX_TYPE: Type = Type::new("DEFINITION").unwrap();
     static ref VIEW_VERTEX_TYPE: Type = Type::new("VIEW").unwrap();
+    static ref FIELD_DEFINITION_VERTEX_TYPE: Type = Type::new("FIELD").unwrap();
 }
 
 // Stored vertices
@@ -102,12 +105,14 @@ impl Vertex for Definition {
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
 pub struct View {
     pub name: String,
-    pub jmespath: String,
+    pub materializer_addr: String,
+    pub fields: HashMap<String, FieldDefinition>,
 }
 
 impl View {
     pub const NAME: &'static str = "VIEW_NAME";
-    pub const EXPRESSION: &'static str = "JMESPATH";
+    pub const MATERIALIZER_ADDR: &'static str = "MATERIALIZER_ADDR";
+    pub const FIELDS: &'static str = "FIELDS";
 }
 
 impl Vertex for View {
@@ -116,7 +121,11 @@ impl Vertex for View {
             properties.vertex.id,
             View {
                 name: extract_vertex_property(&mut properties, View::NAME)?,
-                jmespath: extract_vertex_property(&mut properties, View::EXPRESSION)?,
+                materializer_addr: extract_vertex_property(
+                    &mut properties,
+                    View::MATERIALIZER_ADDR,
+                )?,
+                fields: extract_vertex_property(&mut properties, View::FIELDS)?,
             },
         ))
     }
@@ -124,11 +133,20 @@ impl Vertex for View {
     fn into_properties<'a>(self) -> Vec<(&'a str, Value)> {
         vec![
             (View::NAME, Value::String(self.name)),
-            (View::EXPRESSION, Value::String(self.jmespath)),
+            (
+                View::MATERIALIZER_ADDR,
+                Value::String(self.materializer_addr),
+            ),
+            (View::FIELDS, serde_json::to_value(&self.fields).unwrap()),
         ]
     }
 
     fn db_type() -> Type {
         VIEW_VERTEX_TYPE.clone()
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub enum FieldDefinition {
+    FieldName(String),
 }

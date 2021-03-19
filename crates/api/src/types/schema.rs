@@ -39,8 +39,10 @@ pub struct View {
     pub id: Uuid,
     /// The name is not required to be unique among all views (as `id` is the identifier)
     pub name: String,
-    /// Expression is in JMESPath format, although right now there is no validation
-    pub expression: String,
+    /// Materializer's address
+    pub materializer_addr: String,
+    /// Fields definition encoded in JSON
+    pub fields: String,
 }
 
 /// Input object which creates new schema and new definition. Each schema has to contain at least one definition, which can be later overriden.
@@ -63,8 +65,10 @@ pub struct NewSchema {
 pub struct NewView {
     /// The name is not required to be unique among all views (as `id` is the identifier)
     pub name: String,
-    /// Expression is in JMESPath format, although right now there is no validation
-    pub expression: String,
+    /// Materializer's address
+    pub materializer_addr: String,
+    /// Fields definition encoded in JSON
+    pub fields: String,
 }
 
 /// Input object which creates new version of existing schema.
@@ -95,6 +99,8 @@ pub struct UpdateSchema {
 pub struct UpdateView {
     /// The name is not required to be unique among all views (as `id` is the identifier)
     pub name: Option<String>,
-    /// Expression is in JMESPath format, although right now there is no validation
-    pub expression: Option<String>,
+    /// Materializer's address
+    pub materializer_addr: Option<String>,
+    /// Fields definition encoded in JSON
+    pub fields: Option<String>,
 }

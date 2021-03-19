@@ -59,18 +59,21 @@ message NewSchemaView {
     // for replication (empty for master, UUID for slaves)
     required string view_id = 2;
     required string name = 3;
-    required string jmespath = 4;
+    required string materializer_addr = 4;
+    required string fields = 5;
 }
 
 message UpdatedView {
     required string id = 1;
     optional string name = 2;
-    optional string jmespath = 3;
+    optional string materializer_addr = 3;
+    optional string fields = 4;
 }
 
 message View {
     required string name = 1;
-    required string jmespath = 2;
+    required string materializer_addr = 2;
+    required string fields = 3;
 }
 
 message VersionedId {

@@ -102,6 +102,17 @@ impl<D: Datastore> SchemaDb<D> {
         }
     }
 
+    pub fn ensure_view_exists(&self, id: Uuid) -> RegistryResult<()> {
+        let conn = self.connect()?;
+        let vertices = conn.get_vertices(SpecificVertexQuery::single(id))?;
+
+        if vertices.is_empty() {
+            Err(RegistryError::NoViewWithId(id))
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn get_schema(&self, id: Uuid) -> RegistryResult<Schema> {
         let conn = self.connect()?;
         let props = conn
@@ -319,7 +330,6 @@ impl<D: Datastore> SchemaDb<D> {
         view_id: Option<Uuid>,
     ) -> RegistryResult<Uuid> {
         self.ensure_schema_exists(schema_id)?;
-        self.validate_view(&view.jmespath)?;
 
         let view_id = self.create_vertex_with_properties(view, view_id)?;
 
@@ -331,16 +341,20 @@ impl<D: Datastore> SchemaDb<D> {
     pub fn update_view(&self, id: Uuid, view: ViewUpdate) -> RegistryResult<View> {
         let old_view = self.get_view(id)?;
 
-        if let Some(jmespath) = view.jmespath.as_ref() {
-            self.validate_view(jmespath)?;
-        }
-
         if let Some(name) = view.name {
             self.set_vertex_properties(id, &[(View::NAME, Value::String(name))])?;
         }
 
-        if let Some(jmespath) = view.jmespath {
-            self.set_vertex_properties(id, &[(View::EXPRESSION, Value::String(jmespath))])?;
+        if let Some(materializer_addr) = view.materializer_addr {
+            self.set_vertex_properties(
+                id,
+                &[(View::MATERIALIZER_ADDR, Value::String(materializer_addr))],
+            )?;
+        }
+
+        if let Some(fields) = view.fields {
+            let fields = serde_json::to_value(fields).unwrap();
+            self.set_vertex_properties(id, &[(View::FIELDS, fields)])?;
         }
 
         Ok(old_view)
@@ -401,12 +415,6 @@ impl<D: Datastore> SchemaDb<D> {
                     .ok_or_else(|| MalformedError::MalformedView(view_id).into())
             })
             .collect()
-    }
-
-    fn validate_view(&self, view: &str) -> RegistryResult<()> {
-        jmespatch::parse(view)
-            .map(|_| ())
-            .map_err(|err| RegistryError::InvalidView(err.to_string()))
     }
 
     pub fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
@@ -519,8 +527,10 @@ impl<D: Datastore> SchemaDb<D> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::storage::vertices::FieldDefinition;
     use anyhow::Result;
     use indradb::MemoryDatastore;
+    use maplit::hashmap;
     use serde_json::json;
 
     #[test]
@@ -578,7 +588,7 @@ mod tests {
             .next()
             .unwrap();
         assert_eq!(original_view_id, view_id);
-        assert_eq!(r#"{ a: a }"#, view.jmespath);
+        assert_eq!("https://localhost:1234", view.materializer_addr);
 
         Ok(())
     }
@@ -616,7 +626,7 @@ mod tests {
 
         let (view_id, view) = result.views.into_iter().next().unwrap();
         assert_eq!(original_view_id, view_id);
-        assert_eq!(r#"{ a: a }"#, view.jmespath);
+        assert_eq!("https://localhost:1234", view.materializer_addr);
 
         let schema_definition = result.schema_definitions.into_iter().next().unwrap();
         assert_eq!(schema_id, schema_definition.schema_id);
@@ -683,7 +693,10 @@ mod tests {
     fn view1() -> View {
         View {
             name: "view1".into(),
-            jmespath: "{ a: a }".into(),
+            materializer_addr: "https://localhost:1234".into(),
+            fields: hashmap! {
+                "a".into() => FieldDefinition::FieldName("a".into())
+            },
         }
     }
 
@@ -709,7 +722,10 @@ mod tests {
     fn view2() -> View {
         View {
             name: "view2".into(),
-            jmespath: "{ a: a }".into(),
+            materializer_addr: "https://localhost:1234".into(),
+            fields: hashmap! {
+                "a".into() => FieldDefinition::FieldName("a".into())
+            },
         }
     }
 
@@ -721,7 +737,8 @@ mod tests {
 
         let schema_id = db.add_schema(schema1(), None)?;
 
-        let view_id = db.add_view_to_schema(schema_id, view1(), None)?;
+        let view = view1();
+        let view_id = db.add_view_to_schema(schema_id, view, None)?;
 
         let exported = db.export_all()?;
 
