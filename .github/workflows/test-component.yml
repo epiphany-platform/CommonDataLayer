@@ -1,0 +1,66 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - "develop"
+    paths:
+      - "**/*.rs"
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "rust-toolchain"
+      - "deployment/compose"
+      - "tests"
+      - "build.sh"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "rust-toolchain"
+      - "requirements.txt"
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: short
+  RUSTUP_MAX_RETRIES: 10
+
+jobs:
+  component-test:
+    name: Component
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v2
+
+      - name: Start environment via docker-compose
+        run: docker-compose -f deployment/compose/docker-compose.yml up -d postgres kafka victoria_metrics
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          override: true
+
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+          architecture: 'x64'
+
+      - name: Cache cargo target dir
+        uses: actions/cache@v2.1.4
+        with:
+          path: target
+          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-build-target-
+
+      - name: Run tests
+        run: ./run-tests.sh
+        working-directory: ./tests/
+
+      - name: Clear bloat
+        run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm
+
+      - name: Stop environment
+        run: docker-compose -f deployment/compose/docker-compose.yml down

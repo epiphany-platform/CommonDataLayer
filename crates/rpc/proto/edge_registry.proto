@@ -1,0 +1,69 @@
+syntax = "proto2";
+package edge_registry;
+
+service EdgeRegistry {
+  rpc AddRelation(SchemaRelation) returns (RelationId);
+  rpc GetRelation(RelationQuery) returns (RelationResponse);
+  rpc GetSchemaRelations(SchemaId) returns (RelationList);
+  rpc ListRelations(Empty) returns (RelationList);
+
+  rpc AddEdges(ObjectRelations) returns (Empty);
+  rpc GetEdge(RelationIdQuery) returns (Edge);
+  rpc GetEdges(ObjectIdQuery) returns (ObjectRelations);
+
+  // TODO: Deleting relations and edges
+  // TODO: Resolving multiple relations on object at once
+}
+
+message SchemaRelation {
+  required string parent_schema_id = 1;
+  required string child_schema_id = 2;
+}
+
+message RelationId {
+  required string relation_id = 1;
+}
+
+message RelationQuery {
+  required string relation_id = 1;
+  required string parent_schema_id = 2;
+}
+
+message RelationResponse {
+  repeated string child_schema_ids = 1;
+}
+
+message SchemaId {
+  required string schema_id = 1;
+}
+
+message RelationDetails {
+  required string relation_id = 1;
+  required string parent_schema_id = 2;
+  required string child_schema_id = 3;
+}
+
+message RelationList {
+  repeated RelationDetails items = 1;
+}
+
+message ObjectRelations {
+  repeated Edge relations = 1;
+}
+
+message Edge {
+  required string relation_id = 1;
+  required string parent_object_id = 2;
+  repeated string child_object_ids = 3;
+}
+
+message RelationIdQuery {
+  required string relation_id = 1;
+  required string parent_object_id = 2;
+}
+
+message ObjectIdQuery {
+  required string object_id = 1;
+}
+
+message Empty {}

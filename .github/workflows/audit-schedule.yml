@@ -1,10 +1,11 @@
-name: 'Security audit (periodic)'
+name: Audit
 on:
   schedule:
     - cron: '0 2 * * *'
 
 jobs:
-  security_audit:
+  check-audit:
+    name: Check
     runs-on: ubuntu-latest
     strategy:
       matrix:

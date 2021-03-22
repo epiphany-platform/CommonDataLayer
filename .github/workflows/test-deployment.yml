@@ -4,12 +4,38 @@ on:
   push:
     branches:
       - "develop"
+    paths:
+      - "**/*.rs"
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "rust-toolchain"
+      - "deployment/helm"
+      - "build.sh"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "rust-toolchain"
   pull_request:
+    paths:
+      - "**/*.rs"
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "rust-toolchain"
+      - "deployment/helm"
+      - "build.sh"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "rust-toolchain"
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: short
+  RUSTUP_MAX_RETRIES: 10
 
 jobs:
-  component-testing:
-    name: Test modules
+  deployment-test:
+    name: Deployment
     runs-on: ubuntu-latest
 
     steps:
@@ -42,9 +68,11 @@ jobs:
         run: |
           docker load -i cache_img
           docker tag $(docker images | awk '{print $3}'  | awk 'NR==2') local/cache
+        continue-on-error: true
       - name: Restore cache
         if: steps.cache.outputs.cache-hit == 'true'
         run: DOCKER_BUILDKIT=1 docker build --no-cache --target cache-import .
+        continue-on-error: true
       - name: build cdl images
         run: DOCKER_BUILDKIT=1 ENV=CI ./build.sh
       - name: Build cache
@@ -54,7 +82,7 @@ jobs:
           docker save local/cache:latest > cache_img
       - name: add kafka topics
         run: |
-          topics=(cdl.data.input CDL_SCHEMA_SYNCHRO cdl.document.data cdl.timeseries.data cdl.timeseries.generic-druid cdl.timeseries2.data)
+          topics=(cdl.data.input CDL_SCHEMA_SYNCHRO cdl.document.data cdl.timeseries.data cdl.timeseries.generic-druid cdl.timeseries2.data cdl.edge.input)
           for topic in "${topics[@]}"
           do
           kubectl exec infrastructure-kafka-0 /bin/bash -- /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic $topic --bootstrap-server localhost:9092

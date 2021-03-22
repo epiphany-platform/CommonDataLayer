@@ -25,7 +25,6 @@ rdkafka     = { version = "0.24", features = ["cmake-build"] }
 reqwest     = { version = "0.10", features = ["json"] }
 serde       = { version = "1.0", features = ["derive"] }
 serde_json  = { version = "1.0", features = ["raw_value"] }
-structopt   = "0.3"
 thiserror   = "1.0"
 tokio       = { version = "0.2", features = ["rt-core"] }
 tokio-amqp  = "0.1"
