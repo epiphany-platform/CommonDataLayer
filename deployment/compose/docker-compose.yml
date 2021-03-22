@@ -34,7 +34,8 @@ services:
         cdl.timeseries.druid.2.data:1:1,
         cdl.timeseries.internal.druid:1:1,
         cdl.document.1.data:1:1,
-        cdl.document.2.data:1:1
+        cdl.document.2.data:1:1,
+        cdl.edge.input:1:1
     depends_on:
       - zookeeper
 
