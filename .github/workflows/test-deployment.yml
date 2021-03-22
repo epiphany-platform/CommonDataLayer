@@ -4,12 +4,38 @@ on:
   push:
     branches:
       - "develop"
+    paths:
+      - "**/*.rs"
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "rust-toolchain"
+      - "deployment/helm"
+      - "build.sh"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "rust-toolchain"
   pull_request:
+    paths:
+      - "**/*.rs"
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "rust-toolchain"
+      - "deployment/helm"
+      - "build.sh"
+      - "Dockerfile"
+      - ".dockerignore"
+      - "rust-toolchain"
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  CARGO_NET_RETRY: 10
+  RUST_BACKTRACE: short
+  RUSTUP_MAX_RETRIES: 10
 
 jobs:
-  component-testing:
-    name: Test modules
+  deployment-test:
+    name: Deployment
     runs-on: ubuntu-latest
 
     steps:
