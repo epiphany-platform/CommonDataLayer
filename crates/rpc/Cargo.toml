@@ -10,7 +10,7 @@ name = "rpc"
 path = "src/lib.rs"
 
 [dependencies]
-tonic       = "0.3"
+tonic       = "0.4"
 prost       = "0.6"
 anyhow      = "1.0"
 thiserror   = "1.0"
