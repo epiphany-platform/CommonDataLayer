@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-edge-registry
+  labels:
+    app: {{ .Release.Name }}-edge-registry
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-edge-registry
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-edge-registry
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51805'
+        prometheus.io/path: '/metrics'
+    spec:
+      containers:
+        - name: cdl-edge-registry
+          image: "{{ .Values.global.imageRepositoryPath }}cdl-edge-registry:{{ .Values.global.imageVersion }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command: ["/bin/edge-registry"]
+          env:
+            - name: POSTGRES_USERNAME
+              value: {{ .Values.edgeRegistry.postgresUsername }}
+            - name: POSTGRES_PASSWORD
+              value: {{ .Values.edgeRegistry.postgresPassword }}
+            - name: POSTGRES_HOST
+              value: {{ .Values.edgeRegistry.postgresHost }}
+            - name: POSTGRES_PORT
+              value: "{{ .Values.edgeRegistry.postgresPort }}"
+            - name: POSTGRES_DBNAME
+              value: {{ .Values.edgeRegistry.postgresDbname }}
+            - name: POSTGRES_SCHEMA
+              value: {{ .Values.edgeRegistry.postgresSchema }}
+            - name: COMMUNICATION_PORT
+              value: "{{ .Values.edgeRegistry.communicationPort }}"
+            - name: COMMUNICATION_METHOD
+              value: {{ .Values.global.communicationMethod }}
+            {{- if eq .Values.global.communicationMethod "kafka" }}
+            - name: MQ_HOST
+              value: {{ .Values.global.kafkaBrokers }}
+            {{- else if eq .Values.global.communicationMethod "amqp" }}
+            - name: MQ_HOST
+              value: {{ .Values.global.amqpConnectionString }}
+            {{- end }}
+            - name: MQ_TAG
+              value: {{ .Values.edgeRegistry.mqTag }}
+            - name: MQ_SOURCE
+              value: {{ .Values.edgeRegistry.mqSource }}
+            - name: RUST_LOG
+              value: "info,data_router=debug"
+          ports:
+            - containerPort: 51805
+      imagePullSecrets:
+        - name: {{ .Values.global.cdlImagePullSecrets }}

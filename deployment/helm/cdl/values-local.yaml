@@ -25,6 +25,17 @@ schemaRegistry:
   storageSize: 3Gi
   port: 30150
 
+edgeRegistry:
+  postgresUsername: postgres
+  postgresPassword: CHANGEME
+  postgresHost: infrastructure-postgresql
+  postgresPort: 5432
+  postgresDbname: CDL
+  postgresSchema: public
+  communicationPort: 50110
+  mqTag: edge-registry
+  mqSource: cdl.edge.input
+
 webAdmin:
   port: 30151
 

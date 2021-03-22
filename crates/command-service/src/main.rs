@@ -11,6 +11,8 @@ use utils::metrics;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    utils::set_aborting_panic_hook();
+
     env_logger::init();
     let args: Args = Args::from_args();
 

@@ -1,4 +1,4 @@
-name: Publish to docker.io on HEAD changes
+name: Publish
 
 on:
   push:
@@ -6,19 +6,18 @@ on:
       - "*"
     branches:
       - "develop"
-    paths-ignore:
-      - ".github/"
-      - "benchmarking/"
-      - "docs/"
-      - "examples/"
-      - "helm/"
-      - "tests/"
-      - "**.md"
-      - ".gitignore"
-      - "**.sh"
+    paths:
+      - "crates"
+      - "web-admin"
+      - "build.sh"
+      - "Dockerfile"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain"
 
 jobs:
   build-and-deploy:
+    name: docker.io
     runs-on: ubuntu-latest
     steps:
 

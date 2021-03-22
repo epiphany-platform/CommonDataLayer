@@ -148,6 +148,8 @@ fn replication_config(config: &Config) -> anyhow::Result<Option<ReplicationMetho
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
+    utils::set_aborting_panic_hook();
+
     env_logger::init();
     let config = Config::from_args();
 
