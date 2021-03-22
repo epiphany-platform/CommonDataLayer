@@ -1,6 +1,61 @@
 # Common Data Layer Changelog
 
 ## Unreleased 
+### Breaking changes
+
+### Features
+Added message batching to Data Router
+Added querying and insertion to graphQL API
+Added CDL Web Admin
+Added custom Kafka acknowledgments
+Added multithreading to Data Router with ordering enabled
+Added GRPC as an alternative communication method alongside with Kafka and AMQP
+
+### Fixes
+Added extra tracing logs
+Added delay period during exitting
+Made multitasking opt-out
+
+### Documentation
+Added documentation in form of MDBook available on Github Pages
+Added feature lists
+Updated and described ENV variables in book
+Documented all commandline arguments available in `--help`
+Added information about versioning
+
+### Dependencies
+Bumped juniper_grahql to 0.2.3
+Bumped jsonschema to 0.6.0
+Bumped rand to 0.8.3
+Bumped serde to 1.0.124
+Bumped serde_json to 1.0.64
+Bumped serde_yaml to 0.8.17
+Bumped juniper_warp to 0.6.2
+Bumped log to 0.4.14
+Bumped env_logger to 0.8.3
+Bumped lapin to 1.6.8
+Bumped url to 2.2.1
+Bumped thiserror to 1.0.24
+Bumped futures-util to 0.3.13
+Bumped kube to 0.46.1
+Bumped futures to 0.3.13
+
+### CI and infrastructure
+Added CDL API to Docker Registry
+Bumped actions/cache to v2.1.4
+Added Github Action to automatically deploy MDBook to Github Pages
+Simplified Dockerfile
+Refactored local deployment, unified & updated HELM variables
+Added rust security audit
+Increased timeout for services to start
+
+### Internal
+Moved Druid Query Service
+Restructured graphQL API
+
+### Tests
+Oraganized black-box testing
+Added automated tests for HELM deployment
 
 ## v0.2.0
 
