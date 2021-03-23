@@ -190,9 +190,12 @@ pub enum ViewAction {
         /// The name of the view.
         #[structopt(short, long)]
         name: String,
-        /// The JMESPath the view will filter data with.
+        /// Materializer's address
         #[structopt(short, long)]
-        jmespath: String,
+        materializer_addr: String,
+        /// Fields definition encoded in JSON
+        #[structopt(short, long)]
+        fields: String,
     },
 
     /// Update an existing view in the registry,
@@ -204,8 +207,11 @@ pub enum ViewAction {
         /// The new name of the view.
         #[structopt(short, long)]
         name: Option<String>,
-        /// The new JMESPath the view will filter data with.
+        /// Materializer's address
         #[structopt(short, long)]
-        jmespath: Option<String>,
+        materializer_addr: Option<String>,
+        /// Fields definition encoded in JSON
+        #[structopt(short, long)]
+        fields: Option<String>,
     },
 }

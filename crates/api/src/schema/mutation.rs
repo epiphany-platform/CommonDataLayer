@@ -86,14 +86,19 @@ impl Mutation {
     async fn add_view(context: &Context, schema_id: Uuid, new_view: NewView) -> FieldResult<View> {
         log::debug!("add view for {} - {:?}", schema_id, new_view);
 
-        let NewView { name, expression } = new_view.clone();
+        let NewView {
+            name,
+            materializer_addr,
+            fields,
+        } = new_view.clone();
         let mut conn = context.connect_to_registry().await?;
         let id = conn
             .add_view_to_schema(rpc::schema_registry::NewSchemaView {
                 schema_id: schema_id.to_string(),
                 view_id: "".into(),
                 name,
-                jmespath: expression,
+                materializer_addr,
+                fields,
             })
             .await
             .map_err(rpc::error::registry_error)?
@@ -103,7 +108,8 @@ impl Mutation {
         Ok(View {
             id: id.parse()?,
             name: new_view.name,
-            expression: new_view.expression,
+            materializer_addr: new_view.materializer_addr,
+            fields: new_view.fields,
         })
     }
 
@@ -112,12 +118,17 @@ impl Mutation {
 
         let mut conn = context.connect_to_registry().await?;
 
-        let UpdateView { name, expression } = update;
+        let UpdateView {
+            name,
+            materializer_addr,
+            fields,
+        } = update;
 
         conn.update_view(rpc::schema_registry::UpdatedView {
             id: id.to_string(),
             name: name.clone(),
-            jmespath: expression.clone(),
+            materializer_addr: materializer_addr.clone(),
+            fields: fields.clone(),
         })
         .await
         .map_err(rpc::error::registry_error)?;

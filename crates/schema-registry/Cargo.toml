@@ -38,3 +38,6 @@ tonic       = "0.3"
 url         = "2.2"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 chrono      = "0.4.19"
+
+[dev-dependencies]
+maplit = "1.0.2"

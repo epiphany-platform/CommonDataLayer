@@ -11,6 +11,8 @@ pub enum RegistryError {
     NoSchemaWithId(Uuid),
     #[error("No view found with id \"{0}\"")]
     NoViewWithId(Uuid),
+    #[error("No view's field definition found with id \"{0}\"")]
+    NoFieldWithId(Uuid),
     #[error("Object with id \"{0}\" already exists in database")]
     DuplicatedUuid(Uuid),
     #[error("Error occurred while accessing sled database: {0}")]
@@ -68,7 +70,8 @@ impl From<RegistryError> for Status {
         match error {
             RegistryError::NoTopic(_)
             | RegistryError::NoSchemaWithId(_)
-            | RegistryError::NoViewWithId(_) => Status::not_found(error.to_string()),
+            | RegistryError::NoViewWithId(_)
+            | RegistryError::NoFieldWithId(_) => Status::not_found(error.to_string()),
             RegistryError::NewVersionMustBeGreatest { .. }
             | RegistryError::InvalidSchema
             | RegistryError::InvalidSchemaType
@@ -94,6 +97,8 @@ pub enum MalformedError {
     MalformedSchemaVersion(Uuid),
     #[error("View in database was malformed for view with id {0}")]
     MalformedView(Uuid),
+    #[error("View's field definition in database was malformed for field with id {0}")]
+    MalformedField(Uuid),
 }
 
 impl From<MalformedError> for RegistryError {

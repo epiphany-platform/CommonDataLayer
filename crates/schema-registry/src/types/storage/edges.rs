@@ -17,6 +17,7 @@ lazy_static! {
     // Edge Types
     static ref SCHEMA_DEFINITION_EDGE_TYPE: Type = Type::new("SCHEMA_DEFINITION").unwrap();
     static ref SCHEMA_VIEW_EDGE_TYPE: Type = Type::new("SCHEMA_VIEW").unwrap();
+    static ref VIEW_FIELD_EDGE_TYPE: Type = Type::new("VIEW_FIELD").unwrap();
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]

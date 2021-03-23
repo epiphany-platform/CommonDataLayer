@@ -111,7 +111,8 @@ impl Schema {
                 Ok(View {
                     id: id.parse()?,
                     name: view.name,
-                    expression: view.jmespath,
+                    materializer_addr: view.materializer_addr,
+                    fields: view.fields,
                 })
             })
             .collect::<Result<_>>()?;

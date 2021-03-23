@@ -8,6 +8,8 @@ use uuid::Uuid;
 
 use storage::*;
 
+use self::storage::vertices::FieldDefinition;
+
 pub mod storage {
     pub mod edges;
     pub mod vertices;
@@ -18,7 +20,8 @@ pub mod storage {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ViewUpdate {
     pub name: Option<String>,
-    pub jmespath: Option<String>,
+    pub materializer_addr: Option<String>,
+    pub fields: Option<HashMap<String, FieldDefinition>>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

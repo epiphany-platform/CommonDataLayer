@@ -212,7 +212,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let replicated_view_id = parse_optional_uuid(&request.view_id)?;
         let view = View {
             name: request.name,
-            jmespath: request.jmespath,
+            materializer_addr: request.materializer_addr,
+            fields: parse_json_and_deserialize(&request.fields)?,
         };
 
         let view_id = self
@@ -235,9 +236,15 @@ impl SchemaRegistry for SchemaRegistryImpl {
     ) -> Result<Response<rpc::schema_registry::View>, Status> {
         let request = request.into_inner();
         let view_id = parse_uuid(&request.id)?;
+        let fields = request
+            .fields
+            .as_ref()
+            .map(|fields| parse_json_and_deserialize(fields))
+            .transpose()?;
         let view = ViewUpdate {
             name: request.name,
-            jmespath: request.jmespath,
+            materializer_addr: request.materializer_addr,
+            fields,
         };
 
         let old_view = self.db.update_view(view_id, view.clone())?;
@@ -245,7 +252,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
         Ok(Response::new(rpc::schema_registry::View {
             name: old_view.name,
-            jmespath: old_view.jmespath,
+            materializer_addr: old_view.materializer_addr,
+            fields: serialize_json(&old_view.fields)?,
         }))
     }
 
@@ -339,7 +347,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
         Ok(Response::new(rpc::schema_registry::View {
             name: view.name,
-            jmespath: view.jmespath,
+            materializer_addr: view.materializer_addr,
+            fields: serialize_json(&view.fields)?,
         }))
     }
 
@@ -389,15 +398,16 @@ impl SchemaRegistry for SchemaRegistryImpl {
             views: views
                 .into_iter()
                 .map(|(view_id, view)| {
-                    (
+                    Ok((
                         view_id.to_string(),
                         rpc::schema_registry::View {
                             name: view.name,
-                            jmespath: view.jmespath,
+                            materializer_addr: view.materializer_addr,
+                            fields: serialize_json(&view.fields)?,
                         },
-                    )
+                    ))
                 })
-                .collect(),
+                .collect::<Result<_, Status>>()?,
         }))
     }
 
@@ -455,9 +465,13 @@ fn parse_version(req: &str) -> Result<Version, Status> {
         .map_err(|err| Status::invalid_argument(format!("Invalid version provided: {}", err)))
 }
 
-fn parse_json(json: &str) -> Result<Value, Status> {
+fn parse_json_and_deserialize<T: serde::de::DeserializeOwned>(json: &str) -> Result<T, Status> {
     serde_json::from_str(json)
         .map_err(|err| Status::invalid_argument(format!("Invalid JSON provided: {}", err)))
+}
+
+fn parse_json(json: &str) -> Result<Value, Status> {
+    parse_json_and_deserialize(json)
 }
 
 fn parse_uuid(id: &str) -> Result<Uuid, Status> {
@@ -475,7 +489,7 @@ fn parse_optional_uuid(id: &str) -> Result<Option<Uuid>, Status> {
     }
 }
 
-fn serialize_json(json: &Value) -> Result<String, Status> {
+fn serialize_json<T: serde::Serialize>(json: &T) -> Result<String, Status> {
     serde_json::to_string(json)
         .map_err(|err| Status::internal(format!("Unable to serialize JSON: {}", err)))
 }
