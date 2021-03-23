@@ -19,15 +19,15 @@ services:
       COMMUNICATION_METHOD: "amqp"
       AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
       AMQP_CONSUMER_TAG: "postgres_command"
-      ORDERED_TOPICS_OR_QUEUES: "cdl.document.1.data"
-      UNORDERED_TOPICS_OR_QUEUES: "cdl.document.2.data"
+      ORDERED_SOURCES: "cdl.document.1.data"
+      UNORDERED_SOURCES: "cdl.document.2.data"
       POSTGRES_USERNAME: postgres
       POSTGRES_PASSWORD: 1234
       POSTGRES_HOST: postgres
       POSTGRES_PORT: 5432
       POSTGRES_DBNAME: postgres
       POSTGRES_SCHEMA: cdl
-      REPORT_TOPIC_OR_EXCHANGE: "cdl.reports"
+      REPORT_DESTINATION: "cdl.reports"
       RUST_LOG: info,command_service=trace
 
   postgres_query:
@@ -40,7 +40,7 @@ services:
         - BIN=query-service
         - ENV=DEV
     ports:
-      - "50102:50102"
+      - "50201:50201"
     environment:
       POSTGRES_USERNAME: postgres
       POSTGRES_PASSWORD: 1234
@@ -48,7 +48,7 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_DBNAME: postgres
       POSTGRES_SCHEMA: cdl
-      INPUT_PORT: 50102
+      INPUT_PORT: 50201
       RUST_LOG: info,query_service=trace
 
 networks:

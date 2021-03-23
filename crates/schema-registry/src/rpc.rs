@@ -1,3 +1,4 @@
+use anyhow::Context;
 use semver::Version;
 use semver::VersionReq;
 use serde_json::Value;
@@ -5,21 +6,60 @@ use std::convert::TryInto;
 use std::pin::Pin;
 use tokio_stream::{Stream, StreamExt};
 use tonic::{Request, Response, Status};
-use utils::messaging_system::Result;
 use uuid::Uuid;
 
-use crate::{
-    db::SchemaRegistryDb,
-    error::RegistryError,
-    types::{NewSchema, SchemaDefinition, SchemaUpdate, VersionedUuid},
-};
+use crate::db::SchemaRegistryDb;
+use crate::error::RegistryError;
+use crate::types::{DbExport, NewSchema, SchemaDefinition, SchemaUpdate, VersionedUuid};
+use crate::CommunicationMethodConfig;
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate,
     ValueToValidate, VersionedId,
 };
+use utils::communication::metadata_fetcher::MetadataFetcher;
+use utils::communication::Result;
+
+pub struct SchemaRegistryImpl {
+    pub db: SchemaRegistryDb,
+    pub mq_metadata: MetadataFetcher,
+}
+
+impl SchemaRegistryImpl {
+    pub async fn new(
+        db_url: String,
+        communication_config: CommunicationMethodConfig,
+    ) -> anyhow::Result<Self> {
+        let db = SchemaRegistryDb::connect(db_url).await?;
+        let mq_metadata = match &communication_config {
+            CommunicationMethodConfig::Kafka(kafka) => {
+                MetadataFetcher::new_kafka(&kafka.brokers).await?
+            }
+            CommunicationMethodConfig::Amqp(amqp) => {
+                MetadataFetcher::new_amqp(&amqp.connection_string).await?
+            }
+            CommunicationMethodConfig::Grpc => MetadataFetcher::new_grpc("command_service").await?,
+        };
+
+        Ok(Self { db, mq_metadata })
+    }
+
+    pub async fn export_all(&self) -> anyhow::Result<DbExport> {
+        self.db
+            .export_all()
+            .await
+            .context("Failed to export the entire database")
+    }
+
+    pub async fn import_all(&self, imported: DbExport) -> anyhow::Result<()> {
+        self.db
+            .import_all(imported)
+            .await
+            .context("failed to import database")
+    }
+}
 
 #[tonic::async_trait]
-impl SchemaRegistry for SchemaRegistryDb {
+impl SchemaRegistry for SchemaRegistryImpl {
     async fn add_schema(
         &self,
         request: Request<rpc::schema_registry::NewSchema>,
@@ -29,11 +69,22 @@ impl SchemaRegistry for SchemaRegistryDb {
             name: request.metadata.name,
             definition: parse_json(&request.definition)?,
             query_address: request.metadata.query_address,
-            topic_or_queue: request.metadata.topic_or_queue,
+            insert_destination: request.metadata.insert_destination,
             r#type: request.metadata.r#type.try_into()?,
         };
 
-        let new_id = self.add_schema(new_schema).await?;
+        if !new_schema.insert_destination.is_empty() {
+            if !self
+                .mq_metadata
+                .destination_exists(&new_schema.insert_destination)
+                .await
+                .map_err(RegistryError::from)?
+            {
+                return Err(RegistryError::NoTopic(new_schema.insert_destination.clone()).into());
+            }
+        }
+
+        let new_id = self.db.add_schema(new_schema).await?;
 
         Ok(Response::new(Id {
             id: new_id.to_string(),
@@ -51,7 +102,8 @@ impl SchemaRegistry for SchemaRegistryDb {
             definition: parse_json(&request.definition.definition)?,
         };
 
-        self.add_new_version_of_schema(schema_id, new_version)
+        self.db
+            .add_new_version_of_schema(schema_id, new_version)
             .await?;
 
         Ok(Response::new(Empty {}))
@@ -69,16 +121,29 @@ impl SchemaRegistry for SchemaRegistryDb {
         } else {
             None
         };
-        self.update_schema(
-            schema_id,
-            SchemaUpdate {
-                name: request.patch.name,
-                query_address: request.patch.query_address,
-                topic_or_queue: request.patch.topic_or_queue,
-                r#type: schema_type,
-            },
-        )
-        .await?;
+
+        if let Some(destination) = request.patch.insert_destination.as_ref() {
+            if !self
+                .mq_metadata
+                .destination_exists(&destination)
+                .await
+                .map_err(RegistryError::from)?
+            {
+                return Err(RegistryError::NoTopic(destination.clone()).into());
+            }
+        }
+
+        self.db
+            .update_schema(
+                schema_id,
+                SchemaUpdate {
+                    name: request.patch.name,
+                    query_address: request.patch.query_address,
+                    insert_destination: request.patch.insert_destination,
+                    r#type: schema_type,
+                },
+            )
+            .await?;
 
         Ok(Response::new(Empty {}))
     }
@@ -90,13 +155,13 @@ impl SchemaRegistry for SchemaRegistryDb {
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
-        let schema = self.get_schema(id).await?;
+        let schema = self.db.get_schema(id).await?;
 
         Ok(Response::new(rpc::schema_registry::Schema {
             id: request.id,
             metadata: rpc::schema_registry::SchemaMetadata {
                 name: schema.name,
-                topic_or_queue: schema.topic_or_queue,
+                insert_destination: schema.insert_destination,
                 query_address: schema.query_address,
                 r#type: schema.r#type.into(),
             },
@@ -114,7 +179,7 @@ impl SchemaRegistry for SchemaRegistryDb {
                 .unwrap_or_else(VersionReq::any),
         };
 
-        let (version, definition) = self.get_schema_definition(&versioned_id).await?;
+        let (version, definition) = self.db.get_schema_definition(&versioned_id).await?;
 
         Ok(Response::new(rpc::schema_registry::SchemaDefinition {
             version: version.to_string(),
@@ -129,7 +194,7 @@ impl SchemaRegistry for SchemaRegistryDb {
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
-        let versions = self.get_schema_versions(id).await?;
+        let versions = self.db.get_schema_versions(id).await?;
 
         Ok(Response::new(rpc::schema_registry::SchemaVersions {
             versions: versions.into_iter().map(|v| v.to_string()).collect(),
@@ -143,13 +208,13 @@ impl SchemaRegistry for SchemaRegistryDb {
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
-        let schema = self.get_schema_with_definitions(id).await?;
+        let schema = self.db.get_schema_with_definitions(id).await?;
 
         Ok(Response::new(rpc::schema_registry::SchemaWithDefinitions {
             id: request.id,
             metadata: rpc::schema_registry::SchemaMetadata {
                 name: schema.name,
-                topic_or_queue: schema.topic_or_queue,
+                insert_destination: schema.insert_destination,
                 query_address: schema.query_address,
                 r#type: schema.r#type.into(),
             },
@@ -170,7 +235,7 @@ impl SchemaRegistry for SchemaRegistryDb {
         &self,
         _request: Request<Empty>,
     ) -> Result<Response<rpc::schema_registry::Schemas>, Status> {
-        let schemas = self.get_all_schemas().await?;
+        let schemas = self.db.get_all_schemas().await?;
 
         Ok(Response::new(rpc::schema_registry::Schemas {
             schemas: schemas
@@ -179,7 +244,7 @@ impl SchemaRegistry for SchemaRegistryDb {
                     id: schema.id.to_string(),
                     metadata: rpc::schema_registry::SchemaMetadata {
                         name: schema.name,
-                        topic_or_queue: schema.topic_or_queue,
+                        insert_destination: schema.insert_destination,
                         query_address: schema.query_address,
                         r#type: schema.r#type.into(),
                     },
@@ -192,7 +257,7 @@ impl SchemaRegistry for SchemaRegistryDb {
         &self,
         _request: Request<Empty>,
     ) -> Result<Response<rpc::schema_registry::SchemasWithDefinitions>, Status> {
-        let schemas = self.get_all_schemas_with_definitions().await?;
+        let schemas = self.db.get_all_schemas_with_definitions().await?;
 
         Ok(Response::new(
             rpc::schema_registry::SchemasWithDefinitions {
@@ -203,7 +268,7 @@ impl SchemaRegistry for SchemaRegistryDb {
                             id: schema.id.to_string(),
                             metadata: rpc::schema_registry::SchemaMetadata {
                                 name: schema.name,
-                                topic_or_queue: schema.topic_or_queue,
+                                insert_destination: schema.insert_destination,
                                 query_address: schema.query_address,
                                 r#type: schema.r#type.into(),
                             },
@@ -236,7 +301,7 @@ impl SchemaRegistry for SchemaRegistryDb {
         };
         let json = parse_json(&request.value)?;
 
-        let (_version, definition) = self.get_schema_definition(&versioned_id).await?;
+        let (_version, definition) = self.db.get_schema_definition(&versioned_id).await?;
         let schema = jsonschema::JSONSchema::compile(&definition)
             .map_err(RegistryError::InvalidJsonSchema)?;
         let errors = match schema.validate(&json) {
@@ -257,7 +322,7 @@ impl SchemaRegistry for SchemaRegistryDb {
         &self,
         _request: Request<Empty>,
     ) -> Result<Response<Self::WatchAllSchemaUpdatesStream>, Status> {
-        let schema_rx = self.listen_to_schema_updates().await?;
+        let schema_rx = self.db.listen_to_schema_updates().await?;
 
         Ok(Response::new(Box::pin(
             tokio_stream::wrappers::UnboundedReceiverStream::new(schema_rx).map(|schema| {
@@ -267,7 +332,7 @@ impl SchemaRegistry for SchemaRegistryDb {
                     id: schema.id.to_string(),
                     metadata: rpc::schema_registry::SchemaMetadata {
                         name: schema.name,
-                        topic_or_queue: schema.topic_or_queue,
+                        insert_destination: schema.insert_destination,
                         query_address: schema.query_address,
                         r#type: schema.r#type.into(),
                     },

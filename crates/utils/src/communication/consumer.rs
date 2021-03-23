@@ -1,19 +1,23 @@
 use anyhow::Context;
-use async_stream::try_stream;
-use futures_util::stream::{Stream, StreamExt};
+use async_trait::async_trait;
+use futures_util::TryStreamExt;
 pub use lapin::options::BasicConsumeOptions;
 use lapin::types::FieldTable;
 use rdkafka::{
     consumer::{DefaultConsumerContext, StreamConsumer},
     ClientConfig,
 };
-use std::sync::Arc;
 use tokio_amqp::LapinTokioExt;
 
 use super::{
     kafka_ack_queue::KafkaAckQueue, message::AmqpCommunicationMessage,
     message::CommunicationMessage, message::KafkaCommunicationMessage, Result,
 };
+
+#[async_trait]
+pub trait ConsumerHandler {
+    async fn handle<'a>(&'a mut self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()>;
+}
 
 pub enum CommonConsumerConfig<'a> {
     Kafka {
@@ -30,8 +34,8 @@ pub enum CommonConsumerConfig<'a> {
 }
 pub enum CommonConsumer {
     Kafka {
-        consumer: Arc<StreamConsumer<DefaultConsumerContext>>,
-        ack_queue: Arc<KafkaAckQueue>,
+        consumer: StreamConsumer<DefaultConsumerContext>,
+        ack_queue: KafkaAckQueue,
     },
     Amqp {
         consumer: lapin::Consumer,
@@ -70,7 +74,7 @@ impl CommonConsumer {
             .context("Can't subscribe to specified topics")?;
 
         Ok(CommonConsumer::Kafka {
-            consumer: Arc::new(consumer),
+            consumer,
             ack_queue: Default::default(),
         })
     }
@@ -99,36 +103,45 @@ impl CommonConsumer {
         Ok(CommonConsumer::Amqp { consumer })
     }
 
-    pub async fn consume(
-        &mut self,
-    ) -> impl Stream<Item = Result<Box<dyn CommunicationMessage + '_>>> {
-        try_stream! {
-            match self {
-                CommonConsumer::Kafka { consumer, ack_queue} => {
-                    let mut message_stream = consumer.start();
-                    while let Some(message) = message_stream.next().await {
-                        let message = message?;
-                        ack_queue.add(&message);
-                        yield Box::new(KafkaCommunicationMessage{message,consumer:consumer.clone(),ack_queue:ack_queue.clone()}) as Box<dyn CommunicationMessage>;
+    /// Process messages in order. Cannot be used with Grpc.
+    /// # Error handling
+    /// Function returns and error on first unhandled message.
+    pub async fn run(self, mut handler: impl ConsumerHandler) -> Result<()> {
+        match self {
+            CommonConsumer::Kafka {
+                consumer,
+                ack_queue,
+            } => {
+                let mut message_stream = consumer.start();
+                while let Some(message) = message_stream.try_next().await? {
+                    ack_queue.add(&message);
+                    let message = KafkaCommunicationMessage { message };
+                    match handler.handle(&message).await {
+                        Ok(_) => {
+                            ack_queue.ack(&message.message, &consumer);
+                        }
+                        Err(e) => {
+                            return Err(e.into());
+                        }
                     }
                 }
-                CommonConsumer::Amqp {
-                    consumer,
-                } => {
-                    while let Some(message) = consumer.next().await {
-                        let message = message?;
-                        yield Box::new(AmqpCommunicationMessage{channel:message.0, delivery:message.1})as Box<dyn CommunicationMessage>;
+            }
+            CommonConsumer::Amqp { mut consumer } => {
+                while let Some((channel, delivery)) = consumer.try_next().await? {
+                    let message = AmqpCommunicationMessage { delivery };
+                    match handler.handle(&message).await {
+                        Ok(_) => {
+                            channel
+                                .basic_ack(message.delivery.delivery_tag, Default::default())
+                                .await?;
+                        }
+                        Err(e) => {
+                            return Err(e.into());
+                        }
                     }
                 }
             }
         }
-    }
-
-    /// Leaks consumer to guarantee consumer never be dropped.
-    /// Static consumer lifetime is required for consumed messages to be passed to spawned futures.
-    ///
-    /// Use with caution as it can cause memory leaks.
-    pub fn leak(self) -> &'static mut CommonConsumer {
-        Box::leak(Box::new(self))
+        Ok(())
     }
 }

@@ -1,12 +1,14 @@
-use utils::messaging_system::consumer::{BasicConsumeOptions, CommonConsumerConfig};
+use std::net::{Ipv4Addr, SocketAddrV4};
+use url::Url;
+
+use utils::{
+    communication::{
+        consumer::BasicConsumeOptions, parallel_consumer::ParallelCommonConsumerConfig,
+    },
+    task_limiter::TaskLimiter,
+};
 
 pub enum CommunicationConfig {
-    MessageQueue(MessageQueueConfig),
-    GRpc(GRpcConfig),
-}
-
-#[derive(Clone, Debug)]
-pub enum MessageQueueConfig {
     Kafka {
         brokers: String,
         group_id: String,
@@ -21,82 +23,88 @@ pub enum MessageQueueConfig {
         unordered_queue_names: Vec<String>,
         task_limit: usize,
     },
+    Grpc {
+        grpc_port: u16,
+        report_endpoint_url: Url,
+    },
 }
 
-impl MessageQueueConfig {
-    pub fn task_limit(&self) -> usize {
-        match self {
-            MessageQueueConfig::Kafka { task_limit, .. } => *task_limit,
-            MessageQueueConfig::Amqp { task_limit, .. } => *task_limit,
-        }
-    }
-
+impl CommunicationConfig {
     pub fn ordered_configs<'a>(
         &'a self,
-    ) -> Box<dyn Iterator<Item = CommonConsumerConfig<'a>> + 'a> {
+    ) -> Box<dyn Iterator<Item = ParallelCommonConsumerConfig<'a>> + 'a> {
         match self {
-            MessageQueueConfig::Kafka {
+            CommunicationConfig::Kafka {
                 brokers,
                 group_id,
                 ordered_topics,
+                task_limit,
                 ..
             } => {
-                let iter = ordered_topics
-                    .iter()
-                    .map(move |topic| CommonConsumerConfig::Kafka {
-                        brokers: &brokers,
-                        group_id: &group_id,
-                        topic,
-                    });
+                let iter =
+                    ordered_topics
+                        .iter()
+                        .map(move |topic| ParallelCommonConsumerConfig::Kafka {
+                            brokers: &brokers,
+                            group_id: &group_id,
+                            task_limiter: TaskLimiter::new(*task_limit),
+                            topic,
+                        });
                 Box::new(iter)
             }
-            MessageQueueConfig::Amqp {
+            CommunicationConfig::Amqp {
                 consumer_tag,
                 connection_string,
                 ordered_queue_names,
+                task_limit,
                 ..
             } => {
                 let options = Some(BasicConsumeOptions {
                     exclusive: true,
                     ..Default::default()
                 });
-                let iter =
-                    ordered_queue_names
-                        .iter()
-                        .map(move |queue_name| CommonConsumerConfig::Amqp {
-                            connection_string: &connection_string,
-                            consumer_tag: &consumer_tag,
-                            queue_name,
-                            options,
-                        });
+                let iter = ordered_queue_names.iter().map(move |queue_name| {
+                    ParallelCommonConsumerConfig::Amqp {
+                        connection_string: &connection_string,
+                        consumer_tag: &consumer_tag,
+                        queue_name,
+                        options,
+                        task_limiter: TaskLimiter::new(*task_limit),
+                    }
+                });
                 Box::new(iter)
             }
+            CommunicationConfig::Grpc { .. } => Box::new(std::iter::empty()),
         }
     }
 
     pub fn unordered_configs<'a>(
         &'a self,
-    ) -> Box<dyn Iterator<Item = CommonConsumerConfig<'a>> + 'a> {
+    ) -> Box<dyn Iterator<Item = ParallelCommonConsumerConfig<'a>> + 'a> {
         match self {
-            MessageQueueConfig::Kafka {
+            CommunicationConfig::Kafka {
                 brokers,
                 group_id,
                 unordered_topics,
+                task_limit,
                 ..
             } => {
-                let iter = unordered_topics
-                    .iter()
-                    .map(move |topic| CommonConsumerConfig::Kafka {
-                        brokers: &brokers,
-                        group_id: &group_id,
-                        topic,
-                    });
+                let iter =
+                    unordered_topics
+                        .iter()
+                        .map(move |topic| ParallelCommonConsumerConfig::Kafka {
+                            brokers: &brokers,
+                            group_id: &group_id,
+                            topic,
+                            task_limiter: TaskLimiter::new(*task_limit),
+                        });
                 Box::new(iter)
             }
-            MessageQueueConfig::Amqp {
+            CommunicationConfig::Amqp {
                 consumer_tag,
                 connection_string,
                 unordered_queue_names,
+                task_limit,
                 ..
             } => {
                 let options = Some(BasicConsumeOptions {
@@ -104,20 +112,21 @@ impl MessageQueueConfig {
                     ..Default::default()
                 });
                 let iter = unordered_queue_names.iter().map(move |queue_name| {
-                    CommonConsumerConfig::Amqp {
+                    ParallelCommonConsumerConfig::Amqp {
                         connection_string: &connection_string,
                         consumer_tag: &consumer_tag,
                         queue_name,
                         options,
+                        task_limiter: TaskLimiter::new(*task_limit),
                     }
                 });
                 Box::new(iter)
             }
+            CommunicationConfig::Grpc { grpc_port, .. } => {
+                let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), *grpc_port);
+                let iter = std::iter::once(ParallelCommonConsumerConfig::Grpc { addr });
+                Box::new(iter)
+            }
         }
     }
-}
-
-#[derive(Clone, Debug)]
-pub struct GRpcConfig {
-    pub grpc_port: u16,
 }

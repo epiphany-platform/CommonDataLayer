@@ -16,6 +16,8 @@ pub enum RegistryError {
     InvalidSchemaType,
     #[error("Invalid version retrieved from database: {0}")]
     InvalidVersion(semver::SemVerError),
+    #[error("No topic found named \"{0}\"")]
+    NoTopic(String),
     #[error("No version of schema with id {} matches the given requirement {}", .0.id, .0.version_req)]
     NoVersionMatchesRequirement(VersionedUuid),
     #[error(
@@ -34,6 +36,8 @@ pub enum RegistryError {
     NotificationError(sqlx::Error),
     #[error("Malformed notification payload: {0}")]
     MalformedNotification(serde_json::Error),
+    #[error("{0}")]
+    MQError(utils::communication::Error),
 }
 
 pub type RegistryResult<T> = Result<T, RegistryError>;
@@ -52,6 +56,12 @@ impl From<sqlx::Error> for RegistryError {
     }
 }
 
+impl From<utils::communication::Error> for RegistryError {
+    fn from(error: utils::communication::Error) -> Self {
+        Self::MQError(error)
+    }
+}
+
 impl From<RegistryError> for Status {
     fn from(error: RegistryError) -> Status {
         match error {
@@ -61,9 +71,11 @@ impl From<RegistryError> for Status {
             | RegistryError::InvalidVersion(_)
             | RegistryError::NoVersionMatchesRequirement(_)
             | RegistryError::InvalidData(_)
+            | RegistryError::NoTopic(_)
             | RegistryError::InvalidJsonSchema(_) => Status::invalid_argument(error.to_string()),
             RegistryError::ConnectionError(_)
             | RegistryError::DbError(_)
+            | RegistryError::MQError(_)
             | RegistryError::NotificationError(_)
             | RegistryError::MalformedNotification(_) => Status::internal(error.to_string()),
         }

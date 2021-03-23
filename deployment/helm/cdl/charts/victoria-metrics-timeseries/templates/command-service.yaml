@@ -36,20 +36,25 @@ spec:
           value: {{ .Values.global.kafkaBrokers }}
         - name: KAFKA_GROUP_ID
           value: "cdl-victoria-command-service"
-        {{- else }}
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
         - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: {{ .Values.global.amqpConnectionString }}
         - name: AMQP_CONSUMER_TAG
           value: "cdl-victoria-command-service"
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "grpc"
+        - name: GRPC_PORT
+          value: "6400"
         {{- end }}
-        - name: ORDERED_TOPICS_OR_QUEUES
-          value: {{ .Values.inputTopicOrQueue }}
+        - name: ORDERED_SOURCES
+          value: {{ .Values.inputSource }}
         - name: VICTORIA_METRICS_OUTPUT_URL
           value: {{ .Values.outputURL }}
-        - name: REPORT_TOPIC_OR_EXCHANGE
-          value: {{ .Values.global.reportTopicOrExchange }}
+        - name: REPORT_DESTINATION
+          value: {{ .Values.global.reportDestination }}
         - name: RUST_LOG
           value: "info,command_service=debug"
         ports:

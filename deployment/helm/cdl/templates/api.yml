@@ -30,24 +30,27 @@ spec:
           value: "http://{{ .Release.Name }}-query-router:6401"
         - name: INPUT_PORT
           value: "6402"
-        - name: REPORT_TOPIC_OR_QUEUE
-          value: "{{ .Values.global.reportTopicOrExchange }}"
-        - name: DATA_ROUTER_TOPIC_OR_QUEUE
-          value: "{{ .Values.dataRouter.inputTopicOrQueue }}"
+        - name: REPORT_SOURCE
+          value: "{{ .Values.global.reportDestination }}"
+        - name: INSERT_DESTINATION
+          value: "{{ .Values.dataRouter.inputSource }}"
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: MESSAGE_QUEUE
+        - name: COMMUNICATION_METHOD
           value: "kafka"
         - name: KAFKA_BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
         - name: KAFKA_GROUP_ID
           value: "api"
-        {{- else }}
-        - name: MESSAGE_QUEUE
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
+        - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: "{{ .Values.global.amqpConnectionString }}"
         - name: AMQP_CONSUMER_TAG
           value: "api"
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "grpc"
         {{- end }}
         - name: RUST_LOG
           value: "info,api=debug"

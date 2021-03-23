@@ -3,11 +3,11 @@
 CREATE TYPE schema_type AS ENUM ('document_storage', 'timeseries');
 
 CREATE TABLE schemas (
-    id             uuid primary key not null,
-    name           varchar not null,
-    type           schema_type not null,
-    topic_or_queue varchar not null,
-    query_address  varchar not null
+    id                 uuid primary key not null,
+    name               varchar not null,
+    type               schema_type not null,
+    insert_destination varchar not null,
+    query_address      varchar not null
 );
 
 CREATE TABLE definitions (

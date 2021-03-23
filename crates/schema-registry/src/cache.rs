@@ -75,7 +75,7 @@ impl SchemaCache {
             id: Uuid::parse_str(&schema.id).map_err(|_err| CacheError::MalformedSchema)?,
             name: schema.metadata.name,
             query_address: schema.metadata.query_address,
-            topic_or_queue: schema.metadata.topic_or_queue,
+            insert_destination: schema.metadata.insert_destination,
             r#type: schema
                 .metadata
                 .r#type
@@ -99,7 +99,7 @@ impl SchemaCache {
             id,
             name: metadata.name,
             query_address: metadata.query_address,
-            topic_or_queue: metadata.topic_or_queue,
+            insert_destination: metadata.insert_destination,
             r#type: metadata
                 .r#type
                 .try_into()

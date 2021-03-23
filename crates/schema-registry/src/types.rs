@@ -9,7 +9,7 @@ use rpc::schema_registry::types::SchemaType;
 pub struct Schema {
     pub id: Uuid,
     pub name: String,
-    pub topic_or_queue: String,
+    pub insert_destination: String,
     pub query_address: String,
     pub r#type: SchemaType,
 }
@@ -17,7 +17,7 @@ pub struct Schema {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewSchema {
     pub name: String,
-    pub topic_or_queue: String,
+    pub insert_destination: String,
     pub query_address: String,
     pub r#type: SchemaType,
     pub definition: Value,
@@ -26,7 +26,7 @@ pub struct NewSchema {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct SchemaUpdate {
     pub name: Option<String>,
-    pub topic_or_queue: Option<String>,
+    pub insert_destination: Option<String>,
     pub query_address: Option<String>,
     pub r#type: Option<SchemaType>,
 }
@@ -35,7 +35,7 @@ pub struct SchemaUpdate {
 pub struct SchemaWithDefinitions {
     pub id: Uuid,
     pub name: String,
-    pub topic_or_queue: String,
+    pub insert_destination: String,
     pub query_address: String,
     pub r#type: SchemaType,
     pub definitions: Vec<SchemaDefinition>,

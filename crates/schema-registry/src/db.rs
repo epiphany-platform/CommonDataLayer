@@ -21,7 +21,7 @@ pub struct SchemaRegistryDb {
 }
 
 impl SchemaRegistryDb {
-    pub async fn new(db_url: String) -> RegistryResult<Self> {
+    pub async fn connect(db_url: String) -> RegistryResult<Self> {
         Ok(Self {
             pool: PgPoolOptions::new()
                 .connect(&db_url)
@@ -45,7 +45,7 @@ impl SchemaRegistryDb {
     pub async fn get_schema(&self, id: Uuid) -> RegistryResult<Schema> {
         sqlx::query_as!(
             Schema,
-            "SELECT id, name, topic_or_queue, query_address, type as \"type: _\" \
+            "SELECT id, name, insert_destination, query_address, type as \"type: _\" \
              FROM schemas WHERE id = $1",
             id
         )
@@ -78,7 +78,7 @@ impl SchemaRegistryDb {
             id: schema.id,
             name: schema.name,
             r#type: schema.r#type,
-            topic_or_queue: schema.topic_or_queue,
+            insert_destination: schema.insert_destination,
             query_address: schema.query_address,
             definitions,
         })
@@ -122,7 +122,7 @@ impl SchemaRegistryDb {
     pub async fn get_all_schemas(&self) -> RegistryResult<Vec<Schema>> {
         sqlx::query_as!(
             Schema,
-            "SELECT id, name, topic_or_queue, query_address, type as \"type: _\" \
+            "SELECT id, name, insert_destination, query_address, type as \"type: _\" \
              FROM schemas ORDER BY name"
         )
         .fetch_all(&self.pool)
@@ -135,7 +135,7 @@ impl SchemaRegistryDb {
     ) -> RegistryResult<Vec<SchemaWithDefinitions>> {
         let all_schemas = sqlx::query_as!(
             Schema,
-            "SELECT id, name, topic_or_queue, query_address, type as \"type: _\" FROM schemas"
+            "SELECT id, name, insert_destination, query_address, type as \"type: _\" FROM schemas"
         )
         .fetch_all(&self.pool)
         .await?;
@@ -162,7 +162,7 @@ impl SchemaRegistryDb {
                     id: schema.id,
                     name: schema.name,
                     r#type: schema.r#type,
-                    topic_or_queue: schema.topic_or_queue,
+                    insert_destination: schema.insert_destination,
                     query_address: schema.query_address,
                     definitions,
                 })
@@ -180,12 +180,12 @@ impl SchemaRegistryDb {
             .transaction::<_, _, RegistryError>(move |c| {
                 Box::pin(async move {
                     sqlx::query!(
-                        "INSERT INTO schemas(id, name, type, topic_or_queue, query_address) \
+                        "INSERT INTO schemas(id, name, type, insert_destination, query_address) \
                          VALUES($1, $2, $3, $4, $5)",
                         &new_id,
                         &schema.name,
                         &schema.r#type as &rpc::schema_registry::types::SchemaType,
-                        &schema.topic_or_queue,
+                        &schema.insert_destination,
                         &schema.query_address,
                     )
                     .execute(c.acquire().await?)
@@ -214,10 +214,10 @@ impl SchemaRegistryDb {
         let old_schema = self.get_schema(id).await?;
 
         sqlx::query!(
-            "UPDATE schemas SET name = $1, type = $2, topic_or_queue = $3, query_address = $4 WHERE id = $5",
+            "UPDATE schemas SET name = $1, type = $2, insert_destination = $3, query_address = $4 WHERE id = $5",
             update.name.unwrap_or(old_schema.name),
             update.r#type.unwrap_or(old_schema.r#type) as _,
-            update.topic_or_queue.unwrap_or(old_schema.topic_or_queue),
+            update.insert_destination.unwrap_or(old_schema.insert_destination),
             update.query_address.unwrap_or(old_schema.query_address),
             id
         )
@@ -316,12 +316,12 @@ impl SchemaRegistryDb {
                 Box::pin(async move {
                     for schema in imported.schemas {
                         sqlx::query!(
-                            "INSERT INTO schemas(id, name, type, topic_or_queue, query_address) \
+                            "INSERT INTO schemas(id, name, type, insert_destination, query_address) \
                              VALUES($1, $2, $3, $4, $5)",
                             schema.id,
                             schema.name,
                             schema.r#type as _,
-                            schema.topic_or_queue,
+                            schema.insert_destination,
                             schema.query_address
                         )
                         .execute(c.acquire().await?)
@@ -354,200 +354,3 @@ impl SchemaRegistryDb {
         })
     }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use anyhow::Result;
-//     use rpc::schema_registry::types::SchemaType;
-//     use serde_json::json;
-//     use sqlx::{Connection, SqliteConnection};
-
-//     async fn test_db() -> SchemaRegistryConn {
-//         let conn = DbConn::connect("::sqlite:memory:").await.unwrap();
-//         SchemaRegistryConn { conn }
-//     }
-
-//     #[tokio::test]
-//     async fn import_non_empty() -> Result<()> {
-//         let (to_import, schema1_id, view1_id) = prepare_db_export().await?;
-
-//         let mut conn = test_db().await;
-//         let schema2_id = conn.add_schema(schema2(), None).await?;
-
-//         conn.ensure_schema_exists(schema2_id)?;
-//         assert!(conn.ensure_schema_exists(schema1_id).is_err());
-//         conn.get_view(view2_id)?;
-//         assert!(conn.get_view(view1_id).is_err());
-
-//         conn.import_all(to_import)?;
-
-//         // Ensure nothing changed
-//         conn.ensure_schema_exists(schema2_id)?;
-//         assert!(conn.ensure_schema_exists(schema1_id).is_err());
-//         conn.get_view(view2_id)?;
-//         assert!(conn.get_view(view1_id).is_err());
-
-//         Ok(())
-//     }
-
-//     #[test]
-//     fn import_all() -> Result<()> {
-//         let (original_result, original_schema_id, original_view_id) = prepare_db_export()?;
-
-//         let db = SchemaDb {
-//             db: MemoryDatastore::default(),
-//         };
-
-//         db.import_all(original_result)?;
-
-//         db.ensure_schema_exists(original_schema_id)?;
-
-//         let (schema_id, schema_name) = db.get_all_schema_names()?.into_iter().next().unwrap();
-//         assert_eq!(original_schema_id, schema_id);
-//         assert_eq!("test", schema_name);
-
-//         let defs = db.get_schema_definition(&VersionedUuid::any(original_schema_id))?;
-//         assert_eq!(Version::new(1, 0, 0), defs.version);
-//         assert_eq!(
-//             r#"{"definitions":{"def1":{"a":"number"},"def2":{"b":"string"}}}"#,
-//             serde_json::to_string(&defs.definition).unwrap()
-//         );
-
-//         let (view_id, view) = db
-//             .get_all_views_of_schema(original_schema_id)?
-//             .into_iter()
-//             .next()
-//             .unwrap();
-//         assert_eq!(original_view_id, view_id);
-//         assert_eq!(r#"{ a: a }"#, view.jmespath);
-
-//         Ok(())
-//     }
-
-//     #[test]
-//     fn import_export_all() -> Result<()> {
-//         let original_result = prepare_db_export()?.0;
-
-//         let db = SchemaDb {
-//             db: MemoryDatastore::default(),
-//         };
-//         db.import_all(original_result.clone())?;
-
-//         let new_result = db.export_all()?;
-
-//         assert_eq!(original_result, new_result);
-
-//         Ok(())
-//     }
-
-//     #[test]
-//     fn export_all() -> Result<()> {
-//         let (result, original_schema_id, original_view_id) = prepare_db_export()?;
-
-//         let (schema_id, schema) = result.schemas.into_iter().next().unwrap();
-//         assert_eq!(original_schema_id, schema_id);
-//         assert_eq!("test", schema.name);
-
-//         let (definition_id, definition) = result.definitions.into_iter().next().unwrap();
-//         assert!(definition.definition.is_object());
-//         assert_eq!(
-//             r#"{"definitions":{"def1":{"a":"number"},"def2":{"b":"string"}}}"#,
-//             serde_json::to_string(&definition.definition).unwrap()
-//         );
-
-//         let (view_id, view) = result.views.into_iter().next().unwrap();
-//         assert_eq!(original_view_id, view_id);
-//         assert_eq!(r#"{ a: a }"#, view.jmespath);
-
-//         let schema_definition = result.schema_definitions.into_iter().next().unwrap();
-//         assert_eq!(schema_id, schema_definition.schema_id);
-//         assert_eq!(definition_id, schema_definition.definition_id);
-//         assert_eq!(Version::new(1, 0, 0), schema_definition.version);
-
-//         let schema_view = result.schema_views.into_iter().next().unwrap();
-//         assert_eq!(schema_id, schema_view.schema_id);
-//         assert_eq!(view_id, schema_view.view_id);
-
-//         Ok(())
-//     }
-
-//     #[test]
-//     fn get_schema_type() -> Result<()> {
-//         let db = SchemaDb {
-//             db: MemoryDatastore::default(),
-//         };
-//         let schema_id = db.add_schema(schema1(), None)?;
-
-//         let schema_type = db.get_schema_type(schema_id)?;
-//         assert_eq!(SchemaType::DocumentStorage, schema_type);
-
-//         Ok(())
-//     }
-
-//     #[test]
-//     fn update_schema_type() -> Result<()> {
-//         let db = SchemaRegistryConn {
-//             conn: SqliteConnection::connect("::sqlite:memory:").await.unwrap(),
-//         };
-//         let schema_id = db.add_schema(schema1(), None)?;
-
-//         let schema_type = db.get_schema_type(schema_id)?;
-//         assert_eq!(SchemaType::DocumentStorage, schema_type);
-
-//         db.update_schema_type(schema_id, SchemaType::Timeseries)?;
-
-//         let schema_type = db.get_schema_type(schema_id)?;
-//         assert_eq!(SchemaType::Timeseries, schema_type);
-
-//         Ok(())
-//     }
-
-//     fn schema1() -> NewSchema {
-//         NewSchema {
-//             name: "test".into(),
-//             definition: json! ({
-//                 "definitions": {
-//                     "def1": {
-//                         "a": "number"
-//                     },
-//                     "def2": {
-//                         "b": "string"
-//                     }
-//                 }
-//             }),
-//             queue: "topic1".into(),
-//             query_addr: "query1".into(),
-//             r#type: SchemaType::DocumentStorage,
-//         }
-//     }
-
-//     fn schema2() -> NewSchema {
-//         NewSchema {
-//             name: "test2".into(),
-//             definition: json! ({
-//                 "definitions": {
-//                     "def3": {
-//                         "a": "number"
-//                     },
-//                     "def4": {
-//                         "b": "string"
-//                     }
-//                 }
-//             }),
-//             kafka_topic: "topic2".into(),
-//             query_address: "query2".into(),
-//             schema_type: SchemaType::DocumentStorage,
-//         }
-//     }
-
-//     async fn prepare_db_export() -> Result<(DbExport, Uuid, Uuid)> {
-//         let schema_id = db.add_schema(schema1(), None)?;
-
-//         let view_id = db.add_view_to_schema(schema_id, view1(), None)?;
-
-//         let exported = db.export_all()?;
-
-//         Ok((exported, schema_id, view_id))
-//     }
-// }

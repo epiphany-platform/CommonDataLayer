@@ -32,7 +32,7 @@ spec:
         - name: REPLICATION_ROLE
           value: "slave"
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: REPLICATION_QUEUE
+        - name: COMMUNICATION_METHOD
           value: "kafka"
         - name: KAFKA_BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
@@ -40,8 +40,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
-        {{- else }}
-        - name: REPLICATION_QUEUE
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
+        - name: COMMUNICATION_METHOD
           value: "amqp"
         - name: AMQP_CONNECTION_STRING
           value: "{{ .Values.global.amqpConnectionString }}"
@@ -49,10 +49,13 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.name
+        {{- else }}
+        - name: COMMUNICATION_METHOD
+          value: "grpc"
         {{- end }}
-        - name: REPLICATION_TOPIC_OR_QUEUE
+        - name: REPLICATION_SOURCE
           value: "{{ .Release.Name | upper }}_SCHEMA_SYNCHRO"
-        - name: REPLICATION_TOPIC_OR_EXCHANGE
+        - name: REPLICATION_DESTINATION
           value: "{{ .Release.Name | upper }}_SCHEMA_SYNCHRO"
         - name: POD_NAME
           valueFrom:

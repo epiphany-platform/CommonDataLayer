@@ -5,7 +5,7 @@ pub struct ReportServiceConfig {
     #[structopt(
         name = "report-topic-or-exchange",
         long = "report-topic-or-exchange",
-        env = "REPORT_TOPIC_OR_EXCHANGE"
+        env = "REPORT_DESTINATION"
     )]
-    pub topic_or_exchange: Option<String>,
+    pub destination: Option<String>,
 }

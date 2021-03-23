@@ -24,14 +24,14 @@ message NewSchema {
 message SchemaMetadata {
     required string name = 1;
     required string query_address = 2;
-    required string topic_or_queue = 3;
+    required string insert_destination = 3;
     required SchemaType.Type type = 4;
 }
 
 message SchemaMetadataPatch {
     optional string name = 1;
     optional string query_address = 2;
-    optional string topic_or_queue = 3;
+    optional string insert_destination = 3;
     optional SchemaType.Type type = 4;
 }
 
