@@ -13,6 +13,8 @@ pub struct BorrowedInsertMessage<'a> {
     pub data: &'a RawValue,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct OwnedInsertMessage {
     pub object_id: Uuid,
     pub schema_id: Uuid,
