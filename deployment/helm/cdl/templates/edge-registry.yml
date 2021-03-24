@@ -38,7 +38,7 @@ spec:
               value: {{ .Values.edgeRegistry.postgresSchema }}
             - name: COMMUNICATION_PORT
               value: "{{ .Values.edgeRegistry.communicationPort }}"
-            - name: COMMUNICATION_METHOD
+            - name: METHOD
               value: {{ .Values.global.communicationMethod }}
             {{- if eq .Values.global.communicationMethod "kafka" }}
             - name: MQ_HOST
@@ -52,7 +52,7 @@ spec:
             - name: MQ_SOURCE
               value: {{ .Values.edgeRegistry.mqSource }}
             - name: RUST_LOG
-              value: "info,data_router=debug"
+              value: "info,edge_registry=debug"
           ports:
             - containerPort: 51805
       imagePullSecrets:
