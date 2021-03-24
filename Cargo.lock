@@ -2300,6 +2300,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "partial-update-engine"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "serde",
+ "serde_json",
+ "structopt",
+ "tokio 0.2.24",
+ "tracing",
+ "utils",
+ "uuid",
+]
+
+[[package]]
 name = "pbr"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
