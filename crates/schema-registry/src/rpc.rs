@@ -74,15 +74,14 @@ impl SchemaRegistry for SchemaRegistryImpl {
             r#type: request.metadata.r#type.try_into()?,
         };
 
-        if !new_schema.insert_destination.is_empty() {
-            if !self
+        if !new_schema.insert_destination.is_empty()
+            && !self
                 .mq_metadata
                 .destination_exists(&new_schema.insert_destination)
                 .await
                 .map_err(RegistryError::from)?
-            {
-                return Err(RegistryError::NoTopic(new_schema.insert_destination.clone()).into());
-            }
+        {
+            return Err(RegistryError::NoTopic(new_schema.insert_destination.clone()).into());
         }
 
         let new_id = self.db.add_schema(new_schema).await?;

@@ -13,18 +13,18 @@ pub enum SchemaType {
     Timeseries,
 }
 
-impl Into<SchemaType> for rpc::schema_registry::types::SchemaType {
-    fn into(self) -> SchemaType {
-        match self {
+impl From<rpc::schema_registry::types::SchemaType> for SchemaType {
+    fn from(r#type: rpc::schema_registry::types::SchemaType) -> SchemaType {
+        match r#type {
             rpc::schema_registry::types::SchemaType::DocumentStorage => SchemaType::DocumentStorage,
             rpc::schema_registry::types::SchemaType::Timeseries => SchemaType::Timeseries,
         }
     }
 }
 
-impl Into<rpc::schema_registry::types::SchemaType> for SchemaType {
-    fn into(self) -> rpc::schema_registry::types::SchemaType {
-        match self {
+impl From<SchemaType> for rpc::schema_registry::types::SchemaType {
+    fn from(r#type: SchemaType) -> rpc::schema_registry::types::SchemaType {
+        match r#type {
             SchemaType::DocumentStorage => rpc::schema_registry::types::SchemaType::DocumentStorage,
             SchemaType::Timeseries => rpc::schema_registry::types::SchemaType::Timeseries,
         }

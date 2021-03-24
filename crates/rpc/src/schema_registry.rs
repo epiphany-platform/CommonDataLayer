@@ -77,9 +77,9 @@ pub mod types {
         }
     }
 
-    impl Into<i32> for SchemaType {
-        fn into(self) -> i32 {
-            let r#type: schema_type::Type = self.into();
+    impl From<SchemaType> for i32 {
+        fn from(r#type: SchemaType) -> i32 {
+            let r#type: schema_type::Type = r#type.into();
             r#type as i32
         }
     }
