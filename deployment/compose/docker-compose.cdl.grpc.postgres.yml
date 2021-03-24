@@ -24,7 +24,8 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_DBNAME: postgres
       POSTGRES_SCHEMA: cdl
-      REPORT_DESTINATION: "http://api:50104"
+      REPORT_ENDPOINT_URL: "http://api:50106"
+      REPORT_DESTINATION: "postgres-command"
       RUST_LOG: info,command_service=trace
 
   postgres_query:

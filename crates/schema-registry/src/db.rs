@@ -18,11 +18,11 @@ use indradb::{
     Datastore, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
     SpecificVertexQuery, Transaction, VertexQueryExt,
 };
-use log::{trace, warn};
 use rpc::schema_registry::types::SchemaType;
 use semver::Version;
 use serde_json::Value;
 use std::collections::HashMap;
+use tracing::{trace, warn};
 use uuid::Uuid;
 
 pub struct SchemaDb<D: Datastore = SledDatastore> {

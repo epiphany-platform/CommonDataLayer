@@ -1,10 +1,10 @@
 use super::{CommunicationMethod, ReplicationEvent, ReplicationMethodConfig};
-use log::{error, info};
 use std::{
     process,
     sync::{mpsc, Arc},
 };
 use tokio::{runtime::Handle, sync::oneshot};
+use tracing::{error, info};
 use utils::communication::publisher::CommonPublisher;
 
 pub async fn replicate_db_events(

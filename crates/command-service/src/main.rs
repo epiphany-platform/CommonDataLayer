@@ -5,15 +5,15 @@ use command_service::output::{
 };
 use command_service::report::{FullReportSenderBase, ReportSender, ReportServiceConfig};
 use command_service::{args::Args, communication::config::CommunicationConfig};
-use log::debug;
 use structopt::StructOpt;
+use tracing::debug;
 use utils::metrics;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
+    utils::tracing::init();
 
-    env_logger::init();
     let args: Args = Args::from_args();
 
     debug!("Environment: {:?}", args);

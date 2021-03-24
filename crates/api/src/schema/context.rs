@@ -33,7 +33,9 @@ impl Context {
         &self.config
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn connect_to_registry(&self) -> Result<SchemaRegistryConn> {
+        tracing::debug!("Connecting to registry");
         // TODO: Make proper connection pool
         let new_conn =
             rpc::schema_registry::connect(self.config.schema_registry_addr.clone()).await?;
@@ -41,7 +43,7 @@ impl Context {
     }
 
     pub async fn subscribe_on_communication_method(&self, topic: &str) -> Result<EventStream> {
-        log::debug!("subscribe on message queue: {}", topic);
+        tracing::debug!("subscribe on message queue: {}", topic);
         let mut event_map = self.mq_events.lock().await;
         match event_map.get(topic) {
             Some(subscriber) => {
@@ -54,7 +56,7 @@ impl Context {
                     self.config.communication_method.config()?,
                     topic,
                     move |topic| async move {
-                        log::warn!("Message queue stream has closed");
+                        tracing::warn!("Message queue stream has closed");
                         // Remove topic from hashmap so next time someone ask about this stream,
                         // it will be recreated
                         kafka_events.lock().await.remove(&topic);

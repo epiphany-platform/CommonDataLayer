@@ -35,8 +35,7 @@ async fn spawn_server<Q: QueryService>(service: Q, port: u16) -> anyhow::Result<
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-
-    env_logger::init();
+    utils::tracing::init();
 
     let config: Config = Config::from_args();
 

@@ -28,8 +28,7 @@ struct Config {
 #[tokio::main]
 async fn main() {
     utils::set_aborting_panic_hook();
-
-    env_logger::init();
+    utils::tracing::init();
 
     let config = Config::from_args();
 

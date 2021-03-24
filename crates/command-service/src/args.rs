@@ -51,7 +51,7 @@ pub struct CommunicationArgs {
     #[structopt(long, env)]
     pub amqp_consumer_tag: Option<String>,
     /// Port to listen on
-    #[structopt(long = "rpc-input-port", env = "RPC_PORT")]
+    #[structopt(long = "rpc-input-port", env = "GRPC_PORT")]
     pub grpc_port: Option<u16>,
     /// URL to send notifications to. Used with `grpc` communication method
     #[structopt(long, env)]

@@ -10,13 +10,16 @@ name = "db-shrinker-postgres"
 path = "src/main.rs"
 
 [dependencies]
+# Workspace
+utils       = { path = "../utils" }
+
+# Crates.io
 postgres    = { version = "0.19", features = ["with-uuid-0_8", "with-serde_json-1"] }
 structopt   = "0.3"
 anyhow      = "1.0"
 uuid        = "0.8"
 serde_json  = "1.0"
-log         = "0.4"
-env_logger  = "0.8"
+tracing     = "0.1"
 
 [dev-dependencies]
 test-case = "1.1"

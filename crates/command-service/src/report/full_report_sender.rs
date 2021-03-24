@@ -2,10 +2,10 @@ use crate::{
     communication::config::CommunicationConfig,
     report::{Error, Reporter},
 };
-use log::{debug, trace};
 use serde::Serialize;
 use serde_json::Value;
 use std::sync::Arc;
+use tracing::{debug, trace};
 use utils::communication::publisher::CommonPublisher;
 use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;

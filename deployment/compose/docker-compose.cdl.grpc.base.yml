@@ -68,7 +68,7 @@ services:
     image: cdl-api:latest
     command: "/bin/api"
     ports:
-      - "50104:50104"
+      - "50106:50106"
     build:
       context: ../..
       dockerfile: Dockerfile

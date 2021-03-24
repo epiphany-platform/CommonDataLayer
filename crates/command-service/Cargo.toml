@@ -22,10 +22,8 @@ utils       = { path = "../utils" }
 anyhow      = "1.0"
 async-trait = "0.1"
 bb8         = "0.4"
-env_logger  = "0.8"
 fnv         = "1.0"
 futures     = "0.3"
-log         = "0.4"
 rdkafka     = { version = "0.24", features = ["cmake-build"] }
 reqwest     = "0.10"
 serde       = { version = "1.0", features = ["derive"] }
@@ -34,6 +32,7 @@ structopt   = "0.3"
 thiserror   = "1.0"
 tokio       = { version = "0.2", features = ["rt-threaded", "macros", "sync"] }
 tonic       = "0.3"
+tracing     = "0.1"
 url         = "2.2"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 bb8-postgres            = { version = "0.4", features = ["with-uuid-0_8", "with-serde_json-1"] }

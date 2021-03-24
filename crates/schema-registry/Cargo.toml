@@ -21,9 +21,8 @@ rpc         = { path = "../rpc" }
 # Crates.io
 anyhow      = "1.0"
 async-trait = "0.1"
-env_logger  = "0.8"
+chrono      = "0.4"
 futures     = "0.3"
-log         = "0.4"
 indradb-lib = { git = "https://github.com/jespersm/indradb", branch = "sled", features = ["sled-datastore"] } # We use fork due to reported incompatibility of sled 0.34 with azure k8s. More testing needed before switching to official build.
 jmespatch   = "0.3"
 jsonschema  = "0.6"
@@ -35,9 +34,10 @@ structopt   = "0.3"
 thiserror   = "1.0"
 tokio       = { version = "0.2", features = ["macros"] }
 tonic       = "0.3"
+tracing     = "0.1"
 url         = "2.2"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
-chrono      = "0.4.19"
+tracing-futures         = "0.2"
 
 [dev-dependencies]
 maplit = "1.0.2"

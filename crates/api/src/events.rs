@@ -60,7 +60,7 @@ impl EventSubscriber {
     {
         let (tx, rx) = broadcast::channel(32);
 
-        log::debug!("Create new consumer for: {}", source);
+        tracing::debug!("Create new consumer for: {}", source);
 
         let config = match &config {
             CommunicationMethodConfig::Kafka { group_id, brokers } => CommonConsumerConfig::Kafka {
