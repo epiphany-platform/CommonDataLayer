@@ -1,7 +1,7 @@
 use anyhow::Context;
-use log::debug;
 use metrics_runtime::Receiver;
 use std::net::{Ipv4Addr, SocketAddrV4};
+use tracing::debug;
 
 pub use metrics::{counter, gauge, timing, value};
 

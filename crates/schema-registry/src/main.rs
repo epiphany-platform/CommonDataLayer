@@ -1,7 +1,8 @@
-use anyhow::Context;
 use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
+
+use anyhow::Context;
 use structopt::{clap::arg_enum, StructOpt};
 use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
@@ -43,13 +44,6 @@ struct Config {
     /// Consumer tag
     #[structopt(long, env)]
     pub amqp_consumer_tag: Option<String>,
-
-    /// Kafka topic/AMQP queue
-    #[structopt(long, env)]
-    pub replication_source: String,
-    /// Kafka topic/AMQP exchange
-    #[structopt(long, env)]
-    pub replication_destination: String,
 
     /// Directory to save state of the database. The state is saved in newly created folder with timestamp
     #[structopt(long, env)]
@@ -96,7 +90,8 @@ fn communication_config(config: &Config) -> anyhow::Result<CommunicationMethodCo
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
-    env_logger::init();
+    utils::set_aborting_panic_hook();
+    utils::tracing::init();
     let config = Config::from_args();
 
     status_endpoints::serve();

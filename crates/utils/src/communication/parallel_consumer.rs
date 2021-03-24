@@ -33,6 +33,7 @@ impl<T> GenericRpc for GenericRpcImpl<T>
 where
     T: ParallelConsumerHandler,
 {
+    #[tracing::instrument(skip(self))]
     async fn handle(
         &self,
         request: tonic::Request<proto::Message>,
@@ -195,7 +196,7 @@ impl ParallelCommonConsumer {
                                     ack_queue.ack(&message.message, consumer.as_ref());
                                 }
                                 Err(e) => {
-                                    log::error!("Couldn't process message: {:?}", e);
+                                    tracing::error!("Couldn't process message: {:?}", e);
                                     std::process::abort();
                                 }
                             }
@@ -221,12 +222,12 @@ impl ParallelCommonConsumer {
                                         )
                                         .await
                                     {
-                                        log::error!("Couldn't ack message: {:?}", e);
+                                        tracing::error!("Couldn't ack message: {:?}", e);
                                         std::process::abort();
                                     }
                                 }
                                 Err(e) => {
-                                    log::error!("Couldn't process message: {:?}", e);
+                                    tracing::error!("Couldn't process message: {:?}", e);
                                     std::process::abort();
                                 }
                             }

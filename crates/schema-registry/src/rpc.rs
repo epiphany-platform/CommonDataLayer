@@ -1,9 +1,9 @@
+use std::convert::TryInto;
+use std::pin::Pin;
+
 use anyhow::Context;
 use semver::Version;
 use semver::VersionReq;
-use serde_json::Value;
-use std::convert::TryInto;
-use std::pin::Pin;
 use tokio_stream::{Stream, StreamExt};
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
@@ -60,6 +60,7 @@ impl SchemaRegistryImpl {
 
 #[tonic::async_trait]
 impl SchemaRegistry for SchemaRegistryImpl {
+    #[tracing::instrument(skip(self))]
     async fn add_schema(
         &self,
         request: Request<rpc::schema_registry::NewSchema>,
@@ -67,7 +68,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let request = request.into_inner();
         let new_schema = NewSchema {
             name: request.metadata.name,
-            definition: parse_json(&request.definition)?,
+            definition: parse_json_and_deserialize(&request.definition)?,
             query_address: request.metadata.query_address,
             insert_destination: request.metadata.insert_destination,
             r#type: request.metadata.r#type.try_into()?,
@@ -91,6 +92,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn add_schema_version(
         &self,
         request: Request<rpc::schema_registry::NewSchemaVersion>,
@@ -99,7 +101,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let schema_id = parse_uuid(&request.id)?;
         let new_version = SchemaDefinition {
             version: parse_version(&request.definition.version)?,
-            definition: parse_json(&request.definition.definition)?,
+            definition: parse_json_and_deserialize(&request.definition.definition)?,
         };
 
         self.db
@@ -109,6 +111,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         Ok(Response::new(Empty {}))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn update_schema(
         &self,
         request: Request<SchemaMetadataUpdate>,
@@ -148,26 +151,25 @@ impl SchemaRegistry for SchemaRegistryImpl {
         Ok(Response::new(Empty {}))
     }
 
-    async fn get_schema(
+    #[tracing::instrument(skip(self))]
+    async fn get_schema_metadata(
         &self,
         request: Request<Id>,
-    ) -> Result<Response<rpc::schema_registry::Schema>, Status> {
+    ) -> Result<Response<rpc::schema_registry::SchemaMetadata>, Status> {
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
         let schema = self.db.get_schema(id).await?;
 
-        Ok(Response::new(rpc::schema_registry::Schema {
-            id: request.id,
-            metadata: rpc::schema_registry::SchemaMetadata {
-                name: schema.name,
-                insert_destination: schema.insert_destination,
-                query_address: schema.query_address,
-                r#type: schema.r#type.into(),
-            },
+        Ok(Response::new(rpc::schema_registry::SchemaMetadata {
+            name: schema.name,
+            insert_destination: schema.insert_destination,
+            query_address: schema.query_address,
+            r#type: schema.r#type.into(),
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get_schema_definition(
         &self,
         request: Request<VersionedId>,
@@ -187,6 +189,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get_schema_versions(
         &self,
         request: Request<Id>,
@@ -201,6 +204,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get_schema_with_definitions(
         &self,
         request: Request<Id>,
@@ -231,6 +235,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get_all_schemas(
         &self,
         _request: Request<Empty>,
@@ -253,6 +258,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn get_all_schemas_with_definitions(
         &self,
         _request: Request<Empty>,
@@ -289,6 +295,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         ))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn validate_value(
         &self,
         request: Request<ValueToValidate>,
@@ -299,7 +306,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
             version_req: parse_optional_version_req(&request.schema_id.version_req)?
                 .unwrap_or_else(VersionReq::any),
         };
-        let json = parse_json(&request.value)?;
+        let json = parse_json_and_deserialize(&request.value)?;
 
         let (_version, definition) = self.db.get_schema_definition(&versioned_id).await?;
         let schema = jsonschema::JSONSchema::compile(&definition)
@@ -357,7 +364,7 @@ fn parse_version(req: &str) -> Result<Version, Status> {
         .map_err(|err| Status::invalid_argument(format!("Invalid version provided: {}", err)))
 }
 
-fn parse_json(json: &[u8]) -> Result<Value, Status> {
+fn parse_json_and_deserialize<T: serde::de::DeserializeOwned>(json: &[u8]) -> Result<T, Status> {
     serde_json::from_slice(json)
         .map_err(|err| Status::invalid_argument(format!("Invalid JSON provided: {}", err)))
 }
@@ -367,7 +374,7 @@ fn parse_uuid(id: &str) -> Result<Uuid, Status> {
         .map_err(|err| Status::invalid_argument(format!("Failed to parse UUID: {}", err)))
 }
 
-fn serialize_json(json: &Value) -> Result<Vec<u8>, Status> {
+fn serialize_json<T: serde::Serialize>(json: &T) -> Result<Vec<u8>, Status> {
     serde_json::to_vec(json)
         .map_err(|err| Status::internal(format!("Unable to serialize JSON: {}", err)))
 }

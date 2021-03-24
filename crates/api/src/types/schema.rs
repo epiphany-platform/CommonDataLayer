@@ -34,7 +34,7 @@ impl Into<rpc::schema_registry::types::SchemaType> for SchemaType {
 pub struct SchemaWithDefinitions {
     pub id: Uuid,
     pub name: String,
-    pub topic_or_queue: String,
+    pub insert_destination: String,
     pub query_address: String,
     pub r#type: SchemaType,
     pub definitions: Vec<Definition>,
@@ -57,7 +57,7 @@ impl SchemaWithDefinitions {
         Ok(SchemaWithDefinitions {
             id: Uuid::parse_str(&schema.id)?,
             name: schema.metadata.name,
-            topic_or_queue: schema.metadata.topic_or_queue,
+            insert_destination: schema.metadata.insert_destination,
             query_address: schema.metadata.query_address,
             r#type: r#type.into(),
             definitions: schema
@@ -96,7 +96,7 @@ pub struct NewSchema {
     /// Address of the query service responsible for retrieving data from DB
     pub query_address: String,
     /// Message queue topic to which data is inserted by data-router.
-    pub topic_or_queue: String,
+    pub insert_destination: String,
     /// Definition is stored as a JSON value and therefore needs to be valid JSON.
     pub definition: String,
     /// Whether the schema stores documents or timeseries data.
@@ -122,7 +122,7 @@ pub struct UpdateSchema {
     /// Address of the query service responsible for retrieving data from DB
     pub query_address: Option<String>,
     /// Message queue topic to which data is inserted by data-router.
-    pub topic_or_queue: Option<String>,
+    pub insert_destination: Option<String>,
     /// Whether the schema stores documents or timeseries data.
     pub r#type: Option<SchemaType>,
 }

@@ -66,6 +66,31 @@ services:
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       RUST_LOG: info,query_router=trace
 
+  edge_registry:
+    image: cdl-edge-registry:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=edge-registry
+        - ENV=DEV
+    command: "/bin/edge-registry"
+    ports:
+      - "50110:50110"
+    environment:
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DBNAME: postgres
+      POSTGRES_SCHEMA: cdl
+      COMMUNICATION_PORT: 50110
+      METHOD: amqp
+      MQ_HOST: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      MQ_TAG: edge-registry
+      MQ_SOURCE: "cdl.edge.input"
+      RUST_LOG: info,edge_registry=trace
+
   web_api:
     image: cdl-api:latest
     command: "/bin/api"

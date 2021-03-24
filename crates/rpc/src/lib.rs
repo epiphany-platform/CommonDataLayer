@@ -1,3 +1,4 @@
+pub mod edge_registry;
 pub mod error;
 pub mod generic;
 pub mod query_service;

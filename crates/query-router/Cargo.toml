@@ -5,8 +5,6 @@ version = "0.1.0"
 edition = "2018"
 license = "Apache-2.0"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [[bin]]
 name = "query-router"
 path = "src/main.rs"
@@ -18,8 +16,6 @@ utils       = { path = "../utils" }
 schema-registry         = { path = "../schema-registry" }
 
 # Crates.io
-log         = "0.4"
-env_logger  = "0.8"
 warp        = "0.2"
 anyhow      = "1.0"
 lru-cache   = "0.1"
@@ -28,3 +24,5 @@ serde_json  = "1.0"
 structopt   = "0.3"
 uuid        = { version = "0.8", features = ["v1", "serde"] }
 tokio       = { version = "0.2", features = ["macros"] }
+tracing     = "0.1"
+tracing-futures         = "0.2"

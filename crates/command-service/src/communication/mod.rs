@@ -1,8 +1,8 @@
 use crate::communication::resolution::Resolution;
 use crate::output::OutputPlugin;
 use crate::report::{Error, ReportSender};
-use log::trace;
 use std::sync::Arc;
+use tracing::trace;
 use utils::message_types::BorrowedInsertMessage;
 use utils::metrics::*;
 

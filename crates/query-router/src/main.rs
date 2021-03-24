@@ -9,29 +9,38 @@ pub mod handler;
 
 #[derive(StructOpt)]
 struct Config {
+    /// Address of schema registry gRPC API
     #[structopt(long, env = "SCHEMA_REGISTRY_ADDR")]
     schema_registry_addr: String,
+    /// How many entries the cache can hold
+    #[structopt(long, env = "CACHE_CAPACITY")]
+    cache_capacity: usize,
+    /// Port to listen on
     #[structopt(long, env = "INPUT_PORT")]
     input_port: u16,
+    /// Port to listen on for Prometheus requests
     #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env_logger::init();
+    utils::set_aborting_panic_hook();
+    utils::tracing::init();
 
     let config = Config::from_args();
 
     metrics::serve(config.metrics_port);
 
-    let (schema_cache, error_receiver) = SchemaCache::new(config.schema_registry_addr).await?;
+    let (schema_cache, error_receiver) =
+        SchemaCache::new(config.schema_registry_addr, config.cache_capacity).await?;
     tokio::spawn(async move {
         if let Ok(error) = error_receiver.await {
-            panic!(
+            eprintln!(
                 "Schema Cache encountered an error, restarting to avoid sync issues: {}",
                 error
             );
+            std::process::exit(1);
         }
     });
 

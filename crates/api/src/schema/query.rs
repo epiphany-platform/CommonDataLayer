@@ -4,8 +4,10 @@ use crate::schema::context::Context;
 use crate::types::data::CdlObject;
 use crate::types::schema::{Definition, SchemaType, SchemaWithDefinitions};
 
+use itertools::Itertools;
 use juniper::{graphql_object, FieldResult};
 use semver::VersionReq;
+use tracing::Instrument;
 use uuid::Uuid;
 
 #[graphql_object(context = Context)]
@@ -22,8 +24,8 @@ impl SchemaWithDefinitions {
     }
 
     /// Message queue topic to which data is inserted by data-router.
-    fn topic_or_queue(&self) -> &str {
-        &self.topic_or_queue
+    fn insert_destination(&self) -> &str {
+        &self.insert_destination
     }
 
     /// Address of the query service responsible for retrieving data from DB
@@ -61,54 +63,70 @@ pub struct Query;
 impl Query {
     /// Return single schema for given id
     async fn schema(context: &Context, id: Uuid) -> FieldResult<SchemaWithDefinitions> {
-        let schema = context
-            .connect_to_registry()
-            .await?
-            .get_schema_with_definitions(rpc::schema_registry::Id { id: id.to_string() })
-            .await?
-            .into_inner();
+        let span = tracing::trace_span!("query_schema", ?id);
 
-        SchemaWithDefinitions::from_rpc(schema)
+        async move {
+            let schema = context
+                .connect_to_registry()
+                .await?
+                .get_schema_with_definitions(rpc::schema_registry::Id { id: id.to_string() })
+                .await?
+                .into_inner();
+
+            SchemaWithDefinitions::from_rpc(schema)
+        }
+        .instrument(span)
+        .await
     }
 
     /// Return all schemas in database
     async fn schemas(context: &Context) -> FieldResult<Vec<SchemaWithDefinitions>> {
-        log::debug!("get all schemas");
+        let span = tracing::trace_span!("query_schemas");
 
-        let mut conn = context.connect_to_registry().await?;
-        let schemas = conn
-            .get_all_schemas_with_definitions(rpc::schema_registry::Empty {})
-            .await?
-            .into_inner()
-            .schemas;
+        async move {
+            let mut conn = context.connect_to_registry().await?;
 
-        schemas
-            .into_iter()
-            .map(SchemaWithDefinitions::from_rpc)
-            .collect()
+            let schemas = conn
+                .get_all_schemas_with_definitions(rpc::schema_registry::Empty {})
+                .await?
+                .into_inner()
+                .schemas;
+
+            schemas
+                .into_iter()
+                .map(SchemaWithDefinitions::from_rpc)
+                .collect()
+        }
+        .instrument(span)
+        .await
     }
 
     /// Return a single object from the query router
     async fn object(object_id: Uuid, schema_id: Uuid, context: &Context) -> FieldResult<CdlObject> {
-        let client = reqwest::Client::new();
+        let span = tracing::trace_span!("query_object", ?object_id, ?schema_id);
+        async move {
+            let client = reqwest::Client::new();
 
-        let bytes = client
-            .post(&format!(
-                "{}/single/{}",
-                &context.config().query_router_addr,
-                object_id
-            ))
-            .header("SCHEMA_ID", schema_id.to_string())
-            .body("{}")
-            .send()
-            .await?
-            .bytes()
-            .await?;
+            let bytes = client
+                .post(&format!(
+                    "{}/single/{}",
+                    &context.config().query_router_addr,
+                    object_id
+                ))
+                .header("SCHEMA_ID", schema_id.to_string())
+                .body("{}")
+                .send()
+                .await?
+                .bytes()
+                .await?;
 
-        Ok(CdlObject {
-            object_id,
-            data: serde_json::from_slice(&bytes[..])?,
-        })
+            Ok(CdlObject {
+                object_id,
+                data: serde_json::from_slice(&bytes[..])?,
+            })
+        }
+        .instrument(span)
+        .await
     }
 
     /// Return a map of objects selected by ID from the query router
@@ -117,46 +135,53 @@ impl Query {
         schema_id: Uuid,
         context: &Context,
     ) -> FieldResult<Vec<CdlObject>> {
-        let client = reqwest::Client::new();
+        let span = tracing::trace_span!("query_objects", ?object_ids, ?schema_id);
+        async move {
+            let client = reqwest::Client::new();
 
-        let id_list = object_ids
-            .into_iter()
-            .map(|id| id.to_string())
-            .collect::<Vec<String>>()
-            .join(",");
-        let values: HashMap<Uuid, serde_json::Value> = client
-            .get(&format!(
-                "{}/multiple/{}",
-                &context.config().query_router_addr,
-                id_list
-            ))
-            .header("SCHEMA_ID", schema_id.to_string())
-            .send()
-            .await?
-            .json()
-            .await?;
+            let id_list = object_ids.iter().join(",");
 
-        Ok(values
-            .into_iter()
-            .map(|(object_id, data)| CdlObject { object_id, data })
-            .collect::<Vec<CdlObject>>())
+            let values: HashMap<Uuid, serde_json::Value> = client
+                .get(&format!(
+                    "{}/multiple/{}",
+                    &context.config().query_router_addr,
+                    id_list
+                ))
+                .header("SCHEMA_ID", schema_id.to_string())
+                .send()
+                .await?
+                .json()
+                .await?;
+
+            Ok(values
+                .into_iter()
+                .map(|(object_id, data)| CdlObject { object_id, data })
+                .collect::<Vec<CdlObject>>())
+        }
+        .instrument(span)
+        .await
     }
 
     /// Return a map of all objects (keyed by ID) in a schema from the query router
     async fn schema_objects(schema_id: Uuid, context: &Context) -> FieldResult<Vec<CdlObject>> {
-        let client = reqwest::Client::new();
+        let span = tracing::trace_span!("query_schema_objects", ?schema_id);
+        async move {
+            let client = reqwest::Client::new();
 
-        let values: HashMap<Uuid, serde_json::Value> = client
-            .get(&format!("{}/schema", &context.config().query_router_addr,))
-            .header("SCHEMA_ID", schema_id.to_string())
-            .send()
-            .await?
-            .json()
-            .await?;
+            let values: HashMap<Uuid, serde_json::Value> = client
+                .get(&format!("{}/schema", &context.config().query_router_addr,))
+                .header("SCHEMA_ID", schema_id.to_string())
+                .send()
+                .await?
+                .json()
+                .await?;
 
-        Ok(values
-            .into_iter()
-            .map(|(object_id, data)| CdlObject { object_id, data })
-            .collect::<Vec<CdlObject>>())
+            Ok(values
+                .into_iter()
+                .map(|(object_id, data)| CdlObject { object_id, data })
+                .collect::<Vec<CdlObject>>())
+        }
+        .instrument(span)
+        .await
     }
 }

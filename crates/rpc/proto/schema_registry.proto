@@ -6,7 +6,7 @@ service SchemaRegistry {
     rpc AddSchema (NewSchema) returns (Id);
     rpc AddSchemaVersion (NewSchemaVersion) returns (Empty);
     rpc UpdateSchema (SchemaMetadataUpdate) returns (Empty);
-    rpc GetSchema (Id) returns (Schema);
+    rpc GetSchemaMetadata (Id) returns (SchemaMetadata);
     rpc GetSchemaVersions (Id) returns (SchemaVersions);
     rpc GetSchemaDefinition (VersionedId) returns (SchemaDefinition);
     rpc GetSchemaWithDefinitions (Id) returns (SchemaWithDefinitions);

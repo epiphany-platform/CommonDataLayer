@@ -1,3 +1,11 @@
+use semver::Version;
+use serde_json::Value;
+use sqlx::postgres::{PgListener, PgPool, PgPoolOptions};
+use sqlx::{Acquire, Connection};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
+use tracing::{trace, warn};
+use uuid::Uuid;
+
 use super::types::{
     NewSchema, Schema, SchemaDefinition, SchemaUpdate, SchemaWithDefinitions, VersionedUuid,
 };
@@ -6,13 +14,6 @@ use crate::{
     error::{RegistryError, RegistryResult},
     types::DbExport,
 };
-use log::{trace, warn};
-use semver::Version;
-use serde_json::Value;
-use sqlx::postgres::{PgListener, PgPool, PgPoolOptions};
-use sqlx::{Acquire, Connection};
-use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
-use uuid::Uuid;
 
 const SCHEMAS_LISTEN_CHANNEL: &str = "schemas";
 

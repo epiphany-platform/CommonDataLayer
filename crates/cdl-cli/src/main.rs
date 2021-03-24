@@ -9,6 +9,7 @@ use structopt::StructOpt;
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     let args = Args::from_args();
+    ::utils::tracing::init();
 
     match args.action {
         Action::Schema { action } => match action {

@@ -3,7 +3,6 @@ use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::config::Config as PgConfig;
 use bb8_postgres::tokio_postgres::{types::ToSql, NoTls, Row, SimpleQueryMessage};
 use bb8_postgres::PostgresConnectionManager;
-use log::trace;
 use rpc::query_service::query_service_server::QueryService;
 use rpc::query_service::{ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use serde_json::Value;
@@ -15,16 +14,22 @@ use uuid::Uuid;
 
 #[derive(Debug, StructOpt)]
 pub struct PsqlConfig {
+    /// Postgres username
     #[structopt(long, env = "POSTGRES_USERNAME")]
     username: String,
+    /// Postgres password
     #[structopt(long, env = "POSTGRES_PASSWORD")]
     password: String,
+    /// Host of the postgres server
     #[structopt(long, env = "POSTGRES_HOST")]
     host: String,
+    /// Port on which postgres server listens
     #[structopt(long, env = "POSTGRES_PORT", default_value = "5432")]
     port: u16,
+    /// Database name
     #[structopt(long, env = "POSTGRES_DBNAME")]
     dbname: String,
+    /// SQL schema available for service
     #[structopt(long, env = "POSTGRES_SCHEMA", default_value = "public")]
     schema: String,
 }
@@ -119,20 +124,18 @@ impl PsqlQuery {
             })
             .collect::<Result<Vec<_>, _>>()?;
 
-        Ok(serde_json::to_vec(&data)
-            .map_err(|e| format!("Error serializing data to json: {}", e))?)
+        serde_json::to_vec(&data).map_err(|e| format!("Error serializing data to json: {}", e))
     }
 }
 
 #[tonic::async_trait]
 impl QueryService for PsqlQuery {
+    #[tracing::instrument(skip(self))]
     async fn query_multiple(
         &self,
         request: Request<ObjectIds>,
     ) -> Result<Response<ValueMap>, Status> {
         let request = request.into_inner();
-
-        trace!("QueryMultiple: {:?}", request);
 
         counter!("cdl.query-service.query-multiple.psql", 1);
 
@@ -165,13 +168,12 @@ impl QueryService for PsqlQuery {
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn query_by_schema(
         &self,
         request: Request<SchemaId>,
     ) -> Result<Response<ValueMap>, Status> {
         let request = request.into_inner();
-
-        trace!("QueryBySchema: {:?}", request);
 
         counter!("cdl.query-service.query-by-schema.psql", 1);
 
@@ -198,6 +200,7 @@ impl QueryService for PsqlQuery {
         }))
     }
 
+    #[tracing::instrument(skip(self))]
     async fn query_raw(
         &self,
         request: Request<RawStatement>,

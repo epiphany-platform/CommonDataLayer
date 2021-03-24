@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - "develop"
+    paths:
+      - "**/*.rs"
+      - "**/Cargo.toml"
+      - "**/Cargo.lock"
+      - "rust-toolchain"
   pull_request:
 
 env:
@@ -15,8 +20,8 @@ env:
   SQLX_OFFLINE: true
 
 jobs:
-  cargo-testing:
-    name: Test rust code
+  unit-test:
+    name: Unit
     runs-on: ubuntu-latest
 
     steps:
@@ -68,41 +73,3 @@ jobs:
 
       - name: Clear bloat
         run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm
-
-  component-testing:
-    name: Test modules
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v2
-
-      - name: Start environment via docker-compose
-        run: docker-compose -f deployment/compose/docker-compose.yml up -d postgres kafka victoria_metrics
-
-      - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-         profile: minimal
-         override: true
-
-      - uses: actions/setup-python@v2
-        with:
-          python-version: '3.x'
-          architecture: 'x64'
-
-      - name: Cache cargo target dir
-        uses: actions/cache@v2.1.4
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Run tests
-        run: ./run-tests.sh
-        working-directory: ./tests/
-
-      - name: Clear bloat
-        run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm
-
-      - name: Stop environment
-        run: docker-compose -f deployment/compose/docker-compose.yml down

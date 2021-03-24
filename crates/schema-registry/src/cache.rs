@@ -1,6 +1,7 @@
-use std::collections::HashMap;
 use std::convert::TryInto;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, Mutex};
+
+use lru_cache::LruCache;
 use tokio::sync::oneshot;
 use uuid::Uuid;
 
@@ -9,13 +10,14 @@ use crate::types::Schema;
 
 #[derive(Clone)]
 pub struct SchemaCache {
-    schemas: Arc<RwLock<HashMap<Uuid, Arc<Schema>>>>,
+    schemas: Arc<Mutex<LruCache<Uuid, Arc<Schema>>>>,
     schema_registry_addr: String,
 }
 
 impl SchemaCache {
     pub async fn new(
         schema_registry_addr: String,
+        capacity: usize,
     ) -> CacheResult<(Self, oneshot::Receiver<CacheError>)> {
         let (tx, rx) = oneshot::channel::<CacheError>();
         let mut conn = rpc::schema_registry::connect(schema_registry_addr.clone())
@@ -27,7 +29,7 @@ impl SchemaCache {
             .map_err(CacheError::RegistryError)?
             .into_inner();
 
-        let schemas = Arc::new(RwLock::new(HashMap::new()));
+        let schemas = Arc::new(Mutex::new(LruCache::new(capacity)));
         let schemas2 = Arc::clone(&schemas);
 
         tokio::spawn(async move {
@@ -39,11 +41,9 @@ impl SchemaCache {
                 match message {
                     Ok(Some(schema)) => match Self::parse_schema(schema) {
                         Ok(schema) => {
-                            schemas2
-                                .write()
-                                .unwrap()
-                                .entry(schema.id)
-                                .and_modify(|s| *s = Arc::new(schema));
+                            if let Some(entry) = schemas2.lock().unwrap().get_mut(&schema.id) {
+                                *entry = Arc::new(schema);
+                            }
                         }
                         Err(error) => {
                             tx.send(error).ok();
@@ -89,11 +89,10 @@ impl SchemaCache {
             .await
             .map_err(CacheError::ConnectionError)?;
         let metadata = conn
-            .get_schema(rpc::schema_registry::Id { id: id.to_string() })
+            .get_schema_metadata(rpc::schema_registry::Id { id: id.to_string() })
             .await
             .map_err(CacheError::RegistryError)?
-            .into_inner()
-            .metadata;
+            .into_inner();
 
         Ok(Schema {
             id,
@@ -108,16 +107,16 @@ impl SchemaCache {
     }
 
     pub async fn get_schema(&self, id: Uuid) -> CacheResult<Arc<Schema>> {
-        if !self.schemas.read().unwrap().contains_key(&id) {
+        if !self.schemas.lock().unwrap().contains_key(&id) {
             let schema = Self::retrieve_schema(id, self.schema_registry_addr.clone()).await?;
-            self.schemas.write().unwrap().insert(id, Arc::new(schema));
+            self.schemas.lock().unwrap().insert(id, Arc::new(schema));
         }
 
         Ok(self
             .schemas
-            .read()
+            .lock()
             .unwrap()
-            .get(&id)
+            .get_mut(&id)
             .ok_or(CacheError::MissingSchema)?
             .clone())
     }

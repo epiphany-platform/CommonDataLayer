@@ -19,7 +19,7 @@ services:
       COMMUNICATION_METHOD: "grpc"
       GRPC_PORT: "50204"
       VICTORIA_METRICS_OUTPUT_URL: http://victoria_metrics:8428
-      REPORT_DESTINATION: "http://api:50104"
+      REPORT_DESTINATION: "http://api:50106"
       RUST_LOG: info,command_service=trace
 
   victoria_query:

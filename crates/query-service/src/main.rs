@@ -9,8 +9,10 @@ use utils::metrics;
 pub struct Config {
     #[structopt(subcommand)]
     pub inner: ConfigType,
+    /// Port to listen on
     #[structopt(long, env)]
     pub input_port: u16,
+    /// Port to listen on for Prometheus requests
     #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }
@@ -32,7 +34,8 @@ async fn spawn_server<Q: QueryService>(service: Q, port: u16) -> anyhow::Result<
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env_logger::init();
+    utils::set_aborting_panic_hook();
+    utils::tracing::init();
 
     let config: Config = Config::from_args();
 

@@ -1,5 +1,4 @@
 use crate::error::Error;
-use log::trace;
 use rpc::schema_registry::types::SchemaType;
 use rpc::{query_service, query_service_ts};
 use schema_registry::cache::SchemaCache;
@@ -25,14 +24,13 @@ pub enum Body {
     Empty {},
 }
 
+#[tracing::instrument(skip(cache))]
 pub async fn query_single(
     object_id: Uuid,
     schema_id: Uuid,
     cache: SchemaCache,
     request_body: Body,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    trace!("Received /single/{} (SCHEMA_ID={})", object_id, schema_id);
-
     let schema = cache
         .get_schema(schema_id)
         .await
@@ -78,17 +76,12 @@ pub async fn query_single(
     ))
 }
 
+#[tracing::instrument(skip(cache))]
 pub async fn query_multiple(
     object_ids: String,
     schema_id: Uuid,
     cache: SchemaCache,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    trace!(
-        "Received /multiple/{:?} (SCHEMA_ID={})",
-        object_ids,
-        schema_id
-    );
-
     let schema = cache
         .get_schema(schema_id)
         .await
@@ -105,12 +98,11 @@ pub async fn query_multiple(
     ))
 }
 
+#[tracing::instrument(skip(cache))]
 pub async fn query_by_schema(
     schema_id: Uuid,
     cache: SchemaCache,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    trace!("Received /schema (SCHEMA_ID={})", schema_id);
-
     let schema = cache
         .get_schema(schema_id)
         .await
@@ -146,13 +138,12 @@ pub async fn query_by_schema(
     }
 }
 
+#[tracing::instrument(skip(cache))]
 pub async fn query_raw(
     schema_id: Uuid,
     cache: SchemaCache,
     request_body: Body,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    trace!("Received /raw/ (SCHEMA_ID={})", schema_id);
-
     let schema = cache
         .get_schema(schema_id)
         .await

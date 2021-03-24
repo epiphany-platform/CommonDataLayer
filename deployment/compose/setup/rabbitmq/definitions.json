@@ -131,6 +131,15 @@
       "auto_delete": false,
       "internal": false,
       "arguments": {}
+    },
+    {
+      "name": "cdl.edge.input",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
     }
   ],
   "bindings": [
@@ -186,6 +195,14 @@
       "source": "cdl.timeseries.data",
       "vhost": "/",
       "destination": "cdl.timeseries.2.data",
+      "destination_type": "queue",
+      "routing_key": "unordered",
+      "arguments": {}
+    },
+    {
+      "source": "cdl.edge.input",
+      "vhost": "/",
+      "destination": "cdl.edge.input",
       "destination_type": "queue",
       "routing_key": "unordered",
       "arguments": {}

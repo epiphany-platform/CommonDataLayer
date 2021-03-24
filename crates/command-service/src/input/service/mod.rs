@@ -5,8 +5,8 @@ use crate::{
 };
 use async_trait::async_trait;
 use futures::future::try_join_all;
-use log::{error, trace};
 use std::{process, sync::Arc};
+use tracing::{error, trace};
 use utils::communication::get_order_group_id;
 use utils::communication::{
     message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,

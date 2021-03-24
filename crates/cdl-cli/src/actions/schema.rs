@@ -1,13 +1,15 @@
+use std::convert::TryInto;
+use std::path::PathBuf;
+
+use semver::{Version, VersionReq};
+use serde_json::Value;
+use uuid::Uuid;
+
 use crate::utils::*;
 use rpc::schema_registry::{
     types::SchemaType, Empty, Id, NewSchema, NewSchemaVersion, SchemaDefinition, SchemaMetadata,
     SchemaMetadataPatch, SchemaMetadataUpdate, ValueToValidate, VersionedId,
 };
-use semver::{Version, VersionReq};
-use serde_json::Value;
-use std::convert::TryInto;
-use std::path::PathBuf;
-use uuid::Uuid;
 
 pub async fn get_schema_definition(
     schema_id: Uuid,
@@ -32,7 +34,7 @@ pub async fn get_schema_definition(
 
 pub async fn add_schema(
     schema_name: String,
-    topic_or_queue: String,
+    insert_destination: String,
     query_address: String,
     file: Option<PathBuf>,
     registry_addr: String,
@@ -46,7 +48,7 @@ pub async fn add_schema(
             metadata: SchemaMetadata {
                 name: schema_name.clone(),
                 query_address,
-                topic_or_queue,
+                insert_destination,
                 r#type: r#type.into(),
             },
             definition: serde_json::to_vec(&definition)?,
@@ -89,7 +91,7 @@ pub async fn get_schema_versions(schema_id: Uuid, registry_addr: String) -> anyh
 pub async fn update_schema(
     id: Uuid,
     name: Option<String>,
-    topic_or_queue: Option<String>,
+    insert_destination: Option<String>,
     query_address: Option<String>,
     r#type: Option<SchemaType>,
     registry_addr: String,
@@ -100,7 +102,7 @@ pub async fn update_schema(
             id: id.to_string(),
             patch: SchemaMetadataPatch {
                 name,
-                topic_or_queue,
+                insert_destination,
                 query_address,
                 r#type: r#type.map(|t| t.into()),
             },
@@ -151,14 +153,13 @@ pub async fn get_schema_names(registry_addr: String) -> anyhow::Result<()> {
 pub async fn get_schema_metadata(id: Uuid, registry_addr: String) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let metadata = client
-        .get_schema(Id { id: id.to_string() })
+        .get_schema_metadata(Id { id: id.to_string() })
         .await?
-        .into_inner()
-        .metadata;
+        .into_inner();
     let r#type: SchemaType = metadata.r#type.try_into()?;
 
     println!("Name: {}", metadata.name);
-    println!("Topic or Queue: {}", metadata.topic_or_queue);
+    println!("Topic or Queue: {}", metadata.insert_destination);
     println!("Query Address: {}", metadata.query_address);
     println!("Type: {}", r#type);
 

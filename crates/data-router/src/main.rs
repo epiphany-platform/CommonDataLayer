@@ -1,17 +1,16 @@
+use std::net::{Ipv4Addr, SocketAddrV4};
+use std::process;
+use std::sync::Arc;
+
 use anyhow::Context;
 use async_trait::async_trait;
-use log::{debug, error, trace};
-use schema_registry::cache::SchemaCache;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{
-    net::{Ipv4Addr, SocketAddrV4},
-    process,
-    sync::{Arc, Mutex},
-};
 use structopt::{clap::arg_enum, StructOpt};
+use tracing::{debug, error, trace};
+
+use schema_registry::cache::SchemaCache;
 use utils::{
-    abort_on_poison,
     communication::{
         get_order_group_id,
         message::CommunicationMessage,
@@ -27,7 +26,6 @@ use utils::{
     parallel_task_queue::ParallelTaskQueue,
     task_limiter::TaskLimiter,
 };
-use uuid::Uuid;
 
 arg_enum! {
     #[derive(Deserialize, Debug, Serialize)]
@@ -40,33 +38,46 @@ arg_enum! {
 
 #[derive(StructOpt, Deserialize, Debug, Serialize)]
 struct Config {
+    /// The method of communication with external services
     #[structopt(long, env, possible_values = &CommunicationMethod::variants(), case_insensitive = true)]
     pub communication_method: CommunicationMethod,
+    /// Address of Kafka brokers
     #[structopt(long, env)]
     pub kafka_brokers: Option<String>,
+    /// Group ID of the consumer
     #[structopt(long, env)]
     pub kafka_group_id: Option<String>,
+    /// Connection URL to AMQP Server
     #[structopt(long, env)]
     pub amqp_connection_string: Option<String>,
+    /// Consumer tag
     #[structopt(long, env)]
     pub amqp_consumer_tag: Option<String>,
+    /// Kafka topic or AMQP queue
     #[structopt(long, env)]
     pub input_source: Option<String>,
+    /// Address of schema registry gRPC API
     #[structopt(long, env)]
     pub schema_registry_addr: String,
+    /// How many entries the cache can hold
     #[structopt(long, env)]
     pub cache_capacity: usize,
+    /// Max requests handled in parallel
     #[structopt(long, env, default_value = "128")]
     pub task_limit: usize,
+    /// Port to listen on for Prometheus requests
     #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
+    /// Port to listen on when communication method is `grpc`
     #[structopt(long, env)]
     pub grpc_port: Option<u16>,
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    env_logger::init();
+    utils::set_aborting_panic_hook();
+    utils::tracing::init();
+
     let config: Config = Config::from_args();
 
     debug!("Environment {:?}", config);
@@ -76,15 +87,17 @@ async fn main() -> anyhow::Result<()> {
     let consumer = new_consumer(&config).await?;
     let producer = Arc::new(new_producer(&config).await?);
 
-    let (schema_cache, error_receiver) = SchemaCache::new(config.schema_registry_addr)
-        .await
-        .context("Failed to create schema cache")?;
+    let (schema_cache, error_receiver) =
+        SchemaCache::new(config.schema_registry_addr, config.cache_capacity)
+            .await
+            .context("Failed to create schema cache")?;
     tokio::spawn(async move {
         if let Ok(error) = error_receiver.await {
-            panic!(
+            eprintln!(
                 "Schema Cache encountered an error, restarting to avoid sync issues: {}",
                 error
             );
+            std::process::exit(1);
         }
     });
 
@@ -138,15 +151,9 @@ impl ParallelConsumerHandler for Handler {
                 let mut result = Ok(());
 
                 for entry in maybe_array.iter() {
-                    let r = route(
-                        &self.cache,
-                        &entry,
-                        &message_key,
-                        &self.producer,
-                        &self.schema_registry_addr,
-                    )
-                    .await
-                    .context("Tried to send message and failed");
+                    let r = route(&entry, &message_key, &self.producer, &self.schema_cache)
+                        .await
+                        .context("Tried to send message and failed");
 
                     counter!("cdl.data-router.input-multimsg", 1);
                     counter!("cdl.data-router.processed", 1);
@@ -291,7 +298,7 @@ async fn route(
 
     send_message(
         producer,
-        &schema.topic_or_queue,
+        &schema.insert_destination,
         message_key,
         serde_json::to_vec(&payload)?,
     )
