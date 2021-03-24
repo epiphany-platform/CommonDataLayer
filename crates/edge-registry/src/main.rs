@@ -1,4 +1,5 @@
-use edge_registry::{EdgeRegistryImpl, RegistryConfig};
+use edge_registry::args::RegistryConfig;
+use edge_registry::EdgeRegistryImpl;
 use rpc::edge_registry::edge_registry_server::EdgeRegistryServer;
 use std::process;
 use structopt::StructOpt;

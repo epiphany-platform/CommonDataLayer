@@ -3,7 +3,16 @@ import json
 from urllib.parse import urljoin
 from time import sleep
 
-from tests.common.config import VictoriaMetricsConfig
+
+class VictoriaMetricsConfig:
+    def __init__(self, database_url="http://localhost:8428"):
+        self.database_url = database_url
+
+    def to_dict(self):
+        return {
+            "VICTORIA_METRICS_OUTPUT_URL": self.database_url,
+            "VICTORIA_QUERY_URL": urljoin(self.database_url, '/api/v1'),
+        }
 
 
 def fetch_data(config: VictoriaMetricsConfig):

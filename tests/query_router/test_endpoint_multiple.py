@@ -1,11 +1,11 @@
 import pytest
 
-from tests.common.config import KafkaInputConfig, PostgresConfig
+from tests.common.kafka import KafkaInputConfig
 from tests.common.query_router import QueryRouter
 from tests.common.query_service import QueryService
 from tests.common.schema_registry import SchemaRegistry
 from tests.common import load_case, assert_json
-from tests.common.postgres import clear_data, insert_data
+from tests.common.postgres import clear_data, insert_data, PostgresConfig
 
 DB_NAME = 'query-router'
 TOPIC = 'qr.test.multiple'

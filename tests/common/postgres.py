@@ -2,7 +2,26 @@ import json
 
 import psycopg2
 
-from tests.common.config import PostgresConfig
+
+class PostgresConfig:
+    def __init__(self, user='postgres', password='1234', host='localhost', port='5432', dbname='postgres',
+                 schema='cdl'):
+        self.user = user
+        self.password = password
+        self.host = host
+        self.port = port
+        self.dbname = dbname
+        self.schema = schema
+
+    def to_dict(self):
+        return {
+            "POSTGRES_USERNAME": self.user,
+            "POSTGRES_PASSWORD": self.password,
+            "POSTGRES_HOST": self.host,
+            "POSTGRES_PORT": self.port,
+            "POSTGRES_DBNAME": self.dbname,
+            "POSTGRES_SCHEMA": self.schema,
+        }
 
 
 def connect_to_postgres(config: PostgresConfig):
@@ -40,6 +59,18 @@ def clear_data(config: PostgresConfig):
     curr = db.cursor()
 
     curr.execute('DELETE FROM cdl.data')
+
+    db.commit()
+    curr.close()
+    db.close()
+
+
+def clear_relations(config: PostgresConfig):
+    db = connect_to_postgres(config)
+    curr = db.cursor()
+
+    curr.execute('DELETE FROM cdl.relations')
+    curr.execute('DELETE FROM cdl.edges')
 
     db.commit()
     curr.close()

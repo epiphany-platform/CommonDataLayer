@@ -1,11 +1,8 @@
-import time
-
 import pytest
 
-from tests.common import load_case, assert_json, retry_retrieve
+from tests.common import load_case, assert_json, retry_retrieve, VictoriaMetricsConfig
 from tests.common.command_service import CommandService
-from tests.common.config import KafkaInputConfig, VictoriaMetricsConfig
-from tests.common.kafka import push_to_kafka, create_kafka_topic, delete_kafka_topic
+from tests.common.kafka import push_to_kafka, create_kafka_topic, delete_kafka_topic, KafkaInputConfig
 from tests.common.victoria_metrics import clear_data, fetch_data
 
 TOPIC = "cdl.testing.command-service.victoria-metrics"

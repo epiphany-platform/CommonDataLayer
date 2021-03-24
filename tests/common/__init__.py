@@ -2,7 +2,7 @@ import json
 import os
 import time
 from tests.common.postgres import connect_to_postgres
-from tests.common.config import VictoriaMetricsConfig
+from tests.common.victoria_metrics import VictoriaMetricsConfig
 
 
 def load_case(case_name, app):

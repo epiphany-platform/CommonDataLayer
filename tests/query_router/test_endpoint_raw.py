@@ -2,9 +2,9 @@ import json
 
 import pytest
 
-from tests.common import load_case, assert_json
-from tests.common.config import KafkaInputConfig, PostgresConfig, VictoriaMetricsConfig
-from tests.common.postgres import clear_data as psql_clear_data, insert_data as psql_insert_data
+from tests.common import load_case, assert_json, VictoriaMetricsConfig
+from tests.common.kafka import KafkaInputConfig
+from tests.common.postgres import clear_data as psql_clear_data, insert_data as psql_insert_data, PostgresConfig
 from tests.common.query_router import QueryRouter
 from tests.common.query_service import QueryService
 from tests.common.query_service_ts import QueryServiceTs

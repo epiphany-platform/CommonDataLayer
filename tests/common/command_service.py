@@ -1,6 +1,7 @@
 import os
 import subprocess
-from tests.common.config import PostgresConfig, VictoriaMetricsConfig
+from tests.common.victoria_metrics import VictoriaMetricsConfig
+from tests.common.postgres import PostgresConfig
 
 EXE = os.getenv('COMMAND_SERVICE_EXE') or 'command-service'
 

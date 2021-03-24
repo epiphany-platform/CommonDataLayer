@@ -29,5 +29,8 @@ tokio       = { version = "0.2", features = ["rt-threaded", "macros", "sync"] }
 tonic       = "0.3"
 tracing     = "0.1"
 uuid        = "0.8"
-bb8-postgres            = { version = "0.4", features = ["with-uuid-0_8"] }
-tracing-futures         = "0.2"
+bb8-postgres             = { version = "0.4", features = ["with-uuid-0_8"] }
+tracing-futures          = "0.2"
+
+[dev-dependencies]
+test-case   = "1.1"

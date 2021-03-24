@@ -1,9 +1,22 @@
 import json
+import uuid
 
 from kafka import KafkaAdminClient, KafkaProducer
 from kafka.admin import NewTopic
 
-from tests.common.config import KafkaInputConfig
+
+class KafkaInputConfig:
+    def __init__(self, topic, brokers='localhost:9092', group_id=None):
+        self.topic = topic
+        self.brokers = brokers
+        self.group_id = group_id or str(uuid.uuid1())
+
+    def to_dict(self):
+        return {
+            "KAFKA_BROKERS": self.brokers,
+            "KAFKA_GROUP_ID": self.group_id,
+            "UNORDERED_SOURCES": self.topic,
+        }
 
 
 def create_kafka_topic(config: KafkaInputConfig, topic):
@@ -30,3 +43,14 @@ def push_to_kafka(kafka_config: KafkaInputConfig, data):
 
     producer.flush()
     producer.close()
+
+
+class KafkaReportConfig:
+    def __init__(self, topic='cdl.reports', brokers='localhost:9092'):
+        self.topic = topic
+        self.brokers = brokers
+
+    def to_dict(self):
+        return {
+            "REPORT_DESTINATION": self.topic,
+        }

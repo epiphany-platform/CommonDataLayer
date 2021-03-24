@@ -35,4 +35,3 @@
 
 ## References:
 [CDL RFC directory](https://github.com/epiphany-platform/CommonDataLayer/tree/develop/docs/rfc)
-

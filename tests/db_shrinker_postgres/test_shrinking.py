@@ -1,9 +1,8 @@
 import pytest
 
 from tests.common import load_case
-from tests.common.config import PostgresConfig
 from tests.common.db_shrinker_postgres import DbShrinkerPostgres
-from tests.common.postgres import clear_data, insert_data, fetch_data
+from tests.common.postgres import clear_data, insert_data, fetch_data, PostgresConfig
 
 
 @pytest.fixture(params=['field_added', 'field_deleted', 'partial_update', 'simple_override'])

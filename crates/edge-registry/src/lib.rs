@@ -1,4 +1,5 @@
 use anyhow::Context;
+use args::RegistryConfig;
 use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::{Config, NoTls};
 use bb8_postgres::{bb8, PostgresConnectionManager};
@@ -12,59 +13,14 @@ use serde::Deserialize;
 use std::convert::TryInto;
 use std::str::FromStr;
 use std::{fmt, time};
-use structopt::StructOpt;
 use tonic::{Request, Response, Status};
 use tracing::{debug, error, trace};
-use utils::communication::consumer::{CommonConsumerConfig, ConsumerHandler};
+use utils::communication::consumer::ConsumerHandler;
 use utils::communication::message::CommunicationMessage;
-use utils::metrics::{self, counter};
+use utils::metrics::counter;
 use uuid::Uuid;
 
-#[derive(Clone, Debug, StructOpt)]
-pub struct RegistryConfig {
-    #[structopt(long, env)]
-    postgres_username: String,
-    #[structopt(long, env)]
-    postgres_password: String,
-    #[structopt(long, env)]
-    postgres_host: String,
-    #[structopt(long, env, default_value = "5432")]
-    postgres_port: u16,
-    #[structopt(long, env)]
-    postgres_dbname: String,
-    #[structopt(long, env, default_value = "public")]
-    postgres_schema: String,
-    #[structopt(long, env, default_value = "50110")]
-    /// gRPC server port to host edge-registry on
-    pub communication_port: u16,
-    #[structopt(long, env, default_value = metrics::DEFAULT_PORT)]
-    /// Prometheus metrics port
-    pub metrics_port: u16,
-    #[structopt(flatten)]
-    pub consumer_config: ConsumerConfig,
-}
-
-#[derive(Clone, Debug, StructOpt)]
-enum ConsumerMethod {
-    Kafka,
-    Amqp,
-}
-
-#[derive(Clone, Debug, StructOpt)]
-pub struct ConsumerConfig {
-    #[structopt(long, env)]
-    /// Method of ingestion of messages via Message Queue
-    method: ConsumerMethod,
-    #[structopt(long, env)]
-    /// Kafka broker or Amqp (eg. RabbitMQ) host
-    mq_host: String,
-    #[structopt(long, env)]
-    /// Kafka group id or Amqp consumer tag
-    mq_tag: String,
-    #[structopt(long, env)]
-    /// Kafka topic or Amqp queue
-    mq_source: String,
-}
+pub mod args;
 
 #[derive(Deserialize)]
 pub struct AddEdgesMessage {
@@ -77,36 +33,6 @@ pub struct AddEdgesMessage {
 pub struct EdgeRegistryImpl {
     pool: Pool<PostgresConnectionManager<NoTls>>,
     schema: String,
-}
-
-impl<'a> From<&'a ConsumerConfig> for CommonConsumerConfig<'a> {
-    fn from(config: &'a ConsumerConfig) -> Self {
-        match config.method {
-            ConsumerMethod::Kafka => CommonConsumerConfig::Kafka {
-                brokers: &config.mq_host,
-                group_id: &config.mq_tag,
-                topic: &config.mq_source,
-            },
-            ConsumerMethod::Amqp => CommonConsumerConfig::Amqp {
-                connection_string: &config.mq_host,
-                consumer_tag: &config.mq_tag,
-                queue_name: &config.mq_source,
-                options: None,
-            },
-        }
-    }
-}
-
-impl FromStr for ConsumerMethod {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "kafka" => Ok(ConsumerMethod::Kafka),
-            "amqp" => Ok(ConsumerMethod::Amqp),
-            _ => Err("Invalid consumer method"),
-        }
-    }
 }
 
 impl EdgeRegistryImpl {
