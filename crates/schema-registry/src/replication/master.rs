@@ -33,8 +33,8 @@ pub async fn replicate_db_events(
             return;
         };
 
-        tokio_runtime
-            .enter(|| send_messages_to_kafka(producer.clone(), config.destination.clone(), event));
+        let _guard = tokio_runtime.enter();
+        send_messages_to_kafka(producer.clone(), config.destination.clone(), event);
     }
 }
 

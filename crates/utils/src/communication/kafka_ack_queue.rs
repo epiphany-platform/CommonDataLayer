@@ -81,11 +81,9 @@ impl KafkaPartitionAckQueue {
                 self.waiting_list
             );
             let mut partition_offsets = TopicPartitionList::new();
-            partition_offsets.add_partition_offset(
-                &self.topic,
-                self.partition,
-                Offset::Offset(offset),
-            );
+            partition_offsets
+                .add_partition_offset(&self.topic, self.partition, Offset::Offset(offset))
+                .ok();
             rdkafka::consumer::Consumer::store_offsets(consumer, &partition_offsets).unwrap();
         } else {
             trace!("Marking offset {} as processed", offset);

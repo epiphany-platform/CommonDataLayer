@@ -12,12 +12,6 @@ pub enum Error {
 
 impl Reject for Error {}
 
-impl From<Error> for Rejection {
-    fn from(error: Error) -> Rejection {
-        warp::reject::custom(error)
-    }
-}
-
 pub fn recover(rejection: Rejection) -> Result<impl warp::Reply, Rejection> {
     if let Some(error) = rejection.find::<Error>() {
         let message = match error {
