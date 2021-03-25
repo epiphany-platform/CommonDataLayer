@@ -44,7 +44,7 @@ pub struct View {
     /// Materializer's address
     pub materializer_addr: String,
     /// Fields definition encoded in JSON
-    pub fields: String,
+    pub fields: Json<Value>,
 }
 
 /// Input object which creates new schema and new definition. Each schema has to contain at least one definition, which can be later overriden.
@@ -70,7 +70,7 @@ pub struct NewView {
     /// Materializer's address
     pub materializer_addr: String,
     /// Fields definition encoded in JSON
-    pub fields: String,
+    pub fields: Json<Value>,
 }
 
 /// Input object which creates new version of existing schema.
@@ -104,5 +104,5 @@ pub struct UpdateView {
     /// Materializer's address
     pub materializer_addr: Option<String>,
     /// Fields definition encoded in JSON
-    pub fields: Option<String>,
+    pub fields: Option<Json<Value>>,
 }

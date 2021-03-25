@@ -23,7 +23,7 @@ pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Vi
         id,
         name: view.name,
         materializer_addr: view.materializer_addr,
-        fields: view.fields,
+        fields: serde_json::from_str(&view.fields)?,
     })
 }
 

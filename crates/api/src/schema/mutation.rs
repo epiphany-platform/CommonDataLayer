@@ -96,7 +96,7 @@ impl MutationRoot {
                     view_id: "".into(),
                     name,
                     materializer_addr,
-                    fields,
+                    fields: serde_json::to_string(&fields)?,
                 })
                 .await
                 .map_err(rpc::error::registry_error)?
@@ -134,7 +134,11 @@ impl MutationRoot {
                 id: id.to_string(),
                 name: name.clone(),
                 materializer_addr: materializer_addr.clone(),
-                fields: fields.clone(),
+                fields: if let Some(f) = fields.as_ref() {
+                    Some(serde_json::to_string(f)?)
+                } else {
+                    None
+                },
             })
             .await
             .map_err(rpc::error::registry_error)?;

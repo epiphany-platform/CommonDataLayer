@@ -127,7 +127,8 @@ impl Schema {
                         id: id.parse()?,
                         name: view.name,
                         materializer_addr: view.materializer_addr,
-                        fields: view.fields,
+                        fields: serde_json::from_str(&view.fields)
+                            .map_err(Error::ViewFieldError)?,
                     })
                 })
                 .collect::<Result<_>>()?;

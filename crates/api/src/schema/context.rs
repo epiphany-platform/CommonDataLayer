@@ -62,7 +62,11 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
         rpc::schema_registry::connect(self.address.clone()).await
     }
 
-    async fn is_valid(&self, _conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
+    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
+        conn.heartbeat(rpc::schema_registry::Empty {})
+            .await
+            .map_err(rpc::error::registry_error)?;
+
         Ok(())
     }
 
