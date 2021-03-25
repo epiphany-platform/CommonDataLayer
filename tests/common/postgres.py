@@ -69,8 +69,8 @@ def clear_relations(config: PostgresConfig):
     db = connect_to_postgres(config)
     curr = db.cursor()
 
-    curr.execute('DELETE FROM cdl.relations')
     curr.execute('DELETE FROM cdl.edges')
+    curr.execute('DELETE FROM cdl.relations')
 
     db.commit()
     curr.close()

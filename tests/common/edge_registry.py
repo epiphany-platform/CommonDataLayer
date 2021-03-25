@@ -6,7 +6,7 @@ from tests.common.kafka import KafkaInputConfig
 from tests.common.postgres import PostgresConfig
 
 
-EXE = os.getenv('EDGE_REGISTRY_EXE') or 'query-service'
+EXE = os.getenv('EDGE_REGISTRY_EXE') or 'edge-registry'
 
 
 class EdgeRegistry:

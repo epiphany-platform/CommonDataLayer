@@ -9,6 +9,7 @@ export QUERY_ROUTER_EXE="../target/debug/query-router"
 export SCHEMA_REGISTRY_EXE="../target/debug/schema-registry"
 export QUERY_SERVICE_EXE="../target/debug/query-service"
 export QUERY_SERVICE_TS_EXE="../target/debug/query-service-ts"
+export EDGE_REGISTRY_EXE="../target/debug/edge-registry"
 
 echo "pip3 install -r '../requirements.txt'"
 pip3 install -r "../requirements.txt"

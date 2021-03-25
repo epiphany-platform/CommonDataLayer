@@ -105,7 +105,7 @@ impl EdgeRegistryImpl {
         &self,
         relation_id: &Uuid,
         parent_schema_id: &Uuid,
-    ) -> anyhow::Result<impl Iterator<Item = Uuid>> {
+    ) -> anyhow::Result<Option<Uuid>> {
         counter!("cdl.edge-registry.get-relation", 1);
 
         let conn = self.connect().await?;
@@ -115,7 +115,7 @@ impl EdgeRegistryImpl {
                 &[&relation_id, &parent_schema_id],
             )
             .await?
-            .into_iter()
+            .first()
             .map(|row| row.get::<_, Uuid>(0)))
     }
 
@@ -265,13 +265,13 @@ impl EdgeRegistry for EdgeRegistryImpl {
         let parent_schema_id = Uuid::from_str(&request.parent_schema_id)
             .map_err(|_| Status::invalid_argument("parent_schema_id"))?;
 
-        let rows = self
+        let child_schema_id = self
             .get_relation_impl(&relation_id, &parent_schema_id)
             .await
             .map_err(|err| db_communication_error("get_relation", err))?;
 
         Ok(Response::new(RelationResponse {
-            child_schema_ids: rows.map(|item| item.to_string()).collect(),
+            child_schema_id: child_schema_id.map(|id| id.to_string()),
         }))
     }
 
