@@ -2191,6 +2191,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d3b63360ec3cb337817c2dbd47ab4a0f170d285d8e5a2064600f3def1402397"
 
 [[package]]
+name = "object-builder"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures",
+ "rpc",
+ "serde",
+ "serde_json",
+ "structopt",
+ "thiserror",
+ "tokio 0.2.24",
+ "tonic",
+ "tracing",
+ "tracing-futures",
+ "utils",
+ "uuid",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"

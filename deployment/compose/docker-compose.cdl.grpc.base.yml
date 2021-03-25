@@ -64,6 +64,23 @@ services:
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       RUST_LOG: info,query_router=trace
 
+  object_builder:
+    image: cdl-object-builder:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=object-builder
+        - ENV=DEV
+    command: "/bin/object-builder"
+    ports:
+      - "50107:50107"
+    environment:
+      COMMUNICATION_METHOD: "grpc"
+      GRPC_PORT: "50107"
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      RUST_LOG: info,object_builder=trace
+
   web_api:
     image: cdl-api:latest
     command: "/bin/api"

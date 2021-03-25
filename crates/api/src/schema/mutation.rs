@@ -23,7 +23,7 @@ impl Mutation {
             let NewSchema {
                 name,
                 query_address,
-                topic,
+                insert_destination,
                 definition,
                 schema_type,
             } = new;
@@ -35,7 +35,7 @@ impl Mutation {
                     id: "".into(),
                     name: name.clone(),
                     query_address: query_address.clone(),
-                    topic: topic.clone(),
+                    insert_destination: insert_destination.clone(),
                     definition,
                     schema_type: rpc_schema_type,
                 })
@@ -48,7 +48,7 @@ impl Mutation {
             Ok(Schema {
                 id,
                 name,
-                topic,
+                insert_destination,
                 query_address,
                 schema_type,
             })
@@ -159,7 +159,7 @@ impl Mutation {
             let UpdateSchema {
                 name,
                 query_address: address,
-                topic,
+                insert_destination,
                 schema_type,
             } = update;
 
@@ -167,7 +167,7 @@ impl Mutation {
                 id: id.to_string(),
                 name,
                 address,
-                topic,
+                insert_destination,
                 schema_type: schema_type.and_then(|s| s.to_i32()),
             })
             .await

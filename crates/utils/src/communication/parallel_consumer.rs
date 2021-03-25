@@ -104,16 +104,24 @@ impl ParallelCommonConsumer {
                 )
                 .await
             }
-            ParallelCommonConsumerConfig::Grpc { addr } => Ok(Self::Grpc { addr }),
+            ParallelCommonConsumerConfig::Grpc { addr } => Self::new_grpc(addr),
         }
     }
 
+    #[tracing::instrument]
+    fn new_grpc(addr: SocketAddrV4) -> Result<Self> {
+        tracing::debug!("Creating GRPC parallel consumer");
+        Ok(Self::Grpc { addr })
+    }
+
+    #[tracing::instrument]
     async fn new_kafka(
         group_id: &str,
         brokers: &str,
         topics: &[&str],
         task_limiter: TaskLimiter,
     ) -> Result<Self> {
+        tracing::debug!("Creating kafka parallel consumer");
         let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
             .set("group.id", &group_id)
             .set("bootstrap.servers", &brokers)
@@ -135,6 +143,7 @@ impl ParallelCommonConsumer {
         })
     }
 
+    #[tracing::instrument]
     async fn new_amqp(
         connection_string: &str,
         consumer_tag: &str,
@@ -142,6 +151,7 @@ impl ParallelCommonConsumer {
         consume_options: Option<BasicConsumeOptions>,
         task_limiter: TaskLimiter,
     ) -> Result<Self> {
+        tracing::debug!("Creating AMQP parallel consumer");
         let consume_options = consume_options.unwrap_or_default();
         let connection = lapin::Connection::connect(
             connection_string,

@@ -297,11 +297,12 @@ async fn route(
         timestamp: current_timestamp(),
         data: event.data,
     };
-    let topic_name = get_schema_topic(&cache, payload.schema_id, &schema_registry_addr).await?;
+    let insert_destination =
+        get_schema_insert_destination(&cache, payload.schema_id, &schema_registry_addr).await?;
 
     send_message(
         producer,
-        &topic_name,
+        &insert_destination,
         message_key,
         serde_json::to_vec(&payload)?,
     )
@@ -309,7 +310,7 @@ async fn route(
     Ok(())
 }
 
-async fn get_schema_topic(
+async fn get_schema_insert_destination(
     cache: &Mutex<LruCache<Uuid, String>>,
     schema_id: Uuid,
     schema_addr: &str,
@@ -320,20 +321,23 @@ async fn get_schema_topic(
         .get_mut(&schema_id)
         .cloned();
     if let Some(val) = recv_channel {
-        trace!("Retrieved topic for {} from cache", schema_id);
+        trace!("Retrieved insert destination for {} from cache", schema_id);
         return Ok(val);
     }
 
     let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
     let channel = client
-        .get_schema_topic(Id {
+        .get_schema_insert_destination(Id {
             id: schema_id.to_string(),
         })
         .await?
         .into_inner()
-        .topic;
+        .insert_destination;
 
-    trace!("Retrieved topic for {} from schema registry", schema_id);
+    trace!(
+        "Retrieved insert destination for {} from schema registry",
+        schema_id
+    );
     cache
         .lock()
         .unwrap_or_else(abort_on_poison)
@@ -342,14 +346,21 @@ async fn get_schema_topic(
     Ok(channel)
 }
 
-async fn send_message(producer: &CommonPublisher, topic_name: &str, key: &str, payload: Vec<u8>) {
+async fn send_message(
+    producer: &CommonPublisher,
+    insert_destination: &str,
+    key: &str,
+    payload: Vec<u8>,
+) {
     let payload_len = payload.len();
-    let delivery_status = producer.publish_message(&topic_name, key, payload).await;
+    let delivery_status = producer
+        .publish_message(&insert_destination, key, payload)
+        .await;
 
     if delivery_status.is_err() {
         error!(
-            "Fatal error, delivery status for message not received.  Topic: `{}`, Key: `{}`, Payload len: `{}`, {:?}",
-            topic_name, key, payload_len, delivery_status
+            "Fatal error, delivery status for message not received.  Insert destination: `{}`, Key: `{}`, Payload len: `{}`, {:?}",
+            insert_destination, key, payload_len, delivery_status
         );
         process::abort();
     };

@@ -19,8 +19,8 @@ pub enum RegistryError {
     DbError(indradb::Error),
     #[error("Unable to connect to sled database: {0}")]
     ConnectionError(indradb::Error),
-    #[error("No topic found named \"{0}\"")]
-    NoTopic(String),
+    #[error("No insert destination found named \"{0}\"")]
+    NoInsertDestination(String),
     #[error("{0}")]
     MQError(String),
     #[error("Given schema was invalid")]
@@ -68,7 +68,7 @@ impl From<utils::communication::Error> for RegistryError {
 impl From<RegistryError> for Status {
     fn from(error: RegistryError) -> Status {
         match error {
-            RegistryError::NoTopic(_)
+            RegistryError::NoInsertDestination(_)
             | RegistryError::NoSchemaWithId(_)
             | RegistryError::NoViewWithId(_)
             | RegistryError::NoFieldWithId(_) => Status::not_found(error.to_string()),

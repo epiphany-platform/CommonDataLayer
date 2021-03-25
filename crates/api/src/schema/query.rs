@@ -26,9 +26,9 @@ impl Schema {
         &self.name
     }
 
-    /// Message queue topic to which data is inserted by data-router.
-    fn topic(&self) -> &str {
-        &self.topic
+    /// Message queue insert_destination to which data is inserted by data-router.
+    fn insert_destination(&self) -> &str {
+        &self.insert_destination
     }
 
     /// Address of the query service responsible for retrieving data from DB
@@ -169,7 +169,7 @@ impl Query {
                     Ok(Schema {
                         id: schema_id.parse()?,
                         name: schema.name,
-                        topic: schema.topic,
+                        insert_destination: schema.insert_destination,
                         query_address: schema.query_address,
                         schema_type: SchemaType::from_i32(schema.schema_type)
                             .ok_or(Error::InvalidSchemaType(schema.schema_type))?,

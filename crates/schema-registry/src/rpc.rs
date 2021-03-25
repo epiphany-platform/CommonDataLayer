@@ -12,8 +12,8 @@ use anyhow::Context;
 use indradb::SledDatastore;
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, NewSchemaView, PodName, Schema,
-    SchemaMetadataUpdate, SchemaNames, SchemaQueryAddress, SchemaTopic, SchemaVersions,
-    SchemaViews, Schemas, UpdatedView, ValueToValidate, VersionedId,
+    SchemaInsertDestination, SchemaMetadataUpdate, SchemaNames, SchemaQueryAddress, SchemaVersions,
+    SchemaViews, Schemas, UpdatedView, ValueToValidate, VersionedId, ViewSchema,
 };
 use semver::Version;
 use semver::VersionReq;
@@ -102,6 +102,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<rpc::schema_registry::NewSchema>,
     ) -> Result<Response<Id>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let schema_id = parse_optional_uuid(&request.id)?;
         let schema_type = request.schema_type().into();
@@ -110,7 +111,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
             name: request.name,
             definition: parse_json(&request.definition)?,
             query_address: request.query_address,
-            insert_destination: request.topic,
+            insert_destination: request.insert_destination,
             schema_type,
         };
 
@@ -120,7 +121,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
             .await
             .map_err(RegistryError::from)?
         {
-            return Err(RegistryError::NoTopic(new_schema.insert_destination).into());
+            return Err(RegistryError::NoInsertDestination(new_schema.insert_destination).into());
         }
 
         let new_id = self.db.add_schema(new_schema.clone(), schema_id)?;
@@ -139,6 +140,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<rpc::schema_registry::NewSchemaVersion>,
     ) -> Result<Response<Empty>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let new_version = NewSchemaVersion {
@@ -161,25 +163,27 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<SchemaMetadataUpdate>,
     ) -> Result<Response<Empty>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
 
-        if let Some(destination) = request.topic.as_ref() {
+        if let Some(destination) = request.insert_destination.as_ref() {
             if !self
                 .mq_metadata
                 .destination_exists(&destination)
                 .await
                 .map_err(RegistryError::from)?
             {
-                return Err(RegistryError::NoTopic(destination.clone()).into());
+                return Err(RegistryError::NoInsertDestination(destination.clone()).into());
             }
         }
 
         if let Some(name) = request.name.as_ref() {
             self.db.update_schema_name(schema_id, name.clone())?;
         }
-        if let Some(topic) = request.topic.as_ref() {
-            self.db.update_schema_topic(schema_id, topic.clone())?;
+        if let Some(insert_destination) = request.insert_destination.as_ref() {
+            self.db
+                .update_schema_insert_destination(schema_id, insert_destination.clone())?;
         }
         if let Some(address) = request.address.as_ref() {
             self.db
@@ -198,7 +202,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         self.replicate_message(ReplicationEvent::UpdateSchemaMetadata {
             id: schema_id,
             name: request.name,
-            topic: request.topic,
+            insert_destination: request.insert_destination,
             query_address: request.address,
             schema_type: None,
         });
@@ -211,6 +215,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<NewSchemaView>,
     ) -> Result<Response<Id>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.schema_id)?;
         let replicated_view_id = parse_optional_uuid(&request.view_id)?;
@@ -239,6 +244,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<UpdatedView>,
     ) -> Result<Response<rpc::schema_registry::View>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let view_id = parse_uuid(&request.id)?;
         let fields = request
@@ -267,6 +273,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<VersionedId>,
     ) -> Result<Response<rpc::schema_registry::SchemaDefinition>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let id = VersionedUuid::new(
             parse_uuid(&request.id)?,
@@ -282,13 +289,14 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
     #[tracing::instrument(skip(self))]
     async fn get_schema_metadata(&self, request: Request<Id>) -> Result<Response<Schema>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let schema = self.db.get_schema(schema_id)?;
 
         let schema = Schema {
             name: schema.name,
-            topic: schema.insert_destination,
+            insert_destination: schema.insert_destination,
             query_address: schema.query_address,
             schema_type: schema.schema_type as i32,
         };
@@ -297,15 +305,18 @@ impl SchemaRegistry for SchemaRegistryImpl {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn get_schema_topic(
+    async fn get_schema_insert_destination(
         &self,
         request: Request<Id>,
-    ) -> Result<Response<SchemaTopic>, Status> {
+    ) -> Result<Response<SchemaInsertDestination>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
-        let topic = self.db.get_schema_topic(schema_id)?;
+        let insert_destination = self.db.get_schema_insert_destination(schema_id)?;
 
-        Ok(Response::new(SchemaTopic { topic }))
+        Ok(Response::new(SchemaInsertDestination {
+            insert_destination,
+        }))
     }
 
     #[tracing::instrument(skip(self))]
@@ -313,6 +324,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<SchemaQueryAddress>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let address = self.db.get_schema_query_address(schema_id)?;
@@ -325,6 +337,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<SchemaVersions>, Status> {
+        tracing::trace!("Enter");
         let schema_id = parse_uuid(&request.into_inner().id)?;
         let all_versions = self.db.get_schema_versions(schema_id)?;
         let versions = all_versions
@@ -340,6 +353,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::SchemaType>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let schema_type = self.db.get_schema_type(schema_id)? as i32;
@@ -354,6 +368,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::View>, Status> {
+        tracing::trace!("Enter");
         let view_id = parse_uuid(&request.into_inner().id)?;
         let view = self.db.get_view(view_id)?;
 
@@ -366,7 +381,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
     #[tracing::instrument(skip(self))]
     async fn get_all_schemas(&self, _request: Request<Empty>) -> Result<Response<Schemas>, Status> {
-        tracing::debug!("HERE");
+        tracing::trace!("Enter");
         let schemas = self.db.get_all_schemas()?;
 
         Ok(Response::new(Schemas {
@@ -377,7 +392,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
                         schema_id.to_string(),
                         Schema {
                             name: schema.name,
-                            topic: schema.insert_destination,
+                            insert_destination: schema.insert_destination,
                             query_address: schema.query_address,
                             schema_type: schema.schema_type as i32,
                         },
@@ -392,6 +407,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         _request: Request<Empty>,
     ) -> Result<Response<SchemaNames>, Status> {
+        tracing::trace!("Enter");
         let names = self.db.get_all_schema_names()?;
 
         Ok(Response::new(SchemaNames {
@@ -403,10 +419,31 @@ impl SchemaRegistry for SchemaRegistryImpl {
     }
 
     #[tracing::instrument(skip(self))]
+    async fn get_base_schema_of_view(
+        &self,
+        request: Request<Id>,
+    ) -> Result<Response<ViewSchema>, Status> {
+        tracing::trace!("Enter");
+        let view_id = parse_uuid(&request.into_inner().id)?;
+        let (base_schema_id, base_schema) = self.db.get_base_schema_of_view(view_id)?;
+
+        Ok(Response::new(ViewSchema {
+            schema_id: base_schema_id.to_string(),
+            schema: Schema {
+                name: base_schema.name,
+                query_address: base_schema.query_address,
+                schema_type: base_schema.schema_type as i32,
+                insert_destination: base_schema.insert_destination,
+            },
+        }))
+    }
+
+    #[tracing::instrument(skip(self))]
     async fn get_all_views_of_schema(
         &self,
         request: Request<Id>,
     ) -> Result<Response<SchemaViews>, Status> {
+        tracing::trace!("Enter");
         let schema_id = parse_uuid(&request.into_inner().id)?;
         let views = self.db.get_all_views_of_schema(schema_id)?;
 
@@ -432,6 +469,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<ValueToValidate>,
     ) -> Result<Response<Errors>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.schema_id)?;
         let json = parse_json(&request.value)?;
@@ -454,6 +492,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         _request: Request<Empty>,
     ) -> Result<Response<PodName>, Status> {
+        tracing::trace!("Enter");
         if let Some(replication) = self.replication.as_ref() {
             replication
                 .lock()
@@ -468,6 +507,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
     #[tracing::instrument(skip(self))]
     async fn heartbeat(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
+        tracing::trace!("Enter");
         //empty
         Ok(Response::new(Empty {}))
     }

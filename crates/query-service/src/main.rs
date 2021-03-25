@@ -5,7 +5,7 @@ use structopt::StructOpt;
 use tonic::transport::Server;
 use utils::metrics;
 
-#[derive(StructOpt)]
+#[derive(StructOpt, Debug)]
 pub struct Config {
     #[structopt(subcommand)]
     pub inner: ConfigType,
@@ -17,7 +17,7 @@ pub struct Config {
     pub metrics_port: u16,
 }
 
-#[derive(StructOpt)]
+#[derive(StructOpt, Debug)]
 pub enum ConfigType {
     Postgres(query_service::psql::PsqlConfig),
 }
@@ -38,6 +38,8 @@ async fn main() -> anyhow::Result<()> {
     utils::tracing::init();
 
     let config: Config = Config::from_args();
+
+    tracing::debug!(?config, "Config");
 
     metrics::serve(config.metrics_port);
 

@@ -85,15 +85,15 @@ async fn consume_message(
         ReplicationEvent::UpdateSchemaMetadata {
             id,
             name,
-            topic,
+            insert_destination,
             query_address,
             schema_type,
         } => {
             if let Some(name) = name {
                 db.update_schema_name(id, name)?;
             }
-            if let Some(topic) = topic {
-                db.update_schema_topic(id, topic)?;
+            if let Some(insert_destination) = insert_destination {
+                db.update_schema_insert_destination(id, insert_destination)?;
             }
             if let Some(query_address) = query_address {
                 db.update_schema_query_address(id, query_address)?;
