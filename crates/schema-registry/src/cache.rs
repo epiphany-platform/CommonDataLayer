@@ -6,7 +6,7 @@ use tokio::sync::oneshot;
 use uuid::Uuid;
 
 use crate::error::{CacheError, CacheResult};
-use crate::types::Schema;
+use crate::types::schema::Schema;
 
 #[derive(Clone)]
 pub struct SchemaCache {

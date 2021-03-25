@@ -20,7 +20,7 @@ pub mod types {
     use tonic::Status;
 
     #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, sqlx::Type)]
-    #[sqlx(type_name = "schema_type", rename_all = "lowercase")]
+    #[sqlx(type_name = "schema_type_enum", rename_all = "lowercase")]
     pub enum SchemaType {
         DocumentStorage,
         Timeseries,

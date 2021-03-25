@@ -1,13 +1,27 @@
 -- add migration script here
 
-CREATE TYPE schema_type AS ENUM ('document_storage', 'timeseries');
+CREATE TYPE schema_type_enum AS ENUM ('document_storage', 'timeseries');
 
 CREATE TABLE schemas (
     id                 uuid primary key not null,
     name               varchar not null,
-    type               schema_type not null,
+    schema_type        schema_type_enum not null,
     insert_destination varchar not null,
     query_address      varchar not null
+);
+
+CREATE TABLE views (
+    id                   uuid primary key not null,
+    name                 varchar not null,
+    materializer_address varchar not null,
+    fields               json not null,
+    schema               uuid not null,
+
+    CONSTRAINT fk_schema_1
+        FOREIGN KEY(schema)
+        REFERENCES schemas(id) 
+        ON UPDATE CASCADE
+        ON DELETE CASCADE
 );
 
 CREATE TABLE definitions (
@@ -16,9 +30,10 @@ CREATE TABLE definitions (
     schema     uuid not null,
 
     PRIMARY KEY(schema, version),
-    CONSTRAINT fk_schema_1
+    CONSTRAINT fk_schema_2
         FOREIGN KEY(schema)
         REFERENCES schemas(id) 
+        ON UPDATE CASCADE
         ON DELETE CASCADE
 );
 
@@ -39,3 +54,8 @@ CREATE TRIGGER notify_schema_updated
     AFTER UPDATE ON schemas
     FOR EACH ROW
     EXECUTE PROCEDURE notify_row_updated('schemas');
+
+CREATE TRIGGER notify_view_updated
+    AFTER UPDATE ON views
+    FOR EACH ROW
+    EXECUTE PROCEDURE notify_row_updated('views');

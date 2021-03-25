@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
 
+use crate::types::view::View;
 use rpc::schema_registry::types::SchemaType;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -11,7 +14,8 @@ pub struct Schema {
     pub name: String,
     pub insert_destination: String,
     pub query_address: String,
-    pub r#type: SchemaType,
+    #[serde(rename = "type")]
+    pub schema_type: SchemaType,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -19,7 +23,8 @@ pub struct NewSchema {
     pub name: String,
     pub insert_destination: String,
     pub query_address: String,
-    pub r#type: SchemaType,
+    #[serde(rename = "type")]
+    pub schema_type: SchemaType,
     pub definition: Value,
 }
 
@@ -28,20 +33,23 @@ pub struct SchemaUpdate {
     pub name: Option<String>,
     pub insert_destination: Option<String>,
     pub query_address: Option<String>,
-    pub r#type: Option<SchemaType>,
+    #[serde(rename = "type")]
+    pub schema_type: Option<SchemaType>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct SchemaWithDefinitions {
+pub struct FullSchema {
     pub id: Uuid,
     pub name: String,
     pub insert_destination: String,
     pub query_address: String,
-    pub r#type: SchemaType,
+    #[serde(rename = "type")]
+    pub schema_type: SchemaType,
     pub definitions: Vec<SchemaDefinition>,
+    pub views: HashMap<Uuid, View>,
 }
 
-impl SchemaWithDefinitions {
+impl FullSchema {
     pub fn definition(&self, version: VersionReq) -> Option<&SchemaDefinition> {
         self.definitions
             .iter()
@@ -54,35 +62,4 @@ impl SchemaWithDefinitions {
 pub struct SchemaDefinition {
     pub version: Version,
     pub definition: Value,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct VersionedUuid {
-    pub id: Uuid,
-    pub version_req: VersionReq,
-}
-
-impl VersionedUuid {
-    pub fn new(id: Uuid, version_req: VersionReq) -> Self {
-        Self { id, version_req }
-    }
-
-    pub fn exact(id: Uuid, version: Version) -> Self {
-        Self {
-            id,
-            version_req: VersionReq::exact(&version),
-        }
-    }
-
-    pub fn any(id: Uuid) -> Self {
-        Self {
-            id,
-            version_req: VersionReq::any(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct DbExport {
-    pub schemas: Vec<SchemaWithDefinitions>,
 }

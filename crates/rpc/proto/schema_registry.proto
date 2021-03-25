@@ -6,12 +6,16 @@ service SchemaRegistry {
     rpc AddSchema (NewSchema) returns (Id);
     rpc AddSchemaVersion (NewSchemaVersion) returns (Empty);
     rpc UpdateSchema (SchemaMetadataUpdate) returns (Empty);
+    rpc AddViewToSchema (NewView) returns (Id);
+    rpc UpdateView (ViewUpdate) returns (Empty);
     rpc GetSchemaMetadata (Id) returns (SchemaMetadata);
     rpc GetSchemaVersions (Id) returns (SchemaVersions);
     rpc GetSchemaDefinition (VersionedId) returns (SchemaDefinition);
-    rpc GetSchemaWithDefinitions (Id) returns (SchemaWithDefinitions);
+    rpc GetFullSchema (Id) returns (FullSchema);
+    rpc GetView (Id) returns (View);
     rpc GetAllSchemas (Empty) returns (Schemas);
-    rpc GetAllSchemasWithDefinitions (Empty) returns (SchemasWithDefinitions);
+    rpc GetAllFullSchemas (Empty) returns (FullSchemas);
+    rpc GetAllViewsOfSchema (Id) returns (SchemaViews);
     rpc ValidateValue (ValueToValidate) returns (Errors);
     rpc WatchAllSchemaUpdates (Empty) returns (stream Schema);
 }
@@ -40,10 +44,33 @@ message Schema {
     required SchemaMetadata metadata = 2;
 }
 
-message SchemaWithDefinitions {
+message View {
+    required string id = 1;
+    required string name = 2;
+    required string materializer_address = 3;
+    map<string, string> fields = 4;
+}
+
+message NewView {
+    required string schema_id = 1;
+    required string name = 2;
+    required string materializer_address = 3;
+    map<string, string> fields = 4;
+}
+
+message ViewUpdate {
+    required string id = 1;
+    optional string name = 2;
+    optional string materializer_address = 3;
+    map<string, string> fields = 4;
+    required bool update_fields = 5;
+}
+
+message FullSchema {
     required string id = 1;
     required SchemaMetadata metadata = 2;
     repeated SchemaDefinition definitions = 3;
+    map<string, string> fields = 4;
 }
 
 message NewSchemaVersion {
@@ -78,8 +105,12 @@ message Schemas {
     repeated Schema schemas = 1;
 }
 
-message SchemasWithDefinitions {
-    repeated SchemaWithDefinitions schemas = 1;
+message FullSchemas {
+    repeated FullSchema schemas = 1;
+}
+
+message SchemaViews {
+    repeated View views = 1;
 }
 
 message ValueToValidate {
