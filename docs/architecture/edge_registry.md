@@ -11,7 +11,7 @@ There are two methods of communicating with `ER` - gRPC and MessageQueue (Rabbit
 #### gRPC communication
 
 GRPC communication allows to access whole feature set of `ER` and is required for querying.
-List of available commands can be found in registry's [proto file](../../crates/rpc/proto/edge_registry.proto).
+List of available commands can be found in registry's [proto file](https://github.com/epiphany-platform/CommonDataLayer/tree/develop/crates/rpc/proto).
 
 #### Message queue communication
 
