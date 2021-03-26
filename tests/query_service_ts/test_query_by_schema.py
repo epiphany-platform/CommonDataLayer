@@ -9,7 +9,9 @@ from tests.rpc.proto import query_service_ts_pb2_grpc
 from tests.rpc.proto.query_service_ts_pb2 import SchemaId
 
 
-@pytest.fixture(params=["schema/single", "schema/non_existing", "schema/invalid_schema_id"])
+@pytest.fixture(params=[
+    "schema/single", "schema/non_existing", "schema/invalid_schema_id"
+])
 def prepare(request):
     data, expected = load_case(request.param, 'query_service_ts')
 

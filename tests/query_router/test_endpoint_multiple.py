@@ -11,7 +11,10 @@ DB_NAME = 'query-router'
 TOPIC = 'qr.test.multiple'
 
 
-@pytest.fixture(params=['multiple/non_existing', 'multiple/single_schema', 'multiple/multiple_schemas'])
+@pytest.fixture(params=[
+    'multiple/non_existing', 'multiple/single_schema',
+    'multiple/multiple_schemas'
+])
 def prepare(request, tmp_path):
     data, expected = load_case(request.param, 'query_router')
 
@@ -29,7 +32,8 @@ def prepare(request, tmp_path):
     qs.start()
     sr.start()
 
-    schema_id = sr.create_schema('test', kafka_input_config.topic, f'http://localhost:{qs.input_port}', '{}', 0)
+    schema_id = sr.create_schema('test', kafka_input_config.topic,
+                                 f'http://localhost:{qs.input_port}', '{}', 0)
 
     with QueryRouter(f'http://localhost:{sr.input_port}') as qr:
         yield data, expected, qr, schema_id

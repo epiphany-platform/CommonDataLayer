@@ -32,7 +32,8 @@ def prepare_postgres(tmp_path):
     qs.start()
     sr.start()
 
-    schema_id = sr.create_schema('test', kafka_input_config.topic, f'http://localhost:{qs.input_port}', '{}', 0)
+    schema_id = sr.create_schema('test', kafka_input_config.topic,
+                                 f'http://localhost:{qs.input_port}', '{}', 0)
 
     with QueryRouter(f'http://localhost:{sr.input_port}') as qr:
         yield data, expected, qr, schema_id
@@ -62,7 +63,8 @@ def prepare_victoria_metrics(tmp_path):
     qs.start()
     sr.start()
 
-    schema_id = sr.create_schema('test', kafka_input_config.topic, f'http://localhost:{qs.input_port}', '{}', 1)
+    schema_id = sr.create_schema('test', kafka_input_config.topic,
+                                 f'http://localhost:{qs.input_port}', '{}', 1)
 
     with QueryRouter(f'http://localhost:{sr.input_port}') as qr:
         yield data, expected, qr, schema_id
@@ -77,12 +79,9 @@ def prepare_victoria_metrics(tmp_path):
 def test_endpoint_raw_document_storage(prepare_postgres):
     data, expected, qr, schema_id = prepare_postgres
 
-    req_body = {
-        "raw_statement": f"SELECT '{data['query_for']}'"
-    }
+    req_body = {"raw_statement": f"SELECT '{data['query_for']}'"}
 
-    response = qr.query_get_raw(
-        schema_id, json.dumps(req_body))
+    response = qr.query_get_raw(schema_id, json.dumps(req_body))
 
     assert_json(response.json(), expected)
 
@@ -91,11 +90,11 @@ def test_endpoint_raw_timeseries(prepare_victoria_metrics):
     data, expected, qr, schema_id = prepare_victoria_metrics
 
     req_body = {
-        "raw_statement": f"{{\"method\": \"{str(data['method'])}\", \"endpoint\": \"{str(data['endpoint'])}\", "
-                         f"\"queries\": [[\"{str(data['queries'][0][0])}\", \"{str(data['queries'][0][1])}\"]] }}"
+        "raw_statement":
+        f"{{\"method\": \"{str(data['method'])}\", \"endpoint\": \"{str(data['endpoint'])}\", "
+        f"\"queries\": [[\"{str(data['queries'][0][0])}\", \"{str(data['queries'][0][1])}\"]] }}"
     }
 
-    response = qr.query_get_raw(
-        schema_id, json.dumps(req_body))
+    response = qr.query_get_raw(schema_id, json.dumps(req_body))
 
     assert response.json() == expected

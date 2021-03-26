@@ -9,6 +9,7 @@ from tests.common.schema_registry import SchemaRegistry
 
 TOPIC = 'qr.test.schema'
 
+
 @pytest.fixture
 def prepare(tmp_path):
     data, expected = load_case('schema/query_ds', 'query_router')
@@ -23,7 +24,8 @@ def prepare(tmp_path):
     # prepare environment
     sr.start()
 
-    schema_id = sr.create_schema('test', kafka_input_config.topic, f'http://localhost:{qs.input_port}', '{}', 0)
+    schema_id = sr.create_schema('test', kafka_input_config.topic,
+                                 f'http://localhost:{qs.input_port}', '{}', 0)
 
     clear_data(postgres_config)
 

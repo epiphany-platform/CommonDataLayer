@@ -36,7 +36,8 @@ def test_inserting(prepare):
     for entry in data:
         push_to_kafka(kafka_config, entry)
 
-    actual, err = retry_retrieve(lambda: fetch_data(postgres_config), len(expected))
+    actual, err = retry_retrieve(lambda: fetch_data(postgres_config),
+                                 len(expected))
 
     assert err is None
     assert actual == expected

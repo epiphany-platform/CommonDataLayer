@@ -7,7 +7,10 @@ EXE = os.getenv('COMMAND_SERVICE_EXE') or 'command-service'
 
 
 class CommandService:
-    def __init__(self, kafka_input_config, kafka_report_config=None, db_config=None):
+    def __init__(self,
+                 kafka_input_config,
+                 kafka_report_config=None,
+                 db_config=None):
         self.kafka_input_config = kafka_input_config
         self.kafka_report_config = kafka_report_config
         self.db_config = db_config

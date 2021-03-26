@@ -31,15 +31,16 @@ def delete_kafka_topic(config: KafkaInputConfig, topic):
     client.close()
 
 
-def push_to_kafka(kafka_config: KafkaInputConfig, data):
+def push_to_kafka(kafka_config: KafkaInputConfig, data, **kwargs):
     producer = KafkaProducer(bootstrap_servers=kafka_config.brokers)
 
-    producer.send(
-        kafka_config.topic,
-        json.dumps(data).encode(),
-        key=data['objectId'].encode(),
-        timestamp_ms=data['timestamp']
-    ).get()
+    object_id = (kwargs.get('key') or data['objectId']).encode()
+    timestamp = kwargs.get('timestamp') or data['timestamp']
+
+    producer.send(kafka_config.topic,
+                  json.dumps(data).encode(),
+                  key=object_id,
+                  timestamp_ms=timestamp).get()
 
     producer.flush()
     producer.close()

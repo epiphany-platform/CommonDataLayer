@@ -10,7 +10,8 @@ TOPIC = "cdl.testing.command-service.victoria-metrics"
 
 @pytest.fixture(params=['single_insert', 'multiple_inserts'])
 def prepare(request):
-    data, expected = load_case(request.param, "command_service/victoria_command")
+    data, expected = load_case(request.param,
+                               "command_service/victoria_command")
 
     topic = f'{TOPIC}.{request.param}'
 
@@ -36,7 +37,8 @@ def test_inserting(prepare):
     for entry in data:
         push_to_kafka(kafka_config, entry)
 
-    actual, err = retry_retrieve(lambda: fetch_data(victoria_metrics_config), len(expected))
+    actual, err = retry_retrieve(lambda: fetch_data(victoria_metrics_config),
+                                 len(expected))
 
     assert err is None
     assert_json(actual, expected)
