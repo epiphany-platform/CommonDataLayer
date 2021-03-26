@@ -4,90 +4,63 @@ pub mod events;
 pub mod schema;
 pub mod types;
 
-use std::sync::Arc;
+use std::convert::Infallible;
+
+use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
+use async_graphql::Schema;
+use async_graphql_warp::{graphql_subscription, Response};
+use structopt::StructOpt;
+use warp::{http::Response as HttpResponse, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
 
 use config::Config;
-use futures::FutureExt;
-use schema::context::Context;
-use structopt::StructOpt;
-use warp::{http::Response, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
-
-const SEC_WEBSOCKET_PROTOCOL_NAME: &str = "Sec-WebSocket-Protocol";
-const SEC_WEBSOCKET_PROTOCOL_VALUE: &str = "graphql-ws";
+use schema::context::{MQEvents, SchemaRegistryConnectionManager};
+use schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
 
 #[tokio::main]
 async fn main() {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config = Arc::new(Config::from_args());
+    let config = Config::from_args();
+    let input_port = config.input_port;
 
     let cors = warp::cors()
-        .allow_methods(&[Method::POST, Method::OPTIONS])
+        .allow_methods(&[Method::POST, Method::GET, Method::OPTIONS])
         .allow_headers(&[CONTENT_TYPE])
         .allow_any_origin();
 
-    let homepage = warp::path::end()
-        .map(|| {
-            Response::builder()
-                .header("content-type", "text/html")
-                .body(
-                "<html><h1>juniper_warp</h1><div>visit <a href=\"/graphiql\">/graphiql</a></html>"
-                    .to_string(),
-            )
+    let sr_pool = bb8::Pool::builder()
+        .build(SchemaRegistryConnectionManager {
+            address: config.schema_registry_addr.clone(),
         })
-        .with(cors.clone());
+        .await
+        .unwrap();
+    let schema = Schema::build(QueryRoot, MutationRoot, SubscriptionRoot)
+        .data(config)
+        .data(sr_pool)
+        .data(MQEvents {
+            events: Default::default(),
+        })
+        .finish();
 
-    let context = Context::new(config.clone());
+    let graphql_post = async_graphql_warp::graphql(schema.clone()).and_then(
+        |(schema, request): (
+            Schema<QueryRoot, MutationRoot, SubscriptionRoot>,
+            async_graphql::Request,
+        )| async move { Ok::<_, Infallible>(Response::from(schema.execute(request).await)) },
+    );
 
-    let state = warp::any().map({
-        let context = context.clone();
-        move || context.clone()
+    let graphql_playground = warp::path!("graphiql").and(warp::get()).map(|| {
+        HttpResponse::builder()
+            .header("content-type", "text/html")
+            .body(playground_source(
+                GraphQLPlaygroundConfig::new("/graphql").subscription_endpoint("/subscriptions"),
+            ))
     });
 
-    let graphql_filter = juniper_warp::make_graphql_filter(crate::schema::schema(), state.boxed())
-        .with(cors.clone());
-
-    let root_node = Arc::new(crate::schema::schema());
-
-    let subscriptions = warp::path("subscriptions")
-        .and(warp::ws())
-        .map({
-            let context = context.clone();
-            move |ws: warp::ws::Ws| {
-                let root_node = root_node.clone();
-                let context = context.clone();
-                ws.on_upgrade(move |websocket| async move {
-                    juniper_warp::subscriptions::serve_graphql_ws(
-                        websocket,
-                        root_node,
-                        juniper_graphql_ws::ConnectionConfig::new(context.clone()),
-                    )
-                    .map(|r| {
-                        if let Err(e) = r {
-                            tracing::error!("Websocket error: {}", e);
-                        }
-                    })
-                    .await
-                })
-            }
-        })
-        .map(|reply| {
-            warp::reply::with_header(
-                reply,
-                SEC_WEBSOCKET_PROTOCOL_NAME,
-                SEC_WEBSOCKET_PROTOCOL_VALUE,
-            )
-        });
-
-    warp::serve(
-        warp::get()
-            .and(warp::path("graphiql"))
-            .and(juniper_warp::graphiql_filter("/graphql", Some("/subscriptions")).with(cors))
-            .or(homepage)
-            .or(warp::path("graphql").and(graphql_filter))
-            .or(subscriptions),
-    )
-    .run(([0, 0, 0, 0], config.input_port))
-    .await
+    let routes = warp::path!("subscriptions")
+        .and(graphql_subscription(schema))
+        .or(graphql_playground)
+        .or(warp::path!("graphql").and(graphql_post).with(cors));
+    warp::serve(routes).run(([0, 0, 0, 0], input_port)).await;
 }

@@ -1,59 +1,36 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use anyhow::{Context as _, Result};
+use bb8::Pool;
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
 use tokio::sync::Mutex;
-use utils::communication::publisher::CommonPublisher;
 
-use crate::{
-    config::{CommunicationMethodConfig, Config},
-    events::EventStream,
-    events::EventSubscriber,
-};
+use crate::{config::Config, events::EventStream, events::EventSubscriber};
 
 #[derive(Clone)]
-pub struct Context {
-    config: Arc<Config>,
-    mq_events: Arc<Mutex<HashMap<String, EventSubscriber>>>,
+pub struct MQEvents {
+    pub events: Arc<Mutex<HashMap<String, EventSubscriber>>>,
 }
 
-impl juniper::Context for Context {}
-
-impl Context {
-    pub fn new(config: Arc<Config>) -> Self {
-        Context {
-            config,
-            mq_events: Default::default(),
-        }
-    }
-
-    pub fn config(&self) -> &Config {
-        &self.config
-    }
-
-    #[tracing::instrument(skip(self))]
-    pub async fn connect_to_registry(&self) -> Result<SchemaRegistryConn> {
-        tracing::debug!("Connecting to registry");
-        // TODO: Make proper connection pool
-        let new_conn =
-            rpc::schema_registry::connect(self.config.schema_registry_addr.clone()).await?;
-        Ok(new_conn)
-    }
-
-    pub async fn subscribe_on_communication_method(&self, topic: &str) -> Result<EventStream> {
+impl MQEvents {
+    pub async fn subscribe_on_communication_method(
+        &self,
+        topic: &str,
+        config: &Config,
+    ) -> anyhow::Result<EventStream> {
         tracing::debug!("subscribe on message queue: {}", topic);
-        let mut event_map = self.mq_events.lock().await;
+
+        let mut event_map = self.events.lock().await;
         match event_map.get(topic) {
             Some(subscriber) => {
                 let stream = subscriber.subscribe();
                 Ok(stream)
             }
             None => {
-                let kafka_events = self.mq_events.clone();
+                let kafka_events = self.events.clone();
                 let (subscriber, stream) = EventSubscriber::new(
-                    self.config.communication_method.config()?,
+                    config.communication_method.config()?,
                     topic,
                     move |topic| async move {
                         tracing::warn!("Message queue stream has closed");
@@ -68,24 +45,36 @@ impl Context {
             }
         }
     }
+}
 
-    pub async fn connect_to_cdl_input(&self) -> anyhow::Result<CommonPublisher> {
-        match self.config().communication_method.config()? {
-            CommunicationMethodConfig::Amqp {
-                connection_string, ..
-            } => CommonPublisher::new_amqp(&connection_string)
-                .await
-                .context("Unable to open RabbitMQ publisher for Ingestion Sink"),
-            CommunicationMethodConfig::Kafka { brokers, .. } => {
-                CommonPublisher::new_kafka(&brokers)
-                    .await
-                    .context("Unable to open Kafka publisher for Ingestion Sink")
-            }
-            CommunicationMethodConfig::Grpc => CommonPublisher::new_grpc("ingestion-sink")
-                .await
-                .context("Unable to create GRPC publisher for Ingestion Sink"),
-        }
+pub struct SchemaRegistryConnectionManager {
+    pub address: String,
+}
+
+#[async_trait::async_trait]
+impl bb8::ManageConnection for SchemaRegistryConnectionManager {
+    type Connection = SchemaRegistryConn;
+    type Error = rpc::error::ClientError;
+
+    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
+        tracing::debug!("Connecting to registry");
+
+        rpc::schema_registry::connect(self.address.clone()).await
+    }
+
+    async fn is_valid(&self, mut conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
+        conn.heartbeat(rpc::schema_registry::Empty {})
+            .await
+            .map_err(rpc::error::registry_error)?;
+
+        Ok(conn)
+    }
+
+    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
+        false
     }
 }
+
+pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
 
 pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;

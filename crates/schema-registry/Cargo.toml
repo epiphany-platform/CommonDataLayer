@@ -25,7 +25,7 @@ chrono      = "0.4"
 futures     = "0.3"
 indradb-lib = { git = "https://github.com/jespersm/indradb", branch = "sled", features = ["sled-datastore"] } # We use fork due to reported incompatibility of sled 0.34 with azure k8s. More testing needed before switching to official build.
 jmespatch   = "0.3"
-jsonschema  = "0.6"
+jsonschema  = { version = "0.6", default-features = false }
 lazy_static = "1.4"
 semver      = { version = "0.11", features = ["serde"] }
 serde       = { version = "1.0", features = ["derive"] }
