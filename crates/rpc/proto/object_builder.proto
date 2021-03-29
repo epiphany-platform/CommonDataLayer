@@ -1,0 +1,20 @@
+syntax = "proto2";
+package object_builder;
+
+service ObjectBuilder {
+  rpc Materialize(ViewId) returns (MaterializedView);
+}
+
+message ViewId {
+  required string view_id = 1;
+}
+
+message MaterializedView {
+  required string view_id = 1;
+  repeated RowDefinition rows = 2;
+}
+
+message RowDefinition {
+  required string object_id = 1;
+  map<string, bytes> fields = 2;
+}

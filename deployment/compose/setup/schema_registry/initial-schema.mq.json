@@ -1,0 +1,57 @@
+{
+    "schema_views": [
+        {
+            "view_id": "ec8cc976-412b-11eb-8000-000000000000",
+            "schema_id": "2cfad3c7-411a-11eb-8000-000000000000"
+        }
+    ],
+    "schema_definitions": [
+        {
+            "version": "1.0.0",
+            "definition_id": "2cfad4e7-411a-11eb-8001-000000000000",
+            "schema_id": "2cfad3c7-411a-11eb-8000-000000000000"
+        },
+        {
+            "version": "1.0.0",
+            "definition_id": "a5e0c96b-412c-11eb-8001-000000000000",
+            "schema_id": "a5e0c7e2-412c-11eb-8000-000000000000"
+        }
+    ],
+    "views": {
+        "ec8cc976-412b-11eb-8000-000000000000": {
+            "materializer_addr": "http://materializer:1234",
+            "name": "new view",
+            "fields": {
+              "foo": {
+                "field_name": "a"
+              }
+            }
+        }
+    },
+    "definitions": {
+        "a5e0c96b-412c-11eb-8001-000000000000": {
+            "definition": {
+                "b": "string"
+            }
+        },
+        "2cfad4e7-411a-11eb-8001-000000000000": {
+            "definition": {
+                "a": "number"
+            }
+        }
+    },
+    "schemas": {
+        "2cfad3c7-411a-11eb-8000-000000000000": {
+            "schema_type": "DocumentStorage",
+            "query_address": "http://postgres_query:50201",
+            "insert_destination": "cdl.document.data",
+            "name": "new schema"
+        },
+        "a5e0c7e2-412c-11eb-8000-000000000000": {
+            "schema_type": "DocumentStorage",
+            "query_address": "http://postgres_query:50201",
+            "insert_destination": "cdl.document.data",
+            "name": "second schema"
+        }
+    }
+}

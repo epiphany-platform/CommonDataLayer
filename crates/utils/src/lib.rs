@@ -17,15 +17,7 @@ pub mod query_utils;
 pub mod status_endpoints;
 pub mod task_limiter;
 pub mod tracing;
-pub mod types {
-    use serde::{Deserialize, Serialize};
-
-    #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-    #[serde(rename_all = "snake_case")]
-    pub enum FieldDefinition {
-        FieldName(String),
-    }
-}
+pub mod types;
 
 pub fn abort_on_poison<T>(_e: PoisonError<T>) -> T {
     error!("Encountered mutex poisoning. Aborting.");

@@ -104,14 +104,14 @@ impl ParallelCommonConsumer {
                 )
                 .await
             }
-            ParallelCommonConsumerConfig::Grpc { addr } => Self::new_grpc(addr),
+            ParallelCommonConsumerConfig::Grpc { addr } => Ok(Self::new_grpc(addr)),
         }
     }
 
     #[tracing::instrument]
-    fn new_grpc(addr: SocketAddrV4) -> Result<Self> {
+    fn new_grpc(addr: SocketAddrV4) -> Self {
         tracing::debug!("Creating GRPC parallel consumer");
-        Ok(Self::Grpc { addr })
+        Self::Grpc { addr }
     }
 
     #[tracing::instrument]

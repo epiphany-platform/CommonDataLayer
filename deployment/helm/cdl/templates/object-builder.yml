@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-object-builder
+  labels:
+    app: {{ .Release.Name }}-object-builder
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-object-builder
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-object-builder
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51805'
+        prometheus.io/path: '/metrics'
+    spec:
+      containers:
+        - name: cdl-object-builder
+          image: "{{ .Values.global.imageRepositoryPath }}cdl-object-builder:{{ .Values.global.imageVersion }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command: ["/bin/object-builder"]
+          env:
+            - name: INPUT_PORT
+              value: "{{ .Values.objectBuilder.inputPort }}"
+            {{- if eq .Values.global.communicationMethod "kafka" }}
+            - name: KAFKA_BROKERS
+              value: {{ .Values.global.kafkaBrokers }}
+            - name: KAFKA_GROUP_ID
+              value: "object-builder"
+            {{- else if eq .Values.global.communicationMethod "amqp" }}
+            - name: AMQP_CONNECTION_STRING
+              value: {{ .Values.global.amqpConnectionString }}
+            - name: AMQP_CONSUMER_TAG
+              value: "object-builder"
+            {{- end }}
+            - name: MQ_SOURCE
+              value: {{ .Values.objectBuilder.mqSource }}
+            - name: RUST_LOG
+              value: "info,object_builder=debug"
+          ports:
+            - containerPort: 51805
+      imagePullSecrets:
+        - name: {{ .Values.global.cdlImagePullSecrets }}

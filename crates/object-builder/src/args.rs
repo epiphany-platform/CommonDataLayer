@@ -1,22 +1,20 @@
-use std::net::{Ipv4Addr, SocketAddrV4};
 use structopt::{clap::arg_enum, StructOpt};
 use thiserror::Error;
-use utils::communication::parallel_consumer::ParallelCommonConsumerConfig;
+use utils::communication::consumer::CommonConsumerConfig;
 
 arg_enum! {
-    #[derive(Clone, Debug)]
-    pub enum CommunicationMethod {
+    #[derive(Clone, Debug, Copy)]
+    pub enum MessageQueue {
         Amqp,
         Kafka,
-        GRpc,
     }
 }
 
 #[derive(StructOpt, Debug)]
 pub struct Args {
-    /// The method of communication with external services
-    #[structopt(long, env, possible_values = &CommunicationMethod::variants(), case_insensitive = true)]
-    pub communication_method: CommunicationMethod,
+    /// The method of ingestion of messages via Message Queue
+    #[structopt(long, env, possible_values = &MessageQueue::variants(), case_insensitive = true)]
+    pub mq_method: Option<MessageQueue>,
     /// Address of Kafka brokers
     #[structopt(long, env)]
     pub kafka_brokers: Option<String>,
@@ -29,9 +27,12 @@ pub struct Args {
     /// AMQP consumer tag
     #[structopt(long, env)]
     pub amqp_consumer_tag: Option<String>,
+    /// Kafka topic or AMQP queue name
+    #[structopt(long, env)]
+    pub mq_source: Option<String>,
     /// Port to listen on
     #[structopt(long, env)]
-    pub grpc_port: Option<u16>,
+    pub input_port: u16,
     /// Address of schema registry
     #[structopt(long, env)]
     pub schema_registry_addr: String,
@@ -45,18 +46,48 @@ pub struct Args {
 pub struct MissingConfigError(pub &'static str);
 
 impl Args {
-    pub fn communication_config(&self) -> Result<ParallelCommonConsumerConfig, MissingConfigError> {
-        match self.communication_method {
-            CommunicationMethod::Amqp => {
-                todo!()
+    pub fn consumer_config(&self) -> Result<Option<CommonConsumerConfig>, MissingConfigError> {
+        match self.mq_method {
+            None => Ok(None),
+            Some(MessageQueue::Amqp) => {
+                let connection_string = self
+                    .amqp_connection_string
+                    .as_ref()
+                    .ok_or(MissingConfigError("AMQP connection string"))?;
+                let consumer_tag = self
+                    .amqp_consumer_tag
+                    .as_ref()
+                    .ok_or(MissingConfigError("AMQP consumer tag"))?;
+                let queue_name = self
+                    .mq_source
+                    .as_ref()
+                    .ok_or(MissingConfigError("Message queue source"))?;
+                let options = Default::default();
+                Ok(Some(CommonConsumerConfig::Amqp {
+                    connection_string,
+                    consumer_tag,
+                    queue_name,
+                    options,
+                }))
             }
-            CommunicationMethod::Kafka => {
-                todo!()
-            }
-            CommunicationMethod::GRpc => {
-                let port = self.grpc_port.ok_or(MissingConfigError("Grpc port"))?;
-                let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
-                Ok(ParallelCommonConsumerConfig::Grpc { addr })
+            Some(MessageQueue::Kafka) => {
+                let brokers = self
+                    .kafka_brokers
+                    .as_ref()
+                    .ok_or(MissingConfigError("Kafka brokers"))?;
+                let group_id = self
+                    .kafka_group_id
+                    .as_ref()
+                    .ok_or(MissingConfigError("Kafka group ID"))?;
+                let topic = self
+                    .mq_source
+                    .as_ref()
+                    .ok_or(MissingConfigError("Message queue source"))?;
+                Ok(Some(CommonConsumerConfig::Kafka {
+                    brokers,
+                    group_id,
+                    topic,
+                }))
             }
         }
     }

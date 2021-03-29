@@ -27,7 +27,7 @@ services:
       IMPORT_FILE: "/var/data/schema.json"
       RUST_LOG: info,schema_registry=trace
     volumes:
-      - ./setup/schema_registry/initial-schema.json:/var/data/schema.json
+      - ./setup/schema_registry/initial-schema.grpc.json:/var/data/schema.json
 
   data_router:
     image: cdl-data-router:latest
@@ -76,8 +76,7 @@ services:
     ports:
       - "50107:50107"
     environment:
-      COMMUNICATION_METHOD: "grpc"
-      GRPC_PORT: "50107"
+      INPUT_PORT: "50107"
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       RUST_LOG: info,object_builder=trace
 

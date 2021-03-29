@@ -36,6 +36,10 @@ edgeRegistry:
   mqTag: edge-registry
   mqSource: cdl.edge.input
 
+objectBuilder:
+  inputPort: 50111
+  mqSource: cdl.materialize
+
 webAdmin:
   port: 30151
 

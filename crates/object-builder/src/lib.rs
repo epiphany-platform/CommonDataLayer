@@ -1,29 +1,27 @@
+pub mod args;
+
 use std::collections::HashMap;
 
 use anyhow::Context;
 use async_trait::async_trait;
+use rpc::object_builder::object_builder_server::ObjectBuilder;
+use rpc::object_builder::{MaterializedView, RowDefinition as RpcRowDefinition, ViewId};
 use rpc::schema_registry::ViewSchema;
 use rpc::schema_registry::{schema_registry_client::SchemaRegistryClient, types::SchemaType};
 use serde::Serialize;
 use serde_json::Value;
 use tonic::transport::Channel;
 use utils::{
-    communication::{
-        message::CommunicationMessage,
-        parallel_consumer::{
-            ParallelCommonConsumer, ParallelCommonConsumerConfig, ParallelConsumerHandler,
-        },
-    },
+    communication::{consumer::ConsumerHandler, message::CommunicationMessage},
+    metrics::counter,
     types::FieldDefinition,
 };
 use uuid::Uuid;
 
-pub struct Service {
-    consumer: ParallelCommonConsumer,
-    handler: ServiceHandler,
-}
+use crate::args::Args;
 
-struct ServiceHandler {
+#[derive(Clone)]
+pub struct ObjectBuilderImpl {
     schema_registry: SchemaRegistryClient<Channel>,
 }
 
@@ -41,12 +39,81 @@ struct RowDefinition {
     fields: HashMap<String, Value>,
 }
 
+impl ObjectBuilderImpl {
+    pub async fn new(args: &Args) -> anyhow::Result<Self> {
+        let schema_registry =
+            rpc::schema_registry::connect(args.schema_registry_addr.clone()).await?;
+
+        Ok(Self { schema_registry })
+    }
+}
+
+#[tonic::async_trait]
+impl ObjectBuilder for ObjectBuilderImpl {
+    async fn materialize(
+        &self,
+        request: tonic::Request<ViewId>,
+    ) -> Result<tonic::Response<MaterializedView>, tonic::Status> {
+        let view_id: Uuid = request
+            .into_inner()
+            .view_id
+            .parse()
+            .map_err(|_| tonic::Status::invalid_argument("view_id"))?;
+
+        let object = self
+            .build_object(view_id)
+            .await
+            .map_err(|err| tonic::Status::internal(format!("{}", err)))?;
+
+        let rows = object
+            .rows
+            .into_iter()
+            .map(|row| {
+                let fields = row
+                    .fields
+                    .into_iter()
+                    .map(|(key, value)| Ok((key, serde_json::to_vec(&value)?)))
+                    .collect::<serde_json::Result<_>>()?;
+                Ok(RpcRowDefinition {
+                    object_id: row.object_id.to_string(),
+                    fields,
+                })
+            })
+            .collect::<serde_json::Result<_>>()
+            .map_err(|err| {
+                tracing::error!("Could not serialize view fields: {:?}", err);
+                tonic::Status::internal("Could not serialize view fields")
+            })?;
+
+        Ok(tonic::Response::new(MaterializedView {
+            view_id: object.view_id.to_string(),
+            rows,
+        }))
+    }
+}
+
 #[async_trait]
-impl ParallelConsumerHandler for ServiceHandler {
+impl ConsumerHandler for ObjectBuilderImpl {
     #[tracing::instrument(skip(self, msg))]
-    async fn handle<'a>(&'a self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
+    async fn handle<'a>(&'a mut self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
+        counter!("cdl.object-builder.build-object.mq", 1);
         let view_id: Uuid = msg.payload()?.parse()?;
 
+        let view = self.get_view(&view_id);
+        let output = self.build_object(view_id);
+
+        let (view, _output) = futures::try_join!(view, output)?;
+
+        let _materializer_addr = view.materializer_addr;
+        // TODO: Sending output to materializer
+        // via GRPC
+
+        Ok(())
+    }
+}
+
+impl ObjectBuilderImpl {
+    async fn build_object(&self, view_id: Uuid) -> anyhow::Result<Output> {
         tracing::debug!(?view_id, "Handling");
 
         let view = self.get_view(&view_id);
@@ -66,17 +133,11 @@ impl ParallelConsumerHandler for ServiceHandler {
 
         let output = Output { view_id, rows };
 
-        let _materializer_addr = view.materializer_addr;
-        // TODO: Sending output to materializer
-        // Via GRPC?
-
         tracing::debug!(?output, "Output");
 
-        Ok(())
+        Ok(output)
     }
-}
 
-impl ServiceHandler {
     #[tracing::instrument]
     fn build_row_def(
         object_id: Uuid,
@@ -140,8 +201,7 @@ impl ServiceHandler {
     async fn get_view(&self, view_id: &Uuid) -> anyhow::Result<rpc::schema_registry::View> {
         let view = self
             .schema_registry
-            .clone() // Client is using Arc<> internally therefore `.clone()`
-            // is pretty cheap and recommended way to reuse connection between threads
+            .clone()
             .get_view(rpc::schema_registry::Id {
                 id: view_id.to_string(),
             })
@@ -165,29 +225,5 @@ impl ServiceHandler {
             .await?
             .into_inner();
         Ok(schemas)
-    }
-}
-
-impl Service {
-    pub async fn new(
-        config: ParallelCommonConsumerConfig<'_>,
-        schema_registry_addr: &str,
-    ) -> anyhow::Result<Self> {
-        let consumer = ParallelCommonConsumer::new(config).await?;
-
-        let schema_registry = rpc::schema_registry::connect(schema_registry_addr.into()).await?;
-
-        Ok(Self {
-            consumer,
-            handler: ServiceHandler { schema_registry },
-        })
-    }
-
-    pub async fn listen(self) -> anyhow::Result<()> {
-        self.consumer.par_run(self.handler).await?;
-
-        tokio::time::delay_for(tokio::time::Duration::from_secs(3)).await;
-
-        Ok(())
     }
 }
