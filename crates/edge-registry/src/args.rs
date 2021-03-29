@@ -28,7 +28,6 @@ pub struct RegistryConfig {
 
 arg_enum! {
     #[derive(Clone, Debug)]
-    #[cfg_attr(test, derive(PartialEq))]
     pub enum ConsumerMethod {
         Kafka,
         Amqp,
