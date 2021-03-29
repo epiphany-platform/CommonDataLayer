@@ -42,7 +42,7 @@ async fn main() -> anyhow::Result<()> {
     info!("Starting a grpc server");
     Server::builder()
         .add_service(EdgeRegistryServer::new(registry))
-        .serve(([0, 0, 0, 0], config.communication_port).into())
+        .serve(([0, 0, 0, 0], config.rpc_port).into())
         .await?;
 
     Ok(())
