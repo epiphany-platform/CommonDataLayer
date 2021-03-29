@@ -33,4 +33,3 @@ bb8-postgres             = { version = "0.4", features = ["with-uuid-0_8"] }
 tracing-futures          = "0.2"
 
 [dev-dependencies]
-test-case   = "1.1"
