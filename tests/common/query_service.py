@@ -2,7 +2,7 @@ import os
 import subprocess
 import time
 
-from tests.common.config import PostgresConfig
+from tests.common.postgres import PostgresConfig
 
 EXE = os.getenv('QUERY_SERVICE_EXE') or 'query-service'
 

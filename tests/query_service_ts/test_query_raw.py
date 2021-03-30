@@ -9,7 +9,10 @@ from tests.rpc.proto import query_service_ts_pb2_grpc
 from tests.rpc.proto.query_service_pb2 import RawStatement
 
 
-@pytest.fixture(params=["raw/export", "raw/get_query_range", "raw/post_query_range", "raw/handle_functions"])
+@pytest.fixture(params=[
+    "raw/export", "raw/get_query_range", "raw/post_query_range",
+    "raw/handle_functions"
+])
 def prepare(request):
     data, expected = load_case(request.param, "query_service_ts")
 
@@ -36,9 +39,6 @@ def prepare(request):
 
 def test_query_by_range(prepare):
     stub, expected, query = prepare
-    response = stub.QueryRaw(RawStatement(
-        raw_statement=json.dumps(query)))
+    response = stub.QueryRaw(RawStatement(raw_statement=json.dumps(query)))
 
     assert bytes_to_json(response.value_bytes) == expected
-
-

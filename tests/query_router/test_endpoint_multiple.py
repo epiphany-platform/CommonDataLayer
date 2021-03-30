@@ -1,17 +1,20 @@
 import pytest
 
-from tests.common.config import KafkaInputConfig, PostgresConfig
+from tests.common.kafka import KafkaInputConfig
 from tests.common.query_router import QueryRouter
 from tests.common.query_service import QueryService
 from tests.common.schema_registry import SchemaRegistry
 from tests.common import load_case, assert_json
-from tests.common.postgres import clear_data, insert_data
+from tests.common.postgres import clear_data, insert_data, PostgresConfig
 
 DB_NAME = 'query-router'
 TOPIC = 'qr.test.multiple'
 
 
-@pytest.fixture(params=['multiple/non_existing', 'multiple/single_schema', 'multiple/multiple_schemas'])
+@pytest.fixture(params=[
+    'multiple/non_existing', 'multiple/single_schema',
+    'multiple/multiple_schemas'
+])
 def prepare(request, tmp_path):
     data, expected = load_case(request.param, 'query_router')
 
@@ -29,7 +32,8 @@ def prepare(request, tmp_path):
     qs.start()
     sr.start()
 
-    schema_id = sr.create_schema('test', kafka_input_config.topic, f'http://localhost:{qs.input_port}', '{}', 0)
+    schema_id = sr.create_schema('test', kafka_input_config.topic,
+                                 f'http://localhost:{qs.input_port}', '{}', 0)
 
     with QueryRouter(f'http://localhost:{sr.input_port}') as qr:
         yield data, expected, qr, schema_id

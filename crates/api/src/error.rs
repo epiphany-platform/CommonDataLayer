@@ -8,6 +8,8 @@ pub enum Error {
     InvalidSchemaType(i32),
     #[error("Unable to connect to data router publisher: {0}")]
     PublisherError(MessagingError),
+    #[error("Error while parsing view fields: {0}")]
+    ViewFieldError(serde_json::Error),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;

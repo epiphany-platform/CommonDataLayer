@@ -94,7 +94,7 @@ jobs:
       - name: check if pods are running
         run: |
           kubectl get pods
-          [[ -z `kubectl get pods --field-selector=status.phase!=Running` ]]
+          [[ -z `kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}"` ]]
       - name: uninstall cdl kafka
         run: helm uninstall cdl
       - name: wait
@@ -107,6 +107,6 @@ jobs:
       - name: check if pods are running
         run: |
           kubectl get pods
-          [[ -z `kubectl get pods --field-selector=status.phase!=Running` ]]
+          [[ -z `kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}"` ]]
       - name: uninstall cdl rabbitmq
         run: helm uninstall cdl

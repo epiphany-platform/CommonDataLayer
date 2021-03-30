@@ -3,13 +3,15 @@
 /// Instead you listen on different task (See: `tokio::spawn` in `EventSubscriber::new`) and then send message to broadcast channel.
 /// Each websocket client has its own Receiver.
 /// Thanks to that we are not only reusing connection, but also limit dangerous `consumer.leak()` usage.
-use crate::config::CommunicationMethodConfig;
+use std::pin::Pin;
+
+use async_graphql::FieldResult;
 use async_trait::async_trait;
 use futures::task::{Context as FutCtx, Poll};
 use futures::{Future, Stream};
-use juniper::FieldResult;
-use std::pin::Pin;
 use tokio::sync::broadcast::{self, Sender};
+
+use crate::config::CommunicationMethodConfig;
 use utils::communication::{
     consumer::{CommonConsumer, CommonConsumerConfig, ConsumerHandler},
     message::CommunicationMessage,

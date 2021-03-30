@@ -1,12 +1,16 @@
 import os
 import subprocess
-from tests.common.config import PostgresConfig, VictoriaMetricsConfig
+from tests.common.victoria_metrics import VictoriaMetricsConfig
+from tests.common.postgres import PostgresConfig
 
 EXE = os.getenv('COMMAND_SERVICE_EXE') or 'command-service'
 
 
 class CommandService:
-    def __init__(self, kafka_input_config, kafka_report_config=None, db_config=None):
+    def __init__(self,
+                 kafka_input_config,
+                 kafka_report_config=None,
+                 db_config=None):
         self.kafka_input_config = kafka_input_config
         self.kafka_report_config = kafka_report_config
         self.db_config = db_config

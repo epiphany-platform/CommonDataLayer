@@ -84,11 +84,11 @@ services:
       POSTGRES_PORT: 5432
       POSTGRES_DBNAME: postgres
       POSTGRES_SCHEMA: cdl
-      COMMUNICATION_PORT: 50110
-      METHOD: amqp
-      MQ_HOST: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
-      MQ_TAG: edge-registry
-      MQ_SOURCE: "cdl.edge.input"
+      RPC_PORT: 50110
+      CONSUMER_METHOD: amqp
+      CONSUMER_HOST: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      CONSUMER_TAG: edge-registry
+      CONSUMER_SOURCE: "cdl.edge.input"
       RUST_LOG: info,edge_registry=trace
 
   object_builder:
