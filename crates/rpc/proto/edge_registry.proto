@@ -30,7 +30,7 @@ message RelationQuery {
 }
 
 message RelationResponse {
-  repeated string child_schema_ids = 1;
+  optional string child_schema_id = 1;
 }
 
 message SchemaId {

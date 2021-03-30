@@ -27,7 +27,9 @@ def prepare():
     end = start + len(setup_data)
 
     for i in range(0, len(setup_data)):
-        ts = (start + i) * 1_000_000_000  # VM requires nanoseconds when inserting data via Influx LineProtocol
+        ts = (
+            start + i
+        ) * 1_000_000_000  # VM requires nanoseconds when inserting data via Influx LineProtocol
         setup_data[i] = setup_data[i].replace("$TIMESTAMP", str(ts))
         expected['data']['result'][0]['values'][i][0] = start + i
 

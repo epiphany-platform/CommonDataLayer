@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from tests.common.config import PostgresConfig
+from tests.common.postgres import PostgresConfig
 
 EXE = os.getenv('DB_SHRINKER_POSTGRES_EXE') or 'db-shrinker-postgres'
 

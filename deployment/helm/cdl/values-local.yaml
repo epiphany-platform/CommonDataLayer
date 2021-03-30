@@ -32,9 +32,9 @@ edgeRegistry:
   postgresPort: 5432
   postgresDbname: CDL
   postgresSchema: public
-  communicationPort: 50110
-  mqTag: edge-registry
-  mqSource: cdl.edge.input
+  rpcPort: 50110
+  consumerTag: edge-registry
+  consumerSource: cdl.edge.input
 
 webAdmin:
   port: 30151
