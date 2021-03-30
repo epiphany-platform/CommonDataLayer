@@ -27,8 +27,16 @@ spec:
         env:
         - name: INPUT_PORT
           value: "6400"
-        - name: DB_NAME
-          value: "/data/db/registry_db"
+        - name: POSTGRES_USERNAME
+          value: {{ .Values.postgresUsername }}
+        - name: POSTGRES_PASSWORD
+          value: {{ .Values.postgresPassword }}
+        - name: POSTGRES_HOST
+          value: {{ .Values.postgresHost }}
+        - name: POSTGRES_PORT
+          value: "{{ .Values.postgresPort }}"
+        - name: POSTGRES_DBNAME
+          value: {{ .Values.postgresDbname }}
         - name: REPLICATION_ROLE
           value: "slave"
         {{- if eq .Values.global.communicationMethod "kafka" }}

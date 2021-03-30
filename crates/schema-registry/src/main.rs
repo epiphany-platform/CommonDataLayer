@@ -25,7 +25,7 @@ pub async fn main() -> anyhow::Result<()> {
     );
 
     let comms_config = communication_config(&config)?;
-    let registry = SchemaRegistryImpl::new(config.db_name, comms_config).await?;
+    let registry = SchemaRegistryImpl::new(&config, comms_config).await?;
 
     if let Some(export_filename) = config.export_dir.map(export_path) {
         let exported = registry.export_all().await?;

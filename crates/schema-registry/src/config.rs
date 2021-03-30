@@ -35,8 +35,21 @@ pub struct Config {
     /// Port to listen on
     #[structopt(long, env)]
     pub input_port: u16,
+
+    /// Postgres username
+    #[structopt(long, env = "POSTGRES_USERNAME")]
+    pub db_username: String,
+    /// Postgres password
+    #[structopt(long, env = "POSTGRES_PASSWORD")]
+    pub db_password: String,
+    /// Host of the postgres server
+    #[structopt(long, env = "POSTGRES_HOST")]
+    pub db_host: String,
+    /// Port on which postgres server listens
+    #[structopt(long, env = "POSTGRES_PORT", default_value = "5432")]
+    pub db_port: u16,
     /// Database name
-    #[structopt(long, env)]
+    #[structopt(long, env = "POSTGRES_DBNAME")]
     pub db_name: String,
 
     /// The method of communication with external services.

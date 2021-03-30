@@ -23,12 +23,11 @@ impl MutationRoot {
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-            let schema_type: rpc::schema_registry::types::SchemaType = new.schema_type.into();
             let new_id = conn
                 .add_schema(rpc::schema_registry::NewSchema {
                     metadata: rpc::schema_registry::SchemaMetadata {
                         name: new.name,
-                        schema_type: schema_type as i32,
+                        schema_type: new.schema_type.into(),
                         insert_destination: new.insert_destination,
                         query_address: new.query_address,
                     },

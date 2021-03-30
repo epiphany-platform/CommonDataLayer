@@ -38,7 +38,7 @@ impl FullSchema {
             name: schema.metadata.name,
             insert_destination: schema.metadata.insert_destination,
             query_address: schema.metadata.query_address,
-            schema_type: schema_type.into(),
+            schema_type,
             definitions: schema
                 .definitions
                 .into_iter()

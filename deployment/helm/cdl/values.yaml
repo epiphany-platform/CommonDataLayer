@@ -24,6 +24,11 @@ schemaRegistry:
   storageClass: standard
   storageSize: 3Gi
   port: 30150
+  postgresUsername: postgres
+  postgresPassword: postgres
+  postgresHost: 10.1.1.5
+  postgresPort: 5432
+  postgresDbname: schema-registry
 
 edgeRegistry:
   postgresUsername: postgres

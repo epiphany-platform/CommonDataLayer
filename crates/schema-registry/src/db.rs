@@ -2,21 +2,20 @@ use std::collections::HashMap;
 
 use semver::Version;
 use serde_json::Value;
-use sqlx::postgres::{PgListener, PgPool, PgPoolOptions};
+use sqlx::postgres::{PgConnectOptions, PgListener, PgPool, PgPoolOptions};
 use sqlx::types::Json;
 use sqlx::{Acquire, Connection};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 use tracing::{trace, warn};
 use uuid::Uuid;
 
+use crate::config::Config;
+use crate::error::{RegistryError, RegistryResult};
 use crate::types::schema::{FullSchema, NewSchema, Schema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{FieldDefinition, NewView, View, ViewUpdate};
+use crate::types::DbExport;
 use crate::types::VersionedUuid;
 use crate::utils::build_full_schema;
-use crate::{
-    error::{RegistryError, RegistryResult},
-    types::DbExport,
-};
 
 const SCHEMAS_LISTEN_CHANNEL: &str = "schemas";
 const VIEWS_LISTEN_CHANNEL: &str = "views";
@@ -26,10 +25,17 @@ pub struct SchemaRegistryDb {
 }
 
 impl SchemaRegistryDb {
-    pub async fn connect(db_url: String) -> RegistryResult<Self> {
+    pub async fn connect(config: &Config) -> RegistryResult<Self> {
+        let options = PgConnectOptions::new()
+            .host(&config.db_host)
+            .port(config.db_port)
+            .username(&config.db_username)
+            .password(&config.db_password)
+            .database(&config.db_name);
+
         Ok(Self {
             pool: PgPoolOptions::new()
-                .connect(&db_url)
+                .connect_with(options)
                 .await
                 .map_err(RegistryError::ConnectionError)?,
         })

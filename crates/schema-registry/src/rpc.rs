@@ -10,6 +10,7 @@ use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
 use crate::config::CommunicationMethodConfig;
+use crate::config::Config;
 use crate::db::SchemaRegistryDb;
 use crate::error::{RegistryError, RegistryResult};
 use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
@@ -29,10 +30,10 @@ pub struct SchemaRegistryImpl {
 
 impl SchemaRegistryImpl {
     pub async fn new(
-        db_url: String,
+        config: &Config,
         communication_config: CommunicationMethodConfig,
     ) -> anyhow::Result<Self> {
-        let db = SchemaRegistryDb::connect(db_url).await?;
+        let db = SchemaRegistryDb::connect(config).await?;
         let mq_metadata = match &communication_config {
             CommunicationMethodConfig::Kafka(kafka) => {
                 MetadataFetcher::new_kafka(&kafka.brokers).await?
