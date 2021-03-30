@@ -1,26 +1,25 @@
 use std::collections::HashMap;
 
-use serde_json::value::{RawValue, Value};
 use async_graphql::{Context, FieldResult, Object};
 use num_traits::ToPrimitive;
 use tracing::Instrument;
 use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
 
+use crate::config::Config;
 use crate::error::Error;
-use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
-use crate::types::view::{NewView, View, ViewUpdate};
 use crate::schema::context::SchemaRegistryPool;
 use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
 use crate::types::data::InputMessage;
-use crate::{config::Config};
+use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
+use crate::types::view::{NewView, View, ViewUpdate};
 use utils::current_timestamp;
 
 pub struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
-    async fn add_schema(&self, context: &Context<'_>, new: NewSchema) -> FieldResult<Schema> {
+    async fn add_schema(&self, context: &Context<'_>, new: NewSchema) -> FieldResult<FullSchema> {
         let span = tracing::trace_span!("add_schema", ?new);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
@@ -34,9 +33,7 @@ impl MutationRoot {
                         insert_destination: new.insert_destination,
                         query_address: new.query_address,
                     },
-                    definition: serde_json::to_vec(&serde_json::from_str::<Value>(
-                        &new.definition,
-                    )?)?,
+                    definition: serde_json::to_vec(&new.definition)?,
                 })
                 .await?
                 .into_inner()
@@ -65,8 +62,10 @@ impl MutationRoot {
 
             conn.add_schema_version(rpc::schema_registry::NewSchemaVersion {
                 id: schema_id.to_string(),
-                version: new_version.version.clone(),
-                definition: serde_json::to_string(&new_version.definition)?,
+                definition: rpc::schema_registry::SchemaDefinition {
+                    version: new_version.version.clone(),
+                    definition: serde_json::to_vec(&new_version.definition)?,
+                },
             })
             .await?;
 
@@ -84,24 +83,19 @@ impl MutationRoot {
         context: &Context<'_>,
         id: Uuid,
         update: UpdateSchema,
-    ) -> FieldResult<Schema> {
+    ) -> FieldResult<FullSchema> {
         let span = tracing::trace_span!("update_schema", ?id, ?update);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-            let UpdateSchema {
-                name,
-                query_address: address,
-                topic,
-                schema_type,
-            } = update;
-
-            conn.update_schema_metadata(rpc::schema_registry::SchemaMetadataUpdate {
+            conn.update_schema(rpc::schema_registry::SchemaMetadataUpdate {
                 id: id.to_string(),
-                name,
-                address,
-                topic,
-                schema_type: schema_type.and_then(|s| s.to_i32()),
+                patch: rpc::schema_registry::SchemaMetadataPatch {
+                    name: update.name,
+                    insert_destination: update.insert_destination,
+                    query_address: update.query_address,
+                    schema_type: update.schema_type.and_then(|s| s.to_i32()),
+                },
             })
             .await
             .map_err(rpc::error::registry_error)?;
@@ -126,8 +120,7 @@ impl MutationRoot {
                     schema_id: schema_id.to_string(),
                     name: new_view.name.clone(),
                     materializer_address: new_view.materializer_address.clone(),
-                    fields: serde_json::from_str(&new_view.fields)?,
-                    fields: serde_json::to_string(&fields)?,
+                    fields: new_view.fields.0.clone(),
                 })
                 .await
                 .map_err(rpc::error::registry_error)?
@@ -149,21 +142,23 @@ impl MutationRoot {
         &self,
         context: &Context<'_>,
         id: Uuid,
-        update: UpdateView,
+        update: ViewUpdate,
     ) -> FieldResult<View> {
         let span = tracing::trace_span!("update_view", ?id, ?update);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
+            let (update_fields, fields) = if let Some(fields) = update.fields {
+                (true, fields.0)
+            } else {
+                (false, HashMap::default())
+            };
             conn.update_view(rpc::schema_registry::ViewUpdate {
                 id: id.to_string(),
                 name: update.name,
                 materializer_address: update.materializer_address,
-                fields: if let Some(f) = update.fields.as_ref() {
-                    Some(serde_json::to_string(f)?)
-                } else {
-                    None
-                },
+                update_fields,
+                fields,
             })
             .await
             .map_err(rpc::error::registry_error)?;

@@ -1,10 +1,10 @@
 use std::collections::HashMap;
 
-use juniper::FieldResult;
+use async_graphql::{FieldResult, InputObject, Json, SimpleObject};
 use uuid::Uuid;
 
 /// A view under a schema.
-#[derive(Debug, juniper::GraphQLObject)]
+#[derive(Debug, SimpleObject)]
 pub struct View {
     /// The ID of the view.
     pub id: Uuid,
@@ -13,7 +13,7 @@ pub struct View {
     /// The address of the materializer this view caches data in.
     pub materializer_address: String,
     /// The fields that this view maps with.
-    pub fields: String,
+    pub fields: Json<HashMap<String, String>>,
 }
 
 impl View {
@@ -22,19 +22,13 @@ impl View {
             id: Uuid::parse_str(&view.id)?,
             name: view.name,
             materializer_address: view.materializer_address,
-            fields: serde_json::to_string(
-                &view
-                    .fields
-                    .into_iter()
-                    .map(|(key, value)| Ok((key, serde_json::from_str(&value)?)))
-                    .collect::<FieldResult<HashMap<_, _>>>()?,
-            )?,
+            fields: Json(view.fields),
         })
     }
 }
 
 /// A new view under a schema.
-#[derive(Clone, Debug, juniper::GraphQLInputObject)]
+#[derive(Clone, Debug, InputObject)]
 pub struct NewView {
     /// The ID of the schema this view will belong to.
     pub schema_id: Uuid,
@@ -43,11 +37,11 @@ pub struct NewView {
     /// The address of the materializer this view caches data in.
     pub materializer_address: String,
     /// The fields that this view maps with.
-    pub fields: String,
+    pub fields: Json<HashMap<String, String>>,
 }
 
 /// An update to a view. Only the provided properties are updated.
-#[derive(Debug, juniper::GraphQLInputObject)]
+#[derive(Debug, InputObject)]
 pub struct ViewUpdate {
     /// The ID of the view.
     pub id: Uuid,
@@ -56,5 +50,5 @@ pub struct ViewUpdate {
     /// The address of the materializer this view caches data in.
     pub materializer_address: Option<String>,
     /// The fields that this view maps with.
-    pub fields: Option<String>,
+    pub fields: Option<Json<HashMap<String, String>>>,
 }

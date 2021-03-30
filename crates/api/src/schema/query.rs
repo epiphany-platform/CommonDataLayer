@@ -1,20 +1,16 @@
 use std::collections::HashMap;
 
-
-use semver::VersionReq;
 use async_graphql::{Context, FieldResult, Json, Object};
 use itertools::Itertools;
-use num_traits::FromPrimitive;
-use rpc::schema_registry::Empty;
+use semver::VersionReq;
 use tracing::Instrument;
 use uuid::Uuid;
 
 use crate::config::Config;
-use crate::types::schema::{Definition, FullSchema, SchemaType};
-use crate::error::{Error, Result};
 use crate::schema::context::SchemaRegistryPool;
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::CdlObject;
+use crate::types::schema::{Definition, FullSchema, SchemaType};
 use crate::types::view::View;
 
 #[Object]
@@ -31,7 +27,7 @@ impl FullSchema {
     }
 
     /// Message queue topic to which data is inserted by data-router.
-    fn insert_destination(&self) -> &str {
+    async fn insert_destination(&self) -> &str {
         &self.insert_destination
     }
 
@@ -75,7 +71,7 @@ pub struct QueryRoot;
 #[Object]
 impl QueryRoot {
     /// Return single schema for given id
-    async fn schema(&self, context: &Context<'_>, id: Uuid) -> FieldResult<Schema> {
+    async fn schema(&self, context: &Context<'_>, id: Uuid) -> FieldResult<FullSchema> {
         let span = tracing::trace_span!("query_schema", ?id);
 
         async move {
@@ -87,7 +83,7 @@ impl QueryRoot {
     }
 
     /// Return all schemas in database
-    async fn schemas(&self, context: &Context<'_>) -> FieldResult<Vec<Schema>> {
+    async fn schemas(&self, context: &Context<'_>) -> FieldResult<Vec<FullSchema>> {
         let span = tracing::trace_span!("query_schemas");
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;

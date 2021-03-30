@@ -1,16 +1,12 @@
-use juniper::FieldResult;
-use uuid::Uuid;
 use anyhow::Context;
 use async_graphql::FieldResult;
-use num_traits::FromPrimitive;
 use utils::communication::publisher::CommonPublisher;
+use uuid::Uuid;
 
+use crate::config::{CommunicationMethodConfig, Config};
 use crate::schema::context::SchemaRegistryConn;
 use crate::types::schema::FullSchema;
 use crate::types::view::View;
-use crate::{
-    config::{CommunicationMethodConfig, Config},
-};
 
 pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<View> {
     tracing::debug!("get view: {:?}", id);

@@ -63,7 +63,7 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
     }
 
     async fn is_valid(&self, mut conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
-        conn.heartbeat(rpc::schema_registry::Empty {})
+        conn.ping(rpc::schema_registry::Empty {})
             .await
             .map_err(rpc::error::registry_error)?;
 

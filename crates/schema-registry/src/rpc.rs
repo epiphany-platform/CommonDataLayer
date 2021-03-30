@@ -526,6 +526,10 @@ impl SchemaRegistry for SchemaRegistryImpl {
             }),
         )))
     }
+
+    async fn ping(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
+        Ok(Response::new(Empty {}))
+    }
 }
 
 fn parse_optional_version_req(req: &Option<String>) -> Result<Option<VersionReq>, Status> {

@@ -1,19 +1,19 @@
 use std::convert::TryInto;
 
-use semver::{Version, VersionReq};
-use async_graphql::{Enum, InputObject, Json, SimpleObject};
+use async_graphql::{Enum, FieldResult, InputObject, Json, SimpleObject};
 use num_derive::{FromPrimitive, ToPrimitive};
+use semver::{Version, VersionReq};
 use serde_json::Value;
 use uuid::Uuid;
 
 use crate::types::view::View;
 
-#[derive(Debug, juniper::GraphQLEnum, Clone, Copy)]
-/// Schema type, describes what kind of query service and command service is going to be used,
-/// as timeseries databases are quite different than others.
+#[derive(Debug, Enum, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
+/// Schema type, describes what kind of query service and command service
+/// is going to be used, as timeseries databases are quite different than others.
 pub enum SchemaType {
-    DocumentStorage,
-    Timeseries,
+    DocumentStorage = 0,
+    Timeseries = 1,
 }
 
 impl From<rpc::schema_registry::types::SchemaType> for SchemaType {
@@ -71,9 +71,7 @@ impl FullSchema {
                 .map(|definition| {
                     Ok(Definition {
                         version: definition.version,
-                        definition: serde_json::to_string(&serde_json::from_slice::<Value>(
-                            &definition.definition,
-                        )?)?,
+                        definition: serde_json::from_slice(&definition.definition)?,
                     })
                 })
                 .collect::<FieldResult<Vec<_>>>()?,
@@ -84,14 +82,6 @@ impl FullSchema {
                 .collect::<FieldResult<Vec<_>>>()?,
         })
     }
-}
-
-#[derive(Debug, Enum, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
-/// Schema type, describes what kind of query service and command service
-/// is going to be used, as timeseries databases are quite different than others.
-pub enum SchemaType {
-    DocumentStorage = 0,
-    Timeseries = 1,
 }
 
 #[derive(Debug, SimpleObject)]
