@@ -1,25 +1,26 @@
-use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
-use std::sync::Arc;
-use structopt::StructOpt;
-use tracing::{debug, error, trace};
-use utils::{
-    communication::{
-        consumer::{CommonConsumer, CommonConsumerConfig, ConsumerHandler},
-        message::CommunicationMessage,
-        publisher::CommonPublisher,
-    },
-    metrics::{self},
+use std::collections::HashSet;
+
+use anyhow::Context;
+use rdkafka::{
+    consumer::{DefaultConsumerContext, StreamConsumer},
+    error::KafkaError,
+    ClientConfig,
 };
+use serde::{Deserialize, Serialize};
+use structopt::StructOpt;
+use tokio::stream::StreamExt;
+use tracing::debug;
+use utils::metrics::{self};
+use uuid::Uuid;
 
 #[derive(StructOpt, Deserialize, Debug, Serialize)]
 struct Config {
     /// Address of Kafka brokers
     #[structopt(long, env)]
-    pub kafka_brokers: String,
+    pub brokers: String,
     /// Group ID of the consumer
     #[structopt(long, env)]
-    pub kafka_group_id: String,
+    pub group_id: String,
     /// Kafka topic
     #[structopt(long, env)]
     pub notification_topic: String,
@@ -45,38 +46,55 @@ async fn main() -> anyhow::Result<()> {
 
     metrics::serve(config.metrics_port);
 
-    let notification_consumer = notification_consumer(&config).await?;
-    let update_view_producer = Arc::new(update_view_producer(&config).await?);
+    let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
+        .set("group.id", &config.group_id)
+        .set("bootstrap.servers", &config.brokers)
+        .set("enable.partition.eof", "false")
+        .set("session.timeout.ms", "6000")
+        .set("enable.auto.commit", "true")
+        .set("enable.auto.offset.store", "false")
+        .set("auto.offset.reset", "earliest")
+        .create()
+        .context("Consumer creation failed")?;
+    let topics = [config.notification_topic.as_str()];
 
-    let schema_registry_addr = Arc::new(config.schema_registry_addr);
+    rdkafka::consumer::Consumer::subscribe(&consumer, &topics)
+        .context("Can't subscribe to specified topics")?;
 
-    notification_consumer.run(Handler {}).await?;
+    let mut message_stream = consumer.start();
+
+    let mut changes: HashSet<(Uuid, Uuid)> = HashSet::new();
+    loop {
+        match message_stream.try_next().await {
+            Ok(opt_message) => match opt_message {
+                Some(message) => {
+                    // changes.insert()
+                    // TODO: process message
+                }
+                None => {
+                    // TODO: send  requests to object builder, acks
+                    break;
+                }
+            },
+            Err(err) => match err {
+                KafkaError::PartitionEOF(_) => {
+                    // TODO: send  requests to object builder, acks
+                }
+                err => {
+                    panic!("Unknown kafka error {:?}", err)
+                }
+            },
+        }
+        // let mut partition_offsets = TopicPartitionList::new();
+        //         partition_offsets.add_partition_offset(
+        //             &self.topic,
+        //             self.partition,
+        //             Offset::Offset(offset),
+        //         );
+        //         rdkafka::consumer::Consumer::store_offsets(&consumer, &partition_offsets).unwrap();
+    }
 
     tokio::time::delay_for(tokio::time::Duration::from_secs(3)).await;
 
     Ok(())
-}
-
-struct Handler {}
-
-#[async_trait]
-impl ConsumerHandler for Handler {
-    async fn handle<'a>(&'a mut self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
-        todo!()
-    }
-}
-async fn update_view_producer(config: &Config) -> anyhow::Result<CommonPublisher> {
-    Ok(CommonPublisher::new_kafka(&config.kafka_brokers).await?)
-}
-
-async fn notification_consumer(config: &Config) -> anyhow::Result<CommonConsumer> {
-    debug!("Initializing Kafka consumer");
-    let config = {
-        CommonConsumerConfig::Kafka {
-            brokers: &config.kafka_brokers,
-            group_id: &config.kafka_group_id,
-            topic: &config.notification_topic,
-        }
-    };
-    Ok(CommonConsumer::new(config).await?)
 }

@@ -2305,6 +2305,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "rdkafka",
  "serde",
  "serde_json",
  "structopt",
