@@ -1,6 +1,6 @@
 # Architecture
 
-The CDL consists of five layers, each horizontally scalable and replaceable.
+The CDL consists of six layers, each horizontally scalable and replaceable.
 
 ``` plantuml
 {{#include graphs/cdl.puml}}
@@ -36,6 +36,13 @@ Crate Name              | Purpose
 [command-service]       | Intake data from a MQ and storage, in specific database
 [db-shrinker-storage]   | A service to remove older data from storage
 
+## Materialization Layer
+Internal layer which materializes views
+
+Crate Name              | Purpose
+------------------------|--------
+[object-builder]        | Responsible for fetching data from various repositories and joining it together 
+
 ## Retrieval Layer
 Crate Name              | Purpose
 ------------------------|--------
@@ -69,3 +76,4 @@ docs               | cdl documentation
 [command-service]: command_service.md
 [db-shrinker-storage]: db_shrinker_storage.md
 [query-router]: query_router.md
+[object-builder]: object_builder.md
