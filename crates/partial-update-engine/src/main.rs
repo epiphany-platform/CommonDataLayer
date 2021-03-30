@@ -1,14 +1,18 @@
-use std::collections::HashSet;
+use std::{
+    collections::{HashMap, HashSet},
+    time::Duration,
+};
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 use rdkafka::{
-    consumer::{DefaultConsumerContext, StreamConsumer},
+    consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
     error::KafkaError,
-    ClientConfig,
+    message::BorrowedMessage,
+    ClientConfig, Offset, TopicPartitionList,
 };
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
-use tokio::stream::StreamExt;
+use tokio::{stream::StreamExt, time::delay_for};
 use tracing::debug;
 use utils::metrics::{self};
 use uuid::Uuid;
@@ -33,6 +37,9 @@ struct Config {
     /// Port to listen on for Prometheus requests
     #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
+    /// Duration of sleep phase in seconds
+    #[structopt(long, env)]
+    pub sleep_phase_length: u64,
 }
 
 #[tokio::main]
@@ -49,7 +56,7 @@ async fn main() -> anyhow::Result<()> {
     let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
         .set("group.id", &config.group_id)
         .set("bootstrap.servers", &config.brokers)
-        .set("enable.partition.eof", "false")
+        .set("enable.partition.eof", "true")
         .set("session.timeout.ms", "6000")
         .set("enable.auto.commit", "true")
         .set("enable.auto.offset.store", "false")
@@ -64,37 +71,71 @@ async fn main() -> anyhow::Result<()> {
     let mut message_stream = consumer.start();
 
     let mut changes: HashSet<(Uuid, Uuid)> = HashSet::new();
+    let mut offsets: HashMap<i32, i64> = HashMap::new();
     loop {
         match message_stream.try_next().await {
             Ok(opt_message) => match opt_message {
                 Some(message) => {
-                    // changes.insert()
-                    // TODO: process message
+                    new_notification(&mut changes, message)?;
                 }
                 None => {
-                    // TODO: send  requests to object builder, acks
+                    process_changes(&mut changes).await?;
+                    acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
+                        .await?;
                     break;
                 }
             },
             Err(err) => match err {
                 KafkaError::PartitionEOF(_) => {
-                    // TODO: send  requests to object builder, acks
+                    // TODO: What if eof on one partition, not on others?
+                    process_changes(&mut changes).await?;
+                    acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
+                        .await?;
+                    debug!("Entering sleep phase");
+                    delay_for(Duration::from_secs(config.sleep_phase_length)).await;
+                    debug!("Exiting sleep phase");
                 }
                 err => {
-                    panic!("Unknown kafka error {:?}", err)
+                    panic!("Unexpected kafka error {:?}", err)
                 }
             },
         }
-        // let mut partition_offsets = TopicPartitionList::new();
-        //         partition_offsets.add_partition_offset(
-        //             &self.topic,
-        //             self.partition,
-        //             Offset::Offset(offset),
-        //         );
-        //         rdkafka::consumer::Consumer::store_offsets(&consumer, &partition_offsets).unwrap();
     }
 
     tokio::time::delay_for(tokio::time::Duration::from_secs(3)).await;
 
+    Ok(())
+}
+
+fn new_notification(changes: &mut HashSet<(Uuid, Uuid)>, message: BorrowedMessage) -> Result<()> {
+    let schema_id = Uuid::new_v4();
+    let object_id = Uuid::new_v4();
+    // TODO: deserialize message
+    changes.insert((schema_id, object_id));
+    Ok(())
+}
+
+async fn process_changes(changes: &mut HashSet<(Uuid, Uuid)>) -> Result<()> {
+    // TODO: Send changes to object_builder
+    todo!();
+    changes.clear();
+    Ok(())
+}
+
+async fn acknowledge_messages(
+    offsets: &mut HashMap<i32, i64>,
+    consumer: &StreamConsumer,
+    notification_topic: &str,
+) -> Result<()> {
+    let mut partition_offsets = TopicPartitionList::new();
+    for offset in offsets.iter() {
+        partition_offsets.add_partition_offset(
+            notification_topic,
+            *offset.0,
+            Offset::Offset(*offset.1),
+        );
+    }
+    rdkafka::consumer::Consumer::commit(consumer, &partition_offsets, CommitMode::Sync)?;
+    offsets.clear();
     Ok(())
 }
