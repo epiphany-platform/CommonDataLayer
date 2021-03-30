@@ -3,6 +3,7 @@ pub mod args;
 pub mod utils;
 
 use actions::schema::*;
+use actions::view::*;
 use args::*;
 use structopt::StructOpt;
 
@@ -58,6 +59,44 @@ pub async fn main() -> anyhow::Result<()> {
             }
             SchemaAction::Validate { id, version, file } => {
                 validate_value(id, version, file, args.registry_addr).await
+            }
+        },
+        Action::View { action } => match action {
+            ViewAction::Names { schema_id } => {
+                get_schema_views(schema_id, args.registry_addr).await
+            }
+            ViewAction::Get { id } => get_view(id, args.registry_addr).await,
+            ViewAction::Add {
+                schema_id,
+                name,
+                materializer_address,
+                fields,
+            } => {
+                add_view_to_schema(
+                    schema_id,
+                    name,
+                    materializer_address,
+                    fields,
+                    args.registry_addr,
+                )
+                .await
+            }
+            ViewAction::Update {
+                id,
+                name,
+                materializer_address,
+                fields,
+                update_fields,
+            } => {
+                update_view(
+                    id,
+                    name,
+                    materializer_address,
+                    fields,
+                    update_fields,
+                    args.registry_addr,
+                )
+                .await
             }
         },
     }

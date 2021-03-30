@@ -1,10 +1,9 @@
 use juniper::FieldResult;
-use num_traits::FromPrimitive;
 use uuid::Uuid;
 
-use super::context::SchemaRegistryConn;
-use crate::error::Error;
-use crate::types::schema::*;
+use crate::schema::context::SchemaRegistryConn;
+use crate::types::schema::FullSchema;
+use crate::types::view::View;
 
 pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<View> {
     tracing::debug!("get view: {:?}", id);
@@ -14,32 +13,16 @@ pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Vi
         .map_err(rpc::error::registry_error)?
         .into_inner();
 
-    Ok(View {
-        id,
-        name: view.name,
-        materializer_addr: view.materializer_addr,
-        fields: view.fields,
-    })
+    View::from_rpc(view)
 }
 
-pub async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Schema> {
+pub async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<FullSchema> {
     tracing::debug!("get schema: {:?}", id);
     let schema = conn
-        .get_schema_metadata(rpc::schema_registry::Id { id: id.to_string() })
+        .get_full_schema(rpc::schema_registry::Id { id: id.to_string() })
         .await
         .map_err(rpc::error::registry_error)?
         .into_inner();
 
-    let schema = Schema {
-        id,
-        name: schema.name,
-        topic: schema.topic,
-        query_address: schema.query_address,
-        schema_type: SchemaType::from_i32(schema.schema_type)
-            .ok_or(Error::InvalidSchemaType(schema.schema_type))?,
-    };
-
-    tracing::debug!("schema: {:?}", schema);
-
-    Ok(schema)
+    FullSchema::from_rpc(schema)
 }

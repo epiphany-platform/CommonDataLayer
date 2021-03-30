@@ -3,7 +3,7 @@ use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
 
 use anyhow::Context;
-use structopt::{clap::arg_enum, StructOpt};
+use structopt::StructOpt;
 use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
 

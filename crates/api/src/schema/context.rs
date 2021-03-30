@@ -37,7 +37,7 @@ impl Context {
     pub async fn connect_to_registry(&self) -> Result<SchemaRegistryConn> {
         tracing::debug!("Connecting to registry");
         // TODO: Make proper connection pool
-        
+
         rpc::schema_registry::connect(self.config.schema_registry_addr.clone())
             .await
             .context("Failed to connect to the schema registry")

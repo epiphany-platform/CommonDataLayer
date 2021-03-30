@@ -1,18 +1,20 @@
 use std::collections::HashMap;
 
-use crate::schema::context::Context;
-use crate::types::data::CdlObject;
-use crate::types::schema::{Definition, SchemaType, SchemaWithDefinitions};
-
 use itertools::Itertools;
 use juniper::{graphql_object, FieldResult};
 use semver::VersionReq;
 use tracing::Instrument;
 use uuid::Uuid;
 
+use crate::schema::context::Context;
+use crate::schema::utils::{get_schema, get_view};
+use crate::types::data::CdlObject;
+use crate::types::schema::{Definition, FullSchema, SchemaType};
+use crate::types::view::View;
+
 #[graphql_object(context = Context)]
 /// Schema is the format in which data is to be sent to the Common Data Layer.
-impl SchemaWithDefinitions {
+impl FullSchema {
     /// Random UUID assigned on creation
     fn id(&self) -> &Uuid {
         &self.id
@@ -34,8 +36,9 @@ impl SchemaWithDefinitions {
     }
 
     /// Whether this schema represents documents or timeseries data.
-    fn r#type(&self) -> SchemaType {
-        self.r#type
+    #[graphql(name = "type")]
+    fn schema_type(&self) -> SchemaType {
+        self.schema_type
     }
 
     /// Returns schema definition for given version.
@@ -55,6 +58,11 @@ impl SchemaWithDefinitions {
     fn definitions(&self) -> &Vec<Definition> {
         &self.definitions
     }
+
+    /// All views belonging to this schema.
+    fn views(&self) -> &Vec<View> {
+        &self.views
+    }
 }
 
 pub struct Query;
@@ -62,40 +70,43 @@ pub struct Query;
 #[graphql_object(context = Context)]
 impl Query {
     /// Return single schema for given id
-    async fn schema(context: &Context, id: Uuid) -> FieldResult<SchemaWithDefinitions> {
+    async fn schema(context: &Context, id: Uuid) -> FieldResult<FullSchema> {
         let span = tracing::trace_span!("query_schema", ?id);
 
         async move {
-            let schema = context
-                .connect_to_registry()
-                .await?
-                .get_schema_with_definitions(rpc::schema_registry::Id { id: id.to_string() })
-                .await?
-                .into_inner();
-
-            SchemaWithDefinitions::from_rpc(schema)
+            let mut conn = context.connect_to_registry().await?;
+            get_schema(&mut conn, id).await
         }
         .instrument(span)
         .await
     }
 
     /// Return all schemas in database
-    async fn schemas(context: &Context) -> FieldResult<Vec<SchemaWithDefinitions>> {
+    async fn schemas(context: &Context) -> FieldResult<Vec<FullSchema>> {
         let span = tracing::trace_span!("query_schemas");
 
         async move {
             let mut conn = context.connect_to_registry().await?;
 
             let schemas = conn
-                .get_all_schemas_with_definitions(rpc::schema_registry::Empty {})
+                .get_all_full_schemas(rpc::schema_registry::Empty {})
                 .await?
                 .into_inner()
                 .schemas;
 
-            schemas
-                .into_iter()
-                .map(SchemaWithDefinitions::from_rpc)
-                .collect()
+            schemas.into_iter().map(FullSchema::from_rpc).collect()
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// Return single view for given id
+    async fn view(context: &Context, id: Uuid) -> FieldResult<View> {
+        let span = tracing::trace_span!("get_view", ?id);
+
+        async move {
+            let mut conn = context.connect_to_registry().await?;
+            get_view(&mut conn, id).await
         }
         .instrument(span)
         .await

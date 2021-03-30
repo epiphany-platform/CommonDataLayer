@@ -5,6 +5,8 @@ use semver::{Version, VersionReq};
 use serde_json::Value;
 use uuid::Uuid;
 
+use crate::types::view::View;
+
 #[derive(Debug, juniper::GraphQLEnum, Clone, Copy)]
 /// Schema type, describes what kind of query service and command service is going to be used,
 /// as timeseries databases are quite different than others.
@@ -14,8 +16,8 @@ pub enum SchemaType {
 }
 
 impl From<rpc::schema_registry::types::SchemaType> for SchemaType {
-    fn from(r#type: rpc::schema_registry::types::SchemaType) -> SchemaType {
-        match r#type {
+    fn from(schema_type: rpc::schema_registry::types::SchemaType) -> SchemaType {
+        match schema_type {
             rpc::schema_registry::types::SchemaType::DocumentStorage => SchemaType::DocumentStorage,
             rpc::schema_registry::types::SchemaType::Timeseries => SchemaType::Timeseries,
         }
@@ -23,24 +25,25 @@ impl From<rpc::schema_registry::types::SchemaType> for SchemaType {
 }
 
 impl From<SchemaType> for rpc::schema_registry::types::SchemaType {
-    fn from(r#type: SchemaType) -> rpc::schema_registry::types::SchemaType {
-        match r#type {
+    fn from(schema_type: SchemaType) -> rpc::schema_registry::types::SchemaType {
+        match schema_type {
             SchemaType::DocumentStorage => rpc::schema_registry::types::SchemaType::DocumentStorage,
             SchemaType::Timeseries => rpc::schema_registry::types::SchemaType::Timeseries,
         }
     }
 }
 
-pub struct SchemaWithDefinitions {
+pub struct FullSchema {
     pub id: Uuid,
     pub name: String,
     pub insert_destination: String,
     pub query_address: String,
-    pub r#type: SchemaType,
+    pub schema_type: SchemaType,
     pub definitions: Vec<Definition>,
+    pub views: Vec<View>,
 }
 
-impl SchemaWithDefinitions {
+impl FullSchema {
     pub fn get_definition(&self, version_req: VersionReq) -> Option<&Definition> {
         self.definitions
             .iter()
@@ -51,15 +54,16 @@ impl SchemaWithDefinitions {
             .max_by_key(|d| &d.version)
     }
 
-    pub fn from_rpc(schema: rpc::schema_registry::SchemaWithDefinitions) -> FieldResult<Self> {
-        let r#type: rpc::schema_registry::types::SchemaType = schema.metadata.r#type.try_into()?;
+    pub fn from_rpc(schema: rpc::schema_registry::FullSchema) -> FieldResult<Self> {
+        let schema_type: rpc::schema_registry::types::SchemaType =
+            schema.metadata.schema_type.try_into()?;
 
-        Ok(SchemaWithDefinitions {
+        Ok(FullSchema {
             id: Uuid::parse_str(&schema.id)?,
             name: schema.metadata.name,
             insert_destination: schema.metadata.insert_destination,
             query_address: schema.metadata.query_address,
-            r#type: r#type.into(),
+            schema_type: schema_type.into(),
             definitions: schema
                 .definitions
                 .into_iter()
@@ -71,6 +75,11 @@ impl SchemaWithDefinitions {
                         )?)?,
                     })
                 })
+                .collect::<FieldResult<Vec<_>>>()?,
+            views: schema
+                .views
+                .into_iter()
+                .map(View::from_rpc)
                 .collect::<FieldResult<Vec<_>>>()?,
         })
     }
@@ -100,7 +109,7 @@ pub struct NewSchema {
     /// Definition is stored as a JSON value and therefore needs to be valid JSON.
     pub definition: String,
     /// Whether the schema stores documents or timeseries data.
-    pub r#type: SchemaType,
+    pub schema_type: SchemaType,
 }
 
 /// Input object which creates new version of existing schema.
@@ -124,5 +133,5 @@ pub struct UpdateSchema {
     /// Message queue topic to which data is inserted by data-router.
     pub insert_destination: Option<String>,
     /// Whether the schema stores documents or timeseries data.
-    pub r#type: Option<SchemaType>,
+    pub schema_type: Option<SchemaType>,
 }

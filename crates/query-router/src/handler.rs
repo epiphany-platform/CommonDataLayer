@@ -36,7 +36,7 @@ pub async fn query_single(
         .await
         .map_err(Error::CacheError)?;
 
-    let values = match (&schema.r#type, request_body) {
+    let values = match (&schema.schema_type, request_body) {
         (SchemaType::DocumentStorage, _) => {
             let mut values = rpc::query_service::query_multiple(
                 vec![object_id.to_string()],
@@ -108,7 +108,7 @@ pub async fn query_by_schema(
         .await
         .map_err(Error::CacheError)?;
 
-    match &schema.r#type {
+    match &schema.schema_type {
         SchemaType::DocumentStorage => {
             let values = rpc::query_service::query_by_schema(
                 schema_id.to_string(),
@@ -149,7 +149,7 @@ pub async fn query_raw(
         .await
         .map_err(Error::CacheError)?;
 
-    let values = match (request_body, &schema.r#type) {
+    let values = match (request_body, &schema.schema_type) {
         (Body::Raw { raw_statement }, SchemaType::DocumentStorage) => {
             query_service::query_raw(raw_statement, schema.query_address.clone())
                 .await

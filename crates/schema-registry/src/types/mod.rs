@@ -1,12 +1,8 @@
-use std::collections::HashMap;
-
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use uuid::Uuid;
 
 use self::schema::FullSchema;
-use rpc::schema_registry::types::SchemaType;
 
 pub mod schema;
 pub mod view;

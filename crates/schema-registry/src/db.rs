@@ -394,6 +394,35 @@ impl SchemaRegistryDb {
         Ok(rx)
     }
 
+    pub async fn listen_to_view_updates(
+        &self,
+    ) -> RegistryResult<UnboundedReceiver<RegistryResult<View>>> {
+        let (tx, rx) = unbounded_channel::<RegistryResult<View>>();
+        let mut listener = PgListener::connect_with(&self.pool)
+            .await
+            .map_err(RegistryError::ConnectionError)?;
+        listener.listen(VIEWS_LISTEN_CHANNEL).await?;
+
+        tokio::spawn(async move {
+            loop {
+                let notification = listener
+                    .recv()
+                    .await
+                    .map_err(RegistryError::NotificationError);
+                let view = notification.and_then(|n| {
+                    serde_json::from_str::<View>(n.payload())
+                        .map_err(RegistryError::MalformedNotification)
+                });
+
+                if tx.send(view).is_err() {
+                    return;
+                }
+            }
+        });
+
+        Ok(rx)
+    }
+
     pub async fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
         if !self.get_all_schemas().await?.is_empty() {
             warn!("[IMPORT] Database is not empty, skipping importing");
