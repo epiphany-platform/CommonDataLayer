@@ -4,12 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use rdkafka::{
-    consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
-    error::KafkaError,
-    message::BorrowedMessage,
-    ClientConfig, Offset, TopicPartitionList,
-};
+use rdkafka::{ClientConfig, Message, Offset, TopicPartitionList, consumer::{CommitMode, DefaultConsumerContext, StreamConsumer}, error::KafkaError, message::BorrowedMessage};
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 use tokio::{stream::StreamExt, time::delay_for};
@@ -42,6 +37,12 @@ struct Config {
     pub sleep_phase_length: u64,
 }
 
+#[derive(Deserialize, PartialEq, Eq,Hash)]
+struct PartialNotification{
+    pub object_id: Uuid,
+    pub schema_id: Uuid
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
@@ -70,7 +71,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut message_stream = consumer.start();
 
-    let mut changes: HashSet<(Uuid, Uuid)> = HashSet::new();
+    let mut changes: HashSet<PartialNotification> = HashSet::new();
     let mut offsets: HashMap<i32, i64> = HashMap::new();
     loop {
         match message_stream.try_next().await {
@@ -107,15 +108,16 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn new_notification(changes: &mut HashSet<(Uuid, Uuid)>, message: BorrowedMessage) -> Result<()> {
-    let schema_id = Uuid::new_v4();
-    let object_id = Uuid::new_v4();
-    // TODO: deserialize message
-    changes.insert((schema_id, object_id));
+
+fn new_notification(changes: &mut HashSet<PartialNotification>, message: BorrowedMessage) -> Result<()> {
+    let notification: PartialNotification = serde_json::from_str(
+        message.payload_view::<str>().ok_or_else(|| anyhow::anyhow!("Message has no payload"))??,
+    )?;
+    changes.insert(notification);
     Ok(())
 }
 
-async fn process_changes(changes: &mut HashSet<(Uuid, Uuid)>) -> Result<()> {
+async fn process_changes(changes: &mut HashSet<PartialNotification>) -> Result<()> {
     // TODO: Send changes to object_builder
     todo!();
     changes.clear();
