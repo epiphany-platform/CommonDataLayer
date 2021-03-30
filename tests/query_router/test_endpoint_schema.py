@@ -1,13 +1,14 @@
 import pytest
 
 from tests.common import load_case, assert_json
-from tests.common.config import KafkaInputConfig, PostgresConfig
-from tests.common.postgres import clear_data, insert_data
+from tests.common.kafka import KafkaInputConfig
+from tests.common.postgres import clear_data, insert_data, PostgresConfig
 from tests.common.query_router import QueryRouter
 from tests.common.query_service import QueryService
 from tests.common.schema_registry import SchemaRegistry
 
 TOPIC = 'qr.test.schema'
+
 
 @pytest.fixture
 def prepare(tmp_path):
@@ -23,7 +24,8 @@ def prepare(tmp_path):
     # prepare environment
     sr.start()
 
-    schema_id = sr.create_schema('test', kafka_input_config.topic, f'http://localhost:{qs.input_port}', '{}', 0)
+    schema_id = sr.create_schema('test', kafka_input_config.topic,
+                                 f'http://localhost:{qs.input_port}', '{}', 0)
 
     clear_data(postgres_config)
 

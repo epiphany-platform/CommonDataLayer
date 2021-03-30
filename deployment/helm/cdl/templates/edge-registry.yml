@@ -36,21 +36,21 @@ spec:
               value: {{ .Values.edgeRegistry.postgresDbname }}
             - name: POSTGRES_SCHEMA
               value: {{ .Values.edgeRegistry.postgresSchema }}
-            - name: COMMUNICATION_PORT
-              value: "{{ .Values.edgeRegistry.communicationPort }}"
-            - name: METHOD
+            - name: RPC_PORT
+              value: "{{ .Values.edgeRegistry.rpcPort }}"
+            - name: CONSUMER_METHOD
               value: {{ .Values.global.communicationMethod }}
             {{- if eq .Values.global.communicationMethod "kafka" }}
-            - name: MQ_HOST
+            - name: CONSUMER_HOST
               value: {{ .Values.global.kafkaBrokers }}
             {{- else if eq .Values.global.communicationMethod "amqp" }}
-            - name: MQ_HOST
+            - name: CONSUMER_HOST
               value: {{ .Values.global.amqpConnectionString }}
             {{- end }}
-            - name: MQ_TAG
-              value: {{ .Values.edgeRegistry.mqTag }}
-            - name: MQ_SOURCE
-              value: {{ .Values.edgeRegistry.mqSource }}
+            - name: CONSUMER_TAG
+              value: {{ .Values.edgeRegistry.consumerTag }}
+            - name: CONSUMER_SOURCE
+              value: {{ .Values.edgeRegistry.consumerSource }}
             - name: RUST_LOG
               value: "info,edge_registry=debug"
           ports:
