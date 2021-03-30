@@ -1,38 +1,12 @@
 use std::convert::TryInto;
 
-use async_graphql::{Enum, FieldResult, InputObject, Json, SimpleObject};
-use num_derive::{FromPrimitive, ToPrimitive};
+use async_graphql::{FieldResult, InputObject, Json, SimpleObject};
 use semver::{Version, VersionReq};
 use serde_json::Value;
 use uuid::Uuid;
 
 use crate::types::view::View;
-
-#[derive(Debug, Enum, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
-/// Schema type, describes what kind of query service and command service
-/// is going to be used, as timeseries databases are quite different than others.
-pub enum SchemaType {
-    DocumentStorage = 0,
-    Timeseries = 1,
-}
-
-impl From<rpc::schema_registry::types::SchemaType> for SchemaType {
-    fn from(schema_type: rpc::schema_registry::types::SchemaType) -> SchemaType {
-        match schema_type {
-            rpc::schema_registry::types::SchemaType::DocumentStorage => SchemaType::DocumentStorage,
-            rpc::schema_registry::types::SchemaType::Timeseries => SchemaType::Timeseries,
-        }
-    }
-}
-
-impl From<SchemaType> for rpc::schema_registry::types::SchemaType {
-    fn from(schema_type: SchemaType) -> rpc::schema_registry::types::SchemaType {
-        match schema_type {
-            SchemaType::DocumentStorage => rpc::schema_registry::types::SchemaType::DocumentStorage,
-            SchemaType::Timeseries => rpc::schema_registry::types::SchemaType::Timeseries,
-        }
-    }
-}
+use rpc::schema_registry::types::SchemaType;
 
 pub struct FullSchema {
     pub id: Uuid,

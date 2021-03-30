@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use async_graphql::{Context, FieldResult, Object};
-use num_traits::ToPrimitive;
 use tracing::Instrument;
 use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
@@ -94,7 +93,7 @@ impl MutationRoot {
                     name: update.name,
                     insert_destination: update.insert_destination,
                     query_address: update.query_address,
-                    schema_type: update.schema_type.and_then(|s| s.to_i32()),
+                    schema_type: update.schema_type.map(Into::into),
                 },
             })
             .await

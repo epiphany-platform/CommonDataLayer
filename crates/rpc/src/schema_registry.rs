@@ -14,12 +14,15 @@ pub async fn connect(addr: String) -> Result<SchemaRegistryClient<Channel>, Clie
 }
 
 pub mod types {
-    use super::schema_type;
-    use serde::{Deserialize, Serialize};
     use std::convert::TryFrom;
+
+    use async_graphql::Enum;
+    use serde::{Deserialize, Serialize};
     use tonic::Status;
 
-    #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, sqlx::Type)]
+    use super::schema_type;
+
+    #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, sqlx::Type, Enum)]
     #[sqlx(type_name = "schema_type_enum", rename_all = "lowercase")]
     pub enum SchemaType {
         DocumentStorage,

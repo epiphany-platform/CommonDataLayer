@@ -10,8 +10,9 @@ use crate::config::Config;
 use crate::schema::context::SchemaRegistryPool;
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::CdlObject;
-use crate::types::schema::{Definition, FullSchema, SchemaType};
+use crate::types::schema::{Definition, FullSchema};
 use crate::types::view::View;
+use rpc::schema_registry::types::SchemaType;
 
 #[Object]
 /// Schema is the format in which data is to be sent to the Common Data Layer.
