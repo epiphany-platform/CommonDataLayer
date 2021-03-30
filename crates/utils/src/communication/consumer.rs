@@ -60,8 +60,8 @@ impl CommonConsumer {
 
     async fn new_kafka(group_id: &str, brokers: &str, topics: &[&str]) -> Result<Self> {
         let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
-            .set("group.id", &group_id)
-            .set("bootstrap.servers", &brokers)
+            .set("group.id", group_id)
+            .set("bootstrap.servers", brokers)
             .set("enable.partition.eof", "false")
             .set("session.timeout.ms", "6000")
             .set("enable.auto.commit", "true")
@@ -112,7 +112,7 @@ impl CommonConsumer {
                 consumer,
                 ack_queue,
             } => {
-                let mut message_stream = consumer.start();
+                let mut message_stream = consumer.stream();
                 while let Some(message) = message_stream.try_next().await? {
                     ack_queue.add(&message);
                     let message = KafkaCommunicationMessage { message };

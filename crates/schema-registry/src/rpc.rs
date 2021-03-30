@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::pin::Pin;
 
-use anyhow::Context;
 use semver::Version;
 use semver::VersionReq;
 use sqlx::types::Json;
@@ -47,18 +46,12 @@ impl SchemaRegistryImpl {
         Ok(Self { db, mq_metadata })
     }
 
-    pub async fn export_all(&self) -> anyhow::Result<DbExport> {
-        self.db
-            .export_all()
-            .await
-            .context("Failed to export the entire database")
+    pub async fn export_all(&self) -> RegistryResult<DbExport> {
+        self.db.export_all().await
     }
 
-    pub async fn import_all(&self, imported: DbExport) -> anyhow::Result<()> {
-        self.db
-            .import_all(imported)
-            .await
-            .context("failed to import database")
+    pub async fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
+        self.db.import_all(imported).await
     }
 }
 

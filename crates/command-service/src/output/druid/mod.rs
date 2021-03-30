@@ -10,7 +10,7 @@ use serde_json::Value;
 use std::time::Duration;
 use tracing::error;
 use utils::message_types::BorrowedInsertMessage;
-use utils::metrics::counter;
+use utils::metrics::{self, counter};
 use uuid::Uuid;
 
 mod config;

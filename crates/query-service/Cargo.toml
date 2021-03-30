@@ -19,16 +19,16 @@ rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }
 
 # Crates.io
-bb8         = "0.4"
+bb8         = "0.7"
 anyhow      = "1.0"
 thiserror   = "1.0"
 structopt   = "0.3"
-tonic       = "0.3"
+tonic       = "0.4"
 tracing     = "0.1"
 serde_json  = "1.0"
 serde       = { version = "1.0", features = ["derive"] }
-tokio       = { version = "0.2", features = ["macros"] }
-uuid        = { version = "0.8", features = ["v1", "serde"] }
-reqwest     = { version = "=0.10.10", features = ["json"] }
-bb8-postgres            = { version = "0.4", features = ["with-uuid-0_8", "with-serde_json-1"] }
+tokio       = { version = "1.4", features = ["macros", "rt-multi-thread"] }
+uuid        = { version = "0.8", features = ["v4", "serde"] }
+reqwest     = { version = "0.11", features = ["json"] }
+bb8-postgres            = { version = "0.7", features = ["with-uuid-0_8", "with-serde_json-1"] }
 tracing-futures         = "0.2"

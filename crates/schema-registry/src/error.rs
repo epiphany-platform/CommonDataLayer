@@ -37,6 +37,8 @@ pub enum RegistryError {
     #[error("Malformed notification payload: {0}")]
     MalformedNotification(serde_json::Error),
     #[error("{0}")]
+    CacheError(String),
+    #[error("{0}")]
     MQError(utils::communication::Error),
     #[error("JSON error processing view fields: {0}")]
     MalformedViewFields(serde_json::Error),
@@ -78,9 +80,10 @@ impl From<RegistryError> for Status {
             RegistryError::ConnectionError(_)
             | RegistryError::DbError(_)
             | RegistryError::MQError(_)
-            | RegistryError::NotificationError(_)
+            | RegistryError::MalformedNotification(_)
             | RegistryError::MalformedViewFields(_)
-            | RegistryError::MalformedNotification(_) => Status::internal(error.to_string()),
+            | RegistryError::NotificationError(_)
+            | RegistryError::CacheError(_) => Status::internal(error.to_string()),
         }
     }
 }

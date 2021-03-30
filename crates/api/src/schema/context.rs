@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use bb8::Pool;
+use bb8::{Pool, PooledConnection};
 use tokio::sync::Mutex;
 
 use crate::{config::Config, events::EventStream, events::EventSubscriber};
@@ -62,12 +62,12 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
         rpc::schema_registry::connect(self.address.clone()).await
     }
 
-    async fn is_valid(&self, mut conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
+    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
         conn.ping(rpc::schema_registry::Empty {})
             .await
             .map_err(rpc::error::registry_error)?;
 
-        Ok(conn)
+        Ok(())
     }
 
     fn has_broken(&self, _conn: &mut Self::Connection) -> bool {

@@ -16,13 +16,13 @@ utils       = { path = "../utils" }
 schema-registry         = { path = "../schema-registry" }
 
 # Crates.io
-warp        = "0.2"
+warp        = "0.3"
 anyhow      = "1.0"
 lru-cache   = "0.1"
 serde       = { version = "1.0", features = ["derive"] }
 serde_json  = "1.0"
 structopt   = "0.3"
-uuid        = { version = "0.8", features = ["v1", "serde"] }
-tokio       = { version = "0.2", features = ["macros"] }
+uuid        = { version = "0.8", features = ["v4", "serde"] }
+tokio       = { version = "1.4", features = ["macros"] }
 tracing     = "0.1"
 tracing-futures         = "0.2"
