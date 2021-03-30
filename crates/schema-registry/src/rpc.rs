@@ -211,12 +211,14 @@ impl SchemaRegistry for SchemaRegistryImpl {
         request: Request<NewSchemaView>,
     ) -> Result<Response<Id>, Status> {
         tracing::trace!("Enter");
+        //TODO: request materializer::validate_options() to see if JSON has valid format.
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.schema_id)?;
         let replicated_view_id = parse_optional_uuid(&request.view_id)?;
         let view = View {
             name: request.name,
             materializer_addr: request.materializer_addr,
+            materializer_options: parse_json_and_deserialize(&request.materializer_options)?,
             fields: parse_json_and_deserialize(&request.fields)?,
         };
 
@@ -240,6 +242,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         request: Request<UpdatedView>,
     ) -> Result<Response<rpc::schema_registry::View>, Status> {
         tracing::trace!("Enter");
+        //TODO: request materializer::validate_options() to see if JSON has valid format.
         let request = request.into_inner();
         let view_id = parse_uuid(&request.id)?;
         let fields = request
@@ -250,6 +253,11 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let view = ViewUpdate {
             name: request.name,
             materializer_addr: request.materializer_addr,
+            materializer_options: request
+                .materializer_options
+                .as_deref()
+                .map(|options| parse_json_and_deserialize(options))
+                .transpose()?,
             fields,
         };
 
@@ -259,6 +267,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         Ok(Response::new(rpc::schema_registry::View {
             name: old_view.name,
             materializer_addr: old_view.materializer_addr,
+            materializer_options: serialize_json(&old_view.materializer_options)?,
             fields: serialize_json(&old_view.fields)?,
         }))
     }
@@ -370,6 +379,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         Ok(Response::new(rpc::schema_registry::View {
             name: view.name,
             materializer_addr: view.materializer_addr,
+            materializer_options: serialize_json(&view.materializer_options)?,
             fields: serialize_json(&view.fields)?,
         }))
     }
@@ -451,6 +461,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
                         rpc::schema_registry::View {
                             name: view.name,
                             materializer_addr: view.materializer_addr,
+                            materializer_options: serialize_json(&view.materializer_options)?,
                             fields: serialize_json(&view.fields)?,
                         },
                     ))

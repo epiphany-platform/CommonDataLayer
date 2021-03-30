@@ -19,8 +19,11 @@
   ],
   "views": {
     "ec8cc976-412b-11eb-8000-000000000000": {
-      "materializer_addr": "http://materializer:1234",
+      "materializer_addr": "http://postgres_materializer:50203",
       "name": "new view",
+      "materializer_options": {
+        "table": "MATERIALIZED_VIEW"
+      },
       "fields": {
         "foo": {
           "field_name": "a"
@@ -44,13 +47,13 @@
     "2cfad3c7-411a-11eb-8000-000000000000": {
       "schema_type": "DocumentStorage",
       "query_address": "http://postgres_query:50201",
-      "insert_destination": "cdl.document.data",
+      "insert_destination": "cdl.document.1.data",
       "name": "new schema"
     },
     "a5e0c7e2-412c-11eb-8000-000000000000": {
       "schema_type": "DocumentStorage",
       "query_address": "http://postgres_query:50201",
-      "insert_destination": "cdl.document.data",
+      "insert_destination": "cdl.document.1.data",
       "name": "second schema"
     }
   }

@@ -107,12 +107,14 @@ impl Vertex for Definition {
 pub struct View {
     pub name: String,
     pub materializer_addr: String,
+    pub materializer_options: Value,
     pub fields: HashMap<String, FieldDefinition>,
 }
 
 impl View {
     pub const NAME: &'static str = "VIEW_NAME";
     pub const MATERIALIZER_ADDR: &'static str = "MATERIALIZER_ADDR";
+    pub const MATERIALIZER_OPTIONS: &'static str = "MATERIALIZER_OPTIONS";
     pub const FIELDS: &'static str = "FIELDS";
 }
 
@@ -126,6 +128,10 @@ impl Vertex for View {
                     &mut properties,
                     View::MATERIALIZER_ADDR,
                 )?,
+                materializer_options: extract_vertex_property(
+                    &mut properties,
+                    View::MATERIALIZER_OPTIONS,
+                )?,
                 fields: extract_vertex_property(&mut properties, View::FIELDS)?,
             },
         ))
@@ -138,6 +144,7 @@ impl Vertex for View {
                 View::MATERIALIZER_ADDR,
                 Value::String(self.materializer_addr),
             ),
+            (View::MATERIALIZER_OPTIONS, self.materializer_options),
             (View::FIELDS, serde_json::to_value(&self.fields).unwrap()),
         ]
     }

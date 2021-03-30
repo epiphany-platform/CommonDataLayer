@@ -87,6 +87,7 @@ impl MutationRoot {
             let NewView {
                 name,
                 materializer_addr,
+                materializer_options,
                 fields,
             } = new_view.clone();
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
@@ -96,6 +97,7 @@ impl MutationRoot {
                     view_id: "".into(),
                     name,
                     materializer_addr,
+                    materializer_options: serde_json::to_string(&materializer_options)?,
                     fields: serde_json::to_string(&fields)?,
                 })
                 .await
@@ -127,6 +129,7 @@ impl MutationRoot {
             let UpdateView {
                 name,
                 materializer_addr,
+                materializer_options,
                 fields,
             } = update;
 
@@ -134,11 +137,14 @@ impl MutationRoot {
                 id: id.to_string(),
                 name: name.clone(),
                 materializer_addr: materializer_addr.clone(),
-                fields: if let Some(f) = fields.as_ref() {
-                    Some(serde_json::to_string(f)?)
-                } else {
-                    None
-                },
+                materializer_options: materializer_options
+                    .as_ref()
+                    .map(|o| serde_json::to_string(o))
+                    .transpose()?,
+                fields: fields
+                    .as_ref()
+                    .map(|f| serde_json::to_string(f))
+                    .transpose()?,
             })
             .await
             .map_err(rpc::error::registry_error)?;

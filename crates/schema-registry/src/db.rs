@@ -722,6 +722,7 @@ mod tests {
         View {
             name: "view1".into(),
             materializer_addr: "https://localhost:1234".into(),
+            materializer_options: json!({}),
             fields: hashmap! {
                 "a".into() => FieldDefinition::FieldName("a".into())
             },
@@ -751,6 +752,7 @@ mod tests {
         View {
             name: "view2".into(),
             materializer_addr: "https://localhost:1234".into(),
+            materializer_options: json!({}),
             fields: hashmap! {
                 "a".into() => FieldDefinition::FieldName("a".into())
             },

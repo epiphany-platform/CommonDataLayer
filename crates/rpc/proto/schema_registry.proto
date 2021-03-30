@@ -61,20 +61,23 @@ message NewSchemaView {
     required string view_id = 2;
     required string name = 3;
     required string materializer_addr = 4;
-    required string fields = 5;
+    required string materializer_options = 5;
+    required string fields = 6;
 }
 
 message UpdatedView {
     required string id = 1;
     optional string name = 2;
     optional string materializer_addr = 3;
-    optional string fields = 4;
+    optional string materializer_options = 4;
+    optional string fields = 5;
 }
 
 message View {
     required string name = 1;
     required string materializer_addr = 2;
-    required string fields = 3;
+    required string materializer_options = 3;
+    required string fields = 4;
 }
 
 message VersionedId {

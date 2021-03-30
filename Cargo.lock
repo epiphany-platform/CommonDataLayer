@@ -1638,6 +1638,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ffc5c5338469d4d3ea17d269fa8ea3512ad247247c30bd2df69e68309ed0a08"
 
 [[package]]
+name = "materializer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "bb8-postgres",
+ "futures",
+ "itertools 0.10.0",
+ "rpc",
+ "serde",
+ "serde_json",
+ "structopt",
+ "tokio",
+ "tonic",
+ "tracing",
+ "tracing-futures",
+ "utils",
+ "uuid",
+]
+
+[[package]]
 name = "maybe-uninit"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

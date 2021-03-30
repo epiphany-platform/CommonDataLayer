@@ -6,6 +6,8 @@ fn main() -> std::io::Result<()> {
             "proto/schema_registry.proto",
             "proto/edge_registry.proto",
             "proto/object_builder.proto",
+            "proto/materializer.proto",
+            "proto/common.proto",
             "proto/generic.proto",
         ],
         &["proto/"],
