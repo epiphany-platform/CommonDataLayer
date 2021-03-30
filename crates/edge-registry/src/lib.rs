@@ -17,7 +17,7 @@ use tonic::{Request, Response, Status};
 use tracing::{debug, error, trace};
 use utils::communication::consumer::ConsumerHandler;
 use utils::communication::message::CommunicationMessage;
-use utils::metrics::counter;
+use utils::metrics::{self, counter};
 use uuid::Uuid;
 
 pub mod args;
