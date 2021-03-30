@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -46,7 +44,7 @@ pub struct FullSchema {
     #[serde(rename = "type")]
     pub schema_type: SchemaType,
     pub definitions: Vec<SchemaDefinition>,
-    pub views: HashMap<Uuid, View>,
+    pub views: Vec<View>,
 }
 
 impl FullSchema {

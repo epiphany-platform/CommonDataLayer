@@ -38,7 +38,7 @@ pub async fn add_schema(
     query_address: String,
     file: Option<PathBuf>,
     registry_addr: String,
-    r#type: SchemaType,
+    schema_type: SchemaType,
 ) -> anyhow::Result<()> {
     let definition = read_json(file)?;
 
@@ -49,7 +49,7 @@ pub async fn add_schema(
                 name: schema_name.clone(),
                 query_address,
                 insert_destination,
-                r#type: r#type.into(),
+                schema_type: schema_type.into(),
             },
             definition: serde_json::to_vec(&definition)?,
         })
@@ -93,7 +93,7 @@ pub async fn update_schema(
     name: Option<String>,
     insert_destination: Option<String>,
     query_address: Option<String>,
-    r#type: Option<SchemaType>,
+    schema_type: Option<SchemaType>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
@@ -104,7 +104,7 @@ pub async fn update_schema(
                 name,
                 insert_destination,
                 query_address,
-                r#type: r#type.map(|t| t.into()),
+                schema_type: schema_type.map(|t| t.into()),
             },
         })
         .await?;
@@ -156,12 +156,12 @@ pub async fn get_schema_metadata(id: Uuid, registry_addr: String) -> anyhow::Res
         .get_schema_metadata(Id { id: id.to_string() })
         .await?
         .into_inner();
-    let r#type: SchemaType = metadata.r#type.try_into()?;
+    let schema_type: SchemaType = metadata.schema_type.try_into()?;
 
     println!("Name: {}", metadata.name);
     println!("Topic or Queue: {}", metadata.insert_destination);
     println!("Query Address: {}", metadata.query_address);
-    println!("Type: {}", r#type);
+    println!("Type: {}", schema_type);
 
     Ok(())
 }

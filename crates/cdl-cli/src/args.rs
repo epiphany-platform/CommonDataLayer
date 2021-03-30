@@ -74,8 +74,8 @@ pub enum SchemaAction {
         #[structopt(short, long, parse(from_os_str))]
         file: Option<PathBuf>,
         /// The type of schema. Possible values: DocumentStorage, Timeseries.
-        #[structopt(short, long, default_value = "DocumentStorage")]
-        r#type: SchemaType,
+        #[structopt(short = "t", long = "type", default_value = "DocumentStorage")]
+        schema_type: SchemaType,
     },
 
     /// Add a new version of an existing schema in the registry.
@@ -107,8 +107,8 @@ pub enum SchemaAction {
         #[structopt(short, long)]
         query_address: Option<String>,
         /// The new type of the schema. Possible values: DocumentStorage, Timeseries.
-        #[structopt(short, long)]
-        r#type: Option<SchemaType>,
+        #[structopt(short = "t", long = "type")]
+        schema_type: Option<SchemaType>,
     },
 
     /// Validate that a JSON value is valid under the format of the

@@ -76,9 +76,9 @@ impl SchemaCache {
             name: schema.metadata.name,
             query_address: schema.metadata.query_address,
             insert_destination: schema.metadata.insert_destination,
-            r#type: schema
+            schema_type: schema
                 .metadata
-                .r#type
+                .schema_type
                 .try_into()
                 .map_err(CacheError::RegistryError)?,
         })
@@ -99,8 +99,8 @@ impl SchemaCache {
             name: metadata.name,
             query_address: metadata.query_address,
             insert_destination: metadata.insert_destination,
-            r#type: metadata
-                .r#type
+            schema_type: metadata
+                .schema_type
                 .try_into()
                 .map_err(CacheError::RegistryError)?,
         })

@@ -24,7 +24,7 @@ pub async fn main() -> anyhow::Result<()> {
                 topic_or_queue,
                 query_address,
                 file,
-                r#type,
+                schema_type,
             } => {
                 add_schema(
                     name,
@@ -32,7 +32,7 @@ pub async fn main() -> anyhow::Result<()> {
                     query_address.unwrap_or_default(),
                     file,
                     args.registry_addr,
-                    r#type,
+                    schema_type,
                 )
                 .await
             }
@@ -44,14 +44,14 @@ pub async fn main() -> anyhow::Result<()> {
                 name,
                 topic_or_queue,
                 query_address,
-                r#type,
+                schema_type,
             } => {
                 update_schema(
                     id,
                     name,
                     topic_or_queue,
                     query_address,
-                    r#type,
+                    schema_type,
                     args.registry_addr,
                 )
                 .await

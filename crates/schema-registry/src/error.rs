@@ -38,6 +38,8 @@ pub enum RegistryError {
     MalformedNotification(serde_json::Error),
     #[error("{0}")]
     MQError(utils::communication::Error),
+    #[error("JSON error processing view fields: {0}")]
+    MalformedViewFields(serde_json::Error),
 }
 
 pub type RegistryResult<T> = Result<T, RegistryError>;
@@ -77,6 +79,7 @@ impl From<RegistryError> for Status {
             | RegistryError::DbError(_)
             | RegistryError::MQError(_)
             | RegistryError::NotificationError(_)
+            | RegistryError::MalformedViewFields(_)
             | RegistryError::MalformedNotification(_) => Status::internal(error.to_string()),
         }
     }

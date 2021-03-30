@@ -9,8 +9,8 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 use tracing::{trace, warn};
 use uuid::Uuid;
 
-use crate::types::schema::{FullSchema, NewSchema, Schema, SchemaDefinition};
-use crate::types::view::{FieldDefinition, View, ViewUpdate};
+use crate::types::schema::{FullSchema, NewSchema, Schema, SchemaDefinition, SchemaUpdate};
+use crate::types::view::{FieldDefinition, NewView, View, ViewUpdate};
 use crate::types::VersionedUuid;
 use crate::utils::build_full_schema;
 use crate::{
@@ -71,10 +71,7 @@ impl SchemaRegistryDb {
             id
         )
         .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(|view| (view.id, view))
-        .collect::<HashMap<Uuid, View>>();
+        .await?;
 
         Ok(FullSchema {
             id: schema.id,
@@ -101,6 +98,25 @@ impl SchemaRegistryDb {
         .await?;
 
         Ok((version, row.definition))
+    }
+
+    pub async fn get_view(&self, id: Uuid) -> RegistryResult<View> {
+        let view = sqlx::query!(
+            "SELECT name, materializer_address, fields
+             FROM views WHERE id = $1",
+            id
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(RegistryError::DbError)?;
+
+        Ok(View {
+            id,
+            name: view.name,
+            materializer_address: view.materializer_address,
+            fields: serde_json::from_value(view.fields)
+                .map_err(RegistryError::MalformedViewFields)?,
+        })
     }
 
     pub async fn get_all_views_of_schema(
@@ -160,7 +176,7 @@ impl SchemaRegistryDb {
             sqlx::query!("SELECT version, definition, schema FROM definitions")
                 .fetch_all(&self.pool)
                 .await?;
-        let all_views =
+        let mut all_views =
             sqlx::query!("SELECT id, name, materializer_address, fields, schema FROM views",)
                 .fetch_all(&self.pool)
                 .await?;
@@ -181,19 +197,18 @@ impl SchemaRegistryDb {
                 let views = all_views
                     .drain_filter(|v| v.schema == schema.id)
                     .map(|row| {
-                        Ok((
-                            row.id,
-                            View {
-                                id: row.id,
-                                name: row.name,
-                                materializer_address: row.materializer_address,
-                                fields: serde_json::from_value::<
-                                    Json<HashMap<String, FieldDefinition>>,
-                                >(row.fields)?,
-                            },
-                        ))
+                        Ok(View {
+                            id: row.id,
+                            name: row.name,
+                            materializer_address: row.materializer_address,
+                            fields:
+                                serde_json::from_value::<Json<HashMap<String, FieldDefinition>>>(
+                                    row.fields,
+                                )
+                                .map_err(RegistryError::MalformedViewFields)?,
+                        })
                     })
-                    .collect::<RegistryResult<HashMap<Uuid, View>>>()?;
+                    .collect::<RegistryResult<Vec<View>>>()?;
 
                 Ok(FullSchema {
                     id: schema.id,
@@ -248,16 +263,54 @@ impl SchemaRegistryDb {
         Ok(new_id)
     }
 
+    pub async fn add_view_to_schema(&self, new_view: NewView) -> RegistryResult<Uuid> {
+        let new_id = Uuid::new_v4();
+
+        sqlx::query!(
+            "INSERT INTO views(id, schema, name, materializer_address, fields)
+             VALUES ($1, $2, $3, $4, $5)",
+            new_id,
+            new_view.schema_id,
+            new_view.name,
+            new_view.materializer_address,
+            serde_json::to_value(&new_view.fields).map_err(RegistryError::MalformedViewFields)?,
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(new_id)
+    }
+
     pub async fn update_schema(&self, id: Uuid, update: SchemaUpdate) -> RegistryResult<()> {
         let old_schema = self.get_schema(id).await?;
 
         sqlx::query!(
-            "UPDATE schemas SET name = $1, type = $2, insert_destination = $3, query_address = $4 WHERE id = $5",
+            "UPDATE schemas SET name = $1, schema_type = $2, insert_destination = $3, query_address = $4 WHERE id = $5",
             update.name.unwrap_or(old_schema.name),
-            update.r#type.unwrap_or(old_schema.r#type) as _,
+            update.schema_type.unwrap_or(old_schema.schema_type) as _,
             update.insert_destination.unwrap_or(old_schema.insert_destination),
             update.query_address.unwrap_or(old_schema.query_address),
             id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn update_view(&self, id: Uuid, update: ViewUpdate) -> RegistryResult<()> {
+        let old = self.get_view(id).await?;
+
+        sqlx::query!(
+            "UPDATE views SET name = $1, materializer_address = $2, fields = $3
+             WHERE id = $4",
+            update.name.unwrap_or(old.name),
+            update
+                .materializer_address
+                .unwrap_or(old.materializer_address),
+            serde_json::to_value(&update.fields.unwrap_or(old.fields))
+                .map_err(RegistryError::MalformedViewFields)?,
+            id,
         )
         .execute(&self.pool)
         .await?;
@@ -270,7 +323,7 @@ impl SchemaRegistryDb {
         id: Uuid,
         new_version: SchemaDefinition,
     ) -> RegistryResult<()> {
-        self.ensure_schema_exists(id).await?;
+        self.get_schema(id).await?;
 
         if let Some(max_version) = self.get_schema_versions(id).await?.into_iter().max() {
             if max_version >= new_version.version {
@@ -354,11 +407,11 @@ impl SchemaRegistryDb {
                 Box::pin(async move {
                     for schema in imported.schemas {
                         sqlx::query!(
-                            "INSERT INTO schemas(id, name, type, insert_destination, query_address) \
+                            "INSERT INTO schemas(id, name, schema_type, insert_destination, query_address) \
                              VALUES($1, $2, $3, $4, $5)",
                             schema.id,
                             schema.name,
-                            schema.r#type as _,
+                            schema.schema_type as _,
                             schema.insert_destination,
                             schema.query_address
                         )
@@ -376,7 +429,22 @@ impl SchemaRegistryDb {
                             .execute(c.acquire().await?)
                             .await?;
                         }
-                    }
+
+                        for view in schema.views {
+                            sqlx::query!(
+                                "INSERT INTO views(id, schema, name, materializer_address, fields) \
+                                 VALUES($1, $2, $3, $4, $5)",
+                                 view.id,
+                                 schema.id,
+                                 view.name,
+                                 view.materializer_address,
+                                 serde_json::to_value(&view.fields)
+                                     .map_err(RegistryError::MalformedViewFields)?,
+                            )
+                            .execute(c.acquire().await?)
+                            .await?;
+                        }
+                     }
 
                     Ok(())
                 })
@@ -388,7 +456,7 @@ impl SchemaRegistryDb {
 
     pub async fn export_all(&self) -> RegistryResult<DbExport> {
         Ok(DbExport {
-            schemas: self.get_all_schemas_with_definitions().await?,
+            schemas: self.get_all_full_schemas().await?,
         })
     }
 }
