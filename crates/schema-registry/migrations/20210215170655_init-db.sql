@@ -1,5 +1,3 @@
--- add migration script here
-
 CREATE TYPE schema_type_enum AS ENUM ('document_storage', 'timeseries');
 
 CREATE TABLE schemas (

@@ -5,6 +5,15 @@ import time
 import grpc
 import tests.rpc.proto.schema_registry_pb2 as pb2
 import tests.rpc.proto.schema_registry_pb2_grpc as pb2_grpc
+from tests.common.postgres import PostgresConfig
+
+class DbShrinkerPostgres:
+    def __init__(self, postgres_config: PostgresConfig):
+        self.postgres_config = postgres_config
+
+    def run(self):
+        svc = subprocess.Popen([EXE], env=self.postgres_config.to_dict())
+        svc.wait()
 
 EXE = os.getenv('SCHEMA_REGISTRY_EXE') or 'schema-registry'
 
@@ -13,6 +22,7 @@ class SchemaRegistry:
     def __init__(self,
                  db_name,
                  kafka_brokers,
+                 postgres_config: PostgresConfig,
                  kafka_group_id='schema_registry',
                  kafka_topics='cdl.schema_registry.internal',
                  replication_role='master',
@@ -23,6 +33,7 @@ class SchemaRegistry:
         self.kafka_group_id = kafka_group_id
         self.kafka_topics = kafka_topics
         self.input_port = input_port
+        self.postgres_config = postgres_config
         self.svc = None
 
     def start(self):
@@ -35,7 +46,8 @@ class SchemaRegistry:
             "REPLICATION_SOURCE": self.kafka_topics,
             "REPLICATION_DESTINATION": self.kafka_topics,
             "INPUT_PORT": self.input_port,
-            "METRICS_PORT": "59101"
+            "METRICS_PORT": "59101",
+            **self.postgres_config.to_dict()
         }
 
         self.svc = subprocess.Popen([EXE], env=env)
