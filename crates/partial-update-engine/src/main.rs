@@ -7,7 +7,8 @@ use anyhow::{Context, Result};
 use rdkafka::{ClientConfig, Message, Offset, TopicPartitionList, consumer::{CommitMode, DefaultConsumerContext, StreamConsumer}, error::KafkaError, message::BorrowedMessage};
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
-use tokio::{stream::StreamExt, time::delay_for};
+use tokio::time::sleep;
+use tokio_stream::StreamExt;
 use tracing::debug;
 use utils::metrics::{self};
 use uuid::Uuid;
@@ -69,7 +70,7 @@ async fn main() -> anyhow::Result<()> {
     rdkafka::consumer::Consumer::subscribe(&consumer, &topics)
         .context("Can't subscribe to specified topics")?;
 
-    let mut message_stream = consumer.start();
+    let mut message_stream = consumer.stream();
 
     let mut changes: HashSet<PartialNotification> = HashSet::new();
     let mut offsets: HashMap<i32, i64> = HashMap::new();
@@ -93,7 +94,7 @@ async fn main() -> anyhow::Result<()> {
                     acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
                         .await?;
                     debug!("Entering sleep phase");
-                    delay_for(Duration::from_secs(config.sleep_phase_length)).await;
+                    sleep(Duration::from_secs(config.sleep_phase_length)).await;
                     debug!("Exiting sleep phase");
                 }
                 err => {
@@ -103,7 +104,7 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
-    tokio::time::delay_for(tokio::time::Duration::from_secs(3)).await;
+    sleep(tokio::time::Duration::from_secs(3)).await;
 
     Ok(())
 }
