@@ -3,8 +3,8 @@ skinparam linetype polyline
 skinparam backgroundColor #FEFEFE
 skinparam transparent false
 
-interface "Schema Registry" as SRDoc
-interface "Schema Registry" as SRTS
+interface "Configuration Layer" as ConfIn
+interface "Configuration Layer" as ConfOut
 
 cloud {
   [External System]
@@ -15,16 +15,17 @@ frame "Management Layer" {
     [Admin Web Panel]
 }
 
-[API]
+[API] <-up-> [Configuration Layer]
 
 frame "Ingestion Layer" {
-  API -left--. [Data Router]
-  [Data Router] -left--. SRDoc
+  API -left--> [Data Router]
+  [Data Router] -left--. ConfIn
 }
 
 frame "Configuration Layer" {
-  [Schema Registry] -down--. API
+  [Schema Registry]
   [Leader Elector] -left--. [Schema Registry]
+  [Edge Registry]
 }
 
 frame "Storage Layer" {
@@ -50,22 +51,12 @@ frame "Storage Layer" {
       [Query Service TS]
     }
 
-    node "Repository Blob" {
-      [Command Service Blob]
-
-      database "Sled DB" {
-        [Blob Data]
-      }
-
-      [Query Service Blob]
-    }
-
 
     () "any number of repositories (Document/Timeseries/Blob)" as ANY
 }
 
 frame "Retrieval Layer" {
-  [Query Router] -right-. SRTS
+  [Query Router] -right-. ConfOut
 }
 
 cloud {
@@ -76,18 +67,14 @@ cloud {
 [External System] -down-> [Data Router] : MQ
 [Data Router] -down--> [Command Service Doc] : MQ
 [Data Router] -down-> [Command Service TS] : MQ
-[Data Router] -down--> [Command Service Blob] : MQ
 [Data Router] -down-> ANY : MQ
 [Command Service Doc] -down-> [Document Data] : SQL
 [Command Service TS] -down-> [Timeseries Data] : REST
-[Command Service Blob] -down-> [Blob Data] : REST
 [DB Shrinker Storage] -down-> [Document Data] : SQL
 [Query Service Doc] -up-> [Document Data] : SQL
 [Query Service TS] -up-> [Timeseries Data] : REST
-[Query Service Blob] -up-> [Blob Data] : REST
 [Query Router] -up--> [Query Service Doc] : gRPC
 [Query Router] -up-> [Query Service TS] : gRPC
-[Query Router] -up--> [Query Service Blob] : gRPC
 [Query Router] -up-> ANY : gRPC
 User -up-> [Query Router] : REST
 @enduml
