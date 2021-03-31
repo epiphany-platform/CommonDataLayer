@@ -12,8 +12,8 @@ class EdgeRegistry:
     def __init__(self,
                  consumer_config,
                  postgres_config: PostgresConfig,
-                 communication_port=50110):
-        self.communication_port = communication_port
+                 rpc_port='50110'):
+        self.rpc_port = rpc_port
         self.consumer_config = consumer_config
         self.postgres_config = postgres_config
         self.svc = None
@@ -27,7 +27,9 @@ class EdgeRegistry:
                        CONSUMER_SOURCE=self.consumer_config.topic)
         else:
             raise Exception("Unsupported kind of consumer_config")
-        env.update(RPC_PORT='50110', METRICS_PORT='50105', STATUS_PORT="3001")
+        env.update(RPC_PORT=self.rpc_port,
+                   METRICS_PORT='50105',
+                   STATUS_PORT="3001")
 
         self.svc = subprocess.Popen([EXE], env=env)
 

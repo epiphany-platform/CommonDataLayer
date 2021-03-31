@@ -10,6 +10,7 @@ export SCHEMA_REGISTRY_EXE="../target/debug/schema-registry"
 export QUERY_SERVICE_EXE="../target/debug/query-service"
 export QUERY_SERVICE_TS_EXE="../target/debug/query-service-ts"
 export EDGE_REGISTRY_EXE="../target/debug/edge-registry"
+export OBJECT_BUILDER_EXE="../target/debug/object-builder"
 
 echo "pip3 install -r '../requirements.txt'"
 pip3 install -r "../requirements.txt"
@@ -22,7 +23,7 @@ python3 -m grpc.tools.protoc -I"../crates/" \
   --python_out="." \
   --grpc_python_out="." \
   rpc/proto/schema_registry.proto rpc/proto/query_service.proto rpc/proto/query_service_ts.proto \
-  rpc/proto/generic.proto rpc/proto/edge_registry.proto
+  rpc/proto/generic.proto rpc/proto/edge_registry.proto rpc/proto/object_builder.proto
 
 touch "rpc/proto/__init__.py"
 touch "rpc/__init__.py"

@@ -21,7 +21,7 @@ def prepare():
     create_kafka_topic(kafka_config, TOPIC)
 
     er = EdgeRegistry(kafka_config, postgres_config)
-    channel = grpc.insecure_channel(f"localhost:{er.communication_port}")
+    channel = grpc.insecure_channel(f"localhost:{er.rpc_port}")
     stub = edge_registry_pb2_grpc.EdgeRegistryStub(channel)
 
     er.start()
