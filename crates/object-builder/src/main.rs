@@ -13,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::debug!(?args, "command-line arguments");
 
-    utils::status_endpoints::serve();
+    utils::status_endpoints::serve(args.status_port);
     utils::metrics::serve(args.metrics_port);
 
     let object_builder = ObjectBuilderImpl::new(&args).await?;

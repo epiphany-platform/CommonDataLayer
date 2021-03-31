@@ -39,6 +39,9 @@ pub struct Args {
     /// Port to listen on for Prometheus requests
     #[structopt(long, default_value = utils::metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
+    /// Port exposing status of the application
+    #[structopt(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
+    pub status_port: u16,
 }
 
 #[derive(Error, Debug)]

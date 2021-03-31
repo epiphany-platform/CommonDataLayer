@@ -22,6 +22,9 @@ pub struct RegistryConfig {
     #[structopt(long, env, default_value = metrics::DEFAULT_PORT)]
     /// Port to listen on for Prometheus requests
     pub metrics_port: u16,
+    /// Port exposing status of the application
+    #[structopt(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
+    pub status_port: u16,
     #[structopt(flatten)]
     pub consumer_config: ConsumerConfig,
 }

@@ -72,8 +72,12 @@ struct Config {
     #[structopt(long, env)]
     pub import_file: Option<PathBuf>,
     /// Port to listen on for Prometheus requests
-    #[structopt(long, env)]
-    pub metrics_port: Option<u16>,
+    #[structopt(long, env, default_value = metrics::DEFAULT_PORT)]
+    /// Port to listen on for Prometheus requests
+    pub metrics_port: u16,
+    /// Port exposing status of the application
+    #[structopt(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
+    pub status_port: u16,
 }
 
 fn communication_config(config: &Config) -> anyhow::Result<CommunicationMethodConfig> {
@@ -155,12 +159,8 @@ pub async fn main() -> anyhow::Result<()> {
     let communication_config = communication_config(&config)?;
     let replication_config = replication_config(&config)?;
 
-    status_endpoints::serve();
-    metrics::serve(
-        config
-            .metrics_port
-            .unwrap_or_else(|| metrics::DEFAULT_PORT.parse().unwrap()),
-    );
+    status_endpoints::serve(config.status_port);
+    metrics::serve(config.metrics_port);
 
     let data_store = SledDatastore::new(&config.db_name).map_err(RegistryError::ConnectionError)?;
     let registry = SchemaRegistryImpl::new(

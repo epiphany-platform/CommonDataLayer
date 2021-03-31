@@ -27,7 +27,7 @@ class EdgeRegistry:
                        CONSUMER_SOURCE=self.consumer_config.topic)
         else:
             raise Exception("Unsupported kind of consumer_config")
-        env.update(RPC_PORT='50110', METRICS_PORT='50104')
+        env.update(RPC_PORT='50110', METRICS_PORT='50105', STATUS_PORT="3001")
 
         self.svc = subprocess.Popen([EXE], env=env)
 

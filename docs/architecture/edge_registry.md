@@ -85,6 +85,7 @@ Such `relation_id` should be added beforehand, via gRPC api, between objects sch
 | POSTGRES_SCHEMA   |                                                   | cdl               | no        | postgres |
 | RPC_PORT          | gRPC server port                                  | 50110             | no        | 50110    |
 | METRICS_PORT      | Port to listen on for Prometheus metrics          | 58105             | no        | 58105    |
+| STATUS_PORT       | Port exposing status of the application           | 3000              | no        | 3000     |
 | CONSUMER_METHOD   | MQ ingestion method, can be `kafka` or `rabbitmq` | kafka             | yes       |          |
 | CONSUMER_HOST     | Kafka broker or RabbitMQ host                     | 192.168.0.51:9092 | yes       |          |
 | CONSUMER_TAG      | Kafka group_id or RabbitMQ tag                    | cdl_edge_registry | yes       |          |
