@@ -12,7 +12,7 @@ use utils::communication::{
     message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,
 };
 use utils::communication::{parallel_consumer::ParallelCommonConsumer, Result};
-use utils::metrics::counter;
+use utils::metrics::{self, counter};
 use utils::{message_types::BorrowedInsertMessage, parallel_task_queue::ParallelTaskQueue};
 
 pub struct Service<P: OutputPlugin> {
@@ -115,7 +115,7 @@ impl<P: OutputPlugin> Service<P> {
 
         trace!("Stream closed");
 
-        tokio::time::delay_for(tokio::time::Duration::from_secs(3)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
         Ok(())
     }

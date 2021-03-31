@@ -11,9 +11,9 @@ use rpc::schema_registry::{schema_registry_client::SchemaRegistryClient, types::
 use serde::Serialize;
 use serde_json::Value;
 use tonic::transport::Channel;
+use utils::metrics::{self, counter};
 use utils::{
     communication::{consumer::ConsumerHandler, message::CommunicationMessage},
-    metrics::counter,
     types::FieldDefinition,
 };
 use uuid::Uuid;

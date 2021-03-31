@@ -11,7 +11,8 @@ pub use error::Error;
 use serde_json::Value;
 use tracing::{error, trace};
 use utils::message_types::BorrowedInsertMessage;
-use utils::{metrics::counter, psql::validate_schema};
+use utils::metrics::{self, counter};
+use utils::psql::validate_schema;
 
 pub mod config;
 pub mod error;

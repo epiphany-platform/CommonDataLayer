@@ -9,7 +9,10 @@ use serde_json::Value;
 use std::collections::HashMap;
 use structopt::StructOpt;
 use tonic::{Request, Response, Status};
-use utils::{metrics::counter, psql::validate_schema};
+use utils::{
+    metrics::{self, counter},
+    psql::validate_schema,
+};
 use uuid::Uuid;
 
 #[derive(Debug, StructOpt)]

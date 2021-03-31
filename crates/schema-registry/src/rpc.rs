@@ -1,6 +1,6 @@
 use crate::{
     db::SchemaDb,
-    error::RegistryError,
+    error::{RegistryError, RegistryResult},
     replication::ReplicationMethodConfig,
     replication::{ReplicationEvent, ReplicationRole, ReplicationState},
     types::DbExport,
@@ -8,7 +8,6 @@ use crate::{
     types::{NewSchema, NewSchemaVersion, VersionedUuid},
     CommunicationMethodConfig, View,
 };
-use anyhow::Context;
 use indradb::SledDatastore;
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, NewSchemaView, PodName, Schema,
@@ -82,16 +81,12 @@ impl SchemaRegistryImpl {
         }
     }
 
-    pub fn export_all(&self) -> anyhow::Result<DbExport> {
-        self.db
-            .export_all()
-            .context("Failed to export the entire database")
+    pub fn export_all(&self) -> RegistryResult<DbExport> {
+        self.db.export_all()
     }
 
-    pub fn import_all(&self, imported: DbExport) -> anyhow::Result<()> {
-        self.db
-            .import_all(imported)
-            .context("failed to import database")
+    pub fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
+        self.db.import_all(imported)
     }
 }
 

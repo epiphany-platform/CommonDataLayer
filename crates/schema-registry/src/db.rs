@@ -149,7 +149,7 @@ impl<D: Datastore> SchemaDb<D> {
         let conn = self.connect()?;
         conn.get_edge_properties(
             SpecificVertexQuery::single(id)
-                .outbound(std::u32::MAX)
+                .outbound()
                 .t(SchemaDefinitionEdge::db_type())
                 .property(SchemaDefinitionEdge::VERSION),
         )?
@@ -369,8 +369,8 @@ impl<D: Datastore> SchemaDb<D> {
 
     pub fn get_all_schemas(&self) -> RegistryResult<HashMap<Uuid, Schema>> {
         let conn = self.connect()?;
-        let all_schemas = conn
-            .get_all_vertex_properties(RangeVertexQuery::new(std::u32::MAX).t(Schema::db_type()))?;
+        let all_schemas =
+            conn.get_all_vertex_properties(RangeVertexQuery::new().t(Schema::db_type()))?;
 
         all_schemas
             .into_iter()
@@ -385,7 +385,7 @@ impl<D: Datastore> SchemaDb<D> {
     pub fn get_all_schema_names(&self) -> RegistryResult<HashMap<Uuid, String>> {
         let conn = self.connect()?;
         let all_names = conn.get_vertex_properties(
-            RangeVertexQuery::new(std::u32::MAX)
+            RangeVertexQuery::new()
                 .t(Schema::db_type())
                 .property(Schema::NAME),
         )?;
@@ -408,9 +408,9 @@ impl<D: Datastore> SchemaDb<D> {
 
         let all_schemas = conn.get_all_vertex_properties(
             SpecificVertexQuery::single(view_id)
-                .inbound(std::u32::MAX)
+                .inbound()
                 .t(SchemaViewEdge::db_type())
-                .outbound(std::u32::MAX),
+                .outbound(),
         )?;
 
         let props = all_schemas.into_iter().next().ok_or_else(|| {
@@ -430,9 +430,9 @@ impl<D: Datastore> SchemaDb<D> {
 
         let all_views = conn.get_all_vertex_properties(
             SpecificVertexQuery::single(schema_id)
-                .outbound(std::u32::MAX)
+                .outbound()
                 .t(SchemaViewEdge::db_type())
-                .inbound(std::u32::MAX),
+                .inbound(),
         )?;
 
         all_views
@@ -478,25 +478,24 @@ impl<D: Datastore> SchemaDb<D> {
     pub fn export_all(&self) -> RegistryResult<DbExport> {
         let conn = self.connect()?;
 
-        let all_definitions = conn.get_all_vertex_properties(
-            RangeVertexQuery::new(std::u32::MAX).t(Definition::db_type()),
-        )?;
+        let all_definitions =
+            conn.get_all_vertex_properties(RangeVertexQuery::new().t(Definition::db_type()))?;
 
-        let all_schemas = conn
-            .get_all_vertex_properties(RangeVertexQuery::new(std::u32::MAX).t(Schema::db_type()))?;
+        let all_schemas =
+            conn.get_all_vertex_properties(RangeVertexQuery::new().t(Schema::db_type()))?;
 
-        let all_views = conn
-            .get_all_vertex_properties(RangeVertexQuery::new(std::u32::MAX).t(View::db_type()))?;
+        let all_views =
+            conn.get_all_vertex_properties(RangeVertexQuery::new().t(View::db_type()))?;
 
         let all_schema_definitions = conn.get_all_edge_properties(
-            RangeVertexQuery::new(std::u32::MAX)
-                .outbound(std::u32::MAX)
+            RangeVertexQuery::new()
+                .outbound()
                 .t(SchemaDefinitionEdge::db_type()),
         )?;
 
         let all_schema_views = conn.get_all_edge_properties(
-            RangeVertexQuery::new(std::u32::MAX)
-                .outbound(std::u32::MAX)
+            RangeVertexQuery::new()
+                .outbound()
                 .t(SchemaViewEdge::db_type()),
         )?;
 
@@ -556,14 +555,14 @@ impl<D: Datastore> SchemaDb<D> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::error::RegistryResult;
     use crate::types::storage::vertices::FieldDefinition;
-    use anyhow::Result;
     use indradb::MemoryDatastore;
     use maplit::hashmap;
     use serde_json::json;
 
     #[test]
-    fn import_non_empty() -> Result<()> {
+    fn import_non_empty() -> RegistryResult<()> {
         let (to_import, schema1_id, view1_id) = prepare_db_export()?;
 
         let db = SchemaDb {
@@ -589,7 +588,7 @@ mod tests {
     }
 
     #[test]
-    fn import_all() -> Result<()> {
+    fn import_all() -> RegistryResult<()> {
         let (original_result, original_schema_id, original_view_id) = prepare_db_export()?;
 
         let db = SchemaDb {
@@ -623,7 +622,7 @@ mod tests {
     }
 
     #[test]
-    fn import_export_all() -> Result<()> {
+    fn import_export_all() -> RegistryResult<()> {
         let original_result = prepare_db_export()?.0;
 
         let db = SchemaDb {
@@ -639,7 +638,7 @@ mod tests {
     }
 
     #[test]
-    fn export_all() -> Result<()> {
+    fn export_all() -> RegistryResult<()> {
         let (result, original_schema_id, original_view_id) = prepare_db_export()?;
 
         let (schema_id, schema) = result.schemas.into_iter().next().unwrap();
@@ -670,7 +669,7 @@ mod tests {
     }
 
     #[test]
-    fn get_schema_type() -> Result<()> {
+    fn get_schema_type() -> RegistryResult<()> {
         let db = SchemaDb {
             db: MemoryDatastore::default(),
         };
@@ -683,7 +682,7 @@ mod tests {
     }
 
     #[test]
-    fn update_schema_type() -> Result<()> {
+    fn update_schema_type() -> RegistryResult<()> {
         let db = SchemaDb {
             db: MemoryDatastore::default(),
         };
@@ -758,7 +757,7 @@ mod tests {
         }
     }
 
-    fn prepare_db_export() -> Result<(DbExport, Uuid, Uuid)> {
+    fn prepare_db_export() -> RegistryResult<(DbExport, Uuid, Uuid)> {
         // SchemaId, ViewId
         let db = SchemaDb {
             db: MemoryDatastore::default(),

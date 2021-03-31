@@ -11,7 +11,7 @@ use thiserror::Error as DeriveError;
 use tracing::error;
 use url::ParseError;
 use utils::message_types::BorrowedInsertMessage;
-use utils::metrics::counter;
+use utils::metrics::{self, counter};
 use uuid::Uuid;
 
 pub mod config;

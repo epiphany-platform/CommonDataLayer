@@ -162,7 +162,8 @@ pub async fn main() -> anyhow::Result<()> {
     status_endpoints::serve(config.status_port);
     metrics::serve(config.metrics_port);
 
-    let data_store = SledDatastore::new(&config.db_name).map_err(RegistryError::ConnectionError)?;
+    let data_store = SledDatastore::new(&config.db_name)
+        .map_err(|err| anyhow::anyhow!("{}", RegistryError::ConnectionError(err)))?;
     let registry = SchemaRegistryImpl::new(
         data_store,
         config.replication_role,
@@ -173,7 +174,9 @@ pub async fn main() -> anyhow::Result<()> {
     .await?;
 
     if let Some(export_dir_path) = config.export_dir {
-        let exported = registry.export_all()?;
+        let exported = registry
+            .export_all()
+            .map_err(|err| anyhow::anyhow!("{}", err))?;
         let exported = serde_json::to_string(&exported)?;
         let export_path = export_path(export_dir_path);
         let mut file = File::create(export_path)?;
@@ -181,9 +184,11 @@ pub async fn main() -> anyhow::Result<()> {
     }
 
     if let Some(import_path) = config.import_file {
-        let imported = File::open(import_path)?;
+        let imported = File::open(import_path).map_err(|err| anyhow::anyhow!("{}", err))?;
         let imported = serde_json::from_reader(imported)?;
-        registry.import_all(imported)?;
+        registry
+            .import_all(imported)
+            .map_err(|err| anyhow::anyhow!("{}", err))?;
     }
 
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.input_port);

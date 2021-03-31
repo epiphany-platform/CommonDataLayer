@@ -111,7 +111,7 @@ mod tests {
 
     use tokio::{
         sync::{oneshot, Barrier},
-        time::delay_for,
+        time::sleep,
         try_join,
     };
 
@@ -151,7 +151,7 @@ mod tests {
             task_queue.clone(),
             "B".to_string(),
         ));
-        delay_for(Duration::from_millis(200)).await;
+        sleep(Duration::from_millis(200)).await;
         try_join!(first_task, second_task)?;
         Ok(())
     }
@@ -181,9 +181,9 @@ mod tests {
             counter.clone(),
         ));
         tx3.send(()).unwrap();
-        delay_for(Duration::from_millis(200)).await;
+        sleep(Duration::from_millis(200)).await;
         tx2.send(()).unwrap();
-        delay_for(Duration::from_millis(200)).await;
+        sleep(Duration::from_millis(200)).await;
         tx1.send(()).unwrap();
         let results = try_join!(first_task, second_task, third_task)?;
         assert_eq!(3, counter.load(Ordering::SeqCst));
