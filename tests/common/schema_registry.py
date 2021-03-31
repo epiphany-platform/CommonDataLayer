@@ -46,13 +46,13 @@ class SchemaRegistry:
     def stop(self):
         self.svc.kill()
 
-    def create_schema(self, name, topic, query, body, schema_type):
+    def create_schema(self, name, destination, query, body, schema_type):
         with grpc.insecure_channel(f"localhost:{self.input_port}") as channel:
             stub = pb2_grpc.SchemaRegistryStub(channel)
             resp = stub.AddSchema(
                 pb2.NewSchema(id="",
                               name=name,
-                              topic=topic,
+                              insert_destination=destination,
                               query_address=query,
                               definition=body,
                               schema_type=schema_type))
