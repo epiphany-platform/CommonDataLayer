@@ -26,10 +26,17 @@ class SchemaRegistry:
         self.svc = None
 
     def start(self):
-        env = {"DB_NAME": self.db_name, "REPLICATION_ROLE": self.replication_role, "COMMUNICATION_METHOD": 'kafka',
-               "KAFKA_BROKERS": self.kafka_brokers, "KAFKA_GROUP_ID": self.kafka_group_id,
-               "REPLICATION_SOURCE": self.kafka_topics, "REPLICATION_DESTINATION": self.kafka_topics,
-               "INPUT_PORT": self.input_port, "METRICS_PORT": "59101"}
+        env = {
+            "DB_NAME": self.db_name,
+            "REPLICATION_ROLE": self.replication_role,
+            "COMMUNICATION_METHOD": 'kafka',
+            "KAFKA_BROKERS": self.kafka_brokers,
+            "KAFKA_GROUP_ID": self.kafka_group_id,
+            "REPLICATION_SOURCE": self.kafka_topics,
+            "REPLICATION_DESTINATION": self.kafka_topics,
+            "INPUT_PORT": self.input_port,
+            "METRICS_PORT": "59101"
+        }
 
         self.svc = subprocess.Popen([EXE], env=env)
         time.sleep(3)
@@ -42,6 +49,11 @@ class SchemaRegistry:
     def create_schema(self, name, topic, query, body, schema_type):
         with grpc.insecure_channel(f"localhost:{self.input_port}") as channel:
             stub = pb2_grpc.SchemaRegistryStub(channel)
-            resp = stub.AddSchema(pb2.NewSchema(
-                id="", name=name, topic=topic, query_address=query, definition=body, schema_type=schema_type))
+            resp = stub.AddSchema(
+                pb2.NewSchema(id="",
+                              name=name,
+                              topic=topic,
+                              query_address=query,
+                              definition=body,
+                              schema_type=schema_type))
             return resp.id

@@ -10,7 +10,7 @@ use std::time::Duration;
 use structopt::StructOpt;
 use tokio::sync::mpsc::{channel, Sender};
 use tokio::sync::Mutex;
-use tokio::time::delay_for;
+use tokio::time::sleep;
 use uuid::Uuid;
 
 mod utils;
@@ -87,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
     }
 
     // ensure delivery of all messages
-    delay_for(Duration::from_secs(1)).await;
+    sleep(Duration::from_secs(1)).await;
 
     context.pb.lock().await.finish_print("done");
 

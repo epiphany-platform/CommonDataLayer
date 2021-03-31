@@ -1,6 +1,6 @@
 use super::{CommunicationMethod, ReplicationEvent, ReplicationMethodConfig};
 use crate::db::SchemaDb;
-use anyhow::Context;
+use crate::error::{RegistryError, RegistryResult};
 use async_trait::async_trait;
 use std::{process, sync::Arc};
 use tokio::sync::oneshot::Receiver;
@@ -34,7 +34,7 @@ pub async fn consume_mq(
     config: ReplicationMethodConfig,
     db: Arc<SchemaDb>,
     kill_signal: Receiver<()>,
-) -> anyhow::Result<()> {
+) -> RegistryResult<()> {
     let config = match &config.queue {
         CommunicationMethod::Kafka(kafka) => CommonConsumerConfig::Kafka {
             group_id: &kafka.group_id,
@@ -63,10 +63,10 @@ pub async fn consume_mq(
 async fn consume_message(
     message: &'_ dyn CommunicationMessage,
     db: &SchemaDb,
-) -> anyhow::Result<()> {
+) -> RegistryResult<()> {
     let payload = message.payload()?;
     let event: ReplicationEvent =
-        serde_json::from_str(payload).context("Payload deserialization failed")?;
+        serde_json::from_str(payload).map_err(RegistryError::SerdeError)?;
     trace!("Consuming message: {:?}", event);
     match event {
         ReplicationEvent::AddSchema { id, schema } => {

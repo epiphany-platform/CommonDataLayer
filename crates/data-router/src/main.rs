@@ -104,7 +104,7 @@ async fn main() -> anyhow::Result<()> {
         })
         .await?;
 
-    tokio::time::delay_for(tokio::time::Duration::from_secs(3)).await;
+    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
     Ok(())
 }

@@ -2,7 +2,7 @@ import os
 import subprocess
 import time
 
-from tests.common.config import VictoriaMetricsConfig
+from tests.common import VictoriaMetricsConfig
 
 EXE = os.getenv('QUERY_SERVICE_TS_EXE') or 'query-service-ts'
 

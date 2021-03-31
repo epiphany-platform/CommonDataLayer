@@ -20,12 +20,12 @@ utils       = { path = "../utils" }
 
 # Crates.io
 anyhow      = "1.0"
-bb8         = "0.4"
-reqwest     = { version = "0.10", features = ["json"] }
+bb8         = "0.7"
+reqwest     = { version = "0.11", features = ["json"] }
 serde       = { version = "1.0", features = ["derive"] }
 serde_json  = "1.0"
 structopt   = "0.3"
-tokio       = { version = "0.2", features = ["macros"] }
-tonic       = "0.3"
+tokio       = { version = "1.4", features = ["macros", "rt-multi-thread"] }
+tonic       = "0.4"
 tracing     = "0.1"
 tracing-futures         = "0.2"

@@ -3,9 +3,9 @@ import time
 
 import pytest
 
-from tests.common import load_case, assert_json
-from tests.common.config import KafkaInputConfig, PostgresConfig, VictoriaMetricsConfig
-from tests.common.postgres import clear_data as psql_clear_data, insert_data as psql_insert_data
+from tests.common import load_case, assert_json, VictoriaMetricsConfig
+from tests.common.kafka import KafkaInputConfig
+from tests.common.postgres import clear_data as psql_clear_data, insert_data as psql_insert_data, PostgresConfig
 from tests.common.query_router import QueryRouter
 from tests.common.query_service import QueryService
 from tests.common.query_service_ts import QueryServiceTs
@@ -33,7 +33,8 @@ def prepare_postgres(tmp_path):
     qs.start()
     sr.start()
 
-    schema_id = sr.create_schema('test', kafka_input_config.topic, f'http://localhost:{qs.input_port}', '{}', 0)
+    schema_id = sr.create_schema('test', kafka_input_config.topic,
+                                 f'http://localhost:{qs.input_port}', '{}', 0)
 
     with QueryRouter(f'http://localhost:{sr.input_port}') as qr:
         yield data, expected, qr, schema_id
@@ -64,7 +65,9 @@ def prepare_victoria_metrics(tmp_path):
     end = start + len(setup_data)
 
     for i in range(0, len(setup_data)):
-        ts = (start + i) * 1_000_000_000  # VM requires nanoseconds when inserting data via Influx LineProtocol
+        ts = (
+            start + i
+        ) * 1_000_000_000  # VM requires nanoseconds when inserting data via Influx LineProtocol
         setup_data[i] = setup_data[i].replace("$TIMESTAMP", str(ts))
         expected['data']['result'][0]['values'][i][0] = start + i
 
@@ -73,7 +76,8 @@ def prepare_victoria_metrics(tmp_path):
     qs.start()
     sr.start()
 
-    schema_id = sr.create_schema('test', kafka_input_config.topic, f'http://localhost:{qs.input_port}', '{}', 1)
+    schema_id = sr.create_schema('test', kafka_input_config.topic,
+                                 f'http://localhost:{qs.input_port}', '{}', 1)
 
     with QueryRouter(f'http://localhost:{sr.input_port}') as qr:
         yield data, expected, start, end, qr, schema_id
@@ -98,7 +102,7 @@ def test_endpoint_single_timeseries(prepare_victoria_metrics):
 
     req_body = {"from": str(start_ts), "to": str(end_ts), "step": '1'}
 
-    response = qr.query_get_single(
-        schema_id, data['query_for'], json.dumps(req_body))
+    response = qr.query_get_single(schema_id, data['query_for'],
+                                   json.dumps(req_body))
 
     assert_json(response.json(), expected)

@@ -2,9 +2,8 @@ import pytest
 
 from tests.common import load_case, retry_retrieve
 from tests.common.command_service import CommandService
-from tests.common.config import KafkaInputConfig, PostgresConfig
-from tests.common.kafka import push_to_kafka, create_kafka_topic, delete_kafka_topic
-from tests.common.postgres import clear_data, fetch_data
+from tests.common.kafka import push_to_kafka, create_kafka_topic, delete_kafka_topic, KafkaInputConfig
+from tests.common.postgres import clear_data, fetch_data, PostgresConfig
 
 TOPIC = "cdl.testing.command-service.postgres"
 
@@ -37,7 +36,8 @@ def test_inserting(prepare):
     for entry in data:
         push_to_kafka(kafka_config, entry)
 
-    actual, err = retry_retrieve(lambda: fetch_data(postgres_config), len(expected))
+    actual, err = retry_retrieve(lambda: fetch_data(postgres_config),
+                                 len(expected))
 
     assert err is None
     assert actual == expected

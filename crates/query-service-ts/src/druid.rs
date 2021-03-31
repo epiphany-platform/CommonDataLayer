@@ -7,7 +7,7 @@ use rpc::query_service_ts::{
 use serde_json::{json, Value};
 use structopt::StructOpt;
 use tonic::{Request, Response, Status};
-use utils::metrics::counter;
+use utils::metrics::{self, counter};
 
 #[derive(Debug, StructOpt)]
 pub struct DruidConfig {
@@ -28,8 +28,8 @@ impl bb8::ManageConnection for DruidConnectionManager {
         Ok(Client::new())
     }
 
-    async fn is_valid(&self, conn: Self::Connection) -> Result<Self::Connection, Self::Error> {
-        Ok(conn)
+    async fn is_valid(&self, _conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
+        Ok(())
     }
 
     fn has_broken(&self, _conn: &mut Self::Connection) -> bool {

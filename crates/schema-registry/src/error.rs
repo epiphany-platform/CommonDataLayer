@@ -43,6 +43,8 @@ pub enum RegistryError {
     CacheError(String),
     #[error("{0}")]
     MalformedError(MalformedError),
+    #[error("Error occurred in processing JSON data: {0}")]
+    SerdeError(serde_json::Error),
 }
 
 pub type RegistryResult<T> = Result<T, RegistryError>;
@@ -82,6 +84,7 @@ impl From<RegistryError> for Status {
             | RegistryError::InvalidView(_)
             | RegistryError::NoVersionMatchesRequirement(_)
             | RegistryError::CacheError(_)
+            | RegistryError::SerdeError(_)
             | RegistryError::MalformedError(_) => Status::internal(error.to_string()),
         }
     }
