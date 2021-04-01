@@ -7,14 +7,6 @@ import tests.rpc.proto.schema_registry_pb2 as pb2
 import tests.rpc.proto.schema_registry_pb2_grpc as pb2_grpc
 from tests.common.postgres import PostgresConfig
 
-class DbShrinkerPostgres:
-    def __init__(self, postgres_config: PostgresConfig):
-        self.postgres_config = postgres_config
-
-    def run(self):
-        svc = subprocess.Popen([EXE], env=self.postgres_config.to_dict())
-        svc.wait()
-
 EXE = os.getenv('SCHEMA_REGISTRY_EXE') or 'schema-registry'
 
 

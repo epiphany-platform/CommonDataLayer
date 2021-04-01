@@ -23,7 +23,7 @@ def prepare(request, tmp_path):
     postgres_config = PostgresConfig()
 
     qs = QueryService(db_config=postgres_config)
-    sr = SchemaRegistry(str(tmp_path), kafka_input_config.brokers)
+    sr = SchemaRegistry(str(tmp_path), kafka_input_config.brokers, postgres_config)
 
     # prepare environment
     clear_data(postgres_config)
