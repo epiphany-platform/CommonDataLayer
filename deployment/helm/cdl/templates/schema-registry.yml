@@ -28,15 +28,15 @@ spec:
         - name: INPUT_PORT
           value: "6400"
         - name: POSTGRES_USERNAME
-          value: {{ .Values.postgresUsername }}
+          value: {{ .Values.schemaRegistry.postgresUsername }}
         - name: POSTGRES_PASSWORD
-          value: {{ .Values.postgresPassword }}
+          value: {{ .Values.schemaRegistry.postgresPassword }}
         - name: POSTGRES_HOST
-          value: {{ .Values.postgresHost }}
+          value: {{ .Values.schemaRegistry.postgresHost }}
         - name: POSTGRES_PORT
-          value: "{{ .Values.postgresPort }}"
+          value: "{{ .Values.schemaRegistry.postgresPort }}"
         - name: POSTGRES_DBNAME
-          value: {{ .Values.postgresDbname }}
+          value: {{ .Values.schemaRegistry.postgresDbname }}
         - name: REPLICATION_ROLE
           value: "slave"
         {{- if eq .Values.global.communicationMethod "kafka" }}
