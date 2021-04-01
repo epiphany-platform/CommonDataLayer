@@ -55,10 +55,10 @@ class SchemaRegistry:
             stub = pb2_grpc.SchemaRegistryStub(channel)
             resp = stub.AddSchema(
                 pb2.NewSchema(
+                    definition=bytes(body, 'utf-8'),
                     metadata=pb2.SchemaMetadata(name=name,
                                                 insert_destination=topic,
                                                 query_address=query,
                                                 schema_type=schema_type),
-                    definition=body,
                 ))
             return resp.id
