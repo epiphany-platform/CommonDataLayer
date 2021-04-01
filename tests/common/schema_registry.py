@@ -54,10 +54,11 @@ class SchemaRegistry:
         with grpc.insecure_channel(f"localhost:{self.input_port}") as channel:
             stub = pb2_grpc.SchemaRegistryStub(channel)
             resp = stub.AddSchema(
-                pb2.NewSchema(id="",
-                              name=name,
-                              topic=topic,
-                              query_address=query,
-                              definition=body,
-                              schema_type=schema_type))
+                pb2.NewSchema(
+                    metadata=pb2.SchemaMetadata(name=name,
+                                                insert_destination=topic,
+                                                query_address=query,
+                                                schema_type=schema_type),
+                    definition=body,
+                ))
             return resp.id
