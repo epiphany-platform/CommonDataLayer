@@ -323,7 +323,6 @@ dependencies = [
  "anyhow",
  "lapin",
  "pbr",
- "rand 0.8.3",
  "rdkafka",
  "serde",
  "serde_json",
