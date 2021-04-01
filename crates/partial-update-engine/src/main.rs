@@ -1,10 +1,17 @@
 use std::{
     collections::{HashMap, HashSet},
+    sync::{Arc, Mutex},
     time::Duration,
 };
 
 use anyhow::{Context, Result};
-use rdkafka::{ClientConfig, Message, Offset, TopicPartitionList, consumer::{CommitMode, DefaultConsumerContext, StreamConsumer}, error::KafkaError, message::BorrowedMessage};
+use rdkafka::{
+    consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
+    error::KafkaError,
+    message::BorrowedMessage,
+    producer::{FutureProducer, FutureRecord},
+    ClientConfig, Message, Offset, TopicPartitionList,
+};
 use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 use tokio::time::sleep;
@@ -21,9 +28,12 @@ struct Config {
     /// Group ID of the consumer
     #[structopt(long, env)]
     pub group_id: String,
-    /// Kafka topic
+    /// Kafka topic for notifications
     #[structopt(long, env)]
     pub notification_topic: String,
+    /// Kafka topic for object builder input
+    #[structopt(long, env)]
+    pub object_builder_topic: String,
     /// Address of schema registry gRPC API
     #[structopt(long, env)]
     pub schema_registry_addr: String,
@@ -38,10 +48,10 @@ struct Config {
     pub sleep_phase_length: u64,
 }
 
-#[derive(Deserialize, PartialEq, Eq,Hash)]
-struct PartialNotification{
+#[derive(Deserialize, PartialEq, Eq, Hash)]
+struct PartialNotification {
     pub object_id: Uuid,
-    pub schema_id: Uuid
+    pub schema_id: Uuid,
 }
 
 #[tokio::main]
@@ -70,6 +80,14 @@ async fn main() -> anyhow::Result<()> {
     rdkafka::consumer::Consumer::subscribe(&consumer, &topics)
         .context("Can't subscribe to specified topics")?;
 
+    let producer = ClientConfig::new()
+        .set("bootstrap.servers", &config.brokers)
+        .set("message.timeout.ms", "5000")
+        .set("acks", "all")
+        .set("compression.type", "none")
+        .set("max.in.flight.requests.per.connection", "1")
+        .create()?;
+
     let mut message_stream = consumer.stream();
 
     let mut changes: HashSet<PartialNotification> = HashSet::new();
@@ -81,7 +99,7 @@ async fn main() -> anyhow::Result<()> {
                     new_notification(&mut changes, message)?;
                 }
                 None => {
-                    process_changes(&mut changes).await?;
+                    process_changes(&producer, &config, &mut changes).await?;
                     acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
                         .await?;
                     break;
@@ -90,7 +108,7 @@ async fn main() -> anyhow::Result<()> {
             Err(err) => match err {
                 KafkaError::PartitionEOF(_) => {
                     // TODO: What if eof on one partition, not on others?
-                    process_changes(&mut changes).await?;
+                    process_changes(&producer, &config, &mut changes).await?;
                     acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
                         .await?;
                     debug!("Entering sleep phase");
@@ -109,18 +127,55 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-
-fn new_notification(changes: &mut HashSet<PartialNotification>, message: BorrowedMessage) -> Result<()> {
+fn new_notification(
+    changes: &mut HashSet<PartialNotification>,
+    message: BorrowedMessage,
+) -> Result<()> {
     let notification: PartialNotification = serde_json::from_str(
-        message.payload_view::<str>().ok_or_else(|| anyhow::anyhow!("Message has no payload"))??,
+        message
+            .payload_view::<str>()
+            .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??,
     )?;
     changes.insert(notification);
     Ok(())
 }
 
-async fn process_changes(changes: &mut HashSet<PartialNotification>) -> Result<()> {
-    // TODO: Send changes to object_builder
-    todo!();
+async fn process_changes(
+    producer: &FutureProducer,
+    config: &Config,
+    changes: &mut HashSet<PartialNotification>,
+) -> Result<()> {
+    let schemas: HashSet<_> = changes.iter().map(|x| x.schema_id).collect();
+    let mut client = rpc::schema_registry::connect(config.schema_registry_addr.to_owned()).await?;
+    let mut views: HashSet<Uuid> = HashSet::new();
+    for schema in schemas {
+        let response = client
+            .get_all_views_of_schema(rpc::schema_registry::Id {
+                id: schema.to_string(),
+            })
+            .await?;
+        let schema_in_views = response
+            .into_inner()
+            .views
+            .iter()
+            .map(|view| Ok(view.0.parse()?))
+            .collect::<Result<Vec<Uuid>>>()?;
+        for view in schema_in_views {
+            views.insert(view);
+        }
+    }
+
+    for view in views {
+        let payload = format!("{{{}}}", view);
+        producer
+            .send(
+                FutureRecord::to(config.object_builder_topic.as_str())
+                    .payload(payload.as_str())
+                    .key(&view.to_string()),
+                Duration::from_secs(5),
+            )
+            .await.map_err(|err| anyhow::anyhow!("Error sending message to Kafka {:?}",err))?;
+    }
     changes.clear();
     Ok(())
 }
@@ -136,7 +191,7 @@ async fn acknowledge_messages(
             notification_topic,
             *offset.0,
             Offset::Offset(*offset.1),
-        );
+        )?;
     }
     rdkafka::consumer::Consumer::commit(consumer, &partition_offsets, CommitMode::Sync)?;
     offsets.clear();

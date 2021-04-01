@@ -2011,6 +2011,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "rdkafka",
+ "rpc",
  "serde",
  "serde_json",
  "structopt",
