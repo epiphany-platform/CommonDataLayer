@@ -20,9 +20,10 @@ class ObjectBuilder:
 
     def start(self):
         env = {
+            "RUST_LOG": "object_builder=trace,info",
             "INPUT_PORT": self.input_port,
             "METRICS_PORT": '50106',
-            "STATUS_PORT": "3002",
+            "STATUS_PORT": "0",
             "SCHEMA_REGISTRY_ADDR": self.schema_registry_addr
         }
 

@@ -4,6 +4,12 @@ import time
 from tests.common.postgres import connect_to_postgres
 from tests.common.victoria_metrics import VictoriaMetricsConfig
 
+def load_case_ext(case_name, app):
+    with open(
+            os.path.join(os.path.dirname(os.path.realpath(__file__)), '..',
+                         'data', app, f'{case_name}.json')) as f:
+        json_document = json.load(f)
+        return json_document
 
 def load_case(case_name, app):
     with open(
