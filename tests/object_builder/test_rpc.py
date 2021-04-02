@@ -14,10 +14,11 @@ from tests.common.postgres import clear_data, insert_data, PostgresConfig
 TOPIC = "cdl.object_builder.tests_data"
 
 
-@pytest.fixture(params=['simple'])
+@pytest.fixture(params=['simple', 'missing_view'])
 def prepare(request, tmp_path):
     case = load_case_ext(f"rpc/{request.param}", 'object_builder')
-    expected = case['expected']
+    expected = case.get('expected', None)
+    expectedError = case.get('expected_error', None)
     data = case['data']
     viewId = case['view_id']
 
@@ -42,22 +43,31 @@ def prepare(request, tmp_path):
     qs.start()
     ob.start()
 
-    yield viewId, stub, expected
+    yield viewId, stub, expected, expectedError
 
     ob.stop()
     qs.stop()
     sr.stop()
 
-    # cleanup environment
+    # cleanup environmeFt
     delete_kafka_topic(kafka_config, TOPIC)
     clear_data(postgres_config)
 
 
 def test_materialization(prepare):
-    viewId, ob, expected = prepare
+    viewId, ob, expected, expectedError = prepare
 
-    response = ob.Materialize(ViewId(view_id=viewId))
+    try:
+        response = ob.Materialize(ViewId(view_id=viewId))
 
-    response.rows.sort(key=lambda elem: elem.object_id)
+        response.rows.sort(key=lambda elem: elem.object_id)
 
-    assert_json(MessageToDict(response), expected)
+        assert_json(MessageToDict(response), expected)
+    except grpc.RpcError as rpc_error:
+        error_str = f"{rpc_error}"
+        if expectedError is not None:
+            print(f"Error: `{error_str}`")
+            print(f"Expected error: `{expectedError}`")
+            assert error_str.find(expectedError) != -1
+        else:
+            assert False, f"Received error: {error_str}"
