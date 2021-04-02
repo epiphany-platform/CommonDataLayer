@@ -72,7 +72,7 @@ impl ObjectBuilder for ObjectBuilderImpl {
                 let fields = row
                     .fields
                     .into_iter()
-                    .map(|(key, value)| Ok((key, serde_json::to_vec(&value)?)))
+                    .map(|(key, value)| Ok((key, serde_json::to_string(&value)?)))
                     .collect::<serde_json::Result<_>>()?;
                 Ok(RpcRowDefinition {
                     object_id: row.object_id.to_string(),

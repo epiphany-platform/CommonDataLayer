@@ -16,5 +16,5 @@ message MaterializedView {
 
 message RowDefinition {
   required string object_id = 1;
-  map<string, bytes> fields = 2;
+  map<string, string> fields = 2;
 }

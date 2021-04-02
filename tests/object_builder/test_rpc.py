@@ -58,4 +58,6 @@ def test_materialization(prepare):
 
     response = ob.Materialize(ViewId(view_id=viewId))
 
+    response.rows.sort(key=lambda elem: elem.object_id)
+
     assert_json(MessageToDict(response), expected)

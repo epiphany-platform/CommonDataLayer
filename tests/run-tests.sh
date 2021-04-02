@@ -29,4 +29,4 @@ touch "rpc/proto/__init__.py"
 touch "rpc/__init__.py"
 
 echo "python3 -m pytest . -vv"
-python3 -m pytest "." -vv
+python3 -m pytest -vv "${1:-"."}"

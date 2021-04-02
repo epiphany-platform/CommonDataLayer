@@ -44,15 +44,15 @@
       {
         "objectId": "00000000-1b5a-413c-b310-1a86dc2d3c78",
         "fields": {
-          "foo": "IkphbmUi",
-          "department": "IkFDQyI="
+          "foo": "\"Jane\"",
+          "department": "\"ACC\""
         }
       },
       {
         "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
         "fields": {
-          "foo": "IkpvaG4i",
-          "department": "IkFDQyI="
+          "foo": "\"John\"",
+          "department": "\"ACC\""
         }
       }
     ]
