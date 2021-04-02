@@ -9,7 +9,7 @@ set -ex
 
 array=( data-router command-service query-router query-service query-service-ts leader-elector schema-registry upload-to-kafka upload-to-rabbitmq api edge-registry object-builder )
 
-DOCKER_BUILDKIT=1
+export DOCKER_BUILDKIT=1
 for i in "${array[@]}"
 do
 	docker build -t ${CDL_REPOSITORY_PATH}cdl-${i}:${CDL_VERSION:-latest} --build-arg BIN=${i} --build-arg ENV=${ENV:-PROD} .
