@@ -1,13 +1,11 @@
 use std::{
     collections::{HashMap, HashSet},
-    sync::{Arc, Mutex},
     time::Duration,
 };
 
 use anyhow::{Context, Result};
 use rdkafka::{
     consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
-    error::KafkaError,
     message::BorrowedMessage,
     producer::{FutureProducer, FutureRecord},
     ClientConfig, Message, Offset, TopicPartitionList,
@@ -68,7 +66,7 @@ async fn main() -> anyhow::Result<()> {
     let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
         .set("group.id", &config.group_id)
         .set("bootstrap.servers", &config.brokers)
-        .set("enable.partition.eof", "true")
+        .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
         .set("enable.auto.commit", "true")
         .set("enable.auto.offset.store", "false")
@@ -85,18 +83,18 @@ async fn main() -> anyhow::Result<()> {
         .set("message.timeout.ms", "5000")
         .set("acks", "all")
         .set("compression.type", "none")
-        .set("max.in.flight.requests.per.connection", "1")
+        .set("max.in.flight.requests.per.connection", "5")
         .create()?;
 
-    let mut message_stream = consumer.stream();
-
+    let mut message_stream = Box::pin(consumer.stream().timeout(Duration::from_secs(2)));// TODO: configure?
     let mut changes: HashSet<PartialNotification> = HashSet::new();
     let mut offsets: HashMap<i32, i64> = HashMap::new();
     loop {
+        // TODO: configure max items per batch(?) - otherwise we won't start view recalculation if messages are sent more often then timeout
         match message_stream.try_next().await {
             Ok(opt_message) => match opt_message {
                 Some(message) => {
-                    new_notification(&mut changes, message)?;
+                    new_notification(&mut changes, message?)?;
                 }
                 None => {
                     process_changes(&producer, &config, &mut changes).await?;
@@ -105,20 +103,13 @@ async fn main() -> anyhow::Result<()> {
                     break;
                 }
             },
-            Err(err) => match err {
-                KafkaError::PartitionEOF(_) => {
-                    // TODO: What if eof on one partition, not on others?
-                    process_changes(&producer, &config, &mut changes).await?;
-                    acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
-                        .await?;
-                    debug!("Entering sleep phase");
-                    sleep(Duration::from_secs(config.sleep_phase_length)).await;
-                    debug!("Exiting sleep phase");
-                }
-                err => {
-                    panic!("Unexpected kafka error {:?}", err)
-                }
-            },
+            Err(_) => {
+                process_changes(&producer, &config, &mut changes).await?;
+                acknowledge_messages(&mut offsets, &consumer, &config.notification_topic).await?;
+                debug!("Entering sleep phase");
+                sleep(Duration::from_secs(config.sleep_phase_length)).await;
+                debug!("Exiting sleep phase");
+            }
         }
     }
 
@@ -166,7 +157,7 @@ async fn process_changes(
     }
 
     for view in views {
-        let payload = format!("{{{}}}", view);
+        let payload = format!("{{{}}}", view); // TODO: Use same type as object builder
         producer
             .send(
                 FutureRecord::to(config.object_builder_topic.as_str())
@@ -174,7 +165,8 @@ async fn process_changes(
                     .key(&view.to_string()),
                 Duration::from_secs(5),
             )
-            .await.map_err(|err| anyhow::anyhow!("Error sending message to Kafka {:?}",err))?;
+            .await
+            .map_err(|err| anyhow::anyhow!("Error sending message to Kafka {:?}", err))?;
     }
     changes.clear();
     Ok(())
