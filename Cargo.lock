@@ -98,9 +98,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.39"
+version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81cddc5f91628367664cc7c69714ff08deee8a3efc54623011c772544d7b2767"
+checksum = "28b2cd92db5cbd74e8e5028f7e27dd7aa3090e89e4f2a197cc7c8dfb69c7063b"
 
 [[package]]
 name = "api"
@@ -144,9 +144,9 @@ checksum = "23b62fc65de8e4e7f52534fb52b0f3ed04746ae267519eef2a83941e8085068b"
 
 [[package]]
 name = "async-graphql"
-version = "2.6.5"
+version = "2.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e9c16f745cdafeeaaef08c6c8ed260d74d10513da5efcf60bd7b1d23e3a874ed"
+checksum = "de9c056209e2de2db4843fe1f79d11b7c5d696d6b1951c94879439d04fa06888"
 dependencies = [
  "async-graphql-derive",
  "async-graphql-parser",
@@ -172,9 +172,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-derive"
-version = "2.6.5"
+version = "2.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7a339066bdc55787beec880b101428897943ca82153f474aaf4fea28c3e042b3"
+checksum = "bae7314abcdfd86d5bb637578ead97894924ecb92c1fd2d9ebd1db7587d24c2f"
 dependencies = [
  "Inflector",
  "async-graphql-parser",
@@ -188,9 +188,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-parser"
-version = "2.6.5"
+version = "2.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0761d1fc2f49b6327eb1a5835b5a6abb022192ac91d1152ced4b30a8445d0534"
+checksum = "2a8d8116f3015b7686ef98ffb70a74183c3c17bf45135993d3f095812e09e786"
 dependencies = [
  "async-graphql-value",
  "pest",
@@ -211,9 +211,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-warp"
-version = "2.6.5"
+version = "2.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3f76aef36670774a046db823d8413ab3425c6f16cea2dae8ba7c007167288a4a"
+checksum = "418c07af1830cbe35c6a4c98db244d9b7a3bd01e91424d9234f77b052d723586"
 dependencies = [
  "async-graphql",
  "futures-util",
@@ -1249,9 +1249,9 @@ dependencies = [
 
 [[package]]
 name = "hyper"
-version = "0.14.4"
+version = "0.14.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8e946c2b1349055e0b72ae281b238baf1a3ea7307c7e9f9d64673bdd9c26ac7"
+checksum = "8bf09f61b52cfcf4c00de50df88ae423d6c02354e385a86341133b5338630ad1"
 dependencies = [
  "bytes 1.0.1",
  "futures-channel",
@@ -1264,7 +1264,7 @@ dependencies = [
  "httpdate",
  "itoa",
  "pin-project",
- "socket2",
+ "socket2 0.4.0",
  "tokio",
  "tower-service",
  "tracing",
@@ -2941,6 +2941,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "socket2"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e3dfc207c526015c632472a77be09cf1b6e46866581aecae5cc38fb4235dea2"
+dependencies = [
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "spin"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3216,7 +3226,7 @@ dependencies = [
  "pin-project-lite",
  "postgres-protocol",
  "postgres-types",
- "socket2",
+ "socket2 0.3.19",
  "tokio",
  "tokio-util",
 ]

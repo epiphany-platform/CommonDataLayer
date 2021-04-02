@@ -26,7 +26,7 @@ Communication protocols:
 | INPUT_PORT           | Port to listen on                         | 50103                        | yes       |         |
 | SCHEMA_REGISTRY_ADDR | Address of schema registry gRPC API       | http://schema_registry:50101 | yes       |         |
 | CACHE_CAPACITY       | How many entries the cache can hold       | 1024                         | yes       |         |
-| METRICS_PORT         | Port to listen on for Prometheus requests | 58105                        | no        | 58105   |
+| METRICS_PORT         | Port to listen on for Prometheus requests | 51805                        | no        | 51805   |
 | RUST_LOG             | Log level                                 | `trace`                      | no        |         |
 
 ## Running
