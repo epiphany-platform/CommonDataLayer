@@ -33,5 +33,5 @@ warp        = "0.3"
 reqwest     = { version = "0.11", features = ["json"] }
 async-stream            = "0.3"
 async-graphql           = { version = "2.6", features = ["uuid"] }
-async-graphql-warp      = "2.7"
+async-graphql-warp      = "2.8"
 tracing-futures         = "0.2"
