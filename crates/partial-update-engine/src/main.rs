@@ -83,7 +83,7 @@ async fn main() -> anyhow::Result<()> {
         .set("max.in.flight.requests.per.connection", "5")
         .create()?;
 
-    let mut message_stream = Box::pin(consumer.stream().timeout(Duration::from_secs(2)));// TODO: configure?
+    let mut message_stream = Box::pin(consumer.stream().timeout(Duration::from_secs(2))); // TODO: configure?
     let mut changes: HashSet<PartialNotification> = HashSet::new();
     let mut offsets: HashMap<i32, i64> = HashMap::new();
     loop {
@@ -101,9 +101,10 @@ async fn main() -> anyhow::Result<()> {
                 }
             },
             Err(_) => {
-                if !changes.is_empty(){
+                if !changes.is_empty() {
                     process_changes(&producer, &config, &mut changes).await?;
-                    acknowledge_messages(&mut offsets, &consumer, &config.notification_topic).await?;
+                    acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
+                        .await?;
                 }
                 debug!("Entering sleep phase");
                 sleep(Duration::from_secs(config.sleep_phase_length)).await;
