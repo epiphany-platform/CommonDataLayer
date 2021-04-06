@@ -19,8 +19,13 @@
     ],
     "views": {
         "ec8cc976-412b-11eb-8000-000000000000": {
-            "jmespath": "{ a: a }",
-            "name": "new view"
+            "name": "new view",
+            "materializer_addr":  "",
+            "fields": {
+                "foo": {
+                    "FieldName": "a"
+                }
+            }
         }
     },
     "definitions": {

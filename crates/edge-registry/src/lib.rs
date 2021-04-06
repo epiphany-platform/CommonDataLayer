@@ -434,6 +434,12 @@ impl EdgeRegistry for EdgeRegistryImpl {
                 .collect(),
         }))
     }
+
+    #[tracing::instrument(skip(self))]
+    async fn heartbeat(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
+        //empty
+        Ok(Response::new(Empty {}))
+    }
 }
 
 #[async_trait::async_trait]
