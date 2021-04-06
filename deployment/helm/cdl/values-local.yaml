@@ -39,6 +39,11 @@ edgeRegistry:
 webAdmin:
   port: 30151
 
+partialUpdateEngine:
+  objectBuilderTopic: cdl.object-builder.input
+  sleepPhaseLength: 120
+
+
 postgres-document:
   commandServiceReplicaCount: 1
   queryServiceReplicaCount: 1

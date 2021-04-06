@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-partial-update-engine
+  labels:
+    app: {{ .Release.Name }}-partial-update-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-partial-update-engine
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-partial-update-engine
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51805'
+        prometheus.io/path: '/metrics'
+    spec:
+      containers:
+      - name: cdl-partial-update-engine
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-partial-update-engine:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["/bin/partial-update-engine"]
+        env:
+        - name: SCHEMA_REGISTRY_ADDR
+          value: "http://{{ .Release.Name }}-schema-registry:6400"
+        - name: KAFKA_BROKERS
+          value: "{{ .Values.global.kafkaBrokers }}"
+        - name: KAFKA_GROUP_ID
+          value: "partial-update-engine"
+        - name: NOTIFICATION_TOPIC
+          value: "{{ .Values.global.reportDestination }}"
+        - name: OBJECT_BUILDER_TOPIC
+          value: "{{ .Values.partialUpdateEngine.objectBuilderTopic }}"
+        - name: SLEEP_PHASE_LENGTH
+          value: "{{ .Values.partialUpdateEngine.sleepPhaseLength }}"
+        - name: RUST_LOG
+          value: "info,partial_update_engine=debug"
+        ports:
+        - containerPort: 51805
+      imagePullSecrets:
+        - name: {{ .Values.global.cdlImagePullSecrets }}
+

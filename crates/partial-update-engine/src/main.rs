@@ -22,10 +22,10 @@ use uuid::Uuid;
 struct Config {
     /// Address of Kafka brokers
     #[structopt(long, env)]
-    pub brokers: String,
+    pub kafka_brokers: String,
     /// Group ID of the consumer
     #[structopt(long, env)]
-    pub group_id: String,
+    pub kafka_group_id: String,
     /// Kafka topic for notifications
     #[structopt(long, env)]
     pub notification_topic: String,
@@ -35,9 +35,6 @@ struct Config {
     /// Address of schema registry gRPC API
     #[structopt(long, env)]
     pub schema_registry_addr: String,
-    /// How many entries the cache can hold
-    #[structopt(long, env)]
-    pub cache_capacity: usize,
     /// Port to listen on for Prometheus requests
     #[structopt(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
@@ -64,8 +61,8 @@ async fn main() -> anyhow::Result<()> {
     metrics::serve(config.metrics_port);
 
     let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
-        .set("group.id", &config.group_id)
-        .set("bootstrap.servers", &config.brokers)
+        .set("group.id", &config.kafka_group_id)
+        .set("bootstrap.servers", &config.kafka_brokers)
         .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
         .set("enable.auto.commit", "true")
@@ -79,7 +76,7 @@ async fn main() -> anyhow::Result<()> {
         .context("Can't subscribe to specified topics")?;
 
     let producer = ClientConfig::new()
-        .set("bootstrap.servers", &config.brokers)
+        .set("bootstrap.servers", &config.kafka_brokers)
         .set("message.timeout.ms", "5000")
         .set("acks", "all")
         .set("compression.type", "none")
@@ -104,8 +101,10 @@ async fn main() -> anyhow::Result<()> {
                 }
             },
             Err(_) => {
-                process_changes(&producer, &config, &mut changes).await?;
-                acknowledge_messages(&mut offsets, &consumer, &config.notification_topic).await?;
+                if !changes.is_empty(){
+                    process_changes(&producer, &config, &mut changes).await?;
+                    acknowledge_messages(&mut offsets, &consumer, &config.notification_topic).await?;
+                }
                 debug!("Entering sleep phase");
                 sleep(Duration::from_secs(config.sleep_phase_length)).await;
                 debug!("Exiting sleep phase");
