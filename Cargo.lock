@@ -1468,11 +1468,10 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "0.51.0"
+version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d47a55e9f881dc5027dcaf026670fa24b41f67926ab6517e2155488fe9c012a"
+checksum = "65b2fbe85ad92f8435a0f52072f55bd7f0843e082c8e461e56d1ce29440554c8"
 dependencies = [
- "Inflector",
  "base64",
  "bytes 1.0.1",
  "chrono",
@@ -1498,6 +1497,7 @@ dependencies = [
  "tokio-native-tls",
  "tokio-util",
  "tower",
+ "tracing",
  "url",
 ]
 
