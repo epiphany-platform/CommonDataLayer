@@ -39,6 +39,8 @@ spec:
             {{- end }}
             - name: MQ_SOURCE
               value: {{ .Values.objectBuilder.mqSource }}
+            - name: SCHEMA_REGISTRY_ADDR
+              value: "http://{{ .Release.Name }}-schema-registry:6400"
             - name: RUST_LOG
               value: "info,object_builder=debug"
           ports:
