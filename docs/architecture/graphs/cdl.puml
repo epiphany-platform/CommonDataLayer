@@ -55,6 +55,10 @@ frame "Storage Layer" {
     () "any number of repositories (Document/Timeseries/Blob)" as ANY
 }
 
+frame "Materialization Layer" {
+    [Object Builder] -down--. SRTS
+}
+
 frame "Retrieval Layer" {
   [Query Router] -right-. ConfOut
 }
@@ -76,5 +80,10 @@ cloud {
 [Query Router] -up--> [Query Service Doc] : gRPC
 [Query Router] -up-> [Query Service TS] : gRPC
 [Query Router] -up-> ANY : gRPC
+[Object Builder] -up-> [Query Service Doc]: gRPC
+[Object Builder] -up-> [Query Service TS]: gRPC
+[Object Builder] -up-> [Query Service Blob]: gRPC
+[Object Builder] -up-> ANY : gRPC
 User -up-> [Query Router] : REST
+User -up-> [Object Builder]: gRPC
 @enduml

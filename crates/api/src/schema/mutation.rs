@@ -27,7 +27,7 @@ impl MutationRoot {
                     id: "".into(),
                     name: new.name.clone(),
                     query_address: new.query_address.clone(),
-                    topic: new.topic.clone(),
+                    insert_destination: new.insert_destination.clone(),
                     definition: serde_json::to_string(&new.definition)?,
                     schema_type: rpc_schema_type,
                 })
@@ -40,7 +40,7 @@ impl MutationRoot {
             Ok(Schema {
                 id,
                 name: new.name,
-                topic: new.topic,
+                insert_destination: new.insert_destination,
                 query_address: new.query_address,
                 schema_type: new.schema_type,
             })
@@ -162,7 +162,7 @@ impl MutationRoot {
             let UpdateSchema {
                 name,
                 query_address: address,
-                topic,
+                insert_destination,
                 schema_type,
             } = update;
 
@@ -170,7 +170,7 @@ impl MutationRoot {
                 id: id.to_string(),
                 name,
                 address,
-                topic,
+                insert_destination,
                 schema_type: schema_type.and_then(|s| s.to_i32()),
             })
             .await

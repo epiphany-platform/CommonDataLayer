@@ -163,9 +163,9 @@ impl<D: Datastore> SchemaDb<D> {
         .collect()
     }
 
-    pub fn get_schema_topic(&self, id: Uuid) -> RegistryResult<String> {
+    pub fn get_schema_insert_destination(&self, id: Uuid) -> RegistryResult<String> {
         let conn = self.connect()?;
-        let topic_property = conn
+        let insert_destination_property = conn
             .get_vertex_properties(
                 SpecificVertexQuery::single(id).property(Schema::INSERT_DESTINATION),
             )?
@@ -173,7 +173,7 @@ impl<D: Datastore> SchemaDb<D> {
             .next()
             .ok_or(RegistryError::NoSchemaWithId(id))?;
 
-        serde_json::from_value(topic_property.value)
+        serde_json::from_value(insert_destination_property.value)
             .map_err(|_| MalformedError::MalformedSchema(id).into())
     }
 
@@ -251,12 +251,19 @@ impl<D: Datastore> SchemaDb<D> {
         Ok(())
     }
 
-    pub fn update_schema_topic(&self, id: Uuid, new_topic: String) -> RegistryResult<()> {
+    pub fn update_schema_insert_destination(
+        &self,
+        id: Uuid,
+        new_insert_destination: String,
+    ) -> RegistryResult<()> {
         self.ensure_schema_exists(id)?;
 
         self.set_vertex_properties(
             id,
-            &[(Schema::INSERT_DESTINATION, Value::String(new_topic))],
+            &[(
+                Schema::INSERT_DESTINATION,
+                Value::String(new_insert_destination),
+            )],
         )?;
 
         Ok(())
@@ -393,6 +400,28 @@ impl<D: Datastore> SchemaDb<D> {
                 Ok((schema_id, name))
             })
             .collect()
+    }
+
+    pub fn get_base_schema_of_view(&self, view_id: Uuid) -> RegistryResult<(Uuid, Schema)> {
+        let conn = self.connect()?;
+        self.ensure_view_exists(view_id)?;
+
+        let all_schemas = conn.get_all_vertex_properties(
+            SpecificVertexQuery::single(view_id)
+                .inbound()
+                .t(SchemaViewEdge::db_type())
+                .outbound(),
+        )?;
+
+        let props = all_schemas.into_iter().next().ok_or_else(|| {
+            RegistryError::InvalidView(format!("Missing base schema for view: {:?}", view_id))
+        })?;
+
+        let schema_id = props.vertex.id;
+        let schema =
+            Schema::from_properties(props).ok_or(MalformedError::MalformedSchema(schema_id))?;
+
+        Ok(schema)
     }
 
     pub fn get_all_views_of_schema(&self, schema_id: Uuid) -> RegistryResult<HashMap<Uuid, View>> {
@@ -683,7 +712,7 @@ mod tests {
                     }
                 }
             }),
-            insert_destination: "topic1".into(),
+            insert_destination: "insert_destination1".into(),
             query_address: "query1".into(),
             schema_type: SchemaType::DocumentStorage,
         }
@@ -712,7 +741,7 @@ mod tests {
                     }
                 }
             }),
-            insert_destination: "topic2".into(),
+            insert_destination: "insert_destination2".into(),
             query_address: "query2".into(),
             schema_type: SchemaType::DocumentStorage,
         }

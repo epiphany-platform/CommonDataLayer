@@ -40,7 +40,7 @@ pub async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<
     let schema = Schema {
         id,
         name: schema.name,
-        topic: schema.topic,
+        insert_destination: schema.insert_destination,
         query_address: schema.query_address,
         schema_type: SchemaType::from_i32(schema.schema_type)
             .ok_or(Error::InvalidSchemaType(schema.schema_type))?,

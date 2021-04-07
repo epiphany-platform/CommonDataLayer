@@ -7,7 +7,7 @@ set -ex
 # CDL_VERSION=0.1.0
 # CDL_PUSH=true
 
-array=( data-router command-service query-router query-service query-service-ts leader-elector schema-registry upload-to-kafka upload-to-rabbitmq api edge-registry )
+array=( data-router command-service query-router query-service query-service-ts leader-elector schema-registry upload-to-kafka upload-to-rabbitmq api edge-registry object-builder )
 
 export DOCKER_BUILDKIT=1
 for i in "${array[@]}"
