@@ -32,7 +32,7 @@ pub enum ReplicationEvent {
     UpdateSchemaMetadata {
         id: Uuid,
         name: Option<String>,
-        topic: Option<String>,
+        insert_destination: Option<String>,
         query_address: Option<String>,
         schema_type: Option<SchemaType>,
     },

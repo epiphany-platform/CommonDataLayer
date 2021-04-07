@@ -31,7 +31,7 @@ pub async fn get_schema(
 
 pub async fn add_schema(
     schema_name: String,
-    topic: String,
+    insert_destination: String,
     query_address: String,
     file: Option<PathBuf>,
     registry_addr: String,
@@ -46,7 +46,7 @@ pub async fn add_schema(
             name: schema_name.clone(),
             definition: serde_json::to_string(&definition)?,
             query_address,
-            topic,
+            insert_destination,
             schema_type: schema_type as i32,
         })
         .await?;
@@ -101,16 +101,16 @@ pub async fn set_schema_name(
     Ok(())
 }
 
-pub async fn set_schema_topic(
+pub async fn set_schema_insert_destination(
     schema_id: Uuid,
-    topic: String,
+    insert_destination: String,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client
         .update_schema_metadata(SchemaMetadataUpdate {
             id: schema_id.to_string(),
-            topic: Some(topic),
+            insert_destination: Some(insert_destination),
             ..Default::default()
         })
         .await?;
@@ -190,15 +190,18 @@ pub async fn get_schema_names(registry_addr: String) -> anyhow::Result<()> {
     Ok(())
 }
 
-pub async fn get_schema_topic(schema_id: Uuid, registry_addr: String) -> anyhow::Result<()> {
+pub async fn get_schema_insert_destination(
+    schema_id: Uuid,
+    registry_addr: String,
+) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let response = client
-        .get_schema_topic(Id {
+        .get_schema_insert_destination(Id {
             id: schema_id.to_string(),
         })
         .await?;
 
-    println!("{}", response.into_inner().topic);
+    println!("{}", response.into_inner().insert_destination);
 
     Ok(())
 }

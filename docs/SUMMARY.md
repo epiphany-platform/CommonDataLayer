@@ -31,6 +31,8 @@
         - [Command Service](architecture/command_service.md)
         - [Db Shrinker Storage](architecture/db_shrinker_storage.md)
         - [Query Service](architecture/query_service.md)
+    - [Materialization Layer]()
+        - [Object Builder](architecture/object_builder.md)
     - [Retrieval Layer](architecture/retrieval.md)
         - [Query Router](architecture/query_router.md)
     - [Utils](architecture/utils.md)

@@ -138,6 +138,7 @@ impl QueryService for PsqlQuery {
         &self,
         request: Request<ObjectIds>,
     ) -> Result<Response<ValueMap>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
 
         counter!("cdl.query-service.query-multiple.psql", 1);
@@ -176,6 +177,7 @@ impl QueryService for PsqlQuery {
         &self,
         request: Request<SchemaId>,
     ) -> Result<Response<ValueMap>, Status> {
+        tracing::trace!("Enter");
         let request = request.into_inner();
 
         counter!("cdl.query-service.query-by-schema.psql", 1);
@@ -208,6 +210,7 @@ impl QueryService for PsqlQuery {
         &self,
         request: Request<RawStatement>,
     ) -> Result<Response<ValueBytes>, Status> {
+        tracing::trace!("Enter");
         counter!("cdl.query-service.query_raw.psql", 1);
         let connection = self.connect().await?;
         let messages = connection

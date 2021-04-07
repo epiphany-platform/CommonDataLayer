@@ -7,6 +7,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::types::{extract_vertex_property, SchemaType};
+pub use utils::types::FieldDefinition;
 
 pub trait Vertex: Sized {
     fn into_properties<'a>(self) -> Vec<(&'a str, Value)>;
@@ -144,9 +145,4 @@ impl Vertex for View {
     fn db_type() -> Type {
         VIEW_VERTEX_TYPE.clone()
     }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub enum FieldDefinition {
-    FieldName(String),
 }
