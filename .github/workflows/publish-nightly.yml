@@ -1,0 +1,52 @@
+name: Publish
+
+on:
+  push:
+    branches:
+      - "develop"
+    paths:
+      - "crates"
+      - "web-admin"
+      - "build.sh"
+      - "Dockerfile"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "rust-toolchain"
+
+jobs:
+  build-and-deploy:
+    name: nightly docker.io
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Checkout the repo
+      uses: actions/checkout@v2
+
+    - name: Login to registry
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_LOGIN }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+    - name: Build and push crates
+      run: |
+        crates=(command-service data-router leader-elector query-service query-service-ts schema-registry query-router api)
+        version="dev-$(date -u +'%Y-%m-%d')-$(git rev-parse --short $GITHUB_SHA)"
+        for crate in "${crates[@]}"
+        do
+        docker build . --build-arg BIN=$crate -t epiphanyplatform/cdl-$crate:$version
+        docker tag epiphanyplatform/cdl-$crate:$version epiphanyplatform/cdl-$crate:latest-dev
+        docker push epiphanyplatform/cdl-$crate:$version
+        docker push epiphanyplatform/cdl-$crate:latest-dev
+        done
+      env:
+        DOCKER_BUILDKIT: 1
+
+    - name: Build and push web-admin
+      run: |
+        cd web-admin
+        version="dev-$(date -u +'%Y-%m-%d')-$(git rev-parse --short $GITHUB_SHA)"
+        docker build . -t epiphanyplatform/cdl-web-admin:$version
+        docker tag epiphanyplatform/cdl-web-admin:$version epiphanyplatform/cdl-web-admin:latest-dev
+        docker push epiphanyplatform/cdl-web-admin:$version
+        docker push epiphanyplatform/cdl-web-admin:latest-dev
