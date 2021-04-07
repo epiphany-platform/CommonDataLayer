@@ -2,8 +2,8 @@ use anyhow::Context;
 use futures::{Future, FutureExt};
 use k8s_openapi::api::core::v1::Pod;
 use kube::{
-    api::{DeleteParams, ListParams, Meta, Patch, PatchParams},
-    Api, Client,
+    api::{DeleteParams, ListParams, Patch, PatchParams},
+    Api, Client, Resource,
 };
 use serde::Deserialize;
 use std::{fs, time::Duration};
@@ -77,13 +77,13 @@ impl LeaderElector {
             .labels(&format!("app={},role=master", self.name))
             .timeout(10);
         for pod in pods.list(&params).await? {
-            let pod_name = Meta::name(&pod);
+            let pod_name = Resource::name(&pod);
             let params = DeleteParams {
                 grace_period_seconds: Some(0),
                 ..DeleteParams::default()
             };
             pods.delete(&pod_name, &params).await?;
-            info!("Pod {} marked for deletion", pod_name);
+            info!("Pod {} marked for deletion", &pod_name);
         }
         Ok(())
     }
