@@ -43,7 +43,7 @@ jobs:
     - name: Build and push crates
       run: |
         crates=(command-service data-router leader-elector query-service query-service-ts schema-registry query-router api)
-        version="dev-$(date -u +'%Y-%m-%d')-$(git rev-parse --short $GITHUB_SHA)"
+        version="dev-$(date -u +'%Y-%m-%d')
         for crate in "${crates[@]}"
         do
         docker build . --build-arg BIN=$crate -t epiphanyplatform/cdl-$crate:$version
@@ -57,7 +57,7 @@ jobs:
     - name: Build and push web-admin
       run: |
         cd web-admin
-        version="dev-$(date -u +'%Y-%m-%d')-$(git rev-parse --short $GITHUB_SHA)"
+        version="dev-$(date -u +'%Y-%m-%d')
         docker build . -t epiphanyplatform/cdl-web-admin:$version
         docker tag epiphanyplatform/cdl-web-admin:$version epiphanyplatform/cdl-web-admin:latest-dev
         docker push epiphanyplatform/cdl-web-admin:$version
