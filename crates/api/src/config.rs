@@ -6,7 +6,10 @@ pub struct Config {
     /// Address of schema registry gRPC API
     #[structopt(long, env)]
     pub schema_registry_addr: String,
-    /// Address of query router gRPC API
+    /// Address of edge registry gRPC API
+    #[structopt(long, env)]
+    pub edge_registry_addr: String,
+    /// Address of query router REST API
     #[structopt(long, env)]
     pub query_router_addr: String,
     /// Port to listen on

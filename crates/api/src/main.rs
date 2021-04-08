@@ -12,6 +12,7 @@ use async_graphql_warp::{graphql_subscription, Response};
 use structopt::StructOpt;
 use warp::{http::Response as HttpResponse, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
 
+use crate::schema::context::EdgeRegistryConnectionManager;
 use config::Config;
 use schema::context::{MQEvents, SchemaRegistryConnectionManager};
 use schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
@@ -35,9 +36,17 @@ async fn main() {
         })
         .await
         .unwrap();
+
+    let er_pool = bb8::Pool::builder()
+        .build(EdgeRegistryConnectionManager {
+            address: config.edge_registry_addr.clone(),
+        })
+        .await
+        .unwrap();
     let schema = Schema::build(QueryRoot, MutationRoot, SubscriptionRoot)
         .data(config)
         .data(sr_pool)
+        .data(er_pool)
         .data(MQEvents {
             events: Default::default(),
         })

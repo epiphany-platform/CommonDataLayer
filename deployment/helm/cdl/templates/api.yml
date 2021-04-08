@@ -28,6 +28,8 @@ spec:
           value: "http://{{ .Release.Name }}-schema-registry:6400"
         - name: QUERY_ROUTER_ADDR
           value: "http://{{ .Release.Name }}-query-router:6401"
+        - name: EDGE_REGISTRY_ADDR
+          value: "http://{{ .Release.Name }}-edge-registry:{{ .Values.edgeRegistry.rpcPort }}"
         - name: INPUT_PORT
           value: "6402"
         - name: REPORT_SOURCE

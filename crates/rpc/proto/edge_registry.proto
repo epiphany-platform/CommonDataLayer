@@ -11,6 +11,8 @@ service EdgeRegistry {
   rpc GetEdge(RelationIdQuery) returns (Edge);
   rpc GetEdges(ObjectIdQuery) returns (ObjectRelations);
 
+  rpc Heartbeat (Empty) returns (Empty);
+
   // TODO: Deleting relations and edges
   // TODO: Resolving multiple relations on object at once
 }

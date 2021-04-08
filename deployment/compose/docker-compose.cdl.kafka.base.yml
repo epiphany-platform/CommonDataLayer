@@ -125,6 +125,7 @@ services:
       INPUT_PORT: 50106
       RUST_LOG: info,api=trace
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      EDGE_REGISTRY_ADDR: "http://edge_registry:50110"
       QUERY_ROUTER_ADDR: "http://query_router:50103"
       COMMUNICATION_METHOD: "kafka"
       KAFKA_BROKERS: "kafka:9093"
