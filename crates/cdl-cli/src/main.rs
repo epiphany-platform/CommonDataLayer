@@ -17,8 +17,8 @@ pub async fn main() -> anyhow::Result<()> {
             SchemaAction::Get { schema_id, version } => {
                 get_schema(schema_id, version, args.registry_addr).await
             }
-            SchemaAction::GetTopic { schema_id } => {
-                get_schema_topic(schema_id, args.registry_addr).await
+            SchemaAction::GetInsertDestination { schema_id } => {
+                get_schema_insert_destination(schema_id, args.registry_addr).await
             }
             SchemaAction::GetQueryAddress { schema_id } => {
                 get_schema_query_address(schema_id, args.registry_addr).await
@@ -31,14 +31,14 @@ pub async fn main() -> anyhow::Result<()> {
             }
             SchemaAction::Add {
                 name,
-                topic,
+                insert_destination,
                 query_address,
                 file,
                 schema_type,
             } => {
                 add_schema(
                     name,
-                    topic,
+                    insert_destination,
                     query_address,
                     file,
                     args.registry_addr,
@@ -54,9 +54,10 @@ pub async fn main() -> anyhow::Result<()> {
             SchemaAction::SetName { id, name } => {
                 set_schema_name(id, name, args.registry_addr).await
             }
-            SchemaAction::SetTopic { id, topic } => {
-                set_schema_topic(id, topic, args.registry_addr).await
-            }
+            SchemaAction::SetInsertDestination {
+                id,
+                insert_destination,
+            } => set_schema_insert_destination(id, insert_destination, args.registry_addr).await,
             SchemaAction::SetQueryAddress { id, query_address } => {
                 set_schema_query_address(id, query_address, args.registry_addr).await
             }

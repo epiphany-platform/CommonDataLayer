@@ -10,7 +10,7 @@ service SchemaRegistry {
     rpc UpdateView (UpdatedView) returns (View);
     rpc GetSchema (VersionedId) returns (SchemaDefinition);
     rpc GetSchemaMetadata (Id) returns (Schema);
-    rpc GetSchemaTopic (Id) returns (SchemaTopic);
+    rpc GetSchemaInsertDestination (Id) returns (SchemaInsertDestination);
     rpc GetSchemaQueryAddress (Id) returns (SchemaQueryAddress);
     rpc GetSchemaVersions (Id) returns (SchemaVersions);
     rpc GetSchemaType(Id) returns (SchemaType);
@@ -18,6 +18,7 @@ service SchemaRegistry {
     rpc GetAllSchemas (Empty) returns (Schemas);
     rpc GetAllSchemaNames (Empty) returns (SchemaNames);
     rpc GetAllViewsOfSchema (Id) returns (SchemaViews);
+    rpc GetBaseSchemaOfView (Id) returns (ViewSchema);
     rpc ValidateValue (ValueToValidate) returns (Errors);
     rpc PromoteToMaster (Empty) returns (PodName);
     rpc Heartbeat (Empty) returns (Empty);
@@ -28,14 +29,14 @@ message NewSchema {
     required string id = 1;
     required string name = 2;
     required string query_address = 3;
-    required string topic = 4;
+    required string insert_destination = 4;
     required string definition = 5;
     required SchemaType.Type schema_type = 6;
 }
 
 message Schema {
     required string name = 1;
-    required string topic = 2;
+    required string insert_destination = 2;
     required string query_address = 3;
     required SchemaType.Type schema_type = 4;
 }
@@ -49,7 +50,7 @@ message NewSchemaVersion {
 message SchemaMetadataUpdate {
     required string id = 1;
     optional string name = 2;
-    optional string topic = 3;
+    optional string insert_destination = 3;
     optional string address = 4;
     optional SchemaType.Type schema_type = 5;
 }
@@ -86,8 +87,8 @@ message SchemaDefinition {
     required string definition = 2;
 }
 
-message SchemaTopic {
-    required string topic = 1;
+message SchemaInsertDestination {
+    required string insert_destination = 1;
 }
 
 message SchemaQueryAddress {
@@ -112,6 +113,11 @@ message SchemaNames {
 
 message SchemaViews {
     map<string, View> views = 1;
+}
+
+message ViewSchema {
+    required string schema_id = 1;
+    required Schema schema = 2;
 }
 
 message ValueToValidate {

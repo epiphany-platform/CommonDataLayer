@@ -19,8 +19,16 @@
     ],
     "views": {
         "ec8cc976-412b-11eb-8000-000000000000": {
-            "jmespath": "{ a: a }",
-            "name": "new view"
+            "materializer_addr": "http://localhost:1234",
+            "name": "new view",
+            "fields": {
+              "foo": {
+                "field_name": "name"
+              },
+              "department": {
+                "field_name": "department"
+              }
+            }
         }
     },
     "definitions": {
@@ -31,20 +39,21 @@
         },
         "2cfad4e7-411a-11eb-8001-000000000000": {
             "definition": {
-                "a": "number"
+                "name": "string",
+                "department": "string"
             }
         }
     },
     "schemas": {
         "2cfad3c7-411a-11eb-8000-000000000000": {
             "schema_type": "DocumentStorage",
-            "query_address": "http://postgres_query:50201",
+            "query_address": "http://localhost:50102",
             "insert_destination": "cdl.document.data",
             "name": "new schema"
         },
         "a5e0c7e2-412c-11eb-8000-000000000000": {
             "schema_type": "DocumentStorage",
-            "query_address": "http://postgres_query:50201",
+            "query_address": "http://localhost:50102",
             "insert_destination": "cdl.document.data",
             "name": "second schema"
         }

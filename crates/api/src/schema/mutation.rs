@@ -4,9 +4,9 @@ use tracing::Instrument;
 use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
 
-use crate::schema::context::SchemaRegistryPool;
+use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
 use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
-use crate::types::data::InputMessage;
+use crate::types::data::{InputMessage, ObjectRelations};
 use crate::types::schema::*;
 use crate::{config::Config, error::Error};
 use utils::current_timestamp;
@@ -27,7 +27,7 @@ impl MutationRoot {
                     id: "".into(),
                     name: new.name.clone(),
                     query_address: new.query_address.clone(),
-                    topic: new.topic.clone(),
+                    insert_destination: new.insert_destination.clone(),
                     definition: serde_json::to_string(&new.definition)?,
                     schema_type: rpc_schema_type,
                 })
@@ -40,7 +40,7 @@ impl MutationRoot {
             Ok(Schema {
                 id,
                 name: new.name,
-                topic: new.topic,
+                insert_destination: new.insert_destination,
                 query_address: new.query_address,
                 schema_type: new.schema_type,
             })
@@ -162,7 +162,7 @@ impl MutationRoot {
             let UpdateSchema {
                 name,
                 query_address: address,
-                topic,
+                insert_destination,
                 schema_type,
             } = update;
 
@@ -170,7 +170,7 @@ impl MutationRoot {
                 id: id.to_string(),
                 name,
                 address,
-                topic,
+                insert_destination,
                 schema_type: schema_type.and_then(|s| s.to_i32()),
             })
             .await
@@ -237,6 +237,61 @@ impl MutationRoot {
                     .await
                     .map_err(Error::PublisherError)?;
             }
+            Ok(true)
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// Add new relation, return generated `relation_id`
+    async fn add_relation(
+        &self,
+        context: &Context<'_>,
+        parent_schema_id: Uuid,
+        child_schema_id: Uuid,
+    ) -> FieldResult<Uuid> {
+        let span = tracing::trace_span!("add_relation", ?parent_schema_id, ?child_schema_id);
+        async move {
+            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+            Ok(conn
+                .add_relation(rpc::edge_registry::SchemaRelation {
+                    parent_schema_id: parent_schema_id.to_string(),
+                    child_schema_id: child_schema_id.to_string(),
+                })
+                .await?
+                .into_inner()
+                .relation_id
+                .parse()?)
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// Add new object-object edges
+    async fn add_edges(
+        &self,
+        context: &Context<'_>,
+        relations: Vec<ObjectRelations>,
+    ) -> FieldResult<bool> {
+        let span = tracing::trace_span!("add_edges", len = relations.len());
+        async move {
+            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+            conn.add_edges(rpc::edge_registry::ObjectRelations {
+                relations: relations
+                    .into_iter()
+                    .map(|relation| rpc::edge_registry::Edge {
+                        relation_id: relation.relation_id.to_string(),
+                        parent_object_id: relation.parent_object_id.to_string(),
+                        child_object_ids: relation
+                            .child_object_ids
+                            .into_iter()
+                            .map(|id| id.to_string())
+                            .collect(),
+                    })
+                    .collect(),
+            })
+            .await?;
+
             Ok(true)
         }
         .instrument(span)

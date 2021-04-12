@@ -4,14 +4,16 @@ use lazy_static::lazy_static;
 use std::convert::Infallible;
 use std::sync::RwLock;
 
+pub const DEFAULT_PORT: &str = "3000";
+
 lazy_static! {
     static ref HEALTH_STATUS: RwLock<bool> = RwLock::new(true);
     static ref STARTUP_STATUS: RwLock<bool> = RwLock::new(false);
     static ref READY_STATUS: RwLock<bool> = RwLock::new(true);
 }
 
-pub fn serve() {
-    tokio::spawn(serve_status());
+pub fn serve(port: u16) {
+    tokio::spawn(serve_status(port));
 }
 pub fn get_health_status() -> bool {
     *HEALTH_STATUS.read().unwrap()
@@ -39,8 +41,8 @@ pub fn mark_as_not_ready() {
     *status = false;
 }
 
-async fn serve_status() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let addr = ([0, 0, 0, 0], 3000).into();
+async fn serve_status(port: u16) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let addr = ([0, 0, 0, 0], port).into();
 
     let server = Server::bind(&addr).serve(make_service_fn(|_conn| async {
         Ok::<_, Infallible>(service_fn(handle_requests))

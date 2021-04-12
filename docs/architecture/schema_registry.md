@@ -29,7 +29,8 @@ Communication methods (supported repositores):
 | POD_NAME             | (deprecated) used to promote to `master` role                                                                    | `schema1`                     | no        |         |
 | EXPORT_DIR           | Directory to save state of the database. The state is saved in newly created folder with timestamp               | `/var/db`                     | no        |         |
 | IMPORT_FILE          | JSON file from which SR should load initial state. If the state already exists this env variable will be ignored | `/var/db/initial-schema.json` | no        |         |
-| METRICS_PORT         | Port to listen on for Prometheus requests                                                                        | 51805                         | no        | 51805   |
+| METRICS_PORT         | Port to listen on for Prometheus requests                                                                        | 58105                         | no        | 58105   |
+| STATUS_PORT          | Port exposing status of the application                                                                          | 3000                          | no        | 3000    |
 | RUST_LOG             | Log level                                                                                                        | `trace`                       | no        |         |
 
 #### Kafka Configuration 

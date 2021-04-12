@@ -3,15 +3,16 @@ use std::collections::HashMap;
 use async_graphql::{Context, FieldResult, Json, Object};
 use itertools::Itertools;
 use num_traits::FromPrimitive;
-use rpc::schema_registry::Empty;
 use tracing::Instrument;
 use uuid::Uuid;
 
+use rpc::schema_registry::Empty;
+
 use crate::config::Config;
 use crate::error::{Error, Result};
-use crate::schema::context::SchemaRegistryPool;
+use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
-use crate::types::data::CdlObject;
+use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
 use crate::types::schema::*;
 
 #[Object]
@@ -27,9 +28,9 @@ impl Schema {
         &self.name
     }
 
-    /// Message queue topic to which data is inserted by data-router.
-    async fn topic(&self) -> &str {
-        &self.topic
+    /// Message queue insert_destination to which data is inserted by data-router.
+    async fn insert_destination(&self) -> &str {
+        &self.insert_destination
     }
 
     /// Address of the query service responsible for retrieving data from DB
@@ -171,7 +172,7 @@ impl QueryRoot {
                     Ok(Schema {
                         id: schema_id.parse()?,
                         name: schema.name,
-                        topic: schema.topic,
+                        insert_destination: schema.insert_destination,
                         query_address: schema.query_address,
                         schema_type: SchemaType::from_i32(schema.schema_type)
                             .ok_or(Error::InvalidSchemaType(schema.schema_type))?,
@@ -294,6 +295,141 @@ impl QueryRoot {
                     data: Json(data),
                 })
                 .collect::<Vec<CdlObject>>())
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// Return schema `parent` is in `relation_id` relation with
+    async fn relation(
+        &self,
+        context: &Context<'_>,
+        relation_id: Uuid,
+        parent_schema_id: Uuid,
+    ) -> FieldResult<Option<Uuid>> {
+        let span = tracing::trace_span!("query_relation", ?relation_id, ?parent_schema_id);
+        async move {
+            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+            Ok(conn
+                .get_relation(rpc::edge_registry::RelationQuery {
+                    relation_id: relation_id.to_string(),
+                    parent_schema_id: parent_schema_id.to_string(),
+                })
+                .await?
+                .into_inner()
+                .child_schema_id
+                .map(|s| s.parse())
+                .transpose()?)
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// Return all relations `parent` is in
+    async fn schema_relations(
+        &self,
+        context: &Context<'_>,
+        parent_schema_id: Uuid,
+    ) -> FieldResult<Vec<SchemaRelation>> {
+        let span = tracing::trace_span!("query_schema_relations", ?parent_schema_id);
+        async move {
+            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+            conn.get_schema_relations(rpc::edge_registry::SchemaId {
+                schema_id: parent_schema_id.to_string(),
+            })
+            .await?
+            .into_inner()
+            .items
+            .into_iter()
+            .map(|entry| {
+                Ok(SchemaRelation {
+                    parent_schema_id,
+                    relation_id: entry.relation_id.parse()?,
+                    child_schema_id: entry.child_schema_id.parse()?,
+                })
+            })
+            .collect::<Result<Vec<_>, async_graphql::Error>>()
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// List all relations between schemas stored in database
+    async fn all_relations(&self, context: &Context<'_>) -> FieldResult<Vec<SchemaRelation>> {
+        let span = tracing::trace_span!("query_all_relations");
+        async move {
+            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+            conn.list_relations(rpc::edge_registry::Empty {})
+                .await?
+                .into_inner()
+                .items
+                .into_iter()
+                .map(|entry| {
+                    Ok(SchemaRelation {
+                        relation_id: entry.relation_id.parse()?,
+                        parent_schema_id: entry.parent_schema_id.parse()?,
+                        child_schema_id: entry.child_schema_id.parse()?,
+                    })
+                })
+                .collect::<Result<Vec<_>, async_graphql::Error>>()
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// Return all objects that `parent` object is in `relation_id` relation with
+    async fn edge(
+        &self,
+        context: &Context<'_>,
+        relation_id: Uuid,
+        parent_object_id: Uuid,
+    ) -> FieldResult<Vec<Uuid>> {
+        let span = tracing::trace_span!("query_edge", ?relation_id, ?parent_object_id);
+        async move {
+            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+            conn.get_edge(rpc::edge_registry::RelationIdQuery {
+                relation_id: relation_id.to_string(),
+                parent_object_id: parent_object_id.to_string(),
+            })
+            .await?
+            .into_inner()
+            .child_object_ids
+            .into_iter()
+            .map(|entry| Ok(entry.parse()?))
+            .collect::<Result<Vec<_>, async_graphql::Error>>()
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// Return all relations that `parent` object is in
+    async fn edges(
+        &self,
+        context: &Context<'_>,
+        parent_object_id: Uuid,
+    ) -> FieldResult<Vec<EdgeRelations>> {
+        let span = tracing::trace_span!("query_edges", ?parent_object_id);
+        async move {
+            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+            conn.get_edges(rpc::edge_registry::ObjectIdQuery {
+                object_id: parent_object_id.to_string(),
+            })
+            .await?
+            .into_inner()
+            .relations
+            .into_iter()
+            .map(|entry| {
+                Ok(EdgeRelations {
+                    relation_id: entry.relation_id.parse()?,
+                    parent_object_id: entry.parent_object_id.parse()?,
+                    child_object_ids: entry
+                        .child_object_ids
+                        .into_iter()
+                        .map(|s| Ok(s.parse()?))
+                        .collect::<Result<Vec<_>, async_graphql::Error>>()?,
+                })
+            })
+            .collect::<Result<Vec<_>, async_graphql::Error>>()
         }
         .instrument(span)
         .await

@@ -17,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
 
     debug!("Environment: {:?}", config);
 
-    status_endpoints::serve();
+    status_endpoints::serve(config.status_port);
     metrics::serve(config.metrics_port);
 
     let registry = EdgeRegistryImpl::new(&config).await?;

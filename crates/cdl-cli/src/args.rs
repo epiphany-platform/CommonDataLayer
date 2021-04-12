@@ -50,8 +50,8 @@ pub enum SchemaAction {
         version: Option<VersionReq>,
     },
 
-    /// Get a schema's kafka topic from the registry.
-    GetTopic {
+    /// Get a schema's kafka insert_destination from the registry.
+    GetInsertDestination {
         /// The id of the schema.
         #[structopt(short, long)]
         schema_id: Uuid,
@@ -83,9 +83,9 @@ pub enum SchemaAction {
         /// The name of the schema.
         #[structopt(short, long)]
         name: String,
-        /// The topic of the schema.
+        /// The insert_destination of the schema.
         #[structopt(short, long, default_value = "")]
-        topic: String,
+        insert_destination: String,
         /// The query address of the schema.
         #[structopt(short, long, default_value = "")]
         query_address: String,
@@ -122,14 +122,14 @@ pub enum SchemaAction {
         name: String,
     },
 
-    /// Update a schema's topic in the registry.
-    SetTopic {
+    /// Update a schema's insert_destination in the registry.
+    SetInsertDestination {
         /// The id of the schema.
         #[structopt(short, long)]
         id: Uuid,
-        /// The new topic of the schema.
+        /// The new insert_destination of the schema.
         #[structopt(short, long)]
-        topic: String,
+        insert_destination: String,
     },
 
     /// Update a schema's query address in the registry.
