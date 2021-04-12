@@ -4,8 +4,11 @@ import "common.proto";
 
 service ObjectBuilder {
   rpc Materialize(ViewId) returns (common.MaterializedView);
+  rpc Heartbeat (Empty) returns (Empty);
 }
 
 message ViewId {
   required string view_id = 1;
 }
+
+message Empty {}

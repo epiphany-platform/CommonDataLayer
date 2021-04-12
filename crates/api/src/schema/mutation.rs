@@ -32,7 +32,7 @@ impl MutationRoot {
                     schema_type: rpc_schema_type,
                 })
                 .await
-                .map_err(rpc::error::registry_error)?
+                .map_err(rpc::error::schema_registry_error)?
                 .into_inner()
                 .id
                 .parse()?;
@@ -65,7 +65,7 @@ impl MutationRoot {
                 definition: serde_json::to_string(&new_version.definition)?,
             })
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::schema_registry_error)?;
 
             Ok(Definition {
                 definition: new_version.definition,
@@ -101,7 +101,7 @@ impl MutationRoot {
                     fields: serde_json::to_string(&fields)?,
                 })
                 .await
-                .map_err(rpc::error::registry_error)?
+                .map_err(rpc::error::schema_registry_error)?
                 .into_inner()
                 .id;
 
@@ -147,7 +147,7 @@ impl MutationRoot {
                     .transpose()?,
             })
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::schema_registry_error)?;
 
             get_view(&mut conn, id).await
         }
@@ -180,7 +180,7 @@ impl MutationRoot {
                 schema_type: schema_type.and_then(|s| s.to_i32()),
             })
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::schema_registry_error)?;
             get_schema(&mut conn, id).await
         }
         .instrument(span)
