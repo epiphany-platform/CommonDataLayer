@@ -28,7 +28,7 @@ touch "rpc/proto/__init__.py"
 touch "rpc/__init__.py"
 
 echo "running postgres migration!"
-PGPASSWORD="1234" psql -U postgres -h localhost -d postgres -f crates/schema-registry/migrations/20210215170655_init-db.sql
+PGPASSWORD="1234" psql -U postgres -h localhost -d postgres -f ../crates/schema-registry/migrations/20210215170655_init-db.sql
 
 echo "python3 -m pytest . -vv"
 python3 -m pytest "." -vv
