@@ -51,7 +51,10 @@ jobs:
           cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - name: deploy infrastructure
         run: helm install --values ./deployment/helm/infrastructure/values.yaml infrastructure ./deployment/helm/infrastructure
-
+      - name: run postgres migration
+        continue-on-error: true
+        run: |
+          PGPASSWORD="postgres" psql -U postgres -h 10.1.1.5 -d cdldb -f ../crates/schema-registry/migrations/20210215170655_init-db.sql
       - name: Get Date
         id: get-date
         run: |
