@@ -3,6 +3,7 @@ use std::sync::Arc;
 
 use bb8::{Pool, PooledConnection};
 use rpc::edge_registry::edge_registry_client::EdgeRegistryClient;
+use rpc::object_builder::object_builder_client::ObjectBuilderClient;
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
 use tokio::sync::Mutex;
@@ -11,9 +12,11 @@ use crate::{config::Config, events::EventStream, events::EventSubscriber};
 
 pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
 pub type EdgeRegistryPool = Pool<EdgeRegistryConnectionManager>;
+pub type ObjectBuilderPool = Pool<ObjectBuilderConnectionManager>;
 
-pub type EdgeRegistryConn = EdgeRegistryClient<Channel>;
 pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;
+pub type EdgeRegistryConn = EdgeRegistryClient<Channel>;
+pub type ObjectBuilderConn = ObjectBuilderClient<Channel>;
 
 #[derive(Clone)]
 pub struct MQEvents {
@@ -25,6 +28,10 @@ pub struct SchemaRegistryConnectionManager {
 }
 
 pub struct EdgeRegistryConnectionManager {
+    pub address: String,
+}
+
+pub struct ObjectBuilderConnectionManager {
     pub address: String,
 }
 
@@ -76,7 +83,7 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
         conn.heartbeat(rpc::schema_registry::Empty {})
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::schema_registry_error)?;
 
         Ok(())
     }
@@ -100,7 +107,31 @@ impl bb8::ManageConnection for EdgeRegistryConnectionManager {
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
         conn.heartbeat(rpc::edge_registry::Empty {})
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::edge_registry_error)?;
+
+        Ok(())
+    }
+
+    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
+        false
+    }
+}
+
+#[async_trait::async_trait]
+impl bb8::ManageConnection for ObjectBuilderConnectionManager {
+    type Connection = ObjectBuilderConn;
+    type Error = rpc::error::ClientError;
+
+    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
+        tracing::debug!("Connecting to object builder");
+
+        rpc::object_builder::connect(self.address.clone()).await
+    }
+
+    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
+        conn.heartbeat(rpc::object_builder::Empty {})
+            .await
+            .map_err(rpc::error::object_builder_error)?;
 
         Ok(())
     }

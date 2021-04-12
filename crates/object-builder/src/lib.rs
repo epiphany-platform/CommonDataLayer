@@ -6,7 +6,7 @@ use anyhow::Context;
 use async_trait::async_trait;
 use rpc::common::MaterializedView;
 use rpc::common::RowDefinition as RpcRowDefinition;
-use rpc::object_builder::{object_builder_server::ObjectBuilder, ViewId};
+use rpc::object_builder::{object_builder_server::ObjectBuilder, Empty, ViewId};
 use rpc::schema_registry::ViewSchema;
 use rpc::schema_registry::{schema_registry_client::SchemaRegistryClient, types::SchemaType};
 use serde::Serialize;
@@ -101,6 +101,15 @@ impl ObjectBuilder for ObjectBuilderImpl {
         })?;
 
         Ok(tonic::Response::new(rpc_object))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn heartbeat(
+        &self,
+        _request: tonic::Request<Empty>,
+    ) -> Result<tonic::Response<Empty>, tonic::Status> {
+        //empty
+        Ok(tonic::Response::new(Empty {}))
     }
 }
 

@@ -127,6 +127,7 @@ services:
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       QUERY_ROUTER_ADDR: "http://query_router:50103"
       EDGE_REGISTRY_ADDR: "http://edge_registry:50110"
+      OBJECT_BUILDER_ADDR: "http://object_builder:50107"
       COMMUNICATION_METHOD: "amqp"
       AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
       AMQP_CONSUMER_TAG: "cdl-api"
