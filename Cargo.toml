@@ -14,3 +14,6 @@ incremental = false
 [profile.release]
 lto = true
 codegen-units = 1
+
+[env]
+SQLX_OFFLINE=true
