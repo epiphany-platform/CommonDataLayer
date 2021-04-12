@@ -44,9 +44,11 @@ async fn serve_status() -> Result<(), Box<dyn std::error::Error + Send + Sync>> 
 
     let server = Server::bind(&addr).serve(make_service_fn(|_conn| async {
         Ok::<_, Infallible>(service_fn(handle_requests))
-    }));
+    })).await;
 
-    server.await?; // TODO: What if error
+    if server.is_err() {
+        tracing::warn!("Warn binding socket with this address, probably its already in use, skipping");
+    }
     Ok(())
 }
 async fn handle_requests(req: Request<Body>) -> Result<Response<Body>, Infallible> {
