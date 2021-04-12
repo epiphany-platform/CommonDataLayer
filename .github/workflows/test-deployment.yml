@@ -52,9 +52,9 @@ jobs:
       - name: deploy infrastructure
         run: helm install --values ./deployment/helm/infrastructure/values.yaml infrastructure ./deployment/helm/infrastructure
       - name: run postgres migration
-        continue-on-error: true
+        continue-on-error: false
         run: |
-          PGPASSWORD="postgres" psql -U postgres -h 10.1.1.5 -d cdldb -f ../crates/schema-registry/migrations/20210215170655_init-db.sql
+          PGPASSWORD="CHANGEME" psql -U postgres -h infrastructure-postgresql -d CDL -f ../crates/schema-registry/migrations/20210215170655_init-db.sql
       - name: Get Date
         id: get-date
         run: |
