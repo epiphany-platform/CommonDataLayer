@@ -51,10 +51,6 @@ jobs:
           cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - name: deploy infrastructure
         run: helm install --values ./deployment/helm/infrastructure/values.yaml infrastructure ./deployment/helm/infrastructure
-      - name: run postgres migration
-        continue-on-error: false
-        run: |
-          PGPASSWORD="CHANGEME" psql -U postgres -h infrastructure-postgresql -d CDL -f ../crates/schema-registry/migrations/20210215170655_init-db.sql
       - name: Get Date
         id: get-date
         run: |
@@ -95,6 +91,10 @@ jobs:
         run: helm install --values ./deployment/helm/cdl/values-local.yaml cdl ./deployment/helm/cdl
       - name: wait
         run: sleep 30
+      - name: run postgres migration
+        continue-on-error: false
+        run: |
+          PGPASSWORD="CHANGEME" psql -U postgres -h infrastructure-postgresql -d CDL -f ../crates/schema-registry/migrations/20210215170655_init-db.sql
       - name: check if pods are running
         run: |
           kubectl get pods
