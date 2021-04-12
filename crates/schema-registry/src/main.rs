@@ -1,7 +1,8 @@
 use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
-
+use tokio::time::sleep;
+use tokio::time::Duration;
 use anyhow::Context;
 use structopt::StructOpt;
 use tonic::transport::Server;
@@ -17,7 +18,9 @@ pub async fn main() -> anyhow::Result<()> {
     utils::tracing::init();
     let config = Config::from_args();
 
+
     status_endpoints::serve();
+    sleep(Duration::from_millis(500)).await;
     metrics::serve(
         config
             .metrics_port

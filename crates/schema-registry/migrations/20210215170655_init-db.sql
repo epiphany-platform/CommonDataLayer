@@ -1,4 +1,13 @@
-CREATE TYPE schema_type_enum AS ENUM ('document_storage', 'timeseries');
+-- yes we are dropping all
+-- if you want your trash untouched write your own migration
+DROP TABLE IF EXISTS schemas CASCADE;
+DROP TABLE IF EXISTS views CASCADE;
+DROP TABLE IF EXISTS definitions CASCADE;
+DROP TRIGGER IF EXISTS  notify_view_updated ON views CASCADE ;
+DROP TRIGGER IF EXISTS notify_schema_updated ON schemas CASCADE ;
+DROP FUNCTION IF EXISTS notify_row_updated ( ) CASCADE ;
+
+CREATE TYPE schema_type_enum AS ENUM ('documentstorage', 'timeseries');
 
 CREATE TABLE schemas (
     id                 uuid primary key not null,
@@ -48,7 +57,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER notify_schema_updated
+CREATE OR REPLACE TRIGGER notify_schema_updated
     AFTER UPDATE ON schemas
     FOR EACH ROW
     EXECUTE PROCEDURE notify_row_updated('schemas');
