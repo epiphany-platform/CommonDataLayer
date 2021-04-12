@@ -42,12 +42,16 @@ pub fn mark_as_not_ready() {
 async fn serve_status() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     let addr = ([0, 0, 0, 0], 3000).into();
 
-    let server = Server::bind(&addr).serve(make_service_fn(|_conn| async {
-        Ok::<_, Infallible>(service_fn(handle_requests))
-    })).await;
+    let server = Server::bind(&addr)
+        .serve(make_service_fn(|_conn| async {
+            Ok::<_, Infallible>(service_fn(handle_requests))
+        }))
+        .await;
 
     if server.is_err() {
-        tracing::warn!("Warn binding socket with this address, probably its already in use, skipping");
+        tracing::warn!(
+            "Warn binding socket with this address, probably its already in use, skipping"
+        );
     }
     Ok(())
 }

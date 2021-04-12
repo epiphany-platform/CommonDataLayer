@@ -1,10 +1,10 @@
+use anyhow::Context;
 use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
+use structopt::StructOpt;
 use tokio::time::sleep;
 use tokio::time::Duration;
-use anyhow::Context;
-use structopt::StructOpt;
 use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
 
@@ -17,7 +17,6 @@ pub async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
     let config = Config::from_args();
-
 
     status_endpoints::serve();
     sleep(Duration::from_millis(500)).await;
