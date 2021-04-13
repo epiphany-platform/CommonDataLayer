@@ -12,7 +12,7 @@ data:
       PRIMARY KEY (object_id, version)
     );
 
-    CREATE TYPE schema_type_enum AS ENUM ('document_storage', 'timeseries');
+    CREATE TYPE schema_type_enum AS ENUM ('documentstorage', 'timeseries');
 
     CREATE TABLE schemas (
         id                 uuid primary key not null,
