@@ -4,10 +4,8 @@ metadata:
   name: {{ .Release.Name }}-postgres-materializer
   labels:
     app: {{ .Release.Name }}-postgres-materializer
-    repository.type: document
-    repository.name: postgres
 spec:
-  replicas: {{ .Values.queryServiceReplicaCount }}
+  replicas: {{ .Values.materializerReplicaCount }}
   selector:
     matchLabels:
       app: {{ .Release.Name }}-postgres-materializer
@@ -15,8 +13,6 @@ spec:
     metadata:
       labels:
         app: {{ .Release.Name }}-postgres-materializer
-        repository.type: document
-        repository.name: postgres
       annotations:
         prometheus.io/scrape: 'true'
         prometheus.io/port: '51805'
