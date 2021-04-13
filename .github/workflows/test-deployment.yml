@@ -82,7 +82,7 @@ jobs:
           docker save local/cache:latest > cache_img
       - name: add kafka topics
         run: |
-          topics=(cdl.data.input CDL_SCHEMA_SYNCHRO cdl.document.data cdl.timeseries.data cdl.timeseries.generic-druid cdl.timeseries2.data cdl.edge.input)
+          topics=(cdl.errors cdl.data.input CDL_SCHEMA_SYNCHRO cdl.document.data cdl.timeseries.data cdl.timeseries.generic-druid cdl.timeseries2.data cdl.edge.input)
           for topic in "${topics[@]}"
           do
           kubectl exec infrastructure-kafka-0 /bin/bash -- /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic $topic --bootstrap-server localhost:9092
