@@ -24,6 +24,5 @@ async fn main() -> anyhow::Result<()> {
         .serve(([0, 0, 0, 0], args.input_port).into())
         .await?;
 
-
     Ok(())
 }
