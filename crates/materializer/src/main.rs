@@ -24,7 +24,6 @@ async fn main() -> anyhow::Result<()> {
         .serve(([0, 0, 0, 0], args.input_port).into())
         .await?;
 
-    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
     Ok(())
 }
