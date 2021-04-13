@@ -191,7 +191,7 @@ async fn acknowledge_messages(
         partition_offsets.add_partition_offset(
             notification_topic,
             *offset.0,
-            Offset::Offset(*offset.1),
+            Offset::Offset(*offset.1+1),
         )?;
     }
     rdkafka::consumer::Consumer::commit(consumer, &partition_offsets, CommitMode::Sync)?;
