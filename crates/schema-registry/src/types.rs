@@ -21,6 +21,7 @@ pub mod storage {
 pub struct ViewUpdate {
     pub name: Option<String>,
     pub materializer_addr: Option<String>,
+    pub materializer_options: Option<Value>,
     pub fields: Option<HashMap<String, FieldDefinition>>,
 }
 

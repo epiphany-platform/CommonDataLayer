@@ -131,7 +131,7 @@ services:
       KAFKA_BROKERS: "kafka:9093"
       KAFKA_GROUP_ID: "cdl-api"
       REPORT_SOURCE: "cdl.reports"
-      INSERT_DESTINATION: "cdl.reports"
+      INSERT_DESTINATION: "cdl.data.input"
 
 networks:
   compose_default:
