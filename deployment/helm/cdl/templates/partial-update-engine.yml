@@ -33,7 +33,7 @@ spec:
         - name: NOTIFICATION_TOPIC
           value: "{{ .Values.global.reportDestination }}"
         - name: OBJECT_BUILDER_TOPIC
-          value: "{{ .Values.partialUpdateEngine.objectBuilderTopic }}"
+          value: "{{ .Values.global.objectBuilderInput }}"
         - name: SLEEP_PHASE_LENGTH
           value: "{{ .Values.partialUpdateEngine.sleepPhaseLength }}"
         - name: RUST_LOG

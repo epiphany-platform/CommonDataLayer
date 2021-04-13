@@ -7,6 +7,7 @@ global:
   amqpConnectionString: "amqp://rabbitmq:rabbitmq@10.1.1.4:5672/%2f"
   cdlImagePullSecrets: services
   reportDestination: cdl.errors
+  objectBuilderInput: cdl.materialize
 
 api:
   port: 30152
@@ -38,10 +39,12 @@ edgeRegistry:
 
 objectBuilder:
   inputPort: 50111
-  mqSource: cdl.materialize
 
 webAdmin:
   port: 30151
+
+partialUpdateEngine:
+  sleepPhaseLength: 120
 
 postgres-document:
   commandServiceReplicaCount: 1

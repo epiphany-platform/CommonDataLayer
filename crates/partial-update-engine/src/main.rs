@@ -157,7 +157,7 @@ async fn process_changes(
     }
 
     for view in views {
-        let payload = format!("{{{}}}", view); // TODO: Use same type as object builder
+        let payload = view.to_string();
         producer
             .send(
                 FutureRecord::to(config.object_builder_topic.as_str())

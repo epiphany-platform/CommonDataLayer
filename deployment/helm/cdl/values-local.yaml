@@ -6,6 +6,7 @@ global:
   kafkaBrokers:  infrastructure-kafka-headless
   cdlImagePullSecrets: services
   reportDestination: cdl.errors
+  objectBuilderInput: cdl.materialize
   amqpConnectionString: "amqp://user:CHANGEME@infrastructure-rabbitmq:5672/%2f"
 
 api:
@@ -38,13 +39,11 @@ edgeRegistry:
 
 objectBuilder:
   inputPort: 50111
-  mqSource: cdl.materialize
 
 webAdmin:
   port: 30151
 
 partialUpdateEngine:
-  objectBuilderTopic: cdl.object-builder.input
   sleepPhaseLength: 120
 
 
