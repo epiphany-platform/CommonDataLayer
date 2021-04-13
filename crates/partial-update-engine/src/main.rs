@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use rdkafka::{
-    consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
+    consumer::{DefaultConsumerContext, StreamConsumer},
     message::BorrowedMessage,
     producer::{FutureProducer, FutureRecord},
     ClientConfig, Message, Offset, TopicPartitionList,
@@ -82,7 +82,7 @@ async fn main() -> anyhow::Result<()> {
 
     let mut message_stream = Box::pin(consumer.stream().timeout(Duration::from_secs(2))); // TODO: configure?
     let mut changes: HashSet<PartialNotification> = HashSet::new();
-    let mut offsets: HashMap<i32, i64> = HashMap::new();
+    let mut offsets: HashMap<i32, i64> = HashMap::new(); // partition, offset
     loop {
         // TODO: configure max items per batch(?) - otherwise we won't start view recalculation if messages are sent more often then timeout
         match message_stream.try_next().await {
@@ -181,11 +181,13 @@ async fn process_changes(
     Ok(())
 }
 
+#[tracing::instrument(skip(consumer))]
 async fn acknowledge_messages(
     offsets: &mut HashMap<i32, i64>,
     consumer: &StreamConsumer,
     notification_topic: &str,
 ) -> Result<()> {
+    tracing::debug!("HERE");
     let mut partition_offsets = TopicPartitionList::new();
     for offset in offsets.iter() {
         partition_offsets.add_partition_offset(
@@ -194,7 +196,8 @@ async fn acknowledge_messages(
             Offset::Offset(*offset.1 + 1),
         )?;
     }
-    rdkafka::consumer::Consumer::commit(consumer, &partition_offsets, CommitMode::Sync)?;
+    rdkafka::consumer::Consumer::store_offsets(consumer, &partition_offsets)?;
+    //rdkafka::consumer::Consumer::commit(consumer, &partition_offsets, CommitMode::Sync)?;
     offsets.clear();
     Ok(())
 }
