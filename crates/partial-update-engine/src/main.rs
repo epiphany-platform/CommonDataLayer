@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
-use tracing::debug;
+use tracing::{debug,trace};
 use utils::metrics::{self};
 use uuid::Uuid;
 
@@ -43,7 +43,7 @@ struct Config {
     pub sleep_phase_length: u64,
 }
 
-#[derive(Deserialize, PartialEq, Eq, Hash)]
+#[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
 struct PartialNotification {
     pub object_id: Uuid,
     pub schema_id: Uuid,
@@ -65,9 +65,6 @@ async fn main() -> anyhow::Result<()> {
         .set("bootstrap.servers", &config.kafka_brokers)
         .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
-        .set("enable.auto.commit", "true")
-        .set("enable.auto.offset.store", "false")
-        .set("auto.offset.reset", "earliest")
         .create()
         .context("Consumer creation failed")?;
     let topics = [config.notification_topic.as_str()];
@@ -91,7 +88,8 @@ async fn main() -> anyhow::Result<()> {
         match message_stream.try_next().await {
             Ok(opt_message) => match opt_message {
                 Some(message) => {
-                    new_notification(&mut changes, message?)?;
+                    let (partition, offset) = new_notification(&mut changes, message?)?;
+                    offsets.insert(partition, offset);
                 }
                 None => {
                     process_changes(&producer, &config, &mut changes).await?;
@@ -101,6 +99,7 @@ async fn main() -> anyhow::Result<()> {
                 }
             },
             Err(_) => {
+                trace!("Timeout");
                 if !changes.is_empty() {
                     process_changes(&producer, &config, &mut changes).await?;
                     acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
@@ -121,14 +120,17 @@ async fn main() -> anyhow::Result<()> {
 fn new_notification(
     changes: &mut HashSet<PartialNotification>,
     message: BorrowedMessage,
-) -> Result<()> {
+) -> Result<(i32, i64)> {
     let notification: PartialNotification = serde_json::from_str(
         message
-            .payload_view::<str>()
-            .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??,
+        .payload_view::<str>()
+        .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??,
     )?;
+    trace!("new notification {:#?}",notification);
     changes.insert(notification);
-    Ok(())
+    let partition = message.partition();
+    let offset = message.offset();
+    Ok((partition, offset))
 }
 
 async fn process_changes(
@@ -136,25 +138,32 @@ async fn process_changes(
     config: &Config,
     changes: &mut HashSet<PartialNotification>,
 ) -> Result<()> {
+    trace!("processing changes {:#?}",changes);
     let schemas: HashSet<_> = changes.iter().map(|x| x.schema_id).collect();
+    
     let mut client = rpc::schema_registry::connect(config.schema_registry_addr.to_owned()).await?;
     let mut views: HashSet<Uuid> = HashSet::new();
+    trace!("schemas {:#?}",schemas);
     for schema in schemas {
+        trace!("schema loop: {:#?}",schema);
         let response = client
             .get_all_views_of_schema(rpc::schema_registry::Id {
                 id: schema.to_string(),
             })
             .await?;
+            trace!("response: {:#?}",response);
         let schema_in_views = response
             .into_inner()
             .views
             .iter()
             .map(|view| Ok(view.0.parse()?))
             .collect::<Result<Vec<Uuid>>>()?;
+            trace!("schema_in_views: {:#?}",schema_in_views);
         for view in schema_in_views {
             views.insert(view);
         }
     }
+    trace!("views {:#?}",views);
 
     for view in views {
         let payload = view.to_string();
