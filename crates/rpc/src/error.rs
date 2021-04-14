@@ -16,9 +16,23 @@ pub enum ClientError {
     },
 }
 
-pub fn registry_error(error: Status) -> ClientError {
+pub fn schema_registry_error(error: Status) -> ClientError {
     ClientError::QueryError {
         service: "schema registry",
+        source: error,
+    }
+}
+
+pub fn edge_registry_error(error: Status) -> ClientError {
+    ClientError::QueryError {
+        service: "edge registry",
+        source: error,
+    }
+}
+
+pub fn object_builder_error(error: Status) -> ClientError {
+    ClientError::QueryError {
+        service: "object builder",
         source: error,
     }
 }

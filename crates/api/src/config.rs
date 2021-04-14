@@ -9,6 +9,9 @@ pub struct Config {
     /// Address of edge registry gRPC API
     #[structopt(long, env)]
     pub edge_registry_addr: String,
+    /// Address of object builder gRPC API
+    #[structopt(long, env)]
+    pub object_builder_addr: String,
     /// Address of query router REST API
     #[structopt(long, env)]
     pub query_router_addr: String,
