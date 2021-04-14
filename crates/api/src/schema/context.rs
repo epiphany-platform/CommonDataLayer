@@ -7,10 +7,25 @@ use tokio::sync::Mutex;
 use crate::{config::Config, events::EventStream, events::EventSubscriber};
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
+use rpc::edge_registry::edge_registry_client::EdgeRegistryClient;
+
+pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
+pub type EdgeRegistryPool = Pool<EdgeRegistryConnectionManager>;
+
+pub type EdgeRegistryConn = EdgeRegistryClient<Channel>;
+pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;
 
 #[derive(Clone)]
 pub struct MQEvents {
     pub events: Arc<Mutex<HashMap<String, EventSubscriber>>>,
+}
+
+pub struct SchemaRegistryConnectionManager {
+    pub address: String,
+}
+
+pub struct EdgeRegistryConnectionManager {
+    pub address: String,
 }
 
 impl MQEvents {
@@ -47,10 +62,6 @@ impl MQEvents {
     }
 }
 
-pub struct SchemaRegistryConnectionManager {
-    pub address: String,
-}
-
 #[async_trait::async_trait]
 impl bb8::ManageConnection for SchemaRegistryConnectionManager {
     type Connection = SchemaRegistryConn;
@@ -75,6 +86,26 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
     }
 }
 
-pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
+#[async_trait::async_trait]
+impl bb8::ManageConnection for EdgeRegistryConnectionManager {
+    type Connection = EdgeRegistryConn;
+    type Error = rpc::error::ClientError;
 
-pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;
+    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
+        tracing::debug!("Connecting to registry");
+
+        rpc::edge_registry::connect(self.address.clone()).await
+    }
+
+    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
+        conn.heartbeat(rpc::edge_registry::Empty {})
+            .await
+            .map_err(rpc::error::registry_error)?;
+
+        Ok(())
+    }
+
+    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
+        false
+    }
+}

@@ -17,12 +17,8 @@ pub async fn main() -> anyhow::Result<()> {
     utils::tracing::init();
     let config = Config::from_args();
 
-    status_endpoints::serve();
-    metrics::serve(
-        config
-            .metrics_port
-            .unwrap_or_else(|| metrics::DEFAULT_PORT.parse().unwrap()),
-    );
+    status_endpoints::serve(config.status_port);
+    metrics::serve(config.metrics_port);
 
     let comms_config = communication_config(&config)?;
     let registry = SchemaRegistryImpl::new(&config, comms_config).await?;

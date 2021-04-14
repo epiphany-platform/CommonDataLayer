@@ -16,6 +16,7 @@ service SchemaRegistry {
     rpc GetAllSchemas (Empty) returns (Schemas);
     rpc GetAllFullSchemas (Empty) returns (FullSchemas);
     rpc GetAllViewsOfSchema (Id) returns (SchemaViews);
+    rpc GetBaseSchemaOfView (Id) returns (Schema);
     rpc ValidateValue (ValueToValidate) returns (Errors);
     rpc WatchAllSchemaUpdates (Empty) returns (stream Schema);
     rpc Ping (Empty) returns (Empty);
@@ -28,8 +29,8 @@ message NewSchema {
 
 message SchemaMetadata {
     required string name = 1;
-    required string query_address = 2;
-    required string insert_destination = 3;
+    required string insert_destination = 2;
+    required string query_address = 3;
     required SchemaType.Type schema_type = 4;
 }
 

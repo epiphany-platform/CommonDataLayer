@@ -29,7 +29,7 @@ services:
       IMPORT_FILE: "/var/data/schema.json"
       RUST_LOG: info,schema_registry=trace
     volumes:
-      - ./setup/schema_registry/initial-schema.json:/var/data/schema.json
+      - ./setup/schema_registry/initial-schema.mq.json:/var/data/schema.json
 
   data_router:
     image: cdl-data-router:latest
@@ -91,6 +91,26 @@ services:
       CONSUMER_SOURCE: "cdl.edge.input"
       RUST_LOG: info,edge_registry=trace
 
+  object_builder:
+    image: cdl-object-builder:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=object-builder
+        - ENV=DEV
+    command: "/bin/object-builder"
+    ports:
+      - "50107:50107"
+    environment:
+      MQ_METHOD: amqp
+      INPUT_PORT: "50107"
+      AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+      AMQP_CONSUMER_TAG: "object_builder"
+      MQ_SOURCE: "cdl.materialize"
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      RUST_LOG: info,object_builder=trace
+
   web_api:
     image: cdl-api:latest
     command: "/bin/api"
@@ -106,6 +126,7 @@ services:
       RUST_LOG: info,api=trace
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       QUERY_ROUTER_ADDR: "http://query_router:50103"
+      EDGE_REGISTRY_ADDR: "http://edge_registry:50110"
       COMMUNICATION_METHOD: "amqp"
       AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
       AMQP_CONSUMER_TAG: "cdl-api"

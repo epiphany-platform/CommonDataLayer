@@ -69,9 +69,9 @@ pub enum SchemaAction {
         /// The name of the schema.
         #[structopt(short, long)]
         name: String,
-        /// The topic or queue of the schema.
-        #[structopt(short, long)]
-        topic_or_queue: Option<String>,
+        /// The insert_destination of the schema.
+        #[structopt(short, long, default_value = "")]
+        insert_destination: String,
         /// The query address of the schema.
         #[structopt(short, long)]
         query_address: Option<String>,
@@ -106,9 +106,9 @@ pub enum SchemaAction {
         /// The new name of the schema.
         #[structopt(short, long)]
         name: Option<String>,
-        /// The new topic or queue of the schema.
+        /// The new insert_destination of the schema.
         #[structopt(short, long)]
-        topic_or_queue: Option<String>,
+        insert_destination: Option<String>,
         /// The new query address of the schema.
         #[structopt(short, long)]
         query_address: Option<String>,

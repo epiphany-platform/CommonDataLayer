@@ -77,7 +77,7 @@ pub struct NewSchema {
     pub name: String,
     /// Address of the query service responsible for retrieving data from DB
     pub query_address: String,
-    /// Message queue topic to which data is inserted by data-router.
+    /// Destination to which data is inserted by data-router.
     pub insert_destination: String,
     /// Definition is stored as a JSON value and therefore needs to be valid JSON.
     pub definition: Json<Value>,
@@ -105,8 +105,9 @@ pub struct UpdateSchema {
     pub name: Option<String>,
     /// Address of the query service responsible for retrieving data from DB
     pub query_address: Option<String>,
-    /// Message queue topic to which data is inserted by data-router.
+    /// Destination to which data is inserted by data-router.
     pub insert_destination: Option<String>,
     /// Whether the schema stores documents or timeseries data.
+    #[graphql(name = "type")]
     pub schema_type: Option<SchemaType>,
 }

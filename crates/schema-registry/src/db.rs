@@ -53,6 +53,18 @@ impl SchemaRegistryDb {
         .map_err(RegistryError::DbError)
     }
 
+    pub async fn get_base_schema_of_view(&self, id: Uuid) -> RegistryResult<Schema> {
+        sqlx::query_as!(
+            Schema,
+            "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\"
+             FROM schemas WHERE id = (SELECT schema FROM views WHERE id = $1)",
+            id
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(RegistryError::DbError)
+    }
+
     pub async fn get_full_schema(&self, id: Uuid) -> RegistryResult<FullSchema> {
         let schema = self.get_schema(id).await?;
 

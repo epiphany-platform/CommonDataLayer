@@ -22,15 +22,15 @@ pub async fn main() -> anyhow::Result<()> {
             SchemaAction::Versions { id } => get_schema_versions(id, args.registry_addr).await,
             SchemaAction::Add {
                 name,
-                topic_or_queue,
+                insert_destination,
                 query_address,
                 file,
                 schema_type,
             } => {
                 add_schema(
                     name,
-                    topic_or_queue.unwrap_or_default(),
-                    query_address.unwrap_or_default(),
+                    insert_destination,
+                    query_address,
                     file,
                     args.registry_addr,
                     schema_type,

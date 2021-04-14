@@ -12,6 +12,11 @@ use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
 use crate::types::data::InputMessage;
 use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
 use crate::types::view::{NewView, View, ViewUpdate};
+use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
+use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
+use crate::types::data::{InputMessage, ObjectRelations};
+use crate::types::schema::*;
+use crate::{config::Config, error::Error};
 use utils::current_timestamp;
 
 pub struct MutationRoot;
@@ -223,6 +228,61 @@ impl MutationRoot {
                     .await
                     .map_err(Error::PublisherError)?;
             }
+            Ok(true)
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// Add new relation, return generated `relation_id`
+    async fn add_relation(
+        &self,
+        context: &Context<'_>,
+        parent_schema_id: Uuid,
+        child_schema_id: Uuid,
+    ) -> FieldResult<Uuid> {
+        let span = tracing::trace_span!("add_relation", ?parent_schema_id, ?child_schema_id);
+        async move {
+            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+            Ok(conn
+                .add_relation(rpc::edge_registry::SchemaRelation {
+                    parent_schema_id: parent_schema_id.to_string(),
+                    child_schema_id: child_schema_id.to_string(),
+                })
+                .await?
+                .into_inner()
+                .relation_id
+                .parse()?)
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// Add new object-object edges
+    async fn add_edges(
+        &self,
+        context: &Context<'_>,
+        relations: Vec<ObjectRelations>,
+    ) -> FieldResult<bool> {
+        let span = tracing::trace_span!("add_edges", len = relations.len());
+        async move {
+            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+            conn.add_edges(rpc::edge_registry::ObjectRelations {
+                relations: relations
+                    .into_iter()
+                    .map(|relation| rpc::edge_registry::Edge {
+                        relation_id: relation.relation_id.to_string(),
+                        parent_object_id: relation.parent_object_id.to_string(),
+                        child_object_ids: relation
+                            .child_object_ids
+                            .into_iter()
+                            .map(|id| id.to_string())
+                            .collect(),
+                    })
+                    .collect(),
+            })
+            .await?;
+
             Ok(true)
         }
         .instrument(span)

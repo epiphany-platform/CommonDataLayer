@@ -29,7 +29,7 @@ services:
       IMPORT_FILE: "/var/data/schema.json"
       RUST_LOG: info,schema_registry=trace
     volumes:
-      - ./setup/schema_registry/initial-schema.json:/var/data/schema.json
+      - ./setup/schema_registry/initial-schema.mq.json:/var/data/schema.json
 
   data_router:
     image: cdl-data-router:latest
@@ -91,6 +91,26 @@ services:
       CONSUMER_SOURCE: "cdl.edge.input"
       RUST_LOG: info,edge_registry=trace
 
+  object_builder:
+    image: cdl-object-builder:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=object-builder
+        - ENV=DEV
+    command: "/bin/object-builder"
+    ports:
+      - "50107:50107"
+    environment:
+      MQ_METHOD: kafka
+      INPUT_PORT: "50107"
+      KAFKA_BROKERS: "kafka:9093"
+      KAFKA_GROUP_ID: "object_builder"
+      MQ_SOURCE: "cdl.materialize"
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      RUST_LOG: info,object_builder=trace
+
   web_api:
     image: cdl-api:latest
     command: "/bin/api"
@@ -105,6 +125,7 @@ services:
       INPUT_PORT: 50106
       RUST_LOG: info,api=trace
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      EDGE_REGISTRY_ADDR: "http://edge_registry:50110"
       QUERY_ROUTER_ADDR: "http://query_router:50103"
       COMMUNICATION_METHOD: "kafka"
       KAFKA_BROKERS: "kafka:9093"

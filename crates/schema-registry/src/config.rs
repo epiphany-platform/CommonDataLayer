@@ -3,6 +3,8 @@ use std::path::PathBuf;
 use anyhow::Context;
 use structopt::{clap::arg_enum, StructOpt};
 
+use utils::metrics;
+
 pub enum CommunicationMethodConfig {
     Kafka(KafkaConfig),
     Amqp(AmqpConfig),
@@ -74,9 +76,13 @@ pub struct Config {
     /// JSON file from which SR should load initial state. If the state already exists this env variable witll be ignored
     #[structopt(long, env)]
     pub import_file: Option<PathBuf>,
+
     /// Port to listen on for Prometheus requests
-    #[structopt(long, env)]
-    pub metrics_port: Option<u16>,
+    #[structopt(long, env, default_value = metrics::DEFAULT_PORT)]
+    pub metrics_port: u16,
+    /// Port exposing status of the application
+    #[structopt(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
+    pub status_port: u16,
 }
 
 pub fn communication_config(config: &Config) -> anyhow::Result<CommunicationMethodConfig> {

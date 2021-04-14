@@ -167,6 +167,27 @@ impl SchemaRegistry for SchemaRegistryImpl {
     }
 
     #[tracing::instrument(skip(self))]
+    async fn get_base_schema_of_view(
+        &self,
+        request: Request<Id>,
+    ) -> Result<Response<rpc::schema_registry::Schema>, Status> {
+        let request = request.into_inner();
+        let id = parse_uuid(&request.id)?;
+
+        let schema = self.db.get_base_schema_of_view(id).await?;
+
+        Ok(Response::new(rpc::schema_registry::Schema {
+            id: schema.id.to_string(),
+            metadata: rpc::schema_registry::SchemaMetadata {
+                name: schema.name,
+                insert_destination: schema.insert_destination,
+                query_address: schema.query_address,
+                schema_type: schema.schema_type.into(),
+            },
+        }))
+    }
+
+    #[tracing::instrument(skip(self))]
     async fn get_schema_definition(
         &self,
         request: Request<VersionedId>,

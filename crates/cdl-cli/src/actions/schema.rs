@@ -112,6 +112,23 @@ pub async fn update_schema(
     Ok(())
 }
 
+pub async fn set_schema_insert_destination(
+    schema_id: Uuid,
+    insert_destination: String,
+    registry_addr: String,
+) -> anyhow::Result<()> {
+    let mut client = rpc::schema_registry::connect(registry_addr).await?;
+    client
+        .update_schema_metadata(SchemaMetadataUpdate {
+            id: schema_id.to_string(),
+            insert_destination: Some(insert_destination),
+            ..Default::default()
+        })
+        .await?;
+
+    Ok(())
+}
+
 pub async fn add_schema_version(
     schema_id: Uuid,
     version: Version,
