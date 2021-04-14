@@ -1,47 +1,5 @@
 {
   "db": "PostgreSQL",
-  "079d55ba5dbc8e6f0a6a0052b6ddee72f9ae03b68b701993cd2a8a4327a62944": {
-    "query": "SELECT id, name, materializer_address, fields, schema FROM views",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Uuid"
-        },
-        {
-          "ordinal": 1,
-          "name": "name",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 2,
-          "name": "materializer_address",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 3,
-          "name": "fields",
-          "type_info": "Json"
-        },
-        {
-          "ordinal": 4,
-          "name": "schema",
-          "type_info": "Uuid"
-        }
-      ],
-      "parameters": {
-        "Left": []
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "09fefe2a26798d394c6c413aed8c8e373be5fa0f4dae17fb02ccc5e8554252b0": {
     "query": "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\"\n             FROM schemas WHERE id = $1",
     "describe": {
@@ -74,7 +32,7 @@
               "name": "schema_type_enum",
               "kind": {
                 "Enum": [
-                  "document_storage",
+                  "documentstorage",
                   "timeseries"
                 ]
               }
@@ -109,6 +67,50 @@
       "nullable": []
     }
   },
+  "151f121590fda45f643304223b76b789af64b3b4d5a857e76a3efef9359c9916": {
+    "query": "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"\n             FROM views WHERE schema = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "materializer_address",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "materializer_options",
+          "type_info": "Json"
+        },
+        {
+          "ordinal": 4,
+          "name": "fields: _",
+          "type_info": "Json"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "4da760e3b16ebff5497bad1f06b71c093444dec31e7f693a9ac9d2fccbbf3b88": {
     "query": "UPDATE views SET name = $1, materializer_address = $2, fields = $3\n             WHERE id = $4",
     "describe": {
@@ -124,6 +126,104 @@
       "nullable": []
     }
   },
+  "52373bf9c38f925bf5d93b5fc4afa2244f5d3fc934313d4dc83615cf848ca0e1": {
+    "query": "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\"\n             FROM schemas WHERE id = (SELECT schema FROM views WHERE id = $1)",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "insert_destination",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "query_address",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "schema_type: _",
+          "type_info": {
+            "Custom": {
+              "name": "schema_type_enum",
+              "kind": {
+                "Enum": [
+                  "documentstorage",
+                  "timeseries"
+                ]
+              }
+            }
+          }
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
+  "62bf48e24376e2df2e493f89ccb92640fa6b7d8fbedfc9f57864f8149e0bad0d": {
+    "query": "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"\n             FROM views WHERE id = $1",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "materializer_address",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "materializer_options",
+          "type_info": "Json"
+        },
+        {
+          "ordinal": 4,
+          "name": "fields: _",
+          "type_info": "Json"
+        }
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "6fbfc980c45dbe488e0e68c8e03445da53c22b4d94f8c0afcf688a48af3aa888": {
     "query": "UPDATE schemas SET name = $1, schema_type = $2, insert_destination = $3, query_address = $4 WHERE id = $5",
     "describe": {
@@ -136,7 +236,7 @@
               "name": "schema_type_enum",
               "kind": {
                 "Enum": [
-                  "document_storage",
+                  "documentstorage",
                   "timeseries"
                 ]
               }
@@ -208,7 +308,7 @@
               "name": "schema_type_enum",
               "kind": {
                 "Enum": [
-                  "document_storage",
+                  "documentstorage",
                   "timeseries"
                 ]
               }
@@ -222,38 +322,6 @@
       "nullable": [
         false,
         false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
-  "9a9d47a6c164a3122ad84e2f74b782c7b2e72f564f0e1e4d295b058ea1b3691d": {
-    "query": "SELECT name, materializer_address, fields\n             FROM views WHERE id = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "name",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 1,
-          "name": "materializer_address",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 2,
-          "name": "fields",
-          "type_info": "Json"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      },
-      "nullable": [
         false,
         false,
         false
@@ -317,6 +385,54 @@
       ]
     }
   },
+  "ba4d6b6a3ccda8022d52805d775df488ccb12db739a203c56e7780e7636dc511": {
+    "query": "SELECT id, name, materializer_address, materializer_options, fields, schema FROM views",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "name",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 2,
+          "name": "materializer_address",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "materializer_options",
+          "type_info": "Json"
+        },
+        {
+          "ordinal": 4,
+          "name": "fields",
+          "type_info": "Json"
+        },
+        {
+          "ordinal": 5,
+          "name": "schema",
+          "type_info": "Uuid"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "bd9b167bad2b2a84027280205caaaa6512d6da5905bed42cbeaf9169d5acf1d3": {
     "query": "INSERT INTO schemas(id, name, schema_type, insert_destination, query_address) VALUES($1, $2, $3, $4, $5)",
     "describe": {
@@ -330,7 +446,7 @@
               "name": "schema_type_enum",
               "kind": {
                 "Enum": [
-                  "document_storage",
+                  "documentstorage",
                   "timeseries"
                 ]
               }
@@ -389,44 +505,6 @@
       "nullable": []
     }
   },
-  "e8ed133179a4f6d4214108534fd056828ed5d370117084e9e05c917e45e8af9d": {
-    "query": "SELECT id, name, materializer_address, fields as \"fields: _\" FROM views WHERE schema = $1",
-    "describe": {
-      "columns": [
-        {
-          "ordinal": 0,
-          "name": "id",
-          "type_info": "Uuid"
-        },
-        {
-          "ordinal": 1,
-          "name": "name",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 2,
-          "name": "materializer_address",
-          "type_info": "Varchar"
-        },
-        {
-          "ordinal": 3,
-          "name": "fields: _",
-          "type_info": "Json"
-        }
-      ],
-      "parameters": {
-        "Left": [
-          "Uuid"
-        ]
-      },
-      "nullable": [
-        false,
-        false,
-        false,
-        false
-      ]
-    }
-  },
   "e9f34565e0de9b0d05ed897535bf6c53539aaef32a93f9a2e22c5a65ee5501d1": {
     "query": "INSERT INTO definitions(version, definition, schema) VALUES($1, $2, $3)",
     "describe": {
@@ -473,7 +551,7 @@
               "name": "schema_type_enum",
               "kind": {
                 "Enum": [
-                  "document_storage",
+                  "documentstorage",
                   "timeseries"
                 ]
               }
