@@ -5,7 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use rdkafka::{
-    consumer::{DefaultConsumerContext, StreamConsumer},
+    consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
     message::BorrowedMessage,
     producer::{FutureProducer, FutureRecord},
     ClientConfig, Message, Offset, TopicPartitionList,
@@ -43,7 +43,7 @@ struct Config {
     pub sleep_phase_length: u64,
 }
 
-#[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, Deserialize, PartialEq, Eq, Hash)]
 struct PartialNotification {
     pub object_id: Uuid,
     pub schema_id: Uuid,
@@ -121,15 +121,16 @@ fn new_notification(
     changes: &mut HashSet<PartialNotification>,
     message: BorrowedMessage,
 ) -> Result<(i32, i64)> {
+    let partition = message.partition();
+    let offset = message.offset();
+    tracing::debug!(partition, offset, "New message");
     let notification: PartialNotification = serde_json::from_str(
         message
             .payload_view::<str>()
             .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??,
     )?;
-    trace!("new notification {:#?}", notification);
+    tracing::debug!(?notification, "Notification");
     changes.insert(notification);
-    let partition = message.partition();
-    let offset = message.offset();
     Ok((partition, offset))
 }
 
@@ -187,17 +188,16 @@ async fn acknowledge_messages(
     consumer: &StreamConsumer,
     notification_topic: &str,
 ) -> Result<()> {
-    tracing::debug!("HERE");
     let mut partition_offsets = TopicPartitionList::new();
-    for offset in offsets.iter() {
+    for (partition, offset) in offsets.iter() {
+        tracing::debug!(?partition, ?offset, "Adding offset to topic partition list");
         partition_offsets.add_partition_offset(
             notification_topic,
-            *offset.0,
-            Offset::Offset(*offset.1 + 1),
+            *partition,
+            Offset::Offset(*offset + 1),
         )?;
     }
-    rdkafka::consumer::Consumer::store_offsets(consumer, &partition_offsets)?;
-    //rdkafka::consumer::Consumer::commit(consumer, &partition_offsets, CommitMode::Sync)?;
+    rdkafka::consumer::Consumer::commit(consumer, &partition_offsets, CommitMode::Sync)?;
     offsets.clear();
     Ok(())
 }
