@@ -27,6 +27,9 @@ services:
       REPORT_BROKER: "kafka:9093"
       REPORT_TOPIC: "cdl.reports"
       RUST_LOG: info,command_service=trace
+      OTEL_SERVICE_NAME: "druid-command"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
   druid_query:
     image: cdl-query-service-ts:latest
@@ -43,6 +46,9 @@ services:
       DRUID_TABLE_NAME: "cdl.timeseries.internal.druid"
       INPUT_PORT: 50205
       RUST_LOG: debug
+      OTEL_SERVICE_NAME: "druid-query"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
 networks:
   compose_default:

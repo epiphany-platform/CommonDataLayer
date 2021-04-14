@@ -13,6 +13,7 @@ use rpc::generic::generic_rpc_server::GenericRpc;
 use rpc::generic::generic_rpc_server::GenericRpcServer;
 use std::{net::SocketAddrV4, sync::Arc};
 use tokio_amqp::LapinTokioExt;
+use tracing_futures::Instrument;
 
 use super::{
     kafka_ack_queue::KafkaAckQueue, message::AmqpCommunicationMessage,
@@ -38,6 +39,7 @@ where
         &self,
         request: tonic::Request<proto::Message>,
     ) -> Result<tonic::Response<proto::Empty>, tonic::Status> {
+        crate::tracing::grpc::set_parent_span(&request);
         let msg = request.into_inner();
 
         match self.handler.handle(&msg).await {
@@ -197,19 +199,24 @@ impl ParallelCommonConsumer {
                     let ack_queue = ack_queue.clone();
                     let handler = handler.clone();
                     let consumer = consumer.clone();
+                    let span = tracing::info_span!("consume_message");
                     task_limiter
-                        .run(move || async move {
-                            let message = KafkaCommunicationMessage { message };
+                        .run(move || {
+                            async move {
+                                crate::tracing::kafka::set_parent_span(&message);
+                                let message = KafkaCommunicationMessage { message };
 
-                            match handler.handle(&message).await {
-                                Ok(_) => {
-                                    ack_queue.ack(&message.message, consumer.as_ref());
-                                }
-                                Err(e) => {
-                                    tracing::error!("Couldn't process message: {:?}", e);
-                                    std::process::abort();
+                                match handler.handle(&message).await {
+                                    Ok(_) => {
+                                        ack_queue.ack(&message.message, consumer.as_ref());
+                                    }
+                                    Err(e) => {
+                                        tracing::error!("Couldn't process message: {:?}", e);
+                                        std::process::abort();
+                                    }
                                 }
                             }
+                            .instrument(span)
                         })
                         .await;
                 }

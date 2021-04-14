@@ -6,7 +6,7 @@ use std::{
 use anyhow::{Context, Result};
 use rdkafka::{
     consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
-    message::BorrowedMessage,
+    message::{BorrowedMessage, OwnedHeaders},
     producer::{FutureProducer, FutureRecord},
     ClientConfig, Message, Offset, TopicPartitionList,
 };
@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
-use tracing::{debug, trace};
+use tracing::{debug, trace, Instrument};
 use utils::metrics::{self};
 use uuid::Uuid;
 
@@ -105,9 +105,10 @@ async fn main() -> anyhow::Result<()> {
                     acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
                         .await?;
                 }
-                debug!("Entering sleep phase");
-                sleep(Duration::from_secs(config.sleep_phase_length)).await;
-                debug!("Exiting sleep phase");
+                let sleep_phase = tracing::info_span!("Sleep phase");
+                sleep(Duration::from_secs(config.sleep_phase_length))
+                    .instrument(sleep_phase)
+                    .await;
             }
         }
     }
@@ -117,10 +118,12 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
+#[tracing::instrument(skip(message))]
 fn new_notification(
     changes: &mut HashSet<PartialNotification>,
     message: BorrowedMessage,
 ) -> Result<(i32, i64)> {
+    utils::tracing::kafka::set_parent_span(&message);
     let notification: PartialNotification = serde_json::from_str(
         message
             .payload_view::<str>()
@@ -133,6 +136,7 @@ fn new_notification(
     Ok((partition, offset))
 }
 
+#[tracing::instrument(skip(producer, config))]
 async fn process_changes(
     producer: &FutureProducer,
     config: &Config,
@@ -171,7 +175,8 @@ async fn process_changes(
             .send(
                 FutureRecord::to(config.object_builder_topic.as_str())
                     .payload(payload.as_str())
-                    .key(&view.to_string()),
+                    .key(&view.to_string())
+                    .headers(utils::tracing::kafka::inject_span(OwnedHeaders::new())),
                 Duration::from_secs(5),
             )
             .await
@@ -181,6 +186,7 @@ async fn process_changes(
     Ok(())
 }
 
+#[tracing::instrument(skip(consumer))]
 async fn acknowledge_messages(
     offsets: &mut HashMap<i32, i64>,
     consumer: &StreamConsumer,

@@ -32,10 +32,13 @@ impl MaterializerImpl {
 
 #[tonic::async_trait]
 impl Materializer for MaterializerImpl {
+    #[tracing::instrument(skip(self))]
     async fn validate_options(
         &self,
         request: tonic::Request<Options>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
+        utils::tracing::grpc::set_parent_span(&request);
+
         let options: Options = request.into_inner();
         tracing::debug!(?options, "Options to validate");
 
@@ -45,10 +48,13 @@ impl Materializer for MaterializerImpl {
         }
     }
 
+    #[tracing::instrument(skip(self))]
     async fn upsert_view(
         &self,
         request: tonic::Request<MaterializedView>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
+        utils::tracing::grpc::set_parent_span(&request);
+
         let materialized_view = request.into_inner();
         tracing::debug!(?materialized_view, "materialized view");
 

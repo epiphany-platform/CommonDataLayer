@@ -118,6 +118,7 @@ struct Handler {
 
 #[async_trait]
 impl ParallelConsumerHandler for Handler {
+    #[tracing::instrument(skip(self, message))]
     async fn handle<'a>(&'a self, message: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
         let order_group_id = get_order_group_id(message);
         let _guard =
@@ -284,6 +285,7 @@ async fn new_consumer(config: &Config) -> anyhow::Result<ParallelCommonConsumer>
     Ok(ParallelCommonConsumer::new(config).await?)
 }
 
+#[tracing::instrument(skip(cache, producer))]
 async fn route(
     cache: &Mutex<LruCache<Uuid, String>>,
     event: &DataRouterInsertMessage<'_>,
@@ -310,6 +312,7 @@ async fn route(
     Ok(())
 }
 
+#[tracing::instrument(skip(cache))]
 async fn get_schema_insert_destination(
     cache: &Mutex<LruCache<Uuid, String>>,
     schema_id: Uuid,
@@ -327,9 +330,9 @@ async fn get_schema_insert_destination(
 
     let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
     let channel = client
-        .get_schema_insert_destination(Id {
+        .get_schema_insert_destination(utils::tracing::grpc::inject_span(Id {
             id: schema_id.to_string(),
-        })
+        }))
         .await?
         .into_inner()
         .insert_destination;
@@ -346,6 +349,7 @@ async fn get_schema_insert_destination(
     Ok(channel)
 }
 
+#[tracing::instrument(skip(producer))]
 async fn send_message(
     producer: &CommonPublisher,
     insert_destination: &str,

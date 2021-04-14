@@ -39,6 +39,7 @@ impl<P> ParallelConsumerHandler for ServiceHandler<P>
 where
     P: OutputPlugin,
 {
+    #[tracing::instrument(skip(self, msg))]
     async fn handle<'a>(&'a self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
         let order_group_id = get_order_group_id(msg);
         let _guard = order_group_id
