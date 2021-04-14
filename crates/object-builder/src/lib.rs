@@ -4,6 +4,7 @@ use std::{collections::HashMap, convert::TryInto};
 
 use anyhow::Context;
 use async_trait::async_trait;
+use bb8::{Pool, PooledConnection};
 use rpc::common::MaterializedView;
 use rpc::common::RowDefinition as RpcRowDefinition;
 use rpc::object_builder::{object_builder_server::ObjectBuilder, ViewId};
@@ -24,7 +25,39 @@ use crate::args::Args;
 
 #[derive(Clone)]
 pub struct ObjectBuilderImpl {
-    schema_registry: SchemaRegistryClient<Channel>,
+    pool: Pool<SchemaRegistryConnectionManager>,
+}
+
+#[derive(Clone)]
+pub struct SchemaRegistryConnectionManager {
+    pub address: String,
+}
+
+pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
+pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;
+
+#[async_trait::async_trait]
+impl bb8::ManageConnection for SchemaRegistryConnectionManager {
+    type Connection = SchemaRegistryConn;
+    type Error = rpc::error::ClientError;
+
+    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
+        tracing::debug!("Connecting to registry");
+
+        rpc::schema_registry::connect(self.address.clone()).await
+    }
+
+    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
+        conn.ping(rpc::schema_registry::Empty {})
+            .await
+            .map_err(rpc::error::registry_error)?;
+
+        Ok(())
+    }
+
+    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
+        false
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -44,10 +77,14 @@ struct RowDefinition {
 
 impl ObjectBuilderImpl {
     pub async fn new(args: &Args) -> anyhow::Result<Self> {
-        let schema_registry =
-            rpc::schema_registry::connect(args.schema_registry_addr.clone()).await?;
+        let pool = Pool::builder()
+            .build(SchemaRegistryConnectionManager {
+                address: args.schema_registry_addr.clone(),
+            })
+            .await
+            .unwrap();
 
-        Ok(Self { schema_registry })
+        Ok(Self { pool })
     }
 }
 
@@ -229,8 +266,9 @@ impl ObjectBuilderImpl {
     #[tracing::instrument(skip(self))]
     async fn get_view(&self, view_id: &Uuid) -> anyhow::Result<rpc::schema_registry::View> {
         let view = self
-            .schema_registry
-            .clone()
+            .pool
+            .get()
+            .await?
             .get_view(rpc::schema_registry::Id {
                 id: view_id.to_string(),
             })
@@ -246,8 +284,9 @@ impl ObjectBuilderImpl {
         view_id: &Uuid,
     ) -> anyhow::Result<rpc::schema_registry::Schema> {
         let schemas = self
-            .schema_registry
-            .clone()
+            .pool
+            .get()
+            .await?
             .get_base_schema_of_view(rpc::schema_registry::Id {
                 id: view_id.to_string(),
             })
