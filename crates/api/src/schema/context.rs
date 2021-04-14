@@ -5,9 +5,9 @@ use bb8::{Pool, PooledConnection};
 use tokio::sync::Mutex;
 
 use crate::{config::Config, events::EventStream, events::EventSubscriber};
+use rpc::edge_registry::edge_registry_client::EdgeRegistryClient;
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
-use rpc::edge_registry::edge_registry_client::EdgeRegistryClient;
 
 pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
 pub type EdgeRegistryPool = Pool<EdgeRegistryConnectionManager>;
