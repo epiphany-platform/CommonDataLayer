@@ -80,7 +80,7 @@ pub enum SchemaAction {
         #[structopt(short, long, parse(from_os_str))]
         file: Option<PathBuf>,
         /// The type of schema. Possible values: DocumentStorage, Timeseries.
-        #[structopt(short = "t", long = "type", default_value = "DocumentStorage")]
+        #[structopt(short, long = "type", default_value = "DocumentStorage")]
         schema_type: SchemaType,
     },
 
@@ -113,7 +113,7 @@ pub enum SchemaAction {
         #[structopt(short, long)]
         query_address: Option<String>,
         /// The new type of the schema. Possible values: DocumentStorage, Timeseries.
-        #[structopt(short = "t", long = "type")]
+        #[structopt(short, long = "type")]
         schema_type: Option<SchemaType>,
     },
 

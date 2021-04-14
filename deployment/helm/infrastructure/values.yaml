@@ -234,7 +234,22 @@ rabbitmq:
 kafka:
   replicaCount: 1
   autoCreateTopicsEnable: true
+  deleteTopicEnable: true
+  autoCreateTopicsEnable: true
+  # persistence:
+  #   enabled: false
+  # provisioning:
+  #   enabled: true
+  #   topics:
+  #     - cdl.data.input
+  #     - cdl.edge.input
+  #     - cdl.document.data
+  #     - cdl.timeseries.data
+  #     - cdl.timeseries.generic-druid
+  #     - cdl.timeseries2.data
+  #     - cdl.errors
   zookeeper:
+  #   zookeeper.persistence.enabled: false
     enabled: true
 
 postgresql:
