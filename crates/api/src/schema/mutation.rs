@@ -8,14 +8,14 @@ use uuid::Uuid;
 use crate::config::Config;
 use crate::error::Error;
 use crate::schema::context::SchemaRegistryPool;
-use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
-use crate::types::data::InputMessage;
-use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
-use crate::types::view::{NewView, View, ViewUpdate};
 use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
 use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
+use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
+use crate::types::data::InputMessage;
 use crate::types::data::{InputMessage, ObjectRelations};
 use crate::types::schema::*;
+use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
+use crate::types::view::{NewView, View, ViewUpdate};
 use crate::{config::Config, error::Error};
 use utils::current_timestamp;
 
@@ -123,7 +123,8 @@ impl MutationRoot {
                     schema_id: schema_id.to_string(),
                     name: new_view.name.clone(),
                     materializer_address: new_view.materializer_address.clone(),
-                    fields: new_view.fields.0.clone(),
+                    materializer_options: serde_json::to_string(&materializer_options)?,
+                    fields: serde_json::to_string(&fields)?,
                 })
                 .await
                 .map_err(rpc::error::registry_error)?
@@ -156,12 +157,19 @@ impl MutationRoot {
             } else {
                 (false, HashMap::default())
             };
-            conn.update_view(rpc::schema_registry::ViewUpdate {
+
+            conn.update_view(rpc::schema_registry::UpdatedView {
                 id: id.to_string(),
-                name: update.name,
-                materializer_address: update.materializer_address,
-                update_fields,
-                fields,
+                name: name.clone(),
+                materializer_addr: materializer_addr.clone(),
+                materializer_options: materializer_options
+                    .as_ref()
+                    .map(|o| serde_json::to_string(o))
+                    .transpose()?,
+                fields: fields
+                    .as_ref()
+                    .map(|f| serde_json::to_string(f))
+                    .transpose()?,
             })
             .await
             .map_err(rpc::error::registry_error)?;

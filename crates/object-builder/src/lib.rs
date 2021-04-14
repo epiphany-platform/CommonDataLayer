@@ -1,11 +1,12 @@
 pub mod args;
 
-use std::collections::HashMap;
+use std::{collections::HashMap, convert::TryInto};
 
 use anyhow::Context;
 use async_trait::async_trait;
-use rpc::object_builder::object_builder_server::ObjectBuilder;
-use rpc::object_builder::{MaterializedView, RowDefinition as RpcRowDefinition, ViewId};
+use rpc::common::MaterializedView;
+use rpc::common::RowDefinition as RpcRowDefinition;
+use rpc::object_builder::{object_builder_server::ObjectBuilder, ViewId};
 use rpc::schema_registry::ViewSchema;
 use rpc::schema_registry::{schema_registry_client::SchemaRegistryClient, types::SchemaType};
 use serde::Serialize;
@@ -29,6 +30,7 @@ pub struct ObjectBuilderImpl {
 #[serde(rename_all = "snake_case")]
 struct Output {
     view_id: Uuid,
+    options: Value,
     rows: Vec<RowDefinition>,
 }
 
@@ -45,6 +47,34 @@ impl ObjectBuilderImpl {
             rpc::schema_registry::connect(args.schema_registry_addr.clone()).await?;
 
         Ok(Self { schema_registry })
+    }
+}
+
+impl TryInto<MaterializedView> for Output {
+    type Error = serde_json::Error;
+
+    fn try_into(self) -> Result<MaterializedView, Self::Error> {
+        let rows = self
+            .rows
+            .into_iter()
+            .map(|row| {
+                let fields = row
+                    .fields
+                    .into_iter()
+                    .map(|(key, value)| Ok((key, serde_json::to_string(&value)?)))
+                    .collect::<serde_json::Result<_>>()?;
+                Ok(RpcRowDefinition {
+                    object_id: row.object_id.to_string(),
+                    fields,
+                })
+            })
+            .collect::<serde_json::Result<_>>()?;
+
+        Ok(MaterializedView {
+            view_id: self.view_id.to_string(),
+            options: serde_json::to_string(&self.options)?,
+            rows,
+        })
     }
 }
 
@@ -65,30 +95,12 @@ impl ObjectBuilder for ObjectBuilderImpl {
             .await
             .map_err(|err| tonic::Status::internal(format!("{}", err)))?;
 
-        let rows = object
-            .rows
-            .into_iter()
-            .map(|row| {
-                let fields = row
-                    .fields
-                    .into_iter()
-                    .map(|(key, value)| Ok((key, serde_json::to_string(&value)?)))
-                    .collect::<serde_json::Result<_>>()?;
-                Ok(RpcRowDefinition {
-                    object_id: row.object_id.to_string(),
-                    fields,
-                })
-            })
-            .collect::<serde_json::Result<_>>()
-            .map_err(|err| {
-                tracing::error!("Could not serialize view fields: {:?}", err);
-                tonic::Status::internal("Could not serialize view fields")
-            })?;
+        let rpc_object = object.try_into().map_err(|err| {
+            tracing::error!("Could not serialize materialized view: {:?}", err);
+            tonic::Status::internal("Could not serialize materialized view")
+        })?;
 
-        Ok(tonic::Response::new(MaterializedView {
-            view_id: object.view_id.to_string(),
-            rows,
-        }))
+        Ok(tonic::Response::new(rpc_object))
     }
 }
 
@@ -96,17 +108,22 @@ impl ObjectBuilder for ObjectBuilderImpl {
 impl ConsumerHandler for ObjectBuilderImpl {
     #[tracing::instrument(skip(self, msg))]
     async fn handle<'a>(&'a mut self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
+        let payload = msg.payload()?;
+        tracing::debug!(?payload, "Handle MQ message");
         counter!("cdl.object-builder.build-object.mq", 1);
-        let view_id: Uuid = msg.payload()?.parse()?;
+        let view_id: Uuid = payload.trim().parse()?;
 
         let view = self.get_view(&view_id);
-        let output = self.build_object(view_id);
+        let object = self.build_object(view_id);
 
-        let (view, _output) = futures::try_join!(view, output)?;
+        let (view, object) = futures::try_join!(view, object)?;
 
-        let _materializer_addr = view.materializer_addr;
-        // TODO: Sending output to materializer
-        // via GRPC
+        let rpc_object: MaterializedView = object.try_into()?;
+
+        rpc::materializer::connect(view.materializer_addr)
+            .await?
+            .upsert_view(rpc_object)
+            .await?;
 
         Ok(())
     }
@@ -122,6 +139,8 @@ impl ObjectBuilderImpl {
 
         tracing::debug!(?view, ?base_schema, "View");
 
+        let options = serde_json::from_str(&view.materializer_options)?;
+
         let fields_defs: HashMap<String, FieldDefinition> = serde_json::from_str(&view.fields)?;
         let objects = self.get_objects(&base_schema).await?;
         tracing::debug!(?objects, "Objects");
@@ -131,7 +150,11 @@ impl ObjectBuilderImpl {
             .map(|(object_id, object)| Self::build_row_def(object_id, object, &fields_defs))
             .collect::<anyhow::Result<_>>()?;
 
-        let output = Output { view_id, rows };
+        let output = Output {
+            view_id,
+            options,
+            rows,
+        };
 
         tracing::debug!(?output, "Output");
 

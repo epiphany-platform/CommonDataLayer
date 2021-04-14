@@ -161,6 +161,9 @@ pub enum ViewAction {
         /// Materializer's address
         #[structopt(short, long)]
         materializer_address: String,
+        /// Materializer's options encoded in JSON
+        #[structopt(short, long)]
+        materializer_options: String,
         /// The file containing the fields definition encoded in JSON.
         /// If not provided, the value will be read from STDIN.
         #[structopt(short, long, parse(from_os_str))]
@@ -186,5 +189,8 @@ pub enum ViewAction {
         /// If not provided, the value will be read from STDIN.
         #[structopt(short, long, parse(from_os_str))]
         fields: Option<PathBuf>,
+        /// Materializer's options encoded in JSON
+        #[structopt(short, long)]
+        materializer_options: Option<String>,
     },
 }

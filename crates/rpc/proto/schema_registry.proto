@@ -50,22 +50,25 @@ message View {
     required string id = 1;
     required string name = 2;
     required string materializer_address = 3;
-    map<string, string> fields = 4;
+    required string materializer_options = 4;
+    map<string, string> fields = 5;
 }
 
 message NewView {
     required string schema_id = 1;
     required string name = 2;
     required string materializer_address = 3;
-    map<string, string> fields = 4;
+    required string materializer_options = 4;
+    map<string, string> fields = 5;
 }
 
 message ViewUpdate {
     required string id = 1;
     optional string name = 2;
     optional string materializer_address = 3;
-    map<string, string> fields = 4;
-    required bool update_fields = 5;
+    required string materializer_options = 4;
+    map<string, string> fields = 5;
+    required bool update_fields = 6;
 }
 
 message FullSchema {

@@ -70,12 +70,14 @@ pub async fn main() -> anyhow::Result<()> {
                 schema_id,
                 name,
                 materializer_address,
+                materializer_options,
                 fields,
             } => {
                 add_view_to_schema(
                     schema_id,
                     name,
                     materializer_address,
+                    materializer_options,
                     fields,
                     args.registry_addr,
                 )
@@ -84,16 +86,20 @@ pub async fn main() -> anyhow::Result<()> {
             ViewAction::Update {
                 id,
                 name,
-                materializer_address,
                 fields,
                 update_fields,
+                materializer_address,
+                materializer_options,
+                fields,
             } => {
                 update_view(
                     id,
                     name,
-                    materializer_address,
                     fields,
                     update_fields,
+                    materializer_address,
+                    materializer_options,
+                    fields,
                     args.registry_addr,
                 )
                 .await

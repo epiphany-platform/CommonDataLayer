@@ -85,7 +85,8 @@ impl SchemaRegistryDb {
 
         let views = sqlx::query_as!(
             View,
-            "SELECT id, name, materializer_address, fields as \"fields: _\" FROM views WHERE schema = $1",
+            "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
+             FROM views WHERE schema = $1",
             id
         )
         .fetch_all(&self.pool)
@@ -119,38 +120,27 @@ impl SchemaRegistryDb {
     }
 
     pub async fn get_view(&self, id: Uuid) -> RegistryResult<View> {
-        let view = sqlx::query!(
-            "SELECT name, materializer_address, fields
+        sqlx::query_as!(
+            View,
+            "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
              FROM views WHERE id = $1",
             id
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(RegistryError::DbError)?;
-
-        Ok(View {
-            id,
-            name: view.name,
-            materializer_address: view.materializer_address,
-            fields: serde_json::from_value(view.fields)
-                .map_err(RegistryError::MalformedViewFields)?,
-        })
+        .map_err(RegistryError::DbError)
     }
 
-    pub async fn get_all_views_of_schema(
-        &self,
-        schema_id: Uuid,
-    ) -> RegistryResult<HashMap<Uuid, View>> {
-        Ok(sqlx::query_as!(
+    pub async fn get_all_views_of_schema(&self, schema_id: Uuid) -> RegistryResult<Vec<View>> {
+        sqlx::query_as!(
             View,
-            "SELECT id, name, materializer_address, fields as \"fields: _\" FROM views WHERE schema = $1",
+            "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
+             FROM views WHERE schema = $1",
             schema_id
         )
         .fetch_all(&self.pool)
-        .await?
-        .into_iter()
-        .map(|view| (view.id, view))
-        .collect::<HashMap<Uuid, View>>())
+        .await
+        .map_err(RegistryError::DbError)
     }
 
     pub async fn get_schema_versions(&self, id: Uuid) -> RegistryResult<Vec<Version>> {
@@ -195,7 +185,7 @@ impl SchemaRegistryDb {
                 .fetch_all(&self.pool)
                 .await?;
         let mut all_views =
-            sqlx::query!("SELECT id, name, materializer_address, fields, schema FROM views",)
+            sqlx::query!("SELECT id, name, materializer_address, materializer_options, fields, schema FROM views",)
                 .fetch_all(&self.pool)
                 .await?;
 
@@ -219,6 +209,7 @@ impl SchemaRegistryDb {
                             id: row.id,
                             name: row.name,
                             materializer_address: row.materializer_address,
+                            materializer_options: row.materializer_options,
                             fields:
                                 serde_json::from_value::<Json<HashMap<String, FieldDefinition>>>(
                                     row.fields,

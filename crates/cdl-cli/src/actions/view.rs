@@ -27,6 +27,7 @@ pub async fn add_view_to_schema(
     schema_id: Uuid,
     name: String,
     materializer_address: String,
+    materializer_options: String,
     fields: Option<PathBuf>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
@@ -37,7 +38,8 @@ pub async fn add_view_to_schema(
         schema_id: schema_id.to_string(),
         name: name.clone(),
         materializer_address,
-        fields: serde_json::from_value(fields)?,
+        materializer_options,
+        fields,
     };
 
     let response = client.add_view_to_schema(view).await?;
@@ -56,8 +58,11 @@ pub async fn update_view(
     view_id: Uuid,
     name: Option<String>,
     materializer_address: Option<String>,
+    materializer_options: Option<String>,
     fields: Option<PathBuf>,
     update_fields: bool,
+    materializer_addr: Option<String>,
+    fields: Option<String>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
@@ -71,6 +76,7 @@ pub async fn update_view(
         id: view_id.to_string(),
         name,
         materializer_address,
+        materializer_options,
         update_fields,
         fields,
     };

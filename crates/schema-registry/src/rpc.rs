@@ -258,6 +258,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
                         id: view.id.to_string(),
                         name: view.name,
                         materializer_address: view.materializer_address,
+                        materializer_options: serde_json::to_string(&view.materializer_options)
+                            .map_err(RegistryError::MalformedViewFields)?,
                         fields: view
                             .fields
                             .0
@@ -336,6 +338,10 @@ impl SchemaRegistry for SchemaRegistryImpl {
                                     id: view.id.to_string(),
                                     name: view.name,
                                     materializer_address: view.materializer_address,
+                                    materializer_options: serde_json::to_string(
+                                        &view.materializer_options,
+                                    )
+                                    .map_err(RegistryError::MalformedViewFields)?,
                                     fields: view
                                         .fields
                                         .0
@@ -371,6 +377,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
             id: request.id,
             name: view.name,
             materializer_address: view.materializer_address,
+            materializer_options: serde_json::to_string(&view.materializer_options)
+                .map_err(RegistryError::MalformedViewFields)?,
             fields: view
                 .fields
                 .0
@@ -399,11 +407,13 @@ impl SchemaRegistry for SchemaRegistryImpl {
         Ok(Response::new(rpc::schema_registry::SchemaViews {
             views: views
                 .into_iter()
-                .map(|(view_id, view)| {
+                .map(|view| {
                     Ok(rpc::schema_registry::View {
-                        id: view_id.to_string(),
+                        id: view.id.to_string(),
                         name: view.name,
                         materializer_address: view.materializer_address,
+                        materializer_options: serde_json::to_string(&view.materializer_options)
+                            .map_err(RegistryError::MalformedViewFields)?,
                         fields: view
                             .fields
                             .0
@@ -432,6 +442,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
             schema_id: parse_uuid(&request.schema_id)?,
             name: request.name,
             materializer_address: request.materializer_address,
+            materializer_options: serde_json::from_str(&request.materializer_options)
+                .map_err(RegistryError::MalformedViewFields)?,
             fields: Json(
                 request
                     .fields
@@ -482,6 +494,14 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let update = ViewUpdate {
             name: request.name,
             materializer_address: request.materializer_address,
+            materializer_options: if request.materializer_options.len() == 0 {
+                Some(
+                    serde_json::from_str(&request.materializer_options)
+                        .map_err(RegistryError::MalformedViewFields)?,
+                )
+            } else {
+                None
+            },
             fields,
         };
 

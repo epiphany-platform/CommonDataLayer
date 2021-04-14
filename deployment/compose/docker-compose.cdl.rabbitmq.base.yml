@@ -131,7 +131,7 @@ services:
       AMQP_CONNECTION_STRING: "amqp://user:CHANGEME@rabbitmq:5672/%2f"
       AMQP_CONSUMER_TAG: "cdl-api"
       REPORT_SOURCE: "cdl.reports"
-      INSERT_DESTINATION: "cdl.reports"
+      INSERT_DESTINATION: "cdl.data.input"
 
 networks:
   compose_default:

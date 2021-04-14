@@ -24,6 +24,7 @@ CREATE TABLE views (
     id                   uuid primary key not null,
     name                 varchar not null,
     materializer_address varchar not null,
+    materializer_options json not null,
     fields               json not null,
     schema               uuid not null,
 
