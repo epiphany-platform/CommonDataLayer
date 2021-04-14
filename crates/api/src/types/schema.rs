@@ -14,6 +14,7 @@ pub struct FullSchema {
     pub insert_destination: String,
     pub query_address: String,
     pub schema_type: SchemaType,
+
     pub definitions: Vec<Definition>,
     pub views: Vec<View>,
 }

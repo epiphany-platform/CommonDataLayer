@@ -95,7 +95,7 @@ impl MutationRoot {
                 },
             })
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::schema_registry_error)?;
             get_schema(&mut conn, id).await
         }
         .instrument(span)
@@ -121,7 +121,7 @@ impl MutationRoot {
                     fields: new_view.fields.0.clone(),
                 })
                 .await
-                .map_err(rpc::error::registry_error)?
+                .map_err(rpc::error::schema_registry_error)?
                 .into_inner()
                 .id;
 
@@ -167,7 +167,7 @@ impl MutationRoot {
                 update_fields,
             })
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::schema_registry_error)?;
 
             get_view(&mut conn, id).await
         }

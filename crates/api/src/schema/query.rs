@@ -8,11 +8,13 @@ use uuid::Uuid;
 
 use crate::config::Config;
 use crate::error::Result;
-use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
+use crate::schema::context::{EdgeRegistryPool, ObjectBuilderPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
 use crate::types::schema::{Definition, FullSchema};
 use crate::types::view::View;
+use crate::types::view::{MaterializedView, RowDefinition};
+use rpc::object_builder::ViewId;
 use rpc::schema_registry::types::SchemaType;
 
 #[Object]
@@ -346,6 +348,54 @@ impl QueryRoot {
                 })
             })
             .collect::<Result<Vec<_>, async_graphql::Error>>()
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// On demand materialized view
+    async fn on_demand_view(
+        &self,
+        context: &Context<'_>,
+        view_id: Uuid,
+    ) -> FieldResult<MaterializedView> {
+        let span = tracing::trace_span!("query_on_demand_view", ?view_id);
+        async move {
+            let mut conn = context.data_unchecked::<ObjectBuilderPool>().get().await?;
+            let materialized = conn
+                .materialize(ViewId {
+                    view_id: view_id.to_string(),
+                })
+                .await?
+                .into_inner();
+
+            let rows = materialized
+                .rows
+                .into_iter()
+                .map(|row| {
+                    let fields = row
+                        .fields
+                        .into_iter()
+                        .map(|(field_name, field)| {
+                            let field = serde_json::from_str(&field)?;
+                            Ok((field_name, Json(field)))
+                        })
+                        .collect::<Result<_, async_graphql::Error>>()?;
+
+                    Ok(RowDefinition {
+                        object_id: row.object_id.parse()?,
+                        fields,
+                    })
+                })
+                .collect::<Result<_, async_graphql::Error>>()?;
+
+            let options = serde_json::from_str(&materialized.options)?;
+
+            Ok(MaterializedView {
+                id: view_id,
+                materializer_options: Json(options),
+                rows,
+            })
         }
         .instrument(span)
         .await

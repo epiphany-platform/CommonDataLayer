@@ -341,7 +341,6 @@ dependencies = [
  "anyhow",
  "lapin",
  "pbr",
- "rand 0.8.3",
  "rdkafka",
  "serde",
  "serde_json",
@@ -1894,6 +1893,24 @@ dependencies = [
  "redox_syscall",
  "smallvec",
  "winapi",
+]
+
+[[package]]
+name = "partial-update-engine"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "rdkafka",
+ "rpc",
+ "serde",
+ "serde_json",
+ "structopt",
+ "tokio",
+ "tokio-stream",
+ "tracing",
+ "utils",
+ "uuid",
 ]
 
 [[package]]

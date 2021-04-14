@@ -39,12 +39,12 @@ pub async fn query_single(
             id: schema_id.to_string(),
         })
         .await
-        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?
+        .map_err(|err| Error::ClientError(rpc::error::schema_registry_error(err)))?
         .into_inner();
     let schema_type: rpc::schema_registry::types::SchemaType = schema
         .schema_type
         .try_into()
-        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?;
+        .map_err(|err| Error::ClientError(rpc::error::schema_registry_error(err)))?;
 
     let values = match (&schema_type, request_body) {
         (SchemaType::DocumentStorage, _) => {
@@ -100,7 +100,7 @@ pub async fn query_multiple(
             id: schema_id.to_string(),
         })
         .await
-        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?
+        .map_err(|err| Error::ClientError(rpc::error::schema_registry_error(err)))?
         .into_inner();
 
     let object_ids = object_ids.split(',').map(str::to_owned).collect();
@@ -128,12 +128,12 @@ pub async fn query_by_schema(
             id: schema_id.to_string(),
         })
         .await
-        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?
+        .map_err(|err| Error::ClientError(rpc::error::schema_registry_error(err)))?
         .into_inner();
     let schema_type: rpc::schema_registry::types::SchemaType = schema
         .schema_type
         .try_into()
-        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?;
+        .map_err(|err| Error::ClientError(rpc::error::schema_registry_error(err)))?;
 
     match &schema_type {
         SchemaType::DocumentStorage => {
@@ -179,12 +179,12 @@ pub async fn query_raw(
             id: schema_id.to_string(),
         })
         .await
-        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?
+        .map_err(|err| Error::ClientError(rpc::error::schema_registry_error(err)))?
         .into_inner();
     let schema_type: rpc::schema_registry::types::SchemaType = schema
         .schema_type
         .try_into()
-        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?;
+        .map_err(|err| Error::ClientError(rpc::error::schema_registry_error(err)))?;
 
     let values = match (request_body, &schema_type) {
         (Body::Raw { raw_statement }, SchemaType::DocumentStorage) => {

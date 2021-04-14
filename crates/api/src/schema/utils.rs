@@ -13,7 +13,7 @@ pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Vi
     let view = conn
         .get_view(rpc::schema_registry::Id { id: id.to_string() })
         .await
-        .map_err(rpc::error::registry_error)?
+        .map_err(rpc::error::schema_registry_error)?
         .into_inner();
 
     View::from_rpc(view)
@@ -24,7 +24,7 @@ pub async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<
     let schema = conn
         .get_full_schema(rpc::schema_registry::Id { id: id.to_string() })
         .await
-        .map_err(rpc::error::registry_error)?
+        .map_err(rpc::error::schema_registry_error)?
         .into_inner();
 
     FullSchema::from_rpc(schema)

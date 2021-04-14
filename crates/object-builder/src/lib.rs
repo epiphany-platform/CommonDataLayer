@@ -5,23 +5,23 @@ use std::{collections::HashMap, convert::TryInto};
 use anyhow::Context;
 use async_trait::async_trait;
 use bb8::{Pool, PooledConnection};
-use rpc::common::MaterializedView;
-use rpc::common::RowDefinition as RpcRowDefinition;
-use rpc::object_builder::{object_builder_server::ObjectBuilder, ViewId};
-use rpc::schema_registry::{
-    schema_registry_client::SchemaRegistryClient, types::SchemaType, Schema,
-};
 use serde::Serialize;
 use serde_json::Value;
 use tonic::transport::Channel;
+use uuid::Uuid;
+
+use crate::args::Args;
+use rpc::common::MaterializedView;
+use rpc::common::RowDefinition as RpcRowDefinition;
+use rpc::object_builder::{object_builder_server::ObjectBuilder, Empty, ViewId};
+use rpc::schema_registry::{
+    schema_registry_client::SchemaRegistryClient, types::SchemaType, Schema,
+};
 use utils::metrics::{self, counter};
 use utils::{
     communication::{consumer::ConsumerHandler, message::CommunicationMessage},
     types::FieldDefinition,
 };
-use uuid::Uuid;
-
-use crate::args::Args;
 
 #[derive(Clone)]
 pub struct ObjectBuilderImpl {
@@ -50,7 +50,7 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
         conn.ping(rpc::schema_registry::Empty {})
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::schema_registry_error)?;
 
         Ok(())
     }
@@ -139,6 +139,15 @@ impl ObjectBuilder for ObjectBuilderImpl {
         })?;
 
         Ok(tonic::Response::new(rpc_object))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn heartbeat(
+        &self,
+        _request: tonic::Request<Empty>,
+    ) -> Result<tonic::Response<Empty>, tonic::Status> {
+        //empty
+        Ok(tonic::Response::new(Empty {}))
     }
 }
 
