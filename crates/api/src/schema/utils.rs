@@ -1,20 +1,12 @@
 use anyhow::Context;
 use async_graphql::FieldResult;
-use utils::communication::publisher::CommonPublisher;
 use uuid::Uuid;
 
 use crate::config::{CommunicationMethodConfig, Config};
 use crate::schema::context::SchemaRegistryConn;
 use crate::types::schema::FullSchema;
 use crate::types::view::View;
-
 use utils::communication::publisher::CommonPublisher;
-use crate::types::schema::*;
-use crate::{
-    config::{CommunicationMethodConfig, Config},
-    error::Error,
-};
-use super::context::SchemaRegistryConn;
 
 pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<View> {
     tracing::debug!("get view: {:?}", id);

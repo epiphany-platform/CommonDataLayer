@@ -74,7 +74,7 @@ pub enum SchemaAction {
         insert_destination: String,
         /// The query address of the schema.
         #[structopt(short, long)]
-        query_address: Option<String>,
+        query_address: String,
         /// The file containing the JSON Schema. If not provided,
         /// the schema definition will be read from stdin.
         #[structopt(short, long, parse(from_os_str))]

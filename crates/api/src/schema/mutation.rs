@@ -5,15 +5,9 @@ use tracing::Instrument;
 use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
 
-use crate::config::Config;
-use crate::error::Error;
-use crate::schema::context::SchemaRegistryPool;
 use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
 use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
-use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
-use crate::types::data::InputMessage;
 use crate::types::data::{InputMessage, ObjectRelations};
-use crate::types::schema::*;
 use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
 use crate::types::view::{NewView, View, ViewUpdate};
 use crate::{config::Config, error::Error};
@@ -123,8 +117,8 @@ impl MutationRoot {
                     schema_id: schema_id.to_string(),
                     name: new_view.name.clone(),
                     materializer_address: new_view.materializer_address.clone(),
-                    materializer_options: serde_json::to_string(&materializer_options)?,
-                    fields: serde_json::to_string(&fields)?,
+                    materializer_options: serde_json::to_string(&new_view.materializer_options)?,
+                    fields: new_view.fields.0.clone(),
                 })
                 .await
                 .map_err(rpc::error::registry_error)?
@@ -135,6 +129,7 @@ impl MutationRoot {
                 id: id.parse()?,
                 name: new_view.name,
                 materializer_address: new_view.materializer_address,
+                materializer_options: new_view.materializer_options,
                 fields: new_view.fields,
             })
         }
@@ -158,18 +153,18 @@ impl MutationRoot {
                 (false, HashMap::default())
             };
 
-            conn.update_view(rpc::schema_registry::UpdatedView {
+            conn.update_view(rpc::schema_registry::ViewUpdate {
                 id: id.to_string(),
-                name: name.clone(),
-                materializer_addr: materializer_addr.clone(),
-                materializer_options: materializer_options
+                name: update.name.clone(),
+                materializer_address: update.materializer_address.clone(),
+                materializer_options: update
+                    .materializer_options
                     .as_ref()
-                    .map(|o| serde_json::to_string(o))
-                    .transpose()?,
-                fields: fields
-                    .as_ref()
-                    .map(|f| serde_json::to_string(f))
-                    .transpose()?,
+                    .map(serde_json::to_string)
+                    .transpose()?
+                    .unwrap_or_default(),
+                fields,
+                update_fields,
             })
             .await
             .map_err(rpc::error::registry_error)?;

@@ -290,7 +290,7 @@ async fn route(
         timestamp: current_timestamp(),
         data: event.data,
     };
-    
+
     let schema = schema_cache
         .get_schema(event.schema_id)
         .await
@@ -306,7 +306,12 @@ async fn route(
     Ok(())
 }
 
-async fn send_message(producer: &CommonPublisher, topic_name: &str, key: &str, payload: Vec<u8>) {
+async fn send_message(
+    producer: &CommonPublisher,
+    insert_destination: &str,
+    key: &str,
+    payload: Vec<u8>,
+) {
     let payload_len = payload.len();
     let delivery_status = producer
         .publish_message(&insert_destination, key, payload)

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use async_graphql::{FieldResult, InputObject, Json, SimpleObject};
+use serde_json::Value;
 use uuid::Uuid;
 
 /// A view under a schema.
@@ -12,6 +13,8 @@ pub struct View {
     pub name: String,
     /// The address of the materializer this view caches data in.
     pub materializer_address: String,
+    /// Materializer's options encoded in JSON
+    pub materializer_options: Json<Value>,
     /// The fields that this view maps with.
     pub fields: Json<HashMap<String, String>>,
 }
@@ -22,6 +25,7 @@ impl View {
             id: Uuid::parse_str(&view.id)?,
             name: view.name,
             materializer_address: view.materializer_address,
+            materializer_options: serde_json::from_str(&view.materializer_options)?,
             fields: Json(view.fields),
         })
     }
@@ -36,6 +40,8 @@ pub struct NewView {
     pub name: String,
     /// The address of the materializer this view caches data in.
     pub materializer_address: String,
+    /// Materializer's options encoded in JSON
+    pub materializer_options: Json<Value>,
     /// The fields that this view maps with.
     pub fields: Json<HashMap<String, String>>,
 }
@@ -49,6 +55,8 @@ pub struct ViewUpdate {
     pub name: Option<String>,
     /// The address of the materializer this view caches data in.
     pub materializer_address: Option<String>,
+    /// Materializer's options encoded in JSON
+    pub materializer_options: Option<Json<Value>>,
     /// The fields that this view maps with.
     pub fields: Option<Json<HashMap<String, String>>>,
 }

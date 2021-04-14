@@ -6,20 +6,14 @@ use semver::VersionReq;
 use tracing::Instrument;
 use uuid::Uuid;
 
-use rpc::schema_registry::Empty;
-
 use crate::config::Config;
-use crate::schema::context::SchemaRegistryPool;
-use crate::schema::utils::{get_schema, get_view};
-use crate::types::data::CdlObject;
-use crate::types::schema::{Definition, FullSchema};
-use crate::types::view::View;
-use rpc::schema_registry::types::SchemaType;
-use crate::error::{Error, Result};
+use crate::error::Result;
 use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
-use crate::types::schema::*;
+use crate::types::schema::{Definition, FullSchema};
+use crate::types::view::View;
+use rpc::schema_registry::types::SchemaType;
 
 #[Object]
 /// Schema is the format in which data is to be sent to the Common Data Layer.

@@ -32,8 +32,8 @@ pub async fn main() -> anyhow::Result<()> {
                     insert_destination,
                     query_address,
                     file,
-                    args.registry_addr,
                     schema_type,
+                    args.registry_addr,
                 )
                 .await
             }
@@ -43,14 +43,14 @@ pub async fn main() -> anyhow::Result<()> {
             SchemaAction::Update {
                 id,
                 name,
-                topic_or_queue,
+                insert_destination,
                 query_address,
                 schema_type,
             } => {
                 update_schema(
                     id,
                     name,
-                    topic_or_queue,
+                    insert_destination,
                     query_address,
                     schema_type,
                     args.registry_addr,
@@ -90,16 +90,14 @@ pub async fn main() -> anyhow::Result<()> {
                 update_fields,
                 materializer_address,
                 materializer_options,
-                fields,
             } => {
                 update_view(
                     id,
                     name,
-                    fields,
-                    update_fields,
                     materializer_address,
                     materializer_options,
                     fields,
+                    update_fields,
                     args.registry_addr,
                 )
                 .await

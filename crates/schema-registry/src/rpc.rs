@@ -494,7 +494,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let update = ViewUpdate {
             name: request.name,
             materializer_address: request.materializer_address,
-            materializer_options: if request.materializer_options.len() == 0 {
+            materializer_options: if !request.materializer_options.is_empty() {
                 Some(
                     serde_json::from_str(&request.materializer_options)
                         .map_err(RegistryError::MalformedViewFields)?,

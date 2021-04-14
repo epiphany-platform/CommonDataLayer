@@ -7,8 +7,9 @@ use async_trait::async_trait;
 use rpc::common::MaterializedView;
 use rpc::common::RowDefinition as RpcRowDefinition;
 use rpc::object_builder::{object_builder_server::ObjectBuilder, ViewId};
-use rpc::schema_registry::ViewSchema;
-use rpc::schema_registry::{schema_registry_client::SchemaRegistryClient, types::SchemaType};
+use rpc::schema_registry::{
+    schema_registry_client::SchemaRegistryClient, types::SchemaType, Schema,
+};
 use serde::Serialize;
 use serde_json::Value;
 use tonic::transport::Channel;
@@ -120,7 +121,7 @@ impl ConsumerHandler for ObjectBuilderImpl {
 
         let rpc_object: MaterializedView = object.try_into()?;
 
-        rpc::materializer::connect(view.materializer_addr)
+        rpc::materializer::connect(view.materializer_address)
             .await?
             .upsert_view(rpc_object)
             .await?;
@@ -141,7 +142,12 @@ impl ObjectBuilderImpl {
 
         let options = serde_json::from_str(&view.materializer_options)?;
 
-        let fields_defs: HashMap<String, FieldDefinition> = serde_json::from_str(&view.fields)?;
+        let fields_defs: HashMap<String, FieldDefinition> = view
+            .fields
+            .into_iter()
+            .map(|(key, value)| Ok((key, serde_json::from_str(&value)?)))
+            .collect::<anyhow::Result<_>>()?;
+
         let objects = self.get_objects(&base_schema).await?;
         tracing::debug!(?objects, "Objects");
 
@@ -194,10 +200,10 @@ impl ObjectBuilderImpl {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn get_objects(&self, base_schema: &ViewSchema) -> anyhow::Result<HashMap<Uuid, Value>> {
-        let schema_id = &base_schema.schema_id;
-        let query_address = &base_schema.schema.query_address;
-        let schema_type = base_schema.schema.schema_type().into();
+    async fn get_objects(&self, base_schema: &Schema) -> anyhow::Result<HashMap<Uuid, Value>> {
+        let schema_id = &base_schema.id;
+        let query_address = &base_schema.metadata.query_address;
+        let schema_type = base_schema.metadata.schema_type.try_into()?;
 
         match schema_type {
             SchemaType::DocumentStorage => {
@@ -238,7 +244,7 @@ impl ObjectBuilderImpl {
     async fn get_base_schema(
         &self,
         view_id: &Uuid,
-    ) -> anyhow::Result<rpc::schema_registry::ViewSchema> {
+    ) -> anyhow::Result<rpc::schema_registry::Schema> {
         let schemas = self
             .schema_registry
             .clone()

@@ -37,8 +37,8 @@ pub async fn add_schema(
     insert_destination: String,
     query_address: String,
     file: Option<PathBuf>,
-    registry_addr: String,
     schema_type: SchemaType,
+    registry_addr: String,
 ) -> anyhow::Result<()> {
     let definition = read_json(file)?;
 
@@ -106,23 +106,6 @@ pub async fn update_schema(
                 query_address,
                 schema_type: schema_type.map(|t| t.into()),
             },
-        })
-        .await?;
-
-    Ok(())
-}
-
-pub async fn set_schema_insert_destination(
-    schema_id: Uuid,
-    insert_destination: String,
-    registry_addr: String,
-) -> anyhow::Result<()> {
-    let mut client = rpc::schema_registry::connect(registry_addr).await?;
-    client
-        .update_schema_metadata(SchemaMetadataUpdate {
-            id: schema_id.to_string(),
-            insert_destination: Some(insert_destination),
-            ..Default::default()
         })
         .await?;
 
