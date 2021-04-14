@@ -9,7 +9,6 @@ use serde_json::Value;
 use structopt::{clap::arg_enum, StructOpt};
 use tracing::{debug, error, trace};
 
-use schema_registry::cache::SchemaCache;
 use utils::{
     communication::{
         get_order_group_id,
@@ -86,27 +85,14 @@ async fn main() -> anyhow::Result<()> {
 
     let consumer = new_consumer(&config).await?;
     let producer = Arc::new(new_producer(&config).await?);
-
-    let (schema_cache, error_receiver) =
-        SchemaCache::new(config.schema_registry_addr, config.cache_capacity)
-            .await
-            .context("Failed to create schema cache")?;
-    tokio::spawn(async move {
-        if let Ok(error) = error_receiver.await {
-            eprintln!(
-                "Schema Cache encountered an error, restarting to avoid sync issues: {}",
-                error
-            );
-            std::process::exit(1);
-        }
-    });
+    let schema_registry_addr = Arc::new(config.schema_registry_addr);
 
     let task_queue = Arc::new(ParallelTaskQueue::default());
 
     consumer
         .par_run(Handler {
             producer,
-            schema_cache,
+            schema_registry_addr,
             task_queue,
         })
         .await?;
@@ -118,7 +104,7 @@ async fn main() -> anyhow::Result<()> {
 
 struct Handler {
     producer: Arc<CommonPublisher>,
-    schema_cache: SchemaCache,
+    schema_registry_addr: Arc<String>,
     task_queue: Arc<ParallelTaskQueue>,
 }
 
@@ -151,9 +137,14 @@ impl ParallelConsumerHandler for Handler {
                 let mut result = Ok(());
 
                 for entry in maybe_array.iter() {
-                    let r = route(&entry, &message_key, &self.producer, &self.schema_cache)
-                        .await
-                        .context("Tried to send message and failed");
+                    let r = route(
+                        &entry,
+                        &message_key,
+                        &self.producer,
+                        &self.schema_registry_addr,
+                    )
+                    .await
+                    .context("Tried to send message and failed");
 
                     counter!("cdl.data-router.input-multimsg", 1);
                     counter!("cdl.data-router.processed", 1);
@@ -171,9 +162,14 @@ impl ParallelConsumerHandler for Handler {
                     serde_json::from_str::<DataRouterInsertMessage>(message.payload()?).context(
                         "Payload deserialization failed, message is not a valid cdl message",
                     )?;
-                let result = route(&owned, &message_key, &self.producer, &self.schema_cache)
-                    .await
-                    .context("Tried to send message and failed");
+                let result = route(
+                    &owned,
+                    &message_key,
+                    &self.producer,
+                    &self.schema_registry_addr,
+                )
+                .await
+                .context("Tried to send message and failed");
                 counter!("cdl.data-router.input-singlemsg", 1);
                 counter!("cdl.data-router.processed", 1);
 
@@ -282,7 +278,7 @@ async fn route(
     event: &DataRouterInsertMessage<'_>,
     message_key: &str,
     producer: &CommonPublisher,
-    schema_cache: &SchemaCache,
+    schema_registry_addr: &str,
 ) -> anyhow::Result<()> {
     let payload = BorrowedInsertMessage {
         object_id: event.object_id,
@@ -291,10 +287,14 @@ async fn route(
         data: event.data,
     };
 
-    let schema = schema_cache
-        .get_schema(event.schema_id)
+    let mut conn = rpc::schema_registry::connect(schema_registry_addr.to_owned()).await?;
+    let schema = conn
+        .get_schema_metadata(rpc::schema_registry::Id {
+            id: event.schema_id.to_string(),
+        })
         .await
-        .context("failed to get schema metadata")?;
+        .context("failed to get schema metadata")?
+        .into_inner();
 
     send_message(
         producer,

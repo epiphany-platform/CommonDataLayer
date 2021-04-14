@@ -1,4 +1,3 @@
-use schema_registry::cache::SchemaCache;
 use structopt::StructOpt;
 use utils::metrics;
 use uuid::Uuid;
@@ -12,9 +11,6 @@ struct Config {
     /// Address of schema registry gRPC API
     #[structopt(long, env = "SCHEMA_REGISTRY_ADDR")]
     schema_registry_addr: String,
-    /// How many entries the cache can hold
-    #[structopt(long, env = "CACHE_CAPACITY")]
-    cache_capacity: usize,
     /// Port to listen on
     #[structopt(long, env = "INPUT_PORT")]
     input_port: u16,
@@ -32,19 +28,8 @@ async fn main() -> anyhow::Result<()> {
 
     metrics::serve(config.metrics_port);
 
-    let (schema_cache, error_receiver) =
-        SchemaCache::new(config.schema_registry_addr, config.cache_capacity).await?;
-    tokio::spawn(async move {
-        if let Ok(error) = error_receiver.await {
-            eprintln!(
-                "Schema Cache encountered an error, restarting to avoid sync issues: {}",
-                error
-            );
-            std::process::exit(1);
-        }
-    });
-
-    let cache_filter = warp::any().map(move || schema_cache.clone());
+    let addr = config.schema_registry_addr;
+    let cache_filter = warp::any().map(move || addr.clone());
     let schema_id_filter = warp::header::header::<Uuid>("SCHEMA_ID");
     let body_filter = warp::body::content_length_limit(1024 * 32).and(warp::body::json());
 

@@ -1,10 +1,10 @@
 use crate::error::Error;
 use rpc::schema_registry::types::SchemaType;
 use rpc::{query_service, query_service_ts};
-use schema_registry::cache::SchemaCache;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use uuid::Uuid;
 use warp::hyper::header::CONTENT_TYPE;
 
@@ -24,19 +24,29 @@ pub enum Body {
     Empty {},
 }
 
-#[tracing::instrument(skip(cache))]
+#[tracing::instrument(skip(schema_registry_addr))]
 pub async fn query_single(
     object_id: Uuid,
     schema_id: Uuid,
-    cache: SchemaCache,
+    schema_registry_addr: String,
     request_body: Body,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let schema = cache
-        .get_schema(schema_id)
+    let mut conn = rpc::schema_registry::connect(schema_registry_addr)
         .await
-        .map_err(Error::CacheError)?;
+        .map_err(Error::ClientError)?;
+    let schema = conn
+        .get_schema_metadata(rpc::schema_registry::Id {
+            id: schema_id.to_string(),
+        })
+        .await
+        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?
+        .into_inner();
+    let schema_type: rpc::schema_registry::types::SchemaType = schema
+        .schema_type
+        .try_into()
+        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?;
 
-    let values = match (&schema.schema_type, request_body) {
+    let values = match (&schema_type, request_body) {
         (SchemaType::DocumentStorage, _) => {
             let mut values = rpc::query_service::query_multiple(
                 vec![object_id.to_string()],
@@ -76,16 +86,23 @@ pub async fn query_single(
     ))
 }
 
-#[tracing::instrument(skip(cache))]
+#[tracing::instrument(skip(schema_registry_addr))]
 pub async fn query_multiple(
     object_ids: String,
     schema_id: Uuid,
-    cache: SchemaCache,
+    schema_registry_addr: String,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let schema = cache
-        .get_schema(schema_id)
+    let mut conn = rpc::schema_registry::connect(schema_registry_addr)
         .await
-        .map_err(Error::CacheError)?;
+        .map_err(Error::ClientError)?;
+    let schema = conn
+        .get_schema_metadata(rpc::schema_registry::Id {
+            id: schema_id.to_string(),
+        })
+        .await
+        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?
+        .into_inner();
+
     let object_ids = object_ids.split(',').map(str::to_owned).collect();
     let values = rpc::query_service::query_multiple(object_ids, schema.query_address.clone())
         .await
@@ -98,17 +115,27 @@ pub async fn query_multiple(
     ))
 }
 
-#[tracing::instrument(skip(cache))]
+#[tracing::instrument(skip(schema_registry_addr))]
 pub async fn query_by_schema(
     schema_id: Uuid,
-    cache: SchemaCache,
+    schema_registry_addr: String,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let schema = cache
-        .get_schema(schema_id)
+    let mut conn = rpc::schema_registry::connect(schema_registry_addr)
         .await
-        .map_err(Error::CacheError)?;
+        .map_err(Error::ClientError)?;
+    let schema = conn
+        .get_schema_metadata(rpc::schema_registry::Id {
+            id: schema_id.to_string(),
+        })
+        .await
+        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?
+        .into_inner();
+    let schema_type: rpc::schema_registry::types::SchemaType = schema
+        .schema_type
+        .try_into()
+        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?;
 
-    match &schema.schema_type {
+    match &schema_type {
         SchemaType::DocumentStorage => {
             let values = rpc::query_service::query_by_schema(
                 schema_id.to_string(),
@@ -138,18 +165,28 @@ pub async fn query_by_schema(
     }
 }
 
-#[tracing::instrument(skip(cache))]
+#[tracing::instrument(skip(schema_registry_addr))]
 pub async fn query_raw(
     schema_id: Uuid,
-    cache: SchemaCache,
+    schema_registry_addr: String,
     request_body: Body,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let schema = cache
-        .get_schema(schema_id)
+    let mut conn = rpc::schema_registry::connect(schema_registry_addr)
         .await
-        .map_err(Error::CacheError)?;
+        .map_err(Error::ClientError)?;
+    let schema = conn
+        .get_schema_metadata(rpc::schema_registry::Id {
+            id: schema_id.to_string(),
+        })
+        .await
+        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?
+        .into_inner();
+    let schema_type: rpc::schema_registry::types::SchemaType = schema
+        .schema_type
+        .try_into()
+        .map_err(|err| Error::ClientError(rpc::error::registry_error(err)))?;
 
-    let values = match (request_body, &schema.schema_type) {
+    let values = match (request_body, &schema_type) {
         (Body::Raw { raw_statement }, SchemaType::DocumentStorage) => {
             query_service::query_raw(raw_statement, schema.query_address.clone())
                 .await

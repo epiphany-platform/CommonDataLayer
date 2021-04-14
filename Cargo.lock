@@ -771,6 +771,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "rpc",
  "schema-registry",
  "serde",
  "serde_json",
