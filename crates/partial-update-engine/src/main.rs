@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use structopt::StructOpt;
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
-use tracing::{debug,trace};
+use tracing::{debug, trace};
 use utils::metrics::{self};
 use uuid::Uuid;
 
@@ -123,10 +123,10 @@ fn new_notification(
 ) -> Result<(i32, i64)> {
     let notification: PartialNotification = serde_json::from_str(
         message
-        .payload_view::<str>()
-        .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??,
+            .payload_view::<str>()
+            .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??,
     )?;
-    trace!("new notification {:#?}",notification);
+    trace!("new notification {:#?}", notification);
     changes.insert(notification);
     let partition = message.partition();
     let offset = message.offset();
@@ -138,32 +138,32 @@ async fn process_changes(
     config: &Config,
     changes: &mut HashSet<PartialNotification>,
 ) -> Result<()> {
-    trace!("processing changes {:#?}",changes);
+    trace!("processing changes {:#?}", changes);
     let schemas: HashSet<_> = changes.iter().map(|x| x.schema_id).collect();
-    
+
     let mut client = rpc::schema_registry::connect(config.schema_registry_addr.to_owned()).await?;
     let mut views: HashSet<Uuid> = HashSet::new();
-    trace!("schemas {:#?}",schemas);
+    trace!("schemas {:#?}", schemas);
     for schema in schemas {
-        trace!("schema loop: {:#?}",schema);
+        trace!("schema loop: {:#?}", schema);
         let response = client
             .get_all_views_of_schema(rpc::schema_registry::Id {
                 id: schema.to_string(),
             })
             .await?;
-            trace!("response: {:#?}",response);
+        trace!("response: {:#?}", response);
         let schema_in_views = response
             .into_inner()
             .views
             .iter()
             .map(|view| Ok(view.0.parse()?))
             .collect::<Result<Vec<Uuid>>>()?;
-            trace!("schema_in_views: {:#?}",schema_in_views);
+        trace!("schema_in_views: {:#?}", schema_in_views);
         for view in schema_in_views {
             views.insert(view);
         }
     }
-    trace!("views {:#?}",views);
+    trace!("views {:#?}", views);
 
     for view in views {
         let payload = view.to_string();
@@ -191,7 +191,7 @@ async fn acknowledge_messages(
         partition_offsets.add_partition_offset(
             notification_topic,
             *offset.0,
-            Offset::Offset(*offset.1+1),
+            Offset::Offset(*offset.1 + 1),
         )?;
     }
     rdkafka::consumer::Consumer::commit(consumer, &partition_offsets, CommitMode::Sync)?;
