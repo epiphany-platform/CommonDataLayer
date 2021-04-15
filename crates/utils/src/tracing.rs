@@ -8,11 +8,10 @@ pub mod kafka; // Used mostly in common publisher and [parallel_]consumer
 pub fn init() {
     global::set_text_map_propagator(TraceContextPropagator::new());
 
-    let tracer = opentelemetry_jaeger::new_pipeline()
+    let opentelemetry = opentelemetry_jaeger::new_pipeline()
         .install_batch(opentelemetry::runtime::Tokio)
-        .unwrap();
-
-    let opentelemetry = tracing_opentelemetry::layer().with_tracer(tracer);
+        .map(|tracer| tracing_opentelemetry::layer().with_tracer(tracer))
+        .ok();
 
     let fmt = tracing_subscriber::fmt::layer();
 
