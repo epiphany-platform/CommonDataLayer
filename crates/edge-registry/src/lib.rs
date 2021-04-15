@@ -3,13 +3,17 @@ use args::RegistryConfig;
 use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::{Config, NoTls};
 use bb8_postgres::{bb8, PostgresConnectionManager};
+use futures::future::BoxFuture;
+use futures::FutureExt;
 use itertools::Itertools;
 use rpc::edge_registry::edge_registry_server::EdgeRegistry;
 use rpc::edge_registry::{
     Edge, Empty, ObjectIdQuery, ObjectRelations, RelationDetails, RelationId, RelationIdQuery,
-    RelationList, RelationQuery, RelationResponse, SchemaId, SchemaRelation,
+    RelationList, RelationQuery, RelationResponse, SchemaId, SchemaRelation, TreeObject, TreeQuery,
+    TreeResponse,
 };
 use serde::Deserialize;
+use std::cmp::min;
 use std::convert::TryInto;
 use std::str::FromStr;
 use std::{fmt, time};
@@ -217,6 +221,85 @@ impl EdgeRegistryImpl {
             .into_iter()
             .map(|row| (row.get(0), row.get(1))))
     }
+
+    fn resolve_tree_recursive(
+        &self,
+        relation_id: String,
+        filter_ids: Vec<String>,
+        relations: Vec<TreeQuery>,
+    ) -> BoxFuture<anyhow::Result<TreeResponse>> {
+        async move {
+            let filter_ids = if filter_ids.is_empty() {
+                let conn = self.connect().await?;
+                conn.query(
+                    "SELECT DISTINCT parent_object_id FROM edges WHERE relation_id = $1",
+                    &[&relation_id.parse::<Uuid>()?],
+                )
+                .await?
+                .into_iter()
+                .map(|row| row.get::<_, Uuid>(0).to_string())
+                .collect()
+            } else {
+                filter_ids
+            };
+
+            let mut objects = Vec::new();
+            for object_id in filter_ids {
+                let children: Vec<String> = self
+                    .get_edge_impl(relation_id.parse()?, object_id.parse()?)
+                    .await?
+                    .map(|uuid| uuid.to_string())
+                    .collect();
+                let mut subtrees = Vec::new();
+                for relation in relations.iter() {
+                    let subtree = if relation.filter_ids.is_empty() {
+                        self.resolve_tree_recursive(
+                            relation.relation_id.clone(),
+                            children.clone(),
+                            relation.relations.clone(),
+                        )
+                        .await?
+                    } else {
+                        let object_ids = intersect(&children, &relation.filter_ids);
+                        if !object_ids.is_empty() {
+                            self.resolve_tree_recursive(
+                                relation.relation_id.clone(),
+                                object_ids,
+                                relation.relations.clone(),
+                            )
+                            .await?
+                        } else {
+                            TreeResponse { objects: vec![] }
+                        }
+                    };
+                    subtrees.push(subtree);
+                }
+                if !children.is_empty() {
+                    objects.push(TreeObject {
+                        object_id,
+                        relation_id: relation_id.clone(),
+                        children,
+                        subtrees,
+                    });
+                }
+            }
+
+            Ok(TreeResponse { objects })
+        }
+        .boxed()
+    }
+}
+
+fn intersect<T: PartialEq + Clone>(left: &[T], right: &[T]) -> Vec<T> {
+    let mut result = Vec::with_capacity(min(left.len(), right.len()));
+
+    for item in left {
+        if right.contains(item) {
+            result.push(item.clone())
+        }
+    }
+
+    result
 }
 
 #[tonic::async_trait]
@@ -439,6 +522,26 @@ impl EdgeRegistry for EdgeRegistryImpl {
     async fn heartbeat(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
         //empty
         Ok(Response::new(Empty {}))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn resolve_tree(
+        &self,
+        request: Request<TreeQuery>,
+    ) -> Result<Response<TreeResponse>, Status> {
+        let request = request.into_inner();
+
+        trace!(
+            "Received `resolve_tree` message with root `{}`",
+            request.relation_id
+        );
+
+        let result = self
+            .resolve_tree_recursive(request.relation_id, request.filter_ids, request.relations)
+            .await
+            .map_err(|err| db_communication_error("resolve_tree", err))?;
+
+        Ok(Response::new(result))
     }
 }
 
