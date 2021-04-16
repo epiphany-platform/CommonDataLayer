@@ -1,5 +1,3 @@
-#![feature(exact_size_is_empty)]
-
 use anyhow::{Context, Error};
 use args::RegistryConfig;
 use bb8_postgres::bb8::{Pool, PooledConnection};
@@ -231,7 +229,7 @@ impl EdgeRegistryImpl {
         relations: &'a [TreeQuery],
     ) -> BoxFuture<'_, anyhow::Result<TreeResponse>>
     where
-        F: IntoIterator<Item = S> + ExactSizeIterator + Send + Sync + 'a,
+        F: IntoIterator<Item = S> + Send + Sync + 'a,
         <F as IntoIterator>::IntoIter: Send + Sync,
         S: AsRef<str> + Send + Sync,
         R: AsRef<str> + Send + Sync + 'a,
@@ -239,7 +237,9 @@ impl EdgeRegistryImpl {
         async move {
             let relation_id = relation_id.as_ref();
 
-            if filter_ids.is_empty() {
+            let mut filter_ids = filter_ids.into_iter().peekable();
+
+            if filter_ids.peek().is_some() {
                 let conn = self.connect().await?;
                 self.resolve_tree_for_ids(
                     relation_id,
@@ -268,7 +268,7 @@ impl EdgeRegistryImpl {
         filter_ids: F,
     ) -> BoxFuture<'_, anyhow::Result<TreeResponse, Error>>
     where
-        F: IntoIterator<Item = S> + ExactSizeIterator + Send + Sync + 'a,
+        F: IntoIterator<Item = S> + Send + Sync + 'a,
         <F as IntoIterator>::IntoIter: Send + Sync,
         S: AsRef<str> + Send + Sync,
         R: AsRef<str> + Send + Sync + 'a,
@@ -276,36 +276,37 @@ impl EdgeRegistryImpl {
         async move {
             let mut objects = Vec::new();
             for object_id in filter_ids {
-                let children: Vec<String> = self
+                let children = self
                     .get_edge_impl(relation_id.as_ref().parse()?, object_id.as_ref().parse()?)
                     .await?
                     .map(|uuid| uuid.to_string())
-                    .collect();
-                let mut subtrees = Vec::new();
-                for relation in relations.iter() {
-                    let subtree = if relation.filter_ids.is_empty() {
-                        self.resolve_tree_recursive(
-                            &relation.relation_id,
-                            children.iter(),
-                            &relation.relations,
-                        )
-                        .await?
-                    } else {
-                        let object_ids = intersect(&children, &relation.filter_ids);
-                        if !object_ids.is_empty() {
+                    .collect::<Vec<_>>();
+
+                if !children.is_empty() {
+                    let mut subtrees = Vec::new();
+                    for relation in relations.iter() {
+                        let subtree = if relation.filter_ids.is_empty() {
                             self.resolve_tree_recursive(
                                 &relation.relation_id,
-                                object_ids.iter(),
+                                &children,
                                 &relation.relations,
                             )
                             .await?
                         } else {
-                            TreeResponse { objects: vec![] }
-                        }
-                    };
-                    subtrees.push(subtree);
-                }
-                if !children.is_empty() {
+                            let object_ids = intersect(&children, &relation.filter_ids);
+                            if !object_ids.is_empty() {
+                                self.resolve_tree_recursive(
+                                    &relation.relation_id,
+                                    object_ids.iter(),
+                                    &relation.relations,
+                                )
+                                .await?
+                            } else {
+                                TreeResponse { objects: vec![] }
+                            }
+                        };
+                        subtrees.push(subtree);
+                    }
                     objects.push(TreeObject {
                         object_id: object_id.as_ref().to_string(),
                         relation_id: relation_id.as_ref().to_string(),
