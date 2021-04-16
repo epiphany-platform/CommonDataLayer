@@ -194,6 +194,17 @@ impl EdgeRegistryImpl {
         counter!("cdl.edge-registry.get-edge", 1);
         let conn = self.connect().await?;
 
+        self.get_edge_with_conn(&conn, relation_id, parent_object_id)
+            .await
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn get_edge_with_conn(
+        &self,
+        conn: &PooledConnection<'_, PostgresConnectionManager<NoTls>>,
+        relation_id: Uuid,
+        parent_object_id: Uuid,
+    ) -> anyhow::Result<impl Iterator<Item = Uuid>> {
         Ok(conn
             .query(
                 "SELECT child_object_id FROM edges WHERE relation_id = $1 AND parent_object_id = $2",
@@ -224,6 +235,7 @@ impl EdgeRegistryImpl {
 
     fn resolve_tree_recursive<'a, F, S, R>(
         &'a self,
+        conn: &'a PooledConnection<PostgresConnectionManager<NoTls>>,
         relation_id: R,
         filter_ids: F,
         relations: &'a [TreeQuery],
@@ -239,9 +251,9 @@ impl EdgeRegistryImpl {
 
             let mut filter_ids = filter_ids.into_iter().peekable();
 
-            if filter_ids.peek().is_some() {
-                let conn = self.connect().await?;
+            if filter_ids.peek().is_none() {
                 self.resolve_tree_for_ids(
+                    conn,
                     relation_id,
                     relations,
                     conn.query(
@@ -254,7 +266,7 @@ impl EdgeRegistryImpl {
                 )
                 .await
             } else {
-                self.resolve_tree_for_ids(relation_id, relations, filter_ids)
+                self.resolve_tree_for_ids(conn, relation_id, relations, filter_ids)
                     .await
             }
         }
@@ -263,6 +275,7 @@ impl EdgeRegistryImpl {
 
     fn resolve_tree_for_ids<'a, F, S, R>(
         &'a self,
+        conn: &'a PooledConnection<'_, PostgresConnectionManager<NoTls>>,
         relation_id: R,
         relations: &'a [TreeQuery],
         filter_ids: F,
@@ -277,16 +290,21 @@ impl EdgeRegistryImpl {
             let mut objects = Vec::new();
             for object_id in filter_ids {
                 let children = self
-                    .get_edge_impl(relation_id.as_ref().parse()?, object_id.as_ref().parse()?)
+                    .get_edge_with_conn(
+                        conn,
+                        relation_id.as_ref().parse()?,
+                        object_id.as_ref().parse()?,
+                    )
                     .await?
                     .map(|uuid| uuid.to_string())
                     .collect::<Vec<_>>();
 
                 if !children.is_empty() {
-                    let mut subtrees = Vec::new();
+                    let mut subtrees = Vec::with_capacity(relations.len());
                     for relation in relations.iter() {
                         let subtree = if relation.filter_ids.is_empty() {
                             self.resolve_tree_recursive(
+                                conn,
                                 &relation.relation_id,
                                 &children,
                                 &relation.relations,
@@ -296,6 +314,7 @@ impl EdgeRegistryImpl {
                             let object_ids = intersect(&children, &relation.filter_ids);
                             if !object_ids.is_empty() {
                                 self.resolve_tree_recursive(
+                                    conn,
                                     &relation.relation_id,
                                     object_ids.iter(),
                                     &relation.relations,
@@ -570,6 +589,10 @@ impl EdgeRegistry for EdgeRegistryImpl {
 
         let result = self
             .resolve_tree_recursive(
+                &self
+                    .connect()
+                    .await
+                    .map_err(|err| db_communication_error("resolve_tree", err))?,
                 request.relation_id,
                 request.filter_ids.iter(),
                 &request.relations,
