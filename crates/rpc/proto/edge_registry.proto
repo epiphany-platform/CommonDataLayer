@@ -14,8 +14,6 @@ service EdgeRegistry {
   rpc Heartbeat (Empty) returns (Empty);
 
   rpc ResolveTree (TreeQuery) returns (TreeResponse);
-
-  // TODO: Resolving multiple relations on object at once
 }
 
 message TreeQuery {
