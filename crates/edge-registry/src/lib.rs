@@ -1,4 +1,6 @@
-use anyhow::Context;
+#![feature(exact_size_is_empty)]
+
+use anyhow::{Context, Error};
 use args::RegistryConfig;
 use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::{Config, NoTls};
@@ -222,31 +224,60 @@ impl EdgeRegistryImpl {
             .map(|row| (row.get(0), row.get(1))))
     }
 
-    fn resolve_tree_recursive(
-        &self,
-        relation_id: String,
-        filter_ids: Vec<String>,
-        relations: Vec<TreeQuery>,
-    ) -> BoxFuture<anyhow::Result<TreeResponse>> {
+    fn resolve_tree_recursive<'a, F, S, R>(
+        &'a self,
+        relation_id: R,
+        filter_ids: F,
+        relations: &'a [TreeQuery],
+    ) -> BoxFuture<'_, anyhow::Result<TreeResponse>>
+    where
+        F: IntoIterator<Item = S> + ExactSizeIterator + Send + Sync + 'a,
+        <F as IntoIterator>::IntoIter: Send + Sync,
+        S: AsRef<str> + Send + Sync,
+        R: AsRef<str> + Send + Sync + 'a,
+    {
         async move {
-            let filter_ids = if filter_ids.is_empty() {
-                let conn = self.connect().await?;
-                conn.query(
-                    "SELECT DISTINCT parent_object_id FROM edges WHERE relation_id = $1",
-                    &[&relation_id.parse::<Uuid>()?],
-                )
-                .await?
-                .into_iter()
-                .map(|row| row.get::<_, Uuid>(0).to_string())
-                .collect()
-            } else {
-                filter_ids
-            };
+            let relation_id = relation_id.as_ref();
 
+            if filter_ids.is_empty() {
+                let conn = self.connect().await?;
+                self.resolve_tree_for_ids(
+                    relation_id,
+                    relations,
+                    conn.query(
+                        "SELECT DISTINCT parent_object_id FROM edges WHERE relation_id = $1",
+                        &[&relation_id.parse::<Uuid>()?],
+                    )
+                    .await?
+                    .into_iter()
+                    .map(|row| row.get::<_, Uuid>(0).to_string()),
+                )
+                .await
+            } else {
+                self.resolve_tree_for_ids(relation_id, relations, filter_ids)
+                    .await
+            }
+        }
+        .boxed()
+    }
+
+    fn resolve_tree_for_ids<'a, F, S, R>(
+        &'a self,
+        relation_id: R,
+        relations: &'a [TreeQuery],
+        filter_ids: F,
+    ) -> BoxFuture<'_, anyhow::Result<TreeResponse, Error>>
+    where
+        F: IntoIterator<Item = S> + ExactSizeIterator + Send + Sync + 'a,
+        <F as IntoIterator>::IntoIter: Send + Sync,
+        S: AsRef<str> + Send + Sync,
+        R: AsRef<str> + Send + Sync + 'a,
+    {
+        async move {
             let mut objects = Vec::new();
             for object_id in filter_ids {
                 let children: Vec<String> = self
-                    .get_edge_impl(relation_id.parse()?, object_id.parse()?)
+                    .get_edge_impl(relation_id.as_ref().parse()?, object_id.as_ref().parse()?)
                     .await?
                     .map(|uuid| uuid.to_string())
                     .collect();
@@ -254,18 +285,18 @@ impl EdgeRegistryImpl {
                 for relation in relations.iter() {
                     let subtree = if relation.filter_ids.is_empty() {
                         self.resolve_tree_recursive(
-                            relation.relation_id.clone(),
-                            children.clone(),
-                            relation.relations.clone(),
+                            &relation.relation_id,
+                            children.iter(),
+                            &relation.relations,
                         )
                         .await?
                     } else {
                         let object_ids = intersect(&children, &relation.filter_ids);
                         if !object_ids.is_empty() {
                             self.resolve_tree_recursive(
-                                relation.relation_id.clone(),
-                                object_ids,
-                                relation.relations.clone(),
+                                &relation.relation_id,
+                                object_ids.iter(),
+                                &relation.relations,
                             )
                             .await?
                         } else {
@@ -276,8 +307,8 @@ impl EdgeRegistryImpl {
                 }
                 if !children.is_empty() {
                     objects.push(TreeObject {
-                        object_id,
-                        relation_id: relation_id.clone(),
+                        object_id: object_id.as_ref().to_string(),
+                        relation_id: relation_id.as_ref().to_string(),
                         children,
                         subtrees,
                     });
@@ -537,7 +568,11 @@ impl EdgeRegistry for EdgeRegistryImpl {
         );
 
         let result = self
-            .resolve_tree_recursive(request.relation_id, request.filter_ids, request.relations)
+            .resolve_tree_recursive(
+                request.relation_id,
+                request.filter_ids.iter(),
+                &request.relations,
+            )
             .await
             .map_err(|err| db_communication_error("resolve_tree", err))?;
 
