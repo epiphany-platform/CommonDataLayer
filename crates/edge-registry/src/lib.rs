@@ -606,6 +606,7 @@ impl EdgeRegistry for EdgeRegistryImpl {
 
 #[async_trait::async_trait]
 impl ConsumerHandler for EdgeRegistryImpl {
+    #[tracing::instrument(skip(self, msg))]
     async fn handle<'a>(&'a mut self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
         counter!("cdl.edge-registry.add-edges.mq", 1);
 

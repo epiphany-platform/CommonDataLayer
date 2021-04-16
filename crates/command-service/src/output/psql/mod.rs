@@ -50,6 +50,7 @@ impl PostgresOutputPlugin {
 
 #[async_trait::async_trait]
 impl OutputPlugin for PostgresOutputPlugin {
+    #[tracing::instrument(skip(self, msg))]
     async fn handle_message(&self, msg: BorrowedInsertMessage<'_>) -> Resolution {
         let connection = match self.pool.get().await {
             Ok(conn) => conn,

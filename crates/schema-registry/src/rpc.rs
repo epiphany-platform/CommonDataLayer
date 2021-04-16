@@ -97,7 +97,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<rpc::schema_registry::NewSchema>,
     ) -> Result<Response<Id>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_optional_uuid(&request.id)?;
         let schema_type = request.schema_type().into();
@@ -135,7 +135,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<rpc::schema_registry::NewSchemaVersion>,
     ) -> Result<Response<Empty>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let new_version = NewSchemaVersion {
@@ -158,7 +158,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<SchemaMetadataUpdate>,
     ) -> Result<Response<Empty>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
 
@@ -210,7 +210,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<NewSchemaView>,
     ) -> Result<Response<Id>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         //TODO: request materializer::validate_options() to see if JSON has valid format.
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.schema_id)?;
@@ -241,7 +241,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<UpdatedView>,
     ) -> Result<Response<rpc::schema_registry::View>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         //TODO: request materializer::validate_options() to see if JSON has valid format.
         let request = request.into_inner();
         let view_id = parse_uuid(&request.id)?;
@@ -277,7 +277,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<VersionedId>,
     ) -> Result<Response<rpc::schema_registry::SchemaDefinition>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let id = VersionedUuid::new(
             parse_uuid(&request.id)?,
@@ -293,7 +293,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
     #[tracing::instrument(skip(self))]
     async fn get_schema_metadata(&self, request: Request<Id>) -> Result<Response<Schema>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let schema = self.db.get_schema(schema_id)?;
@@ -313,7 +313,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<SchemaInsertDestination>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let insert_destination = self.db.get_schema_insert_destination(schema_id)?;
@@ -328,7 +328,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<SchemaQueryAddress>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let address = self.db.get_schema_query_address(schema_id)?;
@@ -341,7 +341,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<SchemaVersions>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let schema_id = parse_uuid(&request.into_inner().id)?;
         let all_versions = self.db.get_schema_versions(schema_id)?;
         let versions = all_versions
@@ -357,7 +357,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::SchemaType>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let schema_type = self.db.get_schema_type(schema_id)? as i32;
@@ -372,7 +372,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::View>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let view_id = parse_uuid(&request.into_inner().id)?;
         let view = self.db.get_view(view_id)?;
 
@@ -385,8 +385,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn get_all_schemas(&self, _request: Request<Empty>) -> Result<Response<Schemas>, Status> {
-        tracing::trace!("Enter");
+    async fn get_all_schemas(&self, request: Request<Empty>) -> Result<Response<Schemas>, Status> {
+        utils::tracing::grpc::set_parent_span(&request);
         let schemas = self.db.get_all_schemas()?;
 
         Ok(Response::new(Schemas {
@@ -410,9 +410,9 @@ impl SchemaRegistry for SchemaRegistryImpl {
     #[tracing::instrument(skip(self))]
     async fn get_all_schema_names(
         &self,
-        _request: Request<Empty>,
+        request: Request<Empty>,
     ) -> Result<Response<SchemaNames>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let names = self.db.get_all_schema_names()?;
 
         Ok(Response::new(SchemaNames {
@@ -428,7 +428,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<ViewSchema>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let view_id = parse_uuid(&request.into_inner().id)?;
         let (base_schema_id, base_schema) = self.db.get_base_schema_of_view(view_id)?;
 
@@ -448,7 +448,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<SchemaViews>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let schema_id = parse_uuid(&request.into_inner().id)?;
         let views = self.db.get_all_views_of_schema(schema_id)?;
 
@@ -475,7 +475,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<ValueToValidate>,
     ) -> Result<Response<Errors>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.schema_id)?;
         let json = parse_json(&request.value)?;
@@ -496,9 +496,9 @@ impl SchemaRegistry for SchemaRegistryImpl {
     #[tracing::instrument(skip(self))]
     async fn promote_to_master(
         &self,
-        _request: Request<Empty>,
+        request: Request<Empty>,
     ) -> Result<Response<PodName>, Status> {
-        tracing::trace!("Enter");
+        utils::tracing::grpc::set_parent_span(&request);
         if let Some(replication) = self.replication.as_ref() {
             replication
                 .lock()
@@ -512,8 +512,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn heartbeat(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
-        tracing::trace!("Enter");
+    async fn heartbeat(&self, request: Request<Empty>) -> Result<Response<Empty>, Status> {
+        utils::tracing::grpc::set_parent_span(&request);
         //empty
         Ok(Response::new(Empty {}))
     }

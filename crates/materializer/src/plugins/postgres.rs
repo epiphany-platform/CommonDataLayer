@@ -93,7 +93,7 @@ impl MaterializerPlugin for PostgresMaterializer {
                     {columns},\
                     PRIMARY KEY (object_id)
                  );\
-                 CREATE TEMP TABLE upserts ON COMMIT DELETE ROWS \
+                 CREATE TEMP TABLE upserts ON COMMIT DROP \
                  AS TABLE {table} WITH NO DATA;",
                 table = psql_view.options.table,
                 columns = columns

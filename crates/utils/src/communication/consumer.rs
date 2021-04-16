@@ -8,6 +8,7 @@ use rdkafka::{
     ClientConfig,
 };
 use tokio_amqp::LapinTokioExt;
+use tracing_futures::Instrument;
 
 use super::{
     kafka_ack_queue::KafkaAckQueue, message::AmqpCommunicationMessage,
@@ -115,14 +116,18 @@ impl CommonConsumer {
                 let mut message_stream = consumer.stream();
                 while let Some(message) = message_stream.try_next().await? {
                     ack_queue.add(&message);
-                    let message = KafkaCommunicationMessage { message };
-                    match handler.handle(&message).await {
-                        Ok(_) => {
+                    let span = tracing::info_span!("consume_message");
+                    let result = async {
+                        crate::tracing::kafka::set_parent_span(&message);
+                        let message = KafkaCommunicationMessage { message };
+                        handler.handle(&message).await.map(|_| {
                             ack_queue.ack(&message.message, &consumer);
-                        }
-                        Err(e) => {
-                            return Err(e.into());
-                        }
+                        })
+                    }
+                    .instrument(span)
+                    .await;
+                    if let Err(e) = result {
+                        return Err(e.into());
                     }
                 }
             }

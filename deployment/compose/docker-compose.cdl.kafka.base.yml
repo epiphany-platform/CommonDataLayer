@@ -28,6 +28,9 @@ services:
       INPUT_PORT: "50101"
       IMPORT_FILE: "/var/data/schema.json"
       RUST_LOG: info,schema_registry=trace
+      OTEL_SERVICE_NAME: "schema-registry"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
     volumes:
       - ./setup/schema_registry/initial-schema.mq.json:/var/data/schema.json
 
@@ -48,6 +51,9 @@ services:
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       CACHE_CAPACITY: "1000"
       RUST_LOG: info,data_router=trace
+      OTEL_SERVICE_NAME: "data-router"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
   query_router:
     image: cdl-query-router:latest
@@ -65,6 +71,9 @@ services:
       INPUT_PORT: 50103
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       RUST_LOG: info,query_router=trace
+      OTEL_SERVICE_NAME: "query-router"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
   edge_registry:
     image: cdl-edge-registry:latest
@@ -90,6 +99,9 @@ services:
       CONSUMER_TAG: edge-registry
       CONSUMER_SOURCE: "cdl.edge.input"
       RUST_LOG: info,edge_registry=trace
+      OTEL_SERVICE_NAME: "edge-registry"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
   object_builder:
     image: cdl-object-builder:latest
@@ -110,6 +122,30 @@ services:
       MQ_SOURCE: "cdl.materialize"
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       RUST_LOG: info,object_builder=trace
+      OTEL_SERVICE_NAME: "object-builder"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+
+  partial_update_engine:
+    image: cdl-partial-update-engine:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=partial-update-engine
+        - ENV=DEV
+    command: "/bin/partial-update-engine"
+    environment:
+      SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      KAFKA_BROKERS: "kafka:9093"
+      KAFKA_GROUP_ID: "partial_update_engine"
+      NOTIFICATION_TOPIC: "cdl.reports"
+      OBJECT_BUILDER_TOPIC: "cdl.materialize"
+      SLEEP_PHASE_LENGTH: 1
+      RUST_LOG: info,partial_update_engine=trace
+      OTEL_SERVICE_NAME: "partial-update-engine"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
   web_api:
     image: cdl-api:latest
@@ -133,6 +169,9 @@ services:
       KAFKA_GROUP_ID: "cdl-api"
       REPORT_SOURCE: "cdl.reports"
       INSERT_DESTINATION: "cdl.data.input"
+      OTEL_SERVICE_NAME: "api"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
 networks:
   compose_default:
