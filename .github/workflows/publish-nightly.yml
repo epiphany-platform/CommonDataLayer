@@ -21,8 +21,11 @@ jobs:
         continue-on-error: true
         name: Check latest commit is less than a day
         if: ${{ github.event_name == 'schedule' }}
-        run: test -z $(git rev-list  --after="24 hours"  ${{ github.sha }}) && echo "::set-output name=should_run::false"
-
+        run: |
+          if $(git --no-pager  log --oneline --after="24 hours" | grep -P "[a-f0-9]{6,8} (feat:|fix:)" >> /dev/null)
+          then
+            "::set-output name=should_run::false"
+          fi
   build-and-deploy:
     name: nightly docker.io
     needs: check_date
