@@ -193,6 +193,9 @@ pub enum ViewAction {
         /// Materializer's address
         #[structopt(short, long)]
         materializer_addr: String,
+        /// Materializer's options encoded in JSON
+        #[structopt(short, long)]
+        materializer_options: String,
         /// Fields definition encoded in JSON
         #[structopt(short, long)]
         fields: String,
@@ -210,6 +213,9 @@ pub enum ViewAction {
         /// Materializer's address
         #[structopt(short, long)]
         materializer_addr: Option<String>,
+        /// Materializer's options encoded in JSON
+        #[structopt(short, long)]
+        materializer_options: Option<String>,
         /// Fields definition encoded in JSON
         #[structopt(short, long)]
         fields: Option<String>,

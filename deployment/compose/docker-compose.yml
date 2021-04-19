@@ -35,7 +35,8 @@ services:
         cdl.timeseries.internal.druid:1:1,
         cdl.document.1.data:1:1,
         cdl.document.2.data:1:1,
-        cdl.edge.input:1:1
+        cdl.edge.input:1:1,
+        cdl.materialize:1:1
     depends_on:
       - zookeeper
 
@@ -123,6 +124,14 @@ services:
     command: router
     env_file:
       - druid.env
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "16686:16686"
+      - "14268:14268"
 
 networks:
   default:

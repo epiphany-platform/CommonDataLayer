@@ -18,15 +18,17 @@ pip3 install -r "../requirements.txt"
 echo "mkdir -p 'rpc/proto'"
 mkdir -p "rpc/proto"
 
-echo "python3 -m grpc.tools.protoc -I'../crates/' ..."
-python3 -m grpc.tools.protoc -I"../crates/" \
-  --python_out="." \
-  --grpc_python_out="." \
-  rpc/proto/schema_registry.proto rpc/proto/query_service.proto rpc/proto/query_service_ts.proto \
-  rpc/proto/generic.proto rpc/proto/edge_registry.proto rpc/proto/object_builder.proto
+echo "python3 -m grpc.tools.protoc -I'../crates/rpc/proto' ..."
+
+python3 -m grpc.tools.protoc -I"../crates/rpc/proto" \
+  --python_out="./rpc/proto" \
+  --grpc_python_out="./rpc/proto" \
+  ../crates/rpc/proto/*.proto
 
 touch "rpc/proto/__init__.py"
 touch "rpc/__init__.py"
 
 echo "python3 -m pytest . -vv"
+export PYTHONPATH="${PYTHONPATH}:./rpc/proto" # https://github.com/protocolbuffers/protobuf/issues/1491
+
 python3 -m pytest -vv "${1:-"."}"

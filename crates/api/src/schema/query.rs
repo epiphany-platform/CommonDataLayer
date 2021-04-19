@@ -6,14 +6,16 @@ use num_traits::FromPrimitive;
 use tracing::Instrument;
 use uuid::Uuid;
 
+use rpc::object_builder::ViewId;
 use rpc::schema_registry::Empty;
 
 use crate::config::Config;
 use crate::error::{Error, Result};
-use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
+use crate::schema::context::{EdgeRegistryPool, ObjectBuilderPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
-use crate::types::schema::*;
+use crate::types::schema::{Definition, Schema, SchemaType, View};
+use crate::types::view::{MaterializedView, RowDefinition};
 
 #[Object]
 /// Schema is the format in which data is to be sent to the Common Data Layer.
@@ -47,7 +49,7 @@ impl Schema {
     /// Schema is following semantic versioning, querying for "2.1.0" will return "2.1.1" if exist,
     /// querying for "=2.1.0" will return "2.1.0" if exist
     async fn definition(&self, context: &Context<'_>, version: String) -> FieldResult<Definition> {
-        let span = tracing::trace_span!("query_definition", ?self.id, ?version);
+        let span = tracing::info_span!("query_definition", ?self.id, ?version);
         async move {
             let id = self.id.to_string();
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
@@ -57,7 +59,7 @@ impl Schema {
                     version_req: version,
                 })
                 .await
-                .map_err(rpc::error::registry_error)?
+                .map_err(rpc::error::schema_registry_error)?
                 .into_inner();
 
             Ok(Definition {
@@ -72,7 +74,7 @@ impl Schema {
     /// All definitions connected to this schema.
     /// Each schema can have only one active definition, under latest version but also contains history for backward compability.
     async fn definitions(&self, context: &Context<'_>) -> FieldResult<Vec<Definition>> {
-        let span = tracing::trace_span!("query_definitions", ?self.id);
+        let span = tracing::info_span!("query_definitions", ?self.id);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
             let id = self.id.to_string();
@@ -81,7 +83,7 @@ impl Schema {
             let versions = conn
                 .get_schema_versions(rpc_id)
                 .await
-                .map_err(rpc::error::registry_error)?
+                .map_err(rpc::error::schema_registry_error)?
                 .into_inner()
                 .versions;
 
@@ -93,7 +95,7 @@ impl Schema {
                         version_req: format!("={}", version),
                     })
                     .await
-                    .map_err(rpc::error::registry_error)?
+                    .map_err(rpc::error::schema_registry_error)?
                     .into_inner();
 
                 definitions.push(Definition {
@@ -110,7 +112,7 @@ impl Schema {
 
     /// All views connected to this schema
     async fn views(&self, context: &Context<'_>) -> FieldResult<Vec<View>> {
-        let span = tracing::trace_span!("query_views", ?self.id);
+        let span = tracing::info_span!("query_views", ?self.id);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
             let id = self.id.to_string();
@@ -119,7 +121,7 @@ impl Schema {
             let views = conn
                 .get_all_views_of_schema(rpc_id.clone())
                 .await
-                .map_err(rpc::error::registry_error)?
+                .map_err(rpc::error::schema_registry_error)?
                 .into_inner()
                 .views
                 .into_iter()
@@ -147,7 +149,7 @@ pub struct QueryRoot;
 impl QueryRoot {
     /// Return single schema for given id
     async fn schema(&self, context: &Context<'_>, id: Uuid) -> FieldResult<Schema> {
-        let span = tracing::trace_span!("query_schema", ?id);
+        let span = tracing::info_span!("query_schema", ?id);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
             get_schema(&mut conn, id).await
@@ -158,13 +160,13 @@ impl QueryRoot {
 
     /// Return all schemas in database
     async fn schemas(&self, context: &Context<'_>) -> FieldResult<Vec<Schema>> {
-        let span = tracing::trace_span!("query_schemas");
+        let span = tracing::info_span!("query_schemas");
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
             let schemas = conn
                 .get_all_schemas(Empty {})
                 .await
-                .map_err(rpc::error::registry_error)?
+                .map_err(rpc::error::schema_registry_error)?
                 .into_inner()
                 .schemas
                 .into_iter()
@@ -188,7 +190,7 @@ impl QueryRoot {
 
     /// Return single view for given id
     async fn view(&self, context: &Context<'_>, id: Uuid) -> FieldResult<View> {
-        let span = tracing::trace_span!("query_view", ?id);
+        let span = tracing::info_span!("query_view", ?id);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
             get_view(&mut conn, id).await
@@ -204,7 +206,7 @@ impl QueryRoot {
         object_id: Uuid,
         schema_id: Uuid,
     ) -> FieldResult<CdlObject> {
-        let span = tracing::trace_span!("query_object", ?object_id, ?schema_id);
+        let span = tracing::info_span!("query_object", ?object_id, ?schema_id);
         async move {
             let client = reqwest::Client::new();
 
@@ -237,7 +239,7 @@ impl QueryRoot {
         object_ids: Vec<Uuid>,
         schema_id: Uuid,
     ) -> FieldResult<Vec<CdlObject>> {
-        let span = tracing::trace_span!("query_objects", ?object_ids, ?schema_id);
+        let span = tracing::info_span!("query_objects", ?object_ids, ?schema_id);
         async move {
             let client = reqwest::Client::new();
 
@@ -273,7 +275,7 @@ impl QueryRoot {
         context: &Context<'_>,
         schema_id: Uuid,
     ) -> FieldResult<Vec<CdlObject>> {
-        let span = tracing::trace_span!("query_schema_objects", ?schema_id);
+        let span = tracing::info_span!("query_schema_objects", ?schema_id);
         async move {
             let client = reqwest::Client::new();
 
@@ -307,7 +309,7 @@ impl QueryRoot {
         relation_id: Uuid,
         parent_schema_id: Uuid,
     ) -> FieldResult<Option<Uuid>> {
-        let span = tracing::trace_span!("query_relation", ?relation_id, ?parent_schema_id);
+        let span = tracing::info_span!("query_relation", ?relation_id, ?parent_schema_id);
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             Ok(conn
@@ -331,7 +333,7 @@ impl QueryRoot {
         context: &Context<'_>,
         parent_schema_id: Uuid,
     ) -> FieldResult<Vec<SchemaRelation>> {
-        let span = tracing::trace_span!("query_schema_relations", ?parent_schema_id);
+        let span = tracing::info_span!("query_schema_relations", ?parent_schema_id);
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             conn.get_schema_relations(rpc::edge_registry::SchemaId {
@@ -356,7 +358,7 @@ impl QueryRoot {
 
     /// List all relations between schemas stored in database
     async fn all_relations(&self, context: &Context<'_>) -> FieldResult<Vec<SchemaRelation>> {
-        let span = tracing::trace_span!("query_all_relations");
+        let span = tracing::info_span!("query_all_relations");
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             conn.list_relations(rpc::edge_registry::Empty {})
@@ -384,7 +386,7 @@ impl QueryRoot {
         relation_id: Uuid,
         parent_object_id: Uuid,
     ) -> FieldResult<Vec<Uuid>> {
-        let span = tracing::trace_span!("query_edge", ?relation_id, ?parent_object_id);
+        let span = tracing::info_span!("query_edge", ?relation_id, ?parent_object_id);
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             conn.get_edge(rpc::edge_registry::RelationIdQuery {
@@ -408,7 +410,7 @@ impl QueryRoot {
         context: &Context<'_>,
         parent_object_id: Uuid,
     ) -> FieldResult<Vec<EdgeRelations>> {
-        let span = tracing::trace_span!("query_edges", ?parent_object_id);
+        let span = tracing::info_span!("query_edges", ?parent_object_id);
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             conn.get_edges(rpc::edge_registry::ObjectIdQuery {
@@ -430,6 +432,54 @@ impl QueryRoot {
                 })
             })
             .collect::<Result<Vec<_>, async_graphql::Error>>()
+        }
+        .instrument(span)
+        .await
+    }
+
+    /// On demand materialized view
+    async fn on_demand_view(
+        &self,
+        context: &Context<'_>,
+        view_id: Uuid,
+    ) -> FieldResult<MaterializedView> {
+        let span = tracing::info_span!("query_on_demand_view", ?view_id);
+        async move {
+            let mut conn = context.data_unchecked::<ObjectBuilderPool>().get().await?;
+            let materialized = conn
+                .materialize(utils::tracing::grpc::inject_span(ViewId {
+                    view_id: view_id.to_string(),
+                }))
+                .await?
+                .into_inner();
+
+            let rows = materialized
+                .rows
+                .into_iter()
+                .map(|row| {
+                    let fields = row
+                        .fields
+                        .into_iter()
+                        .map(|(field_name, field)| {
+                            let field = serde_json::from_str(&field)?;
+                            Ok((field_name, Json(field)))
+                        })
+                        .collect::<Result<_, async_graphql::Error>>()?;
+
+                    Ok(RowDefinition {
+                        object_id: row.object_id.parse()?,
+                        fields,
+                    })
+                })
+                .collect::<Result<_, async_graphql::Error>>()?;
+
+            let options = serde_json::from_str(&materialized.options)?;
+
+            Ok(MaterializedView {
+                id: view_id,
+                materializer_options: Json(options),
+                rows,
+            })
         }
         .instrument(span)
         .await

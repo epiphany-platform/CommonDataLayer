@@ -31,6 +31,7 @@ impl<P: OutputPlugin> MessageRouter<P> {
         }
     }
 
+    #[tracing::instrument(skip(self, msg))]
     pub async fn handle_message(&self, msg: BorrowedInsertMessage<'_>) -> Result<(), Error> {
         let instance = self.report_sender.clone().with_message_body(&msg);
 

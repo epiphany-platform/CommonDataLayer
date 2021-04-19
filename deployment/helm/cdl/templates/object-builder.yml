@@ -38,7 +38,7 @@ spec:
               value: "object-builder"
             {{- end }}
             - name: MQ_SOURCE
-              value: {{ .Values.objectBuilder.mqSource }}
+              value: {{ .Values.global.objectBuilderInput }}
             - name: SCHEMA_REGISTRY_ADDR
               value: "http://{{ .Release.Name }}-schema-registry:6400"
             - name: RUST_LOG

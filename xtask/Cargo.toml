@@ -1,0 +1,15 @@
+[package]
+name = "xtask"
+version = "0.1.0"
+authors = ["CDL Team"]
+edition = "2018"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow      = "1.0"
+itertools   = "0.10"
+pico-args   = "0.4"
+tonic-build = { version = "0.4", default-features = false, features = ["prost", "transport"] }
+xshell      = "0.1"

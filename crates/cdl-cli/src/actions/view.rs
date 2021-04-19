@@ -22,6 +22,7 @@ pub async fn add_view_to_schema(
     schema_id: Uuid,
     name: String,
     materializer_addr: String,
+    materializer_options: String,
     registry_addr: String,
     fields: String,
 ) -> anyhow::Result<()> {
@@ -31,6 +32,7 @@ pub async fn add_view_to_schema(
         schema_id: schema_id.to_string(),
         name: name.clone(),
         materializer_addr,
+        materializer_options,
         fields,
     };
 
@@ -50,6 +52,7 @@ pub async fn update_view(
     view_id: Uuid,
     name: Option<String>,
     materializer_addr: Option<String>,
+    materializer_options: Option<String>,
     fields: Option<String>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
@@ -58,6 +61,7 @@ pub async fn update_view(
         id: view_id.to_string(),
         name,
         materializer_addr,
+        materializer_options,
         fields,
     };
 

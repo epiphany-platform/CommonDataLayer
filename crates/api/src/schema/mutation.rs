@@ -16,7 +16,7 @@ pub struct MutationRoot;
 #[Object]
 impl MutationRoot {
     async fn add_schema(&self, context: &Context<'_>, new: NewSchema) -> FieldResult<Schema> {
-        let span = tracing::trace_span!("add_schema", ?new);
+        let span = tracing::info_span!("add_schema", ?new);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
@@ -32,7 +32,7 @@ impl MutationRoot {
                     schema_type: rpc_schema_type,
                 })
                 .await
-                .map_err(rpc::error::registry_error)?
+                .map_err(rpc::error::schema_registry_error)?
                 .into_inner()
                 .id
                 .parse()?;
@@ -55,7 +55,7 @@ impl MutationRoot {
         schema_id: Uuid,
         new_version: NewVersion,
     ) -> FieldResult<Definition> {
-        let span = tracing::trace_span!("add_schema_definition", ?schema_id, ?new_version);
+        let span = tracing::info_span!("add_schema_definition", ?schema_id, ?new_version);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
@@ -65,7 +65,7 @@ impl MutationRoot {
                 definition: serde_json::to_string(&new_version.definition)?,
             })
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::schema_registry_error)?;
 
             Ok(Definition {
                 definition: new_version.definition,
@@ -82,11 +82,12 @@ impl MutationRoot {
         schema_id: Uuid,
         new_view: NewView,
     ) -> FieldResult<View> {
-        let span = tracing::trace_span!("add_view", ?schema_id, ?new_view);
+        let span = tracing::info_span!("add_view", ?schema_id, ?new_view);
         async move {
             let NewView {
                 name,
                 materializer_addr,
+                materializer_options,
                 fields,
             } = new_view.clone();
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
@@ -96,10 +97,11 @@ impl MutationRoot {
                     view_id: "".into(),
                     name,
                     materializer_addr,
+                    materializer_options: serde_json::to_string(&materializer_options)?,
                     fields: serde_json::to_string(&fields)?,
                 })
                 .await
-                .map_err(rpc::error::registry_error)?
+                .map_err(rpc::error::schema_registry_error)?
                 .into_inner()
                 .id;
 
@@ -120,13 +122,14 @@ impl MutationRoot {
         id: Uuid,
         update: UpdateView,
     ) -> FieldResult<View> {
-        let span = tracing::trace_span!("update_view", ?id, ?update);
+        let span = tracing::info_span!("update_view", ?id, ?update);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
             let UpdateView {
                 name,
                 materializer_addr,
+                materializer_options,
                 fields,
             } = update;
 
@@ -134,14 +137,17 @@ impl MutationRoot {
                 id: id.to_string(),
                 name: name.clone(),
                 materializer_addr: materializer_addr.clone(),
-                fields: if let Some(f) = fields.as_ref() {
-                    Some(serde_json::to_string(f)?)
-                } else {
-                    None
-                },
+                materializer_options: materializer_options
+                    .as_ref()
+                    .map(|o| serde_json::to_string(o))
+                    .transpose()?,
+                fields: fields
+                    .as_ref()
+                    .map(|f| serde_json::to_string(f))
+                    .transpose()?,
             })
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::schema_registry_error)?;
 
             get_view(&mut conn, id).await
         }
@@ -155,7 +161,7 @@ impl MutationRoot {
         id: Uuid,
         update: UpdateSchema,
     ) -> FieldResult<Schema> {
-        let span = tracing::trace_span!("update_schema", ?id, ?update);
+        let span = tracing::info_span!("update_schema", ?id, ?update);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
@@ -174,7 +180,7 @@ impl MutationRoot {
                 schema_type: schema_type.and_then(|s| s.to_i32()),
             })
             .await
-            .map_err(rpc::error::registry_error)?;
+            .map_err(rpc::error::schema_registry_error)?;
             get_schema(&mut conn, id).await
         }
         .instrument(span)
@@ -186,7 +192,7 @@ impl MutationRoot {
         context: &Context<'_>,
         message: InputMessage,
     ) -> FieldResult<bool> {
-        let span = tracing::trace_span!("insert_message", ?message.object_id, ?message.schema_id);
+        let span = tracing::info_span!("insert_message", ?message.object_id, ?message.schema_id);
         async move {
             let publisher = connect_to_cdl_input(context.data_unchecked::<Config>()).await?;
             let payload = serde_json::to_vec(&OwnedInsertMessage {
@@ -215,7 +221,7 @@ impl MutationRoot {
         context: &Context<'_>,
         messages: Vec<InputMessage>,
     ) -> FieldResult<bool> {
-        let span = tracing::trace_span!("insert_batch", len = messages.len());
+        let span = tracing::info_span!("insert_batch", len = messages.len());
         async move {
             let publisher = connect_to_cdl_input(context.data_unchecked::<Config>()).await?;
             let order_group_id = Uuid::new_v4().to_string();
@@ -250,7 +256,7 @@ impl MutationRoot {
         parent_schema_id: Uuid,
         child_schema_id: Uuid,
     ) -> FieldResult<Uuid> {
-        let span = tracing::trace_span!("add_relation", ?parent_schema_id, ?child_schema_id);
+        let span = tracing::info_span!("add_relation", ?parent_schema_id, ?child_schema_id);
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             Ok(conn
@@ -273,7 +279,7 @@ impl MutationRoot {
         context: &Context<'_>,
         relations: Vec<ObjectRelations>,
     ) -> FieldResult<bool> {
-        let span = tracing::trace_span!("add_edges", len = relations.len());
+        let span = tracing::info_span!("add_edges", len = relations.len());
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             conn.add_edges(rpc::edge_registry::ObjectRelations {

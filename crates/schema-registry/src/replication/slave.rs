@@ -18,6 +18,7 @@ struct Handler {
 
 #[async_trait]
 impl ConsumerHandler for Handler {
+    #[tracing::instrument(skip(self, msg))]
     async fn handle<'a>(&'a mut self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
         if self.kill_signal.try_recv().is_ok() {
             anyhow::bail!("Slave replication disabled");

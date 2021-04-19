@@ -31,6 +31,7 @@ struct ReportBody<'a> {
     application: &'static str,
     output_plugin: &'a str,
     description: &'a str,
+    schema_id: Uuid,
     object_id: Uuid,
     payload: Value,
 }
@@ -74,6 +75,7 @@ impl Reporter for FullReportSender {
             application: APPLICATION_NAME,
             output_plugin: self.output_plugin.as_str(),
             description,
+            schema_id: self.msg.schema_id,
             object_id: self.msg.object_id,
             payload: self.msg.data,
         };

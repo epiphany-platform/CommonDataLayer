@@ -6,6 +6,7 @@ global:
   kafkaBrokers:  infrastructure-kafka-headless
   cdlImagePullSecrets: services
   reportDestination: cdl.errors
+  objectBuilderInput: cdl.materialize
   amqpConnectionString: "amqp://user:CHANGEME@infrastructure-rabbitmq:5672/%2f"
 
 api:
@@ -38,14 +39,18 @@ edgeRegistry:
 
 objectBuilder:
   inputPort: 50111
-  mqSource: cdl.materialize
 
 webAdmin:
   port: 30151
 
+partialUpdateEngine:
+  sleepPhaseLength: 120
+
+
 postgres-document:
   commandServiceReplicaCount: 1
   queryServiceReplicaCount: 1
+  materializerReplicaCount: 1
   postgresConnectionString: "postgres://postgres:CHANGEME@infrastructure-postgresql/CDL"
   postgresUsername: postgres
   postgresPassword: CHANGEME

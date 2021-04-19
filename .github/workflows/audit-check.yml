@@ -1,6 +1,9 @@
 name: Audit
 on:
   push:
+    branches:
+      - develop
+      - main
     paths:
       - '**/Cargo.toml'
       - '**/Cargo.lock'

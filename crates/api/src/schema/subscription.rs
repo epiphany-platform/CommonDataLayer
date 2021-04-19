@@ -15,7 +15,7 @@ pub struct SubscriptionRoot;
 #[Subscription]
 impl SubscriptionRoot {
     async fn reports(&self, context: &Context<'_>) -> FieldResult<ReportStream> {
-        let span = tracing::trace_span!("subscribe_reports");
+        let span = tracing::info_span!("subscribe_reports");
         reports_inner(context).instrument(span).await
     }
 }

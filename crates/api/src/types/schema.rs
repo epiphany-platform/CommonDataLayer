@@ -69,6 +69,8 @@ pub struct NewView {
     pub name: String,
     /// Materializer's address
     pub materializer_addr: String,
+    /// Materializer's options encoded in JSON
+    pub materializer_options: Json<Value>,
     /// Fields definition encoded in JSON
     pub fields: Json<Value>,
 }
@@ -103,6 +105,8 @@ pub struct UpdateView {
     pub name: Option<String>,
     /// Materializer's address
     pub materializer_addr: Option<String>,
+    /// Materializer's options encoded in JSON
+    pub materializer_options: Option<Json<Value>>,
     /// Fields definition encoded in JSON
     pub fields: Option<Json<Value>>,
 }

@@ -2,7 +2,7 @@ use crate::error::ClientError;
 use generic_rpc_client::GenericRpcClient;
 use tonic::transport::Channel;
 
-tonic::include_proto!("generic_rpc");
+pub use crate::codegen::generic_rpc::*;
 
 pub async fn connect(
     addr: String,

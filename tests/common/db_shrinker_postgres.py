@@ -11,5 +11,9 @@ class DbShrinkerPostgres:
         self.postgres_config = postgres_config
 
     def run(self):
-        svc = subprocess.Popen([EXE], env=self.postgres_config.to_dict())
+        env = self.postgres_config.to_dict()
+        env.update(
+            RUST_LOG = "db_shrinker_postgres=trace,info",
+        )
+        svc = subprocess.Popen([EXE], env=env)
         svc.wait()
