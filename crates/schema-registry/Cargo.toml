@@ -22,7 +22,7 @@ rpc         = { path = "../rpc" }
 anyhow      = "1.0"
 async-trait = "0.1"
 chrono      = "0.4"
-clap = "3.0.0-beta.2"
+clap        = "3.0.0-beta.2"
 futures     = "0.3"
 indradb-lib = { version = "2.1", features = ["sled-datastore"] }
 jmespatch   = "0.3"
