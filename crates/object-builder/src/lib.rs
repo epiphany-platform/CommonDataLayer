@@ -118,10 +118,13 @@ impl TryInto<MaterializedView> for Output {
 
 #[tonic::async_trait]
 impl ObjectBuilder for ObjectBuilderImpl {
+    #[tracing::instrument(skip(self))]
     async fn materialize(
         &self,
         request: tonic::Request<ViewId>,
     ) -> Result<tonic::Response<MaterializedView>, tonic::Status> {
+        utils::tracing::grpc::set_parent_span(&request);
+
         let view_id: Uuid = request
             .into_inner()
             .view_id
@@ -169,7 +172,7 @@ impl ConsumerHandler for ObjectBuilderImpl {
 
         rpc::materializer::connect(view.materializer_address)
             .await?
-            .upsert_view(rpc_object)
+            .upsert_view(utils::tracing::grpc::inject_span(rpc_object))
             .await?;
 
         Ok(())
@@ -177,6 +180,7 @@ impl ConsumerHandler for ObjectBuilderImpl {
 }
 
 impl ObjectBuilderImpl {
+    #[tracing::instrument(skip(self))]
     async fn build_object(&self, view_id: Uuid) -> anyhow::Result<Output> {
         tracing::debug!(?view_id, "Handling");
 

@@ -1,5 +1,6 @@
 use lapin::{options::BasicPublishOptions, BasicProperties, Channel};
 use rdkafka::{
+    message::OwnedHeaders,
     producer::{FutureProducer, FutureRecord},
     ClientConfig,
 };
@@ -63,7 +64,10 @@ impl CommonPublisher {
         match self {
             CommonPublisher::Kafka { producer } => {
                 let delivery_status = producer.send(
-                    FutureRecord::to(destination).payload(&payload).key(key),
+                    FutureRecord::to(destination)
+                        .payload(&payload)
+                        .key(key)
+                        .headers(crate::tracing::kafka::inject_span(OwnedHeaders::new())),
                     Duration::from_secs(5),
                 );
                 delivery_status.await.map_err(|x| x.0)?;
@@ -93,10 +97,10 @@ impl CommonPublisher {
                 let addr = destination.into();
                 let mut client = rpc::generic::connect(addr, service).await?;
                 let response = client
-                    .handle(rpc::generic::Message {
+                    .handle(crate::tracing::grpc::inject_span(rpc::generic::Message {
                         key: key.into(),
                         payload,
-                    })
+                    }))
                     .await;
 
                 match response {

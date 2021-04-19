@@ -76,8 +76,7 @@ pub struct QueryRoot;
 impl QueryRoot {
     /// Return single schema for given id
     async fn schema(&self, context: &Context<'_>, id: Uuid) -> FieldResult<FullSchema> {
-        let span = tracing::trace_span!("query_schema", ?id);
-
+        let span = tracing::info_span!("query_schema", ?id);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
             get_schema(&mut conn, id).await
@@ -88,7 +87,7 @@ impl QueryRoot {
 
     /// Return all schemas in database
     async fn schemas(&self, context: &Context<'_>) -> FieldResult<Vec<FullSchema>> {
-        let span = tracing::trace_span!("query_schemas");
+        let span = tracing::info_span!("query_schemas");
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
@@ -106,7 +105,7 @@ impl QueryRoot {
 
     /// Return single view for given id
     async fn view(&self, context: &Context<'_>, id: Uuid) -> FieldResult<View> {
-        let span = tracing::trace_span!("query_view", ?id);
+        let span = tracing::info_span!("query_view", ?id);
         async move {
             let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
             get_view(&mut conn, id).await
@@ -122,7 +121,7 @@ impl QueryRoot {
         object_id: Uuid,
         schema_id: Uuid,
     ) -> FieldResult<CdlObject> {
-        let span = tracing::trace_span!("query_object", ?object_id, ?schema_id);
+        let span = tracing::info_span!("query_object", ?object_id, ?schema_id);
         async move {
             let client = reqwest::Client::new();
 
@@ -155,7 +154,7 @@ impl QueryRoot {
         object_ids: Vec<Uuid>,
         schema_id: Uuid,
     ) -> FieldResult<Vec<CdlObject>> {
-        let span = tracing::trace_span!("query_objects", ?object_ids, ?schema_id);
+        let span = tracing::info_span!("query_objects", ?object_ids, ?schema_id);
         async move {
             let client = reqwest::Client::new();
 
@@ -191,7 +190,7 @@ impl QueryRoot {
         context: &Context<'_>,
         schema_id: Uuid,
     ) -> FieldResult<Vec<CdlObject>> {
-        let span = tracing::trace_span!("query_schema_objects", ?schema_id);
+        let span = tracing::info_span!("query_schema_objects", ?schema_id);
         async move {
             let client = reqwest::Client::new();
 
@@ -225,7 +224,7 @@ impl QueryRoot {
         relation_id: Uuid,
         parent_schema_id: Uuid,
     ) -> FieldResult<Option<Uuid>> {
-        let span = tracing::trace_span!("query_relation", ?relation_id, ?parent_schema_id);
+        let span = tracing::info_span!("query_relation", ?relation_id, ?parent_schema_id);
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             Ok(conn
@@ -249,7 +248,7 @@ impl QueryRoot {
         context: &Context<'_>,
         parent_schema_id: Uuid,
     ) -> FieldResult<Vec<SchemaRelation>> {
-        let span = tracing::trace_span!("query_schema_relations", ?parent_schema_id);
+        let span = tracing::info_span!("query_schema_relations", ?parent_schema_id);
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             conn.get_schema_relations(rpc::edge_registry::SchemaId {
@@ -274,7 +273,7 @@ impl QueryRoot {
 
     /// List all relations between schemas stored in database
     async fn all_relations(&self, context: &Context<'_>) -> FieldResult<Vec<SchemaRelation>> {
-        let span = tracing::trace_span!("query_all_relations");
+        let span = tracing::info_span!("query_all_relations");
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             conn.list_relations(rpc::edge_registry::Empty {})
@@ -302,7 +301,7 @@ impl QueryRoot {
         relation_id: Uuid,
         parent_object_id: Uuid,
     ) -> FieldResult<Vec<Uuid>> {
-        let span = tracing::trace_span!("query_edge", ?relation_id, ?parent_object_id);
+        let span = tracing::info_span!("query_edge", ?relation_id, ?parent_object_id);
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             conn.get_edge(rpc::edge_registry::RelationIdQuery {
@@ -326,7 +325,7 @@ impl QueryRoot {
         context: &Context<'_>,
         parent_object_id: Uuid,
     ) -> FieldResult<Vec<EdgeRelations>> {
-        let span = tracing::trace_span!("query_edges", ?parent_object_id);
+        let span = tracing::info_span!("query_edges", ?parent_object_id);
         async move {
             let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
             conn.get_edges(rpc::edge_registry::ObjectIdQuery {
@@ -359,13 +358,13 @@ impl QueryRoot {
         context: &Context<'_>,
         view_id: Uuid,
     ) -> FieldResult<MaterializedView> {
-        let span = tracing::trace_span!("query_on_demand_view", ?view_id);
+        let span = tracing::info_span!("query_on_demand_view", ?view_id);
         async move {
             let mut conn = context.data_unchecked::<ObjectBuilderPool>().get().await?;
             let materialized = conn
-                .materialize(ViewId {
+                .materialize(utils::tracing::grpc::inject_span(ViewId {
                     view_id: view_id.to_string(),
-                })
+                }))
                 .await?
                 .into_inner();
 

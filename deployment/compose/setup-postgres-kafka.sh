@@ -2,7 +2,7 @@
 set -euo pipefail
 
 docker-compose down --remove-orphans
-docker-compose -f docker-compose.yml up -d postgres kafka
+docker-compose -f docker-compose.yml up -d postgres kafka jaeger
 
 sleep 15s
 
@@ -27,4 +27,5 @@ docker-compose \
     web_api \
     query_router \
     data_router \
+    partial_update_engine \
     object_builder

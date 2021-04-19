@@ -2,7 +2,7 @@ use crate::error::ClientError;
 use schema_registry_client::SchemaRegistryClient;
 use tonic::transport::Channel;
 
-tonic::include_proto!("schema_registry");
+pub use crate::codegen::schema_registry::*;
 
 pub async fn connect(addr: String) -> Result<SchemaRegistryClient<Channel>, ClientError> {
     SchemaRegistryClient::connect(addr)

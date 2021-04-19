@@ -40,6 +40,7 @@ struct Handler {
 
 #[async_trait]
 impl ConsumerHandler for Handler {
+    #[tracing::instrument(skip(self, msg))]
     async fn handle<'a>(&'a mut self, msg: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
         let key = msg.key().map(|s| s.to_string()).ok();
         let payload = msg.payload().map(|s| s.to_string()).ok();

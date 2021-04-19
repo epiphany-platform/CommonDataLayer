@@ -17,6 +17,3 @@ thiserror   = "1.0"
 sqlx        = { version = "0.5", features = ['runtime-tokio-rustls'] }
 serde       = { version = "1.0", features = ["derive"] }
 async-graphql           = { version = "2.6", features = ["uuid"] }
-
-[build-dependencies]
-tonic-build = { version = "0.4", default-features = false, features = ["prost", "transport"] }
