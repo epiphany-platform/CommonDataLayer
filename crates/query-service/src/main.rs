@@ -1,23 +1,23 @@
 use anyhow::Context;
+use clap::Clap;
 use rpc::query_service::query_service_server::{QueryService, QueryServiceServer};
 use std::net::{Ipv4Addr, SocketAddrV4};
-use structopt::StructOpt;
 use tonic::transport::Server;
 use utils::metrics;
 
-#[derive(StructOpt, Debug)]
+#[derive(Clap, Debug)]
 pub struct Config {
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub inner: ConfigType,
     /// Port to listen on
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub input_port: u16,
     /// Port to listen on for Prometheus requests
-    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
+    #[clap(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Clap, Debug)]
 pub enum ConfigType {
     Postgres(query_service::psql::PsqlConfig),
 }
@@ -37,7 +37,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config: Config = Config::from_args();
+    let config: Config = Config::parse();
 
     tracing::debug!(?config, "Config");
 

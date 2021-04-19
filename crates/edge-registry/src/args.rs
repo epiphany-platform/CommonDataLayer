@@ -1,54 +1,61 @@
-use structopt::{clap::arg_enum, StructOpt};
+use clap::{ArgEnum, Clap};
+use std::str::FromStr;
 use utils::communication::consumer::CommonConsumerConfig;
 use utils::metrics;
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Clap)]
 pub struct RegistryConfig {
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub postgres_username: String,
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub postgres_password: String,
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub postgres_host: String,
-    #[structopt(long, env, default_value = "5432")]
+    #[clap(long, env, default_value = "5432")]
     pub postgres_port: u16,
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub postgres_dbname: String,
-    #[structopt(long, env, default_value = "public")]
+    #[clap(long, env, default_value = "public")]
     pub postgres_schema: String,
-    #[structopt(long, env, default_value = "50110")]
+    #[clap(long, env, default_value = "50110")]
     /// gRPC server port to host edge-registry on
     pub rpc_port: u16,
-    #[structopt(long, env, default_value = metrics::DEFAULT_PORT)]
+    #[clap(long, env, default_value = metrics::DEFAULT_PORT)]
     /// Port to listen on for Prometheus requests
     pub metrics_port: u16,
     /// Port exposing status of the application
-    #[structopt(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
+    #[clap(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
     pub status_port: u16,
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub consumer_config: ConsumerConfig,
 }
 
-arg_enum! {
-    #[derive(Clone, Debug)]
-    pub enum ConsumerMethod {
-        Kafka,
-        Amqp,
+#[derive(Clone, Debug, ArgEnum)]
+pub enum ConsumerMethod {
+    Kafka,
+    Amqp,
+}
+
+impl FromStr for ConsumerMethod {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ArgEnum::from_str(s, true)
     }
 }
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Clap)]
 pub struct ConsumerConfig {
-    #[structopt(long, env, possible_values = &ConsumerMethod::variants(), case_insensitive = true)]
+    #[clap(long, env, case_insensitive = true)]
     /// Method of ingestion of messages via Message Queue
     pub consumer_method: ConsumerMethod,
-    #[structopt(long, env)]
+    #[clap(long, env)]
     /// Kafka broker or Amqp (eg. RabbitMQ) host
     pub consumer_host: String,
-    #[structopt(long, env)]
+    #[clap(long, env)]
     /// Kafka group id or Amqp consumer tag
     pub consumer_tag: String,
-    #[structopt(long, env)]
+    #[clap(long, env)]
     /// Kafka topic or Amqp queue
     pub consumer_source: String,
 }

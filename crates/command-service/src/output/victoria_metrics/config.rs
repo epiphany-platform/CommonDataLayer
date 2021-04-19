@@ -1,10 +1,10 @@
+use clap::Clap;
 use reqwest::Url;
-use structopt::StructOpt;
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Clap)]
 pub struct VictoriaMetricsConfig {
     /// Address of Victoria Metrics
-    #[structopt(
+    #[clap(
         name = "victoria-metrics-url",
         long = "victoria-metrics-output-url",
         env = "VICTORIA_METRICS_OUTPUT_URL"

@@ -1,6 +1,6 @@
+use clap::Clap;
 use materializer::{args::Args, MaterializerImpl};
 use rpc::materializer::materializer_server::MaterializerServer;
-use structopt::StructOpt;
 use tonic::transport::Server;
 
 #[tokio::main]
@@ -8,7 +8,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let args: Args = Args::from_args();
+    let args: Args = Args::parse();
 
     tracing::debug!(?args, "command-line arguments");
 

@@ -1,51 +1,52 @@
 use anyhow::Context;
-use structopt::{clap::arg_enum, StructOpt};
+use clap::{ArgEnum, Clap};
+use std::str::FromStr;
 
-#[derive(StructOpt)]
+#[derive(Clap)]
 pub struct Config {
     /// Address of schema registry gRPC API
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub schema_registry_addr: String,
     /// Address of edge registry gRPC API
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub edge_registry_addr: String,
     /// Address of object builder gRPC API
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub object_builder_addr: String,
     /// Address of query router REST API
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub query_router_addr: String,
     /// Port to listen on
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub input_port: u16,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub communication_method: CommunicationMethodArgs,
 
     /// Kafka topic/AMQP queue on which API listens for notifications
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub report_source: Option<String>,
     /// Kafka topic/AMQP exchange/gRPC service address to which API inserts new objects
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub insert_destination: String,
 }
 
-#[derive(StructOpt)]
+#[derive(Clap)]
 pub struct CommunicationMethodArgs {
     /// The method of communication with external services
-    #[structopt(long, env, possible_values = &CommunicationMethod::variants(), case_insensitive = true)]
+    #[clap(long, env, possible_values = CommunicationMethod::VARIANTS)]
     communication_method: CommunicationMethod,
     /// Address to Kafka brokers
-    #[structopt(long, env)]
+    #[clap(long, env)]
     kafka_brokers: Option<String>,
     /// Group ID of the Kafka consumer
-    #[structopt(long, env)]
+    #[clap(long, env)]
     kafka_group_id: Option<String>,
     /// Connection URL to AMQP Server
-    #[structopt(long, env)]
+    #[clap(long, env)]
     amqp_connection_string: Option<String>,
     /// AMQP consumer tag
-    #[structopt(long, env)]
+    #[clap(long, env)]
     amqp_consumer_tag: Option<String>,
 }
 
@@ -79,12 +80,18 @@ impl CommunicationMethodArgs {
     }
 }
 
-arg_enum! {
-    #[derive(Clone, Debug)]
-    enum CommunicationMethod {
-        Amqp,
-        Kafka,
-        Grpc
+#[derive(Clone, Debug, ArgEnum)]
+enum CommunicationMethod {
+    Amqp,
+    Kafka,
+    Grpc,
+}
+
+impl FromStr for CommunicationMethod {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ArgEnum::from_str(s, true)
     }
 }
 

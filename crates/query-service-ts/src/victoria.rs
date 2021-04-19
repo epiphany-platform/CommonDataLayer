@@ -1,16 +1,16 @@
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
+use clap::Clap;
 use reqwest::Client;
 use rpc::query_service_ts::{
     query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
 };
 use serde::Deserialize;
-use structopt::StructOpt;
 use tonic::{Request, Response, Status};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Clap)]
 pub struct VictoriaConfig {
-    #[structopt(long = "victoria-query-url", env = "VICTORIA_QUERY_URL")]
+    #[clap(long = "victoria-query-url", env = "VICTORIA_QUERY_URL")]
     victoria_url: String,
 }
 

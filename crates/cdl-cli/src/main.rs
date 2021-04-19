@@ -4,11 +4,11 @@ pub mod utils;
 
 use actions::{schema::*, view::*};
 use args::*;
-use structopt::StructOpt;
+use clap::Clap;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
-    let args = Args::from_args();
+    let args = Args::parse();
     ::utils::tracing::init();
 
     match args.action {

@@ -1,6 +1,6 @@
 use cache::SchemaRegistryCache;
+use clap::Clap;
 use std::sync::Arc;
-use structopt::StructOpt;
 use utils::metrics;
 use uuid::Uuid;
 use warp::Filter;
@@ -9,19 +9,19 @@ pub mod cache;
 pub mod error;
 pub mod handler;
 
-#[derive(StructOpt)]
+#[derive(Clap)]
 struct Config {
     /// Address of schema registry gRPC API
-    #[structopt(long, env = "SCHEMA_REGISTRY_ADDR")]
+    #[clap(long, env = "SCHEMA_REGISTRY_ADDR")]
     schema_registry_addr: String,
     /// How many entries the cache can hold
-    #[structopt(long, env = "CACHE_CAPACITY")]
+    #[clap(long, env = "CACHE_CAPACITY")]
     cache_capacity: usize,
     /// Port to listen on
-    #[structopt(long, env = "INPUT_PORT")]
+    #[clap(long, env = "INPUT_PORT")]
     input_port: u16,
     /// Port to listen on for Prometheus requests
-    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
+    #[clap(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }
 
@@ -30,7 +30,7 @@ async fn main() {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config = Config::from_args();
+    let config = Config::parse();
 
     metrics::serve(config.metrics_port);
 

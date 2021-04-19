@@ -1,5 +1,6 @@
 use anyhow::Context;
 use chrono::{DateTime, Utc};
+use clap::{ArgEnum, Clap};
 use indradb::SledDatastore;
 use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
 use schema_registry::{
@@ -13,70 +14,75 @@ use std::fs::File;
 use std::io::Write;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
-use structopt::clap::arg_enum;
-use structopt::StructOpt;
+use std::str::FromStr;
 use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
 
-arg_enum! {
-    #[derive(Clone, Debug)]
-    pub enum CommunicationMethodType {
-        Amqp,
-        Kafka,
-        GRpc,
+#[derive(Clone, Debug, ArgEnum)]
+pub enum CommunicationMethodType {
+    Amqp,
+    Kafka,
+    GRpc,
+}
+
+impl FromStr for CommunicationMethodType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ArgEnum::from_str(s, true)
     }
 }
 
-#[derive(StructOpt)]
+#[derive(Clap)]
 struct Config {
     /// Port to listen on
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub input_port: u16,
     /// Database name
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub db_name: String,
     /// (deprecated)
-    #[structopt(long, env = "REPLICATION_ROLE", possible_values = &ReplicationRole::variants(), case_insensitive = true)]
+    #[clap(long, env = "REPLICATION_ROLE", possible_values = ReplicationRole::VARIANTS)]
     pub replication_role: ReplicationRole,
 
     /// The method of communication with external services.
-    #[structopt(long, env = "COMMUNICATION_METHOD", possible_values = &CommunicationMethodType::variants(), case_insensitive = true)]
+    #[clap(long, env = "COMMUNICATION_METHOD", possible_values = CommunicationMethodType::VARIANTS)]
     pub communication_method: CommunicationMethodType,
     /// Address of Kafka brokers
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_brokers: Option<String>,
     /// Group ID of the consumer
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_group_id: Option<String>,
     /// Connection URL to AMQP server
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub amqp_connection_string: Option<String>,
     /// Consumer tag
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub amqp_consumer_tag: Option<String>,
 
     /// Kafka topic/AMQP queue
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub replication_source: String,
     /// Kafka topic/AMQP exchange
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub replication_destination: String,
 
     /// (deprecated) used to promote to `master` role
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub pod_name: Option<String>,
     /// Directory to save state of the database. The state is saved in newly created folder with timestamp
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub export_dir: Option<PathBuf>,
     /// JSON file from which SR should load initial state. If the state already exists this env variable witll be ignored
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub import_file: Option<PathBuf>,
     /// Port to listen on for Prometheus requests
-    #[structopt(long, env, default_value = metrics::DEFAULT_PORT)]
+    #[clap(long, env, default_value = metrics::DEFAULT_PORT)]
     /// Port to listen on for Prometheus requests
     pub metrics_port: u16,
     /// Port exposing status of the application
-    #[structopt(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
+    #[clap(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
     pub status_port: u16,
 }
 
@@ -154,7 +160,7 @@ fn replication_config(config: &Config) -> anyhow::Result<Option<ReplicationMetho
 pub async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
-    let config = Config::from_args();
+    let config = Config::parse();
 
     let communication_config = communication_config(&config)?;
     let replication_config = replication_config(&config)?;

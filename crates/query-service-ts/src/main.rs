@@ -1,23 +1,23 @@
 use anyhow::Context;
+use clap::Clap;
 use query_service_ts::druid::{DruidConfig, DruidQuery};
 use query_service_ts::victoria::{VictoriaConfig, VictoriaQuery};
 use rpc::query_service_ts::query_service_ts_server::{QueryServiceTs, QueryServiceTsServer};
 use std::net::{Ipv4Addr, SocketAddrV4};
-use structopt::StructOpt;
 use tonic::transport::Server;
 use utils::metrics;
 
-#[derive(StructOpt)]
+#[derive(Clap)]
 pub struct Config {
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     pub inner: ConfigType,
-    #[structopt(long, env = "INPUT_PORT")]
+    #[clap(long, env = "INPUT_PORT")]
     pub input_port: u16,
-    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
+    #[clap(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }
 
-#[derive(StructOpt)]
+#[derive(Clap)]
 pub enum ConfigType {
     Victoria(VictoriaConfig),
     Druid(DruidConfig),
@@ -38,7 +38,7 @@ async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Resul
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
-    let config: Config = Config::from_args();
+    let config: Config = Config::parse();
     utils::tracing::init();
     metrics::serve(config.metrics_port);
 

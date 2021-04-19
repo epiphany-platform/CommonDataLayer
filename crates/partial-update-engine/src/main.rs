@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use clap::Clap;
 use rdkafka::{
     consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
     message::{BorrowedMessage, OwnedHeaders},
@@ -11,35 +12,34 @@ use rdkafka::{
     ClientConfig, Message, Offset, TopicPartitionList,
 };
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
 use tracing::{debug, trace, Instrument};
 use utils::metrics::{self};
 use uuid::Uuid;
 
-#[derive(StructOpt, Deserialize, Debug, Serialize)]
+#[derive(Clap, Deserialize, Debug, Serialize)]
 struct Config {
     /// Address of Kafka brokers
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_brokers: String,
     /// Group ID of the consumer
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_group_id: String,
     /// Kafka topic for notifications
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub notification_topic: String,
     /// Kafka topic for object builder input
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub object_builder_topic: String,
     /// Address of schema registry gRPC API
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub schema_registry_addr: String,
     /// Port to listen on for Prometheus requests
-    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
+    #[clap(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
     /// Duration of sleep phase in seconds
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub sleep_phase_length: u64,
 }
 
@@ -54,7 +54,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config: Config = Config::from_args();
+    let config: Config = Config::parse();
 
     debug!("Environment {:?}", config);
 

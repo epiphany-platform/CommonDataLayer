@@ -9,7 +9,7 @@ use std::convert::Infallible;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::Schema;
 use async_graphql_warp::{graphql_subscription, Response};
-use structopt::StructOpt;
+use clap::Clap;
 use warp::{http::Response as HttpResponse, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
 
 use crate::schema::context::EdgeRegistryConnectionManager;
@@ -22,7 +22,7 @@ async fn main() {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config = Config::from_args();
+    let config = Config::parse();
     let input_port = config.input_port;
 
     let cors = warp::cors()

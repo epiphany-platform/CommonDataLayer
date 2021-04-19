@@ -1,46 +1,53 @@
-use structopt::{clap::arg_enum, StructOpt};
+use clap::{ArgEnum, Clap};
+use std::str::FromStr;
 use thiserror::Error;
 use utils::communication::consumer::CommonConsumerConfig;
 
-arg_enum! {
-    #[derive(Clone, Debug, Copy)]
-    pub enum MessageQueue {
-        Amqp,
-        Kafka,
+#[derive(Clone, Debug, Copy, ArgEnum)]
+pub enum MessageQueue {
+    Amqp,
+    Kafka,
+}
+
+impl FromStr for MessageQueue {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        ArgEnum::from_str(s, true)
     }
 }
 
-#[derive(StructOpt, Debug)]
+#[derive(Clap, Debug)]
 pub struct Args {
     /// The method of ingestion of messages via Message Queue
-    #[structopt(long, env, possible_values = &MessageQueue::variants(), case_insensitive = true)]
+    #[clap(long, env, possible_values = MessageQueue::VARIANTS)]
     pub mq_method: Option<MessageQueue>,
     /// Address of Kafka brokers
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_brokers: Option<String>,
     /// Group ID of the Kafka consumer
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_group_id: Option<String>,
     /// Connection URL to AMQP server
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub amqp_connection_string: Option<String>,
     /// AMQP consumer tag
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub amqp_consumer_tag: Option<String>,
     /// Kafka topic or AMQP queue name
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub mq_source: Option<String>,
     /// Port to listen on
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub input_port: u16,
     /// Address of schema registry
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub schema_registry_addr: String,
     /// Port to listen on for Prometheus requests
-    #[structopt(long, default_value = utils::metrics::DEFAULT_PORT, env)]
+    #[clap(long, default_value = utils::metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
     /// Port exposing status of the application
-    #[structopt(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
+    #[clap(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
     pub status_port: u16,
 }
 
