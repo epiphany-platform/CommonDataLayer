@@ -56,7 +56,7 @@ jobs:
         run: |
           echo "::set-output name=date::$(/bin/date -u "+%Y%m")"
       - name: Cache cargo directories
-        uses: actions/cache@v2.1.4
+        uses: actions/cache@v2.1.5
         id: cache
         with:
           path: |

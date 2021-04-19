@@ -50,7 +50,7 @@ jobs:
           architecture: 'x64'
 
       - name: Cache cargo target dir
-        uses: actions/cache@v2.1.4
+        uses: actions/cache@v2.1.5
         with:
           path: target
           key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
