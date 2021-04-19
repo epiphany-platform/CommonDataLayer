@@ -198,7 +198,7 @@ impl EdgeRegistryImpl {
             .await
     }
 
-    #[tracing::instrument(skip(self))]
+    #[tracing::instrument(skip(self, conn))]
     async fn get_edge_with_conn(
         &self,
         conn: &PooledConnection<'_, PostgresConnectionManager<NoTls>>,
