@@ -2,7 +2,7 @@ use crate::error::ClientError;
 use query_service_ts_client::QueryServiceTsClient;
 use tonic::transport::Channel;
 
-tonic::include_proto!("query_service_ts");
+pub use crate::codegen::query_service_ts::*;
 
 pub async fn connect(addr: String) -> Result<QueryServiceTsClient<Channel>, ClientError> {
     QueryServiceTsClient::connect(addr)
