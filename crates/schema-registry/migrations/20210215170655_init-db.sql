@@ -1,6 +1,3 @@
--- yes we are dropping all
--- if you want your "valuable data" untouched write your own migration
-
 DROP TABLE IF EXISTS schemas CASCADE;
 DROP TABLE IF EXISTS views CASCADE;
 DROP TABLE IF EXISTS definitions CASCADE;

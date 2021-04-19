@@ -29,7 +29,7 @@ schemaRegistry:
   postgresPassword: postgres
   postgresHost: 10.1.1.5
   postgresPort: 5432
-  postgresDbname: schema-registry
+  postgresDbname: cdldb
 
 edgeRegistry:
   postgresUsername: postgres
