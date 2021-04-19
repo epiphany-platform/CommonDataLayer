@@ -3,7 +3,7 @@ use query_service_client::QueryServiceClient;
 use std::collections::HashMap;
 use tonic::transport::Channel;
 
-tonic::include_proto!("query_service");
+pub use crate::codegen::query_service::*;
 
 pub async fn connect(addr: String) -> Result<QueryServiceClient<Channel>, ClientError> {
     QueryServiceClient::connect(addr)

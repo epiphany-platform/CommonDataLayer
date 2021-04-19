@@ -2,7 +2,7 @@ use crate::error::ClientError;
 use materializer_client::MaterializerClient;
 use tonic::transport::Channel;
 
-tonic::include_proto!("materializer");
+pub use crate::codegen::materializer::*;
 
 pub async fn connect(addr: String) -> Result<MaterializerClient<Channel>, ClientError> {
     MaterializerClient::connect(addr)

@@ -3,6 +3,7 @@ cargo-features = ["named-profiles"]
 [workspace]
 members = [
   "benchmarking",
+  "xtask",
   "crates/*"
 ]
 
