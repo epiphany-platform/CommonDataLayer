@@ -12,6 +12,8 @@ pub enum RegistryError {
     DbError(sqlx::Error),
     #[error("No schema found with id \"{0}\"")]
     NoSchemaWithId(Uuid),
+    #[error("No view found with id \"{0}\"")]
+    NoViewWithId(Uuid),
     #[error("No insert destination found named \"{0}\"")]
     NoInsertDestination(String),
     #[error("Given schema type is invalid")]
@@ -71,9 +73,9 @@ impl From<utils::communication::Error> for RegistryError {
 impl From<RegistryError> for Status {
     fn from(error: RegistryError) -> Status {
         match error {
-            RegistryError::NoInsertDestination(_) | RegistryError::NoSchemaWithId(_) => {
-                Status::not_found(error.to_string())
-            }
+            RegistryError::NoInsertDestination(_)
+            | RegistryError::NoSchemaWithId(_)
+            | RegistryError::NoViewWithId(_) => Status::not_found(error.to_string()),
             RegistryError::InvalidSchemaType
             | RegistryError::NewVersionMustBeGreatest { .. }
             | RegistryError::InvalidVersion(_)
