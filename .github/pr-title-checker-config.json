@@ -1,0 +1,9 @@
+{
+  "LABEL": {
+    "name": "ERROR:TitleFormat",
+    "color": "EEEEEE"
+  },
+  "CHECKS": {
+    "prefixes": ["fix: ", "feat: ", "chore: ", "test: ", "docs: "]
+   }
+}

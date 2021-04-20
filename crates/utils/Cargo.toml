@@ -17,7 +17,7 @@ rpc         = { path    = "../rpc" }
 anyhow      = "1.0"
 async-trait = "0.1"
 hyper       = "0.14"
-lapin       = "1.6"
+lapin       = "1.7"
 lazy_static = "1.4"
 metrics     = { version = "0.14", features = ["std"] }
 rdkafka     = { version = "0.26", features = ["cmake-build"] }

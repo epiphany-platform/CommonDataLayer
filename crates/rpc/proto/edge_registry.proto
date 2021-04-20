@@ -13,8 +13,24 @@ service EdgeRegistry {
 
   rpc Heartbeat (Empty) returns (Empty);
 
-  // TODO: Deleting relations and edges
-  // TODO: Resolving multiple relations on object at once
+  rpc ResolveTree (TreeQuery) returns (TreeResponse);
+}
+
+message TreeQuery {
+  required string relation_id = 1;
+  repeated TreeQuery relations = 2;
+  repeated string filter_ids = 3;
+}
+
+message TreeResponse {
+  repeated TreeObject objects = 1;
+}
+
+message TreeObject {
+  required string object_id = 1;
+  required string relation_id = 2;
+  repeated string children = 3;
+  repeated TreeResponse subtrees = 4;
 }
 
 message SchemaRelation {
