@@ -1,6 +1,5 @@
 use async_graphql::{Context, FieldResult, Object};
 use num_traits::ToPrimitive;
-use tracing::Instrument;
 use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
 
@@ -15,186 +14,193 @@ pub struct MutationRoot;
 
 #[Object]
 impl MutationRoot {
+    #[tracing::instrument(skip(self, context))]
     async fn add_schema(&self, context: &Context<'_>, new: NewSchema) -> FieldResult<Schema> {
-        let span = tracing::info_span!("add_schema", ?new);
-        async move {
-            let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
+        let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-            let rpc_schema_type: i32 = new.schema_type.to_i32().unwrap(); // Unwrap because we for sure can build i32 from enum
+        let rpc_schema_type: i32 = new.schema_type.to_i32().unwrap(); // Unwrap because we for sure can build i32 from enum
 
-            let id = conn
-                .add_schema(rpc::schema_registry::NewSchema {
-                    id: "".into(),
-                    name: new.name.clone(),
-                    query_address: new.query_address.clone(),
-                    insert_destination: new.insert_destination.clone(),
-                    definition: serde_json::to_string(&new.definition)?,
-                    schema_type: rpc_schema_type,
-                })
-                .await
-                .map_err(rpc::error::schema_registry_error)?
-                .into_inner()
-                .id
-                .parse()?;
-
-            Ok(Schema {
-                id,
-                name: new.name,
-                insert_destination: new.insert_destination,
-                query_address: new.query_address,
-                schema_type: new.schema_type,
+        let id = conn
+            .add_schema(rpc::schema_registry::NewSchema {
+                id: "".into(),
+                name: new.name.clone(),
+                query_address: new.query_address.clone(),
+                insert_destination: new.insert_destination.clone(),
+                definition: serde_json::to_string(&new.definition)?,
+                schema_type: rpc_schema_type,
             })
-        }
-        .instrument(span)
-        .await
+            .await
+            .map_err(rpc::error::schema_registry_error)?
+            .into_inner()
+            .id
+            .parse()?;
+
+        Ok(Schema {
+            id,
+            name: new.name,
+            insert_destination: new.insert_destination,
+            query_address: new.query_address,
+            schema_type: new.schema_type,
+        })
     }
 
+    #[tracing::instrument(skip(self, context))]
     async fn add_schema_definition(
         &self,
         context: &Context<'_>,
         schema_id: Uuid,
         new_version: NewVersion,
     ) -> FieldResult<Definition> {
-        let span = tracing::info_span!("add_schema_definition", ?schema_id, ?new_version);
-        async move {
-            let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
+        let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-            conn.add_schema_version(rpc::schema_registry::NewSchemaVersion {
-                id: schema_id.to_string(),
-                version: new_version.version.clone(),
-                definition: serde_json::to_string(&new_version.definition)?,
-            })
-            .await
-            .map_err(rpc::error::schema_registry_error)?;
-
-            Ok(Definition {
-                definition: new_version.definition,
-                version: new_version.version,
-            })
-        }
-        .instrument(span)
+        conn.add_schema_version(rpc::schema_registry::NewSchemaVersion {
+            id: schema_id.to_string(),
+            version: new_version.version.clone(),
+            definition: serde_json::to_string(&new_version.definition)?,
+        })
         .await
+        .map_err(rpc::error::schema_registry_error)?;
+
+        Ok(Definition {
+            definition: new_version.definition,
+            version: new_version.version,
+        })
     }
 
+    #[tracing::instrument(skip(self, context))]
     async fn add_view(
         &self,
         context: &Context<'_>,
         schema_id: Uuid,
         new_view: NewView,
     ) -> FieldResult<View> {
-        let span = tracing::info_span!("add_view", ?schema_id, ?new_view);
-        async move {
-            let NewView {
+        let NewView {
+            name,
+            materializer_addr,
+            materializer_options,
+            fields,
+        } = new_view.clone();
+        let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
+        let id = conn
+            .add_view_to_schema(rpc::schema_registry::NewSchemaView {
+                schema_id: schema_id.to_string(),
+                view_id: "".into(),
                 name,
                 materializer_addr,
-                materializer_options,
-                fields,
-            } = new_view.clone();
-            let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
-            let id = conn
-                .add_view_to_schema(rpc::schema_registry::NewSchemaView {
-                    schema_id: schema_id.to_string(),
-                    view_id: "".into(),
-                    name,
-                    materializer_addr,
-                    materializer_options: serde_json::to_string(&materializer_options)?,
-                    fields: serde_json::to_string(&fields)?,
-                })
-                .await
-                .map_err(rpc::error::schema_registry_error)?
-                .into_inner()
-                .id;
-
-            Ok(View {
-                id: id.parse()?,
-                name: new_view.name,
-                materializer_addr: new_view.materializer_addr,
-                fields: new_view.fields,
+                materializer_options: serde_json::to_string(&materializer_options)?,
+                fields: serde_json::to_string(&fields)?,
             })
-        }
-        .instrument(span)
-        .await
+            .await
+            .map_err(rpc::error::schema_registry_error)?
+            .into_inner()
+            .id;
+
+        Ok(View {
+            id: id.parse()?,
+            name: new_view.name,
+            materializer_addr: new_view.materializer_addr,
+            fields: new_view.fields,
+        })
     }
 
+    #[tracing::instrument(skip(self, context))]
     async fn update_view(
         &self,
         context: &Context<'_>,
         id: Uuid,
         update: UpdateView,
     ) -> FieldResult<View> {
-        let span = tracing::info_span!("update_view", ?id, ?update);
-        async move {
-            let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
+        let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-            let UpdateView {
-                name,
-                materializer_addr,
-                materializer_options,
-                fields,
-            } = update;
+        let UpdateView {
+            name,
+            materializer_addr,
+            materializer_options,
+            fields,
+        } = update;
 
-            conn.update_view(rpc::schema_registry::UpdatedView {
-                id: id.to_string(),
-                name: name.clone(),
-                materializer_addr: materializer_addr.clone(),
-                materializer_options: materializer_options
-                    .as_ref()
-                    .map(|o| serde_json::to_string(o))
-                    .transpose()?,
-                fields: fields
-                    .as_ref()
-                    .map(|f| serde_json::to_string(f))
-                    .transpose()?,
-            })
-            .await
-            .map_err(rpc::error::schema_registry_error)?;
-
-            get_view(&mut conn, id).await
-        }
-        .instrument(span)
+        conn.update_view(rpc::schema_registry::UpdatedView {
+            id: id.to_string(),
+            name: name.clone(),
+            materializer_addr: materializer_addr.clone(),
+            materializer_options: materializer_options
+                .as_ref()
+                .map(|o| serde_json::to_string(o))
+                .transpose()?,
+            fields: fields
+                .as_ref()
+                .map(|f| serde_json::to_string(f))
+                .transpose()?,
+        })
         .await
+        .map_err(rpc::error::schema_registry_error)?;
+
+        get_view(&mut conn, id).await
     }
 
+    #[tracing::instrument(skip(self, context))]
     async fn update_schema(
         &self,
         context: &Context<'_>,
         id: Uuid,
         update: UpdateSchema,
     ) -> FieldResult<Schema> {
-        let span = tracing::info_span!("update_schema", ?id, ?update);
-        async move {
-            let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
+        let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-            let UpdateSchema {
-                name,
-                query_address: address,
-                insert_destination,
-                schema_type,
-            } = update;
+        let UpdateSchema {
+            name,
+            query_address: address,
+            insert_destination,
+            schema_type,
+        } = update;
 
-            conn.update_schema_metadata(rpc::schema_registry::SchemaMetadataUpdate {
-                id: id.to_string(),
-                name,
-                address,
-                insert_destination,
-                schema_type: schema_type.and_then(|s| s.to_i32()),
-            })
-            .await
-            .map_err(rpc::error::schema_registry_error)?;
-            get_schema(&mut conn, id).await
-        }
-        .instrument(span)
+        conn.update_schema_metadata(rpc::schema_registry::SchemaMetadataUpdate {
+            id: id.to_string(),
+            name,
+            address,
+            insert_destination,
+            schema_type: schema_type.and_then(|s| s.to_i32()),
+        })
         .await
+        .map_err(rpc::error::schema_registry_error)?;
+        get_schema(&mut conn, id).await
     }
 
+    #[tracing::instrument(skip(self, context))]
     async fn insert_message(
         &self,
         context: &Context<'_>,
         message: InputMessage,
     ) -> FieldResult<bool> {
-        let span = tracing::info_span!("insert_message", ?message.object_id, ?message.schema_id);
-        async move {
-            let publisher = connect_to_cdl_input(context.data_unchecked::<Config>()).await?;
+        let publisher = connect_to_cdl_input(context.data_unchecked::<Config>()).await?;
+        let payload = serde_json::to_vec(&OwnedInsertMessage {
+            object_id: message.object_id,
+            schema_id: message.schema_id,
+            data: message.payload.0,
+            timestamp: current_timestamp(),
+        })?;
+
+        publisher
+            .publish_message(
+                &context.data_unchecked::<Config>().insert_destination,
+                "",
+                payload,
+            )
+            .await
+            .map_err(Error::PublisherError)?;
+        Ok(true)
+    }
+
+    #[tracing::instrument(skip(self, context))]
+    async fn insert_batch(
+        &self,
+        context: &Context<'_>,
+        messages: Vec<InputMessage>,
+    ) -> FieldResult<bool> {
+        let publisher = connect_to_cdl_input(context.data_unchecked::<Config>()).await?;
+        let order_group_id = Uuid::new_v4().to_string();
+
+        for message in messages {
             let payload = serde_json::to_vec(&OwnedInsertMessage {
                 object_id: message.object_id,
                 schema_id: message.schema_id,
@@ -205,50 +211,16 @@ impl MutationRoot {
             publisher
                 .publish_message(
                     &context.data_unchecked::<Config>().insert_destination,
-                    "",
+                    &order_group_id,
                     payload,
                 )
                 .await
                 .map_err(Error::PublisherError)?;
-            Ok(true)
         }
-        .instrument(span)
-        .await
+        Ok(true)
     }
 
-    async fn insert_batch(
-        &self,
-        context: &Context<'_>,
-        messages: Vec<InputMessage>,
-    ) -> FieldResult<bool> {
-        let span = tracing::info_span!("insert_batch", len = messages.len());
-        async move {
-            let publisher = connect_to_cdl_input(context.data_unchecked::<Config>()).await?;
-            let order_group_id = Uuid::new_v4().to_string();
-
-            for message in messages {
-                let payload = serde_json::to_vec(&OwnedInsertMessage {
-                    object_id: message.object_id,
-                    schema_id: message.schema_id,
-                    data: message.payload.0,
-                    timestamp: current_timestamp(),
-                })?;
-
-                publisher
-                    .publish_message(
-                        &context.data_unchecked::<Config>().insert_destination,
-                        &order_group_id,
-                        payload,
-                    )
-                    .await
-                    .map_err(Error::PublisherError)?;
-            }
-            Ok(true)
-        }
-        .instrument(span)
-        .await
-    }
-
+    #[tracing::instrument(skip(self, context))]
     /// Add new relation, return generated `relation_id`
     async fn add_relation(
         &self,
@@ -256,51 +228,42 @@ impl MutationRoot {
         parent_schema_id: Uuid,
         child_schema_id: Uuid,
     ) -> FieldResult<Uuid> {
-        let span = tracing::info_span!("add_relation", ?parent_schema_id, ?child_schema_id);
-        async move {
-            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
-            Ok(conn
-                .add_relation(rpc::edge_registry::SchemaRelation {
-                    parent_schema_id: parent_schema_id.to_string(),
-                    child_schema_id: child_schema_id.to_string(),
-                })
-                .await?
-                .into_inner()
-                .relation_id
-                .parse()?)
-        }
-        .instrument(span)
-        .await
+        let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+        Ok(conn
+            .add_relation(rpc::edge_registry::SchemaRelation {
+                parent_schema_id: parent_schema_id.to_string(),
+                child_schema_id: child_schema_id.to_string(),
+            })
+            .await?
+            .into_inner()
+            .relation_id
+            .parse()?)
     }
 
+    #[tracing::instrument(skip(self, context))]
     /// Add new object-object edges
     async fn add_edges(
         &self,
         context: &Context<'_>,
         relations: Vec<ObjectRelations>,
     ) -> FieldResult<bool> {
-        let span = tracing::info_span!("add_edges", len = relations.len());
-        async move {
-            let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
-            conn.add_edges(rpc::edge_registry::ObjectRelations {
-                relations: relations
-                    .into_iter()
-                    .map(|relation| rpc::edge_registry::Edge {
-                        relation_id: relation.relation_id.to_string(),
-                        parent_object_id: relation.parent_object_id.to_string(),
-                        child_object_ids: relation
-                            .child_object_ids
-                            .into_iter()
-                            .map(|id| id.to_string())
-                            .collect(),
-                    })
-                    .collect(),
-            })
-            .await?;
+        let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
+        conn.add_edges(rpc::edge_registry::ObjectRelations {
+            relations: relations
+                .into_iter()
+                .map(|relation| rpc::edge_registry::Edge {
+                    relation_id: relation.relation_id.to_string(),
+                    parent_object_id: relation.parent_object_id.to_string(),
+                    child_object_ids: relation
+                        .child_object_ids
+                        .into_iter()
+                        .map(|id| id.to_string())
+                        .collect(),
+                })
+                .collect(),
+        })
+        .await?;
 
-            Ok(true)
-        }
-        .instrument(span)
-        .await
+        Ok(true)
     }
 }
