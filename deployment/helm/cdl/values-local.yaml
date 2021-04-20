@@ -22,8 +22,6 @@ queryRouter:
   port: 30153
 
 schemaRegistry:
-  storageClass:
-  storageSize: 3Gi
   port: 30150
   postgresUsername: postgres
   postgresPassword: CHANGEME

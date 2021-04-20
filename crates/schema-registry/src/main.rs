@@ -20,7 +20,8 @@ pub async fn main() -> anyhow::Result<()> {
 
     sleep(Duration::from_millis(500)).await;
 
-    status_endpoints::serve(config.status_port);
+    // TODO:
+    // status_endpoints::serve(config.status_port);
     metrics::serve(config.metrics_port);
 
     let comms_config = communication_config(&config)?;
