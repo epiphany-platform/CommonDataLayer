@@ -5,11 +5,10 @@ use kube::{
     api::{DeleteParams, ListParams, Patch, PatchParams},
     Api, Client, Resource,
 };
-use serde::Deserialize;
 use std::{fs, time::Duration};
 use tracing::{debug, info, warn};
 
-#[derive(Debug, Deserialize, Clap)]
+#[derive(Debug, Clap)]
 pub struct Config {
     #[clap(long, env)]
     pub heartbeat_secs: u64,
