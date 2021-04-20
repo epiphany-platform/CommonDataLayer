@@ -30,7 +30,6 @@ pub struct OnDemandViewRequest {
     pub schemas: Vec<Schema>,
 }
 
-
 #[derive(Debug, Clone, InputObject)]
 pub struct Schema {
     /// Schema's UUID
