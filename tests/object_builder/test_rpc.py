@@ -54,7 +54,7 @@ def prepare(request, tmp_path):
     qs.stop()
     sr.stop()
 
-    # cleanup environmeFt
+    # cleanup environment
     delete_kafka_topic(kafka_config, TOPIC)
     clear_data(postgres_config)
 
