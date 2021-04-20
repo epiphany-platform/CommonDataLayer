@@ -328,22 +328,6 @@
       ]
     }
   },
-  "adb592a0f1f4ae54313106f945e23aec9f5f234786551e47807d08d7a860e026": {
-    "query": "INSERT INTO views(id, schema, name, materializer_address, fields) VALUES($1, $2, $3, $4, $5)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Varchar",
-          "Varchar",
-          "Json"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "ae1ae494dfd5fded571f046d9dcda3692d58e30536ba13c312c6a69093d9d27e": {
     "query": "SELECT definition FROM definitions WHERE schema = $1 and version = $2",
     "describe": {
@@ -569,6 +553,23 @@
         false,
         false
       ]
+    }
+  },
+  "f69d7c58ef5aed4825e39644b239a5bcbfd2d1c0218252640c5f35de9ac8afa9": {
+    "query": "INSERT INTO views(id, schema, name, materializer_address, materializer_options, fields) VALUES($1, $2, $3, $4, $5, $6)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Varchar",
+          "Varchar",
+          "Json",
+          "Json"
+        ]
+      },
+      "nullable": []
     }
   }
 }

@@ -470,14 +470,15 @@ impl SchemaRegistryDb {
 
                         for view in schema.views {
                             sqlx::query!(
-                                "INSERT INTO views(id, schema, name, materializer_address, fields) \
-                                 VALUES($1, $2, $3, $4, $5)",
+                                "INSERT INTO views(id, schema, name, materializer_address, materializer_options, fields) \
+                                 VALUES($1, $2, $3, $4, $5, $6)",
                                  view.id,
                                  schema.id,
                                  view.name,
                                  view.materializer_address,
+                                 view.materializer_options,
                                  serde_json::to_value(&view.fields)
-                                     .map_err(RegistryError::MalformedViewFields)?,
+                                    .map_err(RegistryError::MalformedViewFields)?,
                             )
                             .execute(c.acquire().await?)
                             .await?;

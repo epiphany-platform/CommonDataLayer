@@ -32,6 +32,7 @@ pub struct ViewUpdate {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum FieldDefinition {
     FieldName(String),
 }
