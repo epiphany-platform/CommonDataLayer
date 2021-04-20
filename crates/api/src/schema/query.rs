@@ -50,6 +50,9 @@ impl Schema {
     #[tracing::instrument(skip(self, context), fields(id))]
     async fn definition(&self, context: &Context<'_>, version: String) -> FieldResult<Definition> {
         let id = self.id.to_string();
+        // For unknown reason i couldn't do fields(self.id = ?self.id) even tho documentation says I should
+        // (https://docs.rs/tracing/0.1.25/tracing/attr.instrument.html#examples-2)...
+        // So this is way around it.
         tracing::Span::current().record("id", &id.as_str());
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
         let schema_def = conn
@@ -73,6 +76,7 @@ impl Schema {
     async fn definitions(&self, context: &Context<'_>) -> FieldResult<Vec<Definition>> {
         let id = self.id.to_string();
         tracing::Span::current().record("id", &id.as_str());
+
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
         let rpc_id = rpc::schema_registry::Id { id: id.clone() };
 
@@ -108,6 +112,7 @@ impl Schema {
     async fn views(&self, context: &Context<'_>) -> FieldResult<Vec<View>> {
         let id = self.id.to_string();
         tracing::Span::current().record("id", &id.as_str());
+
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
         let rpc_id = rpc::schema_registry::Id { id: id.clone() };
 
