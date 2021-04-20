@@ -95,6 +95,10 @@ jobs:
         run: |
           kubectl get pods
           [[ -z `kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}"` ]]
+      - name: logging support for k8s
+        run: |
+          kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}" | xargs -n 1 -t  kubectl logs
+          kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}" | xargs -n 1 -t  kubectl describe pod
       - name: uninstall cdl kafka
         run: helm uninstall cdl
       - name: wait
