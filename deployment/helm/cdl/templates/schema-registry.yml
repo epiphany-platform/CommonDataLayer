@@ -65,9 +65,6 @@ spec:
           value: "info,schema_registry=debug"
         ports:
         - containerPort: 51805
-        volumeMounts:
-        - mountPath: "/data/db"
-          name: {{ .Release.Name }}-pv-schema-registry
         readinessProbe:
           httpGet:
             path: /status/readiness
@@ -88,16 +85,7 @@ spec:
           periodSeconds: 5
       imagePullSecrets:
       - name: {{ .Values.global.cdlImagePullSecrets }}
-  volumeClaimTemplates:
-  - metadata:
-      name: {{ .Release.Name }}-pv-schema-registry
-    spec:
-      storageClassName: {{ .Values.schemaRegistry.storageClass }}
-      resources:
-        requests:
-          storage: {{ .Values.schemaRegistry.storageSize }}
-      accessModes:
-      - ReadWriteOnce
+
 
 ---
 apiVersion: v1
