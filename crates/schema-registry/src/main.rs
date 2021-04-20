@@ -20,8 +20,7 @@ pub async fn main() -> anyhow::Result<()> {
 
     sleep(Duration::from_millis(500)).await;
 
-    // TODO:
-    // status_endpoints::serve(config.status_port);
+    status_endpoints::serve(config.status_port);
     metrics::serve(config.metrics_port);
 
     let comms_config = communication_config(&config)?;
@@ -43,7 +42,7 @@ pub async fn main() -> anyhow::Result<()> {
     }
 
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.input_port);
-
+    status_endpoints::mark_as_started();
     Server::builder()
         .add_service(SchemaRegistryServer::new(registry))
         .serve(addr.into())

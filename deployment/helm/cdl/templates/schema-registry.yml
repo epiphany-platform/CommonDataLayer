@@ -65,24 +65,24 @@ spec:
           value: "info,schema_registry=debug"
         ports:
         - containerPort: 51805
-        # readinessProbe:
-        #   httpGet:
-        #     path: /status/readiness
-        #     port: 3000
-        #   initialDelaySeconds: 3
-        #   periodSeconds: 3
-        # livenessProbe:
-        #   httpGet:
-        #     path: /status/health
-        #     port: 3000
-        #   initialDelaySeconds: 3
-        #   periodSeconds: 3
-        # startupProbe:
-        #   httpGet:
-        #     path: /status/startup
-        #     port: 3000
-        #   failureThreshold: 6
-        #   periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /status/readiness
+            port: 3000
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        livenessProbe:
+          httpGet:
+            path: /status/health
+            port: 3000
+          initialDelaySeconds: 3
+          periodSeconds: 3
+        startupProbe:
+          httpGet:
+            path: /status/startup
+            port: 3000
+          failureThreshold: 6
+          periodSeconds: 5
       imagePullSecrets:
       - name: {{ .Values.global.cdlImagePullSecrets }}
 
