@@ -865,6 +865,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bb8-postgres",
+ "futures",
  "itertools 0.10.0",
  "rpc",
  "serde",

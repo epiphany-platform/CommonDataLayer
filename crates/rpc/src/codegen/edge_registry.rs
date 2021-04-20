@@ -1,4 +1,29 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TreeQuery {
+    #[prost(string, required, tag = "1")]
+    pub relation_id: ::prost::alloc::string::String,
+    #[prost(message, repeated, tag = "2")]
+    pub relations: ::prost::alloc::vec::Vec<TreeQuery>,
+    #[prost(string, repeated, tag = "3")]
+    pub filter_ids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TreeResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub objects: ::prost::alloc::vec::Vec<TreeObject>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct TreeObject {
+    #[prost(string, required, tag = "1")]
+    pub object_id: ::prost::alloc::string::String,
+    #[prost(string, required, tag = "2")]
+    pub relation_id: ::prost::alloc::string::String,
+    #[prost(string, repeated, tag = "3")]
+    pub children: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    #[prost(message, repeated, tag = "4")]
+    pub subtrees: ::prost::alloc::vec::Vec<TreeResponse>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SchemaRelation {
     #[prost(string, required, tag = "1")]
     pub parent_schema_id: ::prost::alloc::string::String,
@@ -220,6 +245,21 @@ pub mod edge_registry_client {
                 http::uri::PathAndQuery::from_static("/edge_registry.EdgeRegistry/Heartbeat");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        pub async fn resolve_tree(
+            &mut self,
+            request: impl tonic::IntoRequest<super::TreeQuery>,
+        ) -> Result<tonic::Response<super::TreeResponse>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path =
+                http::uri::PathAndQuery::from_static("/edge_registry.EdgeRegistry/ResolveTree");
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
     impl<T: Clone> Clone for EdgeRegistryClient<T> {
         fn clone(&self) -> Self {
@@ -273,6 +313,10 @@ pub mod edge_registry_server {
             &self,
             request: tonic::Request<super::Empty>,
         ) -> Result<tonic::Response<super::Empty>, tonic::Status>;
+        async fn resolve_tree(
+            &self,
+            request: tonic::Request<super::TreeQuery>,
+        ) -> Result<tonic::Response<super::TreeResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct EdgeRegistryServer<T: EdgeRegistry> {
@@ -537,6 +581,37 @@ pub mod edge_registry_server {
                         let interceptor = inner.1.clone();
                         let inner = inner.0;
                         let method = HeartbeatSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = if let Some(interceptor) = interceptor {
+                            tonic::server::Grpc::with_interceptor(codec, interceptor)
+                        } else {
+                            tonic::server::Grpc::new(codec)
+                        };
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/edge_registry.EdgeRegistry/ResolveTree" => {
+                    #[allow(non_camel_case_types)]
+                    struct ResolveTreeSvc<T: EdgeRegistry>(pub Arc<T>);
+                    impl<T: EdgeRegistry> tonic::server::UnaryService<super::TreeQuery> for ResolveTreeSvc<T> {
+                        type Response = super::TreeResponse;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::TreeQuery>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).resolve_tree(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let interceptor = inner.1.clone();
+                        let inner = inner.0;
+                        let method = ResolveTreeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = if let Some(interceptor) = interceptor {
                             tonic::server::Grpc::with_interceptor(codec, interceptor)
