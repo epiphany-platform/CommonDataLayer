@@ -151,9 +151,6 @@ impl ObjectBuilderImpl {
         let view = self.get_view(&view_id).await?;
         tracing::debug!(?view, "View");
 
-        // For now view can have only one base schema,
-        // and it have to have at least one
-        // Therefore panic is safe.
         // TODO: Handle more than one schema
         // TODO: Handle empty filter for seeding view (maybe in another method)
         let (schema_id, schema) = schemas.into_iter().next().unwrap();
