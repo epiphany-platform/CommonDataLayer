@@ -30,7 +30,6 @@ pub struct OnDemandViewRequest {
     pub schemas: Vec<Schema>,
 }
 
-//async_graphql::scalar!(OnDemandViewRequest);
 
 #[derive(Debug, Clone, InputObject)]
 pub struct Schema {

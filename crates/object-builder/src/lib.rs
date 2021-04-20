@@ -155,6 +155,7 @@ impl ObjectBuilderImpl {
         // and it have to have at least one
         // Therefore panic is safe.
         // TODO: Handle more than one schema
+        // TODO: Handle empty filter for seeding view (maybe in another method)
         let (schema_id, schema) = schemas.into_iter().next().unwrap();
 
         let objects = self.get_objects(schema_id, schema).await?;
@@ -269,6 +270,7 @@ impl ObjectBuilderImpl {
     }
 
     #[tracing::instrument(skip(self))]
+    // TODO: Change name to `get_schema_metadata`
     async fn get_base_schema(
         &self,
         schema_id: Uuid,
