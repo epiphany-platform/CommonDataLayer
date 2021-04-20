@@ -48,12 +48,9 @@ impl SchemaRegistryDb {
              FROM schemas WHERE id = $1",
             id
         )
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|err| match err {
-            sqlx::Error::RowNotFound => RegistryError::NoSchemaWithId(id),
-            other => RegistryError::DbError(other),
-        })
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(RegistryError::NoSchemaWithId(id))
     }
 
     pub async fn get_base_schema_of_view(&self, id: Uuid) -> RegistryResult<Schema> {
@@ -129,12 +126,9 @@ impl SchemaRegistryDb {
              FROM views WHERE id = $1",
             id
         )
-        .fetch_one(&self.pool)
-        .await
-        .map_err(|err| match err {
-            sqlx::Error::RowNotFound => RegistryError::NoViewWithId(id),
-            other => RegistryError::DbError(other),
-        })
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(RegistryError::NoViewWithId(id))
     }
 
     pub async fn get_all_views_of_schema(&self, schema_id: Uuid) -> RegistryResult<Vec<View>> {
