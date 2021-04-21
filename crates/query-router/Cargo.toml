@@ -13,7 +13,6 @@ path = "src/main.rs"
 # Workspace
 rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }
-schema-registry         = { path = "../schema-registry" }
 
 # Crates.io
 warp        = "0.3"

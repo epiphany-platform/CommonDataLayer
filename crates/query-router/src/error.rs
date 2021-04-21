@@ -8,7 +8,6 @@ pub enum Error {
     SingleQueryMissingValue,
     RawQueryMissingValue,
     WrongValueFormat,
-    CacheError(schema_registry::error::CacheError),
 }
 
 impl Reject for Error {}
@@ -21,7 +20,6 @@ pub fn recover(rejection: Rejection) -> Result<impl warp::Reply, Rejection> {
             Error::SingleQueryMissingValue => "Value not returned from query".to_owned(),
             Error::WrongValueFormat => "Value incorrectly formatted".to_owned(),
             Error::RawQueryMissingValue => "Value not returned from query".to_owned(),
-            Error::CacheError(err) => format!("Schema cache error: {}", err),
         };
 
         Ok(warp::reply::with_status(

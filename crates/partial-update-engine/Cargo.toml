@@ -14,7 +14,6 @@ path = "src/main.rs"
 rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }
 
-
 # Crates.io
 anyhow      = "1.0"
 async-trait = "0.1"
