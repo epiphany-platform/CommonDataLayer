@@ -26,6 +26,7 @@ pub struct Args {
 pub enum CommunicationMethod {
     Amqp,
     Kafka,
+    #[clap(name = "grpc")]
     GRpc,
 }
 

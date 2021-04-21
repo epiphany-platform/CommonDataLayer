@@ -22,6 +22,7 @@ use utils::{metrics, status_endpoints};
 pub enum CommunicationMethodType {
     Amqp,
     Kafka,
+    #[clap(name = "grpc")]
     GRpc,
 }
 

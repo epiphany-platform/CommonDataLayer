@@ -75,7 +75,7 @@ impl CommunicationMethodArgs {
                     consumer_tag,
                 }
             }
-            CommunicationMethod::Grpc => CommunicationMethodConfig::Grpc,
+            CommunicationMethod::GRpc => CommunicationMethodConfig::Grpc,
         })
     }
 }
@@ -84,7 +84,8 @@ impl CommunicationMethodArgs {
 enum CommunicationMethod {
     Amqp,
     Kafka,
-    Grpc,
+    #[clap(name = "grpc")]
+    GRpc,
 }
 
 impl FromStr for CommunicationMethod {

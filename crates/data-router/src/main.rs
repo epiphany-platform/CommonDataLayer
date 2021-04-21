@@ -34,7 +34,8 @@ use uuid::Uuid;
 enum CommunicationMethod {
     Kafka,
     Amqp,
-    Grpc,
+    #[clap(name = "grpc")]
+    GRpc,
 }
 
 impl FromStr for CommunicationMethod {
@@ -226,7 +227,7 @@ async fn new_producer(config: &Config) -> anyhow::Result<CommonPublisher> {
                 .context("amqp connection string was not specified")?;
             CommonPublisher::new_amqp(connection_string).await?
         }
-        CommunicationMethod::Grpc => CommonPublisher::new_grpc("command_service").await?,
+        CommunicationMethod::GRpc => CommonPublisher::new_grpc("command_service").await?,
     })
 }
 
@@ -279,7 +280,7 @@ async fn new_consumer(config: &Config) -> anyhow::Result<ParallelCommonConsumer>
                 options: None,
             }
         }
-        CommunicationMethod::Grpc => {
+        CommunicationMethod::GRpc => {
             let port = config
                 .grpc_port
                 .clone()
