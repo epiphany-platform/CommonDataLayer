@@ -94,6 +94,7 @@ jobs:
           kubectl get pods
           [[ -z `kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}"` ]]
       - name: logging support for k8s
+        if: ${{ failure() }}
         run: |
           kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}" | xargs -n 1 -t  kubectl logs
           kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}" | xargs -n 1 -t  kubectl describe pod
