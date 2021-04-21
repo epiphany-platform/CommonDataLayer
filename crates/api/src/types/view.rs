@@ -49,8 +49,6 @@ pub struct NewView {
 /// An update to a view. Only the provided properties are updated.
 #[derive(Debug, InputObject)]
 pub struct ViewUpdate {
-    /// The ID of the view.
-    pub id: Uuid,
     /// The name of the view.
     pub name: Option<String>,
     /// The address of the materializer this view caches data in.
@@ -59,6 +57,30 @@ pub struct ViewUpdate {
     pub materializer_options: Option<Json<Value>>,
     /// The fields that this view maps with.
     pub fields: Option<Json<HashMap<String, String>>>,
+}
+
+impl ViewUpdate {
+    pub fn to_rpc(self, id: Uuid) -> FieldResult<rpc::schema_registry::ViewUpdate> {
+        let (update_fields, fields) = if let Some(fields) = self.fields {
+            (true, fields.0)
+        } else {
+            (false, HashMap::default())
+        };
+
+        Ok(rpc::schema_registry::ViewUpdate {
+            id: id.to_string(),
+            name: self.name.clone(),
+            materializer_address: self.materializer_address.clone(),
+            materializer_options: self
+                .materializer_options
+                .as_ref()
+                .map(serde_json::to_string)
+                .transpose()?
+                .unwrap_or_default(),
+            fields,
+            update_fields,
+        })
+    }
 }
 
 #[derive(Debug, SimpleObject)]

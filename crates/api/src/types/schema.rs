@@ -24,8 +24,9 @@ impl FullSchema {
         self.definitions
             .iter()
             .filter(|d| {
-                let version = Version::parse(&d.version);
-                version.map(|v| version_req.matches(&v)).unwrap_or(false)
+                Version::parse(&d.version)
+                    .map(|v| version_req.matches(&v))
+                    .unwrap_or(false)
             })
             .max_by_key(|d| &d.version)
     }
@@ -87,6 +88,20 @@ pub struct NewSchema {
     pub schema_type: SchemaType,
 }
 
+impl NewSchema {
+    pub fn to_rpc(self) -> FieldResult<rpc::schema_registry::NewSchema> {
+        Ok(rpc::schema_registry::NewSchema {
+            metadata: rpc::schema_registry::SchemaMetadata {
+                name: self.name,
+                schema_type: self.schema_type.into(),
+                insert_destination: self.insert_destination,
+                query_address: self.query_address,
+            },
+            definition: serde_json::to_vec(&self.definition)?,
+        })
+    }
+}
+
 /// Input object which creates new version of existing schema.
 #[derive(Debug, InputObject)]
 pub struct NewVersion {
@@ -111,4 +126,18 @@ pub struct UpdateSchema {
     /// Whether the schema stores documents or timeseries data.
     #[graphql(name = "type")]
     pub schema_type: Option<SchemaType>,
+}
+
+impl UpdateSchema {
+    pub fn to_rpc(self, id: Uuid) -> rpc::schema_registry::SchemaMetadataUpdate {
+        rpc::schema_registry::SchemaMetadataUpdate {
+            id: id.to_string(),
+            patch: rpc::schema_registry::SchemaMetadataPatch {
+                name: self.name,
+                insert_destination: self.insert_destination,
+                query_address: self.query_address,
+                schema_type: self.schema_type.map(Into::into),
+            },
+        }
+    }
 }

@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use async_graphql::{Context, FieldResult, Object};
 use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
@@ -20,20 +18,7 @@ impl MutationRoot {
     async fn add_schema(&self, context: &Context<'_>, new: NewSchema) -> FieldResult<FullSchema> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-        let new_id = conn
-            .add_schema(rpc::schema_registry::NewSchema {
-                metadata: rpc::schema_registry::SchemaMetadata {
-                    name: new.name,
-                    schema_type: new.schema_type.into(),
-                    insert_destination: new.insert_destination,
-                    query_address: new.query_address,
-                },
-                definition: serde_json::to_vec(&new.definition)?,
-            })
-            .await?
-            .into_inner()
-            .id;
-
+        let new_id = conn.add_schema(new.to_rpc()?).await?.into_inner().id;
         let schema = conn
             .get_full_schema(rpc::schema_registry::Id { id: new_id })
             .await?
@@ -75,17 +60,9 @@ impl MutationRoot {
     ) -> FieldResult<FullSchema> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-        conn.update_schema(rpc::schema_registry::SchemaMetadataUpdate {
-            id: id.to_string(),
-            patch: rpc::schema_registry::SchemaMetadataPatch {
-                name: update.name,
-                insert_destination: update.insert_destination,
-                query_address: update.query_address,
-                schema_type: update.schema_type.map(Into::into),
-            },
-        })
-        .await
-        .map_err(rpc::error::schema_registry_error)?;
+        conn.update_schema(update.to_rpc(id))
+            .await
+            .map_err(rpc::error::schema_registry_error)?;
         get_schema(&mut conn, id).await
     }
 
@@ -129,27 +106,9 @@ impl MutationRoot {
     ) -> FieldResult<View> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-        let (update_fields, fields) = if let Some(fields) = update.fields {
-            (true, fields.0)
-        } else {
-            (false, HashMap::default())
-        };
-
-        conn.update_view(rpc::schema_registry::ViewUpdate {
-            id: id.to_string(),
-            name: update.name.clone(),
-            materializer_address: update.materializer_address.clone(),
-            materializer_options: update
-                .materializer_options
-                .as_ref()
-                .map(serde_json::to_string)
-                .transpose()?
-                .unwrap_or_default(),
-            fields,
-            update_fields,
-        })
-        .await
-        .map_err(rpc::error::schema_registry_error)?;
+        conn.update_view(update.to_rpc(id)?)
+            .await
+            .map_err(rpc::error::schema_registry_error)?;
 
         get_view(&mut conn, id).await
     }
@@ -239,15 +198,7 @@ impl MutationRoot {
         conn.add_edges(rpc::edge_registry::ObjectRelations {
             relations: relations
                 .into_iter()
-                .map(|relation| rpc::edge_registry::Edge {
-                    relation_id: relation.relation_id.to_string(),
-                    parent_object_id: relation.parent_object_id.to_string(),
-                    child_object_ids: relation
-                        .child_object_ids
-                        .into_iter()
-                        .map(|id| id.to_string())
-                        .collect(),
-                })
+                .map(ObjectRelations::to_edge_rpc)
                 .collect(),
         })
         .await?;
