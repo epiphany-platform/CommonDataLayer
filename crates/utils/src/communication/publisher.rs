@@ -36,7 +36,6 @@ impl CommonPublisher {
             .set("message.timeout.ms", "5000")
             .set("acks", "all")
             .set("compression.type", "none")
-            .set("allow.auto.create.topics", "true")
             .set("max.in.flight.requests.per.connection", "1")
             .create()?;
         Ok(Self::Kafka {
