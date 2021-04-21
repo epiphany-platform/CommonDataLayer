@@ -89,7 +89,7 @@ pub struct NewSchema {
 }
 
 impl NewSchema {
-    pub fn to_rpc(self) -> FieldResult<rpc::schema_registry::NewSchema> {
+    pub fn into_rpc(self) -> FieldResult<rpc::schema_registry::NewSchema> {
         Ok(rpc::schema_registry::NewSchema {
             metadata: rpc::schema_registry::SchemaMetadata {
                 name: self.name,
@@ -129,7 +129,7 @@ pub struct UpdateSchema {
 }
 
 impl UpdateSchema {
-    pub fn to_rpc(self, id: Uuid) -> rpc::schema_registry::SchemaMetadataUpdate {
+    pub fn into_rpc(self, id: Uuid) -> rpc::schema_registry::SchemaMetadataUpdate {
         rpc::schema_registry::SchemaMetadataUpdate {
             id: id.to_string(),
             patch: rpc::schema_registry::SchemaMetadataPatch {

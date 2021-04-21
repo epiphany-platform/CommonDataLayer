@@ -18,7 +18,7 @@ impl MutationRoot {
     async fn add_schema(&self, context: &Context<'_>, new: NewSchema) -> FieldResult<FullSchema> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-        let new_id = conn.add_schema(new.to_rpc()?).await?.into_inner().id;
+        let new_id = conn.add_schema(new.into_rpc()?).await?.into_inner().id;
         let schema = conn
             .get_full_schema(rpc::schema_registry::Id { id: new_id })
             .await?
@@ -60,7 +60,7 @@ impl MutationRoot {
     ) -> FieldResult<FullSchema> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-        conn.update_schema(update.to_rpc(id))
+        conn.update_schema(update.into_rpc(id))
             .await
             .map_err(rpc::error::schema_registry_error)?;
         get_schema(&mut conn, id).await
@@ -106,7 +106,7 @@ impl MutationRoot {
     ) -> FieldResult<View> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
-        conn.update_view(update.to_rpc(id)?)
+        conn.update_view(update.into_rpc(id)?)
             .await
             .map_err(rpc::error::schema_registry_error)?;
 
@@ -198,7 +198,7 @@ impl MutationRoot {
         conn.add_edges(rpc::edge_registry::ObjectRelations {
             relations: relations
                 .into_iter()
-                .map(ObjectRelations::to_edge_rpc)
+                .map(ObjectRelations::into_edge_rpc)
                 .collect(),
         })
         .await?;

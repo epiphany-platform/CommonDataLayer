@@ -43,7 +43,7 @@ pub struct ObjectRelations {
 }
 
 impl ObjectRelations {
-    pub fn to_edge_rpc(self) -> rpc::edge_registry::Edge {
+    pub fn into_edge_rpc(self) -> rpc::edge_registry::Edge {
         rpc::edge_registry::Edge {
             relation_id: self.relation_id.to_string(),
             parent_object_id: self.parent_object_id.to_string(),

@@ -60,7 +60,7 @@ pub struct ViewUpdate {
 }
 
 impl ViewUpdate {
-    pub fn to_rpc(self, id: Uuid) -> FieldResult<rpc::schema_registry::ViewUpdate> {
+    pub fn into_rpc(self, id: Uuid) -> FieldResult<rpc::schema_registry::ViewUpdate> {
         let (update_fields, fields) = if let Some(fields) = self.fields {
             (true, fields.0)
         } else {
