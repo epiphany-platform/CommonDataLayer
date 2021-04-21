@@ -17,7 +17,6 @@ env:
   CARGO_NET_RETRY: 10
   RUST_BACKTRACE: short
   RUSTUP_MAX_RETRIES: 10
-  SQLX_OFFLINE: true
 
 jobs:
   unit-test:
