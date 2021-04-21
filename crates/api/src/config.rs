@@ -1,6 +1,5 @@
 use anyhow::Context;
-use clap::{ArgEnum, Clap};
-use std::str::FromStr;
+use clap::Clap;
 
 #[derive(Clap)]
 pub struct Config {
@@ -34,7 +33,7 @@ pub struct Config {
 #[derive(Clap)]
 pub struct CommunicationMethodArgs {
     /// The method of communication with external services
-    #[clap(long, env, possible_values = CommunicationMethod::VARIANTS)]
+    #[clap(long, env, arg_enum)]
     communication_method: CommunicationMethod,
     /// Address to Kafka brokers
     #[clap(long, env)]
@@ -80,20 +79,12 @@ impl CommunicationMethodArgs {
     }
 }
 
-#[derive(Clone, Debug, ArgEnum)]
+#[derive(Clap, Clone, Debug)]
 enum CommunicationMethod {
     Amqp,
     Kafka,
-    #[clap(name = "grpc")]
+    #[clap(alias = "grpc")]
     GRpc,
-}
-
-impl FromStr for CommunicationMethod {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        ArgEnum::from_str(s, true)
-    }
 }
 
 #[derive(Clone, Debug)]

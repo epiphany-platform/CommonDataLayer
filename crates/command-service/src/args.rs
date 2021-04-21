@@ -1,8 +1,7 @@
 use crate::communication::config::CommunicationConfig;
 use crate::output::OutputArgs;
 use crate::report::ReportServiceConfig;
-use clap::{ArgEnum, Clap};
-use std::str::FromStr;
+use clap::Clap;
 use thiserror::Error;
 use url::Url;
 use utils::metrics;
@@ -22,26 +21,18 @@ pub struct Args {
     #[clap(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
 }
-#[derive(Clone, Debug, ArgEnum)]
+#[derive(Clap, Clone, Debug)]
 pub enum CommunicationMethod {
     Amqp,
     Kafka,
-    #[clap(name = "grpc")]
+    #[clap(alias = "grpc")]
     GRpc,
-}
-
-impl FromStr for CommunicationMethod {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        ArgEnum::from_str(s, true)
-    }
 }
 
 #[derive(Clone, Debug, Clap)]
 pub struct CommunicationArgs {
     /// The method of communication with external services
-    #[clap(long, env = "COMMUNICATION_METHOD", possible_values = CommunicationMethod::VARIANTS)]
+    #[clap(long, env = "COMMUNICATION_METHOD", arg_enum)]
     pub communication_method: CommunicationMethod,
 
     /// Address of Kafka brokers

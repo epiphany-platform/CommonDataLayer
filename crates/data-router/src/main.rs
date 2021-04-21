@@ -1,11 +1,10 @@
 use anyhow::Context;
 use async_trait::async_trait;
-use clap::{ArgEnum, Clap};
+use clap::Clap;
 use lru_cache::LruCache;
 use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::str::FromStr;
 use std::{
     net::{Ipv4Addr, SocketAddrV4},
     process,
@@ -30,26 +29,18 @@ use utils::{
 use utils::{current_timestamp, message_types::DataRouterInsertMessage};
 use uuid::Uuid;
 
-#[derive(Deserialize, Debug, Serialize, ArgEnum)]
+#[derive(Clap, Deserialize, Debug, Serialize)]
 enum CommunicationMethod {
     Kafka,
     Amqp,
-    #[clap(name = "grpc")]
+    #[clap(alias = "grpc")]
     GRpc,
-}
-
-impl FromStr for CommunicationMethod {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        ArgEnum::from_str(s, true)
-    }
 }
 
 #[derive(Clap, Deserialize, Debug, Serialize)]
 struct Config {
     /// The method of communication with external services
-    #[clap(long, env, possible_values = CommunicationMethod::VARIANTS)]
+    #[clap(long, env, arg_enum)]
     pub communication_method: CommunicationMethod,
     /// Address of Kafka brokers
     #[clap(long, env)]

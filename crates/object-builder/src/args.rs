@@ -1,26 +1,17 @@
-use clap::{ArgEnum, Clap};
-use std::str::FromStr;
+use clap::Clap;
 use thiserror::Error;
 use utils::communication::consumer::CommonConsumerConfig;
 
-#[derive(Clone, Debug, Copy, ArgEnum)]
+#[derive(Clap, Clone, Debug, Copy)]
 pub enum MessageQueue {
     Amqp,
     Kafka,
 }
 
-impl FromStr for MessageQueue {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        ArgEnum::from_str(s, true)
-    }
-}
-
 #[derive(Clap, Debug)]
 pub struct Args {
     /// The method of ingestion of messages via Message Queue
-    #[clap(long, env, possible_values = MessageQueue::VARIANTS)]
+    #[clap(long, env, arg_enum)]
     pub mq_method: Option<MessageQueue>,
     /// Address of Kafka brokers
     #[clap(long, env)]

@@ -5,10 +5,9 @@ use crate::{
     types::{NewSchema, NewSchemaVersion},
     AmqpConfig, KafkaConfig,
 };
-use clap::ArgEnum;
+use clap::Clap;
 use rpc::schema_registry::types::SchemaType;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use std::{
     sync::{mpsc, Arc},
     thread,
@@ -48,20 +47,12 @@ pub enum ReplicationEvent {
     },
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, ArgEnum)]
+#[derive(Clap, Clone, Debug, Deserialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum ReplicationRole {
     Master,
     Slave,
     None,
-}
-
-impl FromStr for ReplicationRole {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        ArgEnum::from_str(s, true)
-    }
 }
 
 pub struct ReplicationState {

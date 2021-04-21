@@ -1,6 +1,6 @@
 use anyhow::Context;
 use chrono::{DateTime, Utc};
-use clap::{ArgEnum, Clap};
+use clap::Clap;
 use indradb::SledDatastore;
 use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
 use schema_registry::{
@@ -14,24 +14,15 @@ use std::fs::File;
 use std::io::Write;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
-use std::str::FromStr;
 use tonic::transport::Server;
 use utils::{metrics, status_endpoints};
 
-#[derive(Clone, Debug, ArgEnum)]
+#[derive(Clap, Clone, Debug)]
 pub enum CommunicationMethodType {
     Amqp,
     Kafka,
-    #[clap(name = "grpc")]
+    #[clap(alias = "grpc")]
     GRpc,
-}
-
-impl FromStr for CommunicationMethodType {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        ArgEnum::from_str(s, true)
-    }
 }
 
 #[derive(Clap)]
@@ -43,11 +34,11 @@ struct Config {
     #[clap(long, env)]
     pub db_name: String,
     /// (deprecated)
-    #[clap(long, env = "REPLICATION_ROLE", possible_values = ReplicationRole::VARIANTS)]
+    #[clap(long, env = "REPLICATION_ROLE", arg_enum)]
     pub replication_role: ReplicationRole,
 
     /// The method of communication with external services.
-    #[clap(long, env = "COMMUNICATION_METHOD", possible_values = CommunicationMethodType::VARIANTS)]
+    #[clap(long, env = "COMMUNICATION_METHOD", arg_enum)]
     pub communication_method: CommunicationMethodType,
     /// Address of Kafka brokers
     #[clap(long, env)]

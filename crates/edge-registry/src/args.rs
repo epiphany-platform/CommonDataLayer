@@ -1,5 +1,4 @@
-use clap::{ArgEnum, Clap};
-use std::str::FromStr;
+use clap::Clap;
 use utils::communication::consumer::CommonConsumerConfig;
 use utils::metrics;
 
@@ -30,23 +29,15 @@ pub struct RegistryConfig {
     pub consumer_config: ConsumerConfig,
 }
 
-#[derive(Clone, Debug, ArgEnum)]
+#[derive(Clap, Clone, Debug)]
 pub enum ConsumerMethod {
     Kafka,
     Amqp,
 }
 
-impl FromStr for ConsumerMethod {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        ArgEnum::from_str(s, true)
-    }
-}
-
 #[derive(Clone, Debug, Clap)]
 pub struct ConsumerConfig {
-    #[clap(long, env, case_insensitive = true)]
+    #[clap(long, env, arg_enum)]
     /// Method of ingestion of messages via Message Queue
     pub consumer_method: ConsumerMethod,
     #[clap(long, env)]
