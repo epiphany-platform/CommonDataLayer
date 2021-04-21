@@ -11,7 +11,7 @@ pub enum MessageQueue {
 #[derive(Clap, Debug)]
 pub struct Args {
     /// The method of ingestion of messages via Message Queue
-    #[clap(long, env, arg_enum)]
+    #[clap(long, env, arg_enum, case_insensitive = true)]
     pub mq_method: Option<MessageQueue>,
     /// Address of Kafka brokers
     #[clap(long, env)]

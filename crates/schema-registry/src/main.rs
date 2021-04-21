@@ -34,11 +34,11 @@ struct Config {
     #[clap(long, env)]
     pub db_name: String,
     /// (deprecated)
-    #[clap(long, env = "REPLICATION_ROLE", arg_enum)]
+    #[clap(long, env = "REPLICATION_ROLE", arg_enum, case_insensitive = true)]
     pub replication_role: ReplicationRole,
 
     /// The method of communication with external services.
-    #[clap(long, env = "COMMUNICATION_METHOD", arg_enum)]
+    #[clap(long, env = "COMMUNICATION_METHOD", arg_enum, case_insensitive = true)]
     pub communication_method: CommunicationMethodType,
     /// Address of Kafka brokers
     #[clap(long, env)]

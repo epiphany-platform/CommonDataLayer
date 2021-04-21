@@ -33,7 +33,7 @@ pub struct Config {
 #[derive(Clap)]
 pub struct CommunicationMethodArgs {
     /// The method of communication with external services
-    #[clap(long, env, arg_enum)]
+    #[clap(long, env, arg_enum, case_insensitive = true)]
     communication_method: CommunicationMethod,
     /// Address to Kafka brokers
     #[clap(long, env)]

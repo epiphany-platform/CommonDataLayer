@@ -37,7 +37,7 @@ pub enum ConsumerMethod {
 
 #[derive(Clone, Debug, Clap)]
 pub struct ConsumerConfig {
-    #[clap(long, env, arg_enum)]
+    #[clap(long, env, arg_enum, case_insensitive = true)]
     /// Method of ingestion of messages via Message Queue
     pub consumer_method: ConsumerMethod,
     #[clap(long, env)]

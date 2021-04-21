@@ -40,7 +40,7 @@ enum CommunicationMethod {
 #[derive(Clap, Deserialize, Debug, Serialize)]
 struct Config {
     /// The method of communication with external services
-    #[clap(long, env, arg_enum)]
+    #[clap(long, env, arg_enum, case_insensitive = true)]
     pub communication_method: CommunicationMethod,
     /// Address of Kafka brokers
     #[clap(long, env)]
