@@ -14,6 +14,7 @@ pub mod metrics;
 pub mod parallel_task_queue;
 pub mod psql;
 pub mod query_utils;
+pub mod report;
 pub mod status_endpoints;
 pub mod task_limiter;
 pub mod tracing;

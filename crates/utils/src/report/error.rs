@@ -1,5 +1,5 @@
+use crate::communication::Error as MSError;
 use thiserror::Error as DeriveError;
-use utils::communication::Error as MSError;
 
 #[derive(Debug, DeriveError)]
 pub enum Error {

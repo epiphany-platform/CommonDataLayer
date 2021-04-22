@@ -1,20 +1,18 @@
-use crate::{
-    communication::config::CommunicationConfig,
-    report::{Error, Reporter},
-};
+use crate::communication::publisher::CommonPublisher;
+use crate::message_types::OwnedInsertMessage;
+use crate::report::error::Error;
+use crate::report::Reporter;
 use serde::Serialize;
 use serde_json::Value;
 use std::sync::Arc;
 use tracing::{debug, trace};
-use utils::communication::publisher::CommonPublisher;
-use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
 
 const APPLICATION_NAME: &str = "Command Service";
 
 #[derive(Clone)]
 pub struct FullReportSenderBase {
-    pub producer: CommonPublisher,
+    pub publisher: CommonPublisher,
     pub destination: Arc<String>,
     pub output_plugin: Arc<String>,
 }
@@ -38,28 +36,17 @@ struct ReportBody<'a> {
 
 impl FullReportSenderBase {
     pub async fn new(
-        communication_config: &CommunicationConfig,
+        publisher: CommonPublisher,
         destination: String,
         output_plugin: String,
     ) -> Result<Self, Error> {
-        let publisher = match communication_config {
-            CommunicationConfig::Kafka { brokers, .. } => CommonPublisher::new_kafka(brokers).await,
-            CommunicationConfig::Amqp {
-                connection_string, ..
-            } => CommonPublisher::new_amqp(connection_string).await,
-            CommunicationConfig::Grpc {
-                report_endpoint_url,
-                ..
-            } => CommonPublisher::new_rest(report_endpoint_url.clone()).await,
-        };
-
         debug!(
             "Initialized report service with notification sink at `{}`",
             destination
         );
 
         Ok(Self {
-            producer: publisher.map_err(Error::ProducerCreation)?,
+            publisher,
             destination: Arc::new(destination),
             output_plugin: Arc::new(output_plugin),
         })

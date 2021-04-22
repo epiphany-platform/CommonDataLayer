@@ -3726,6 +3726,7 @@ dependencies = [
  "anyhow",
  "async-stream",
  "async-trait",
+ "clap 3.0.0-beta.2",
  "futures-util",
  "hyper",
  "lapin",

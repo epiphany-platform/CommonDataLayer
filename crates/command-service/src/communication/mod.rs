@@ -1,10 +1,11 @@
 use crate::communication::resolution::Resolution;
 use crate::output::OutputPlugin;
-use crate::report::{Error, ReportSender};
 use std::sync::Arc;
 use tracing::trace;
 use utils::message_types::BorrowedInsertMessage;
 use utils::metrics::*;
+use utils::report::error::Error;
+use utils::report::ReportSender;
 
 pub mod config;
 pub mod resolution;

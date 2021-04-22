@@ -1,10 +1,10 @@
 use crate::communication::config::CommunicationConfig;
 use crate::output::OutputArgs;
-use crate::report::ReportServiceConfig;
 use clap::Clap;
 use thiserror::Error;
 use url::Url;
 use utils::metrics;
+use utils::report::ReportServiceConfig;
 
 #[derive(Clone, Debug, Clap)]
 pub struct Args {

@@ -4,10 +4,11 @@ use command_service::input::{Error, Service};
 use command_service::output::{
     DruidOutputPlugin, OutputArgs, OutputPlugin, PostgresOutputPlugin, VictoriaMetricsOutputPlugin,
 };
-use command_service::report::{FullReportSenderBase, ReportSender, ReportServiceConfig};
 use command_service::{args::Args, communication::config::CommunicationConfig};
 use tracing::debug;
+use utils::communication::publisher::CommonPublisher;
 use utils::metrics;
+use utils::report::{FullReportSenderBase, ReportSender, ReportServiceConfig};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -58,15 +59,30 @@ async fn start_services(
     output: impl OutputPlugin,
 ) -> Result<(), Error> {
     let report_service = match report_config.destination {
-        Some(destination) => ReportSender::Full(
-            FullReportSenderBase::new(
-                &communication_config,
-                destination,
-                output.name().to_string(),
+        Some(destination) => {
+            let publisher = match &communication_config {
+                CommunicationConfig::Kafka { brokers, .. } => CommonPublisher::new_kafka(&brokers)
+                    .await
+                    .map_err(Error::ConsumerCreationFailed)?,
+                CommunicationConfig::Amqp {
+                    connection_string, ..
+                } => CommonPublisher::new_amqp(&connection_string)
+                    .await
+                    .map_err(Error::ConsumerCreationFailed)?,
+                CommunicationConfig::Grpc {
+                    report_endpoint_url,
+                    ..
+                } => CommonPublisher::new_rest(report_endpoint_url.clone())
+                    .await
+                    .map_err(Error::ConsumerCreationFailed)?,
+            };
+
+            ReportSender::Full(
+                FullReportSenderBase::new(publisher, destination, output.name().to_string())
+                    .await
+                    .map_err(Error::FailedToInitializeReporting)?,
             )
-            .await
-            .map_err(Error::FailedToInitializeReporting)?,
-        ),
+        }
         None => ReportSender::Disabled,
     };
 

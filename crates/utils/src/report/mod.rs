@@ -1,10 +1,10 @@
+use crate::message_types::BorrowedInsertMessage;
+use crate::report::error::Error;
 pub use config::ReportServiceConfig;
-pub use error::Error;
 pub use full_report_sender::{FullReportSender, FullReportSenderBase};
-use utils::message_types::BorrowedInsertMessage;
 
 mod config;
-mod error;
+pub mod error;
 mod full_report_sender;
 
 #[derive(Clone)]
@@ -29,7 +29,7 @@ impl ReportSender {
     pub fn with_message_body(self, msg: &BorrowedInsertMessage) -> Box<dyn Reporter> {
         match self {
             ReportSender::Full(config) => Box::new(FullReportSender {
-                producer: config.producer,
+                producer: config.publisher,
                 destination: config.destination,
                 output_plugin: config.output_plugin,
                 msg: msg.to_owned(),
