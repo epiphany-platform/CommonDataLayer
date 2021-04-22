@@ -30,8 +30,8 @@ spec:
           value: "http://{{ .Release.Name }}-query-router:6401"
         - name: EDGE_REGISTRY_ADDR
           value: "http://{{ .Release.Name }}-edge-registry:{{ .Values.edgeRegistry.rpcPort }}"
-        - name: OBJECT_BUILDER_ADDR
-          value: "http://{{ .Release.Name }}-object-builder:{{ .Values.objectBuilder.rpcPort }}"
+        - name: ON_DEMAND_MATERIALIZER_ADDR
+          value: "http://{{ .Release.Name }}-materializer-ondemand:{{ .Values.materializerOnDemand.inputPort }}"
         - name: INPUT_PORT
           value: "6402"
         - name: REPORT_SOURCE

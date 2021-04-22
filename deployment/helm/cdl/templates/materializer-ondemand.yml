@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-materializer-ondemand
+  labels:
+    app: {{ .Release.Name }}-materializer-ondemand
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}-materializer-ondemand
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}-materializer-ondemand
+      annotations:
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '51805'
+        prometheus.io/path: '/metrics'
+    spec:
+      containers:
+        - name: cdl-materializer-ondemand
+          image: "{{ .Values.global.imageRepositoryPath }}cdl-materializer-ondemand:{{ .Values.global.imageVersion }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command: ["/bin/materializer-ondemand"]
+          env:
+            - name: INPUT_PORT
+              value: "{{ .Values.materializerOnDemand.inputPort }}"
+            - name: OBJECT_BUILDER_ADDR
+              value: "http://{{ .Release.Name }}-object-builder:{{ .Values.objectBuilder.inputPort }}"
+            - name: RUST_LOG
+              value: "info,materializer_ondemand=debug"
+          ports:
+            - containerPort: 51805
+      imagePullSecrets:
+        - name: {{ .Values.global.cdlImagePullSecrets }}

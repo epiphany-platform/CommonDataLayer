@@ -44,6 +44,9 @@ edgeRegistry:
 objectBuilder:
   inputPort: 50111
 
+materializerOnDemand:
+  inputPort: 50112
+
 webAdmin:
   port: 30151
 
