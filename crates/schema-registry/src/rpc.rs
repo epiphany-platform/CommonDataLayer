@@ -489,6 +489,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
+        //TODO: Request materializer validation for the options
         let fields = if request.update_fields {
             Some(Json(
                 request
