@@ -1,23 +1,19 @@
-use std::{collections::HashMap, convert::TryInto};
-
 use anyhow::Context;
 use async_trait::async_trait;
 use bb8::{Pool, PooledConnection};
-use serde::Serialize;
-use serde_json::Value;
-use tonic::transport::Channel;
-use uuid::Uuid;
-
 use crate::args::Args;
-use rpc::common::MaterializedView;
+use futures::Stream;
 use rpc::common::RowDefinition as RpcRowDefinition;
+use rpc::materializer_general::{MaterializedView, Options};
 use rpc::object_builder::{object_builder_server::ObjectBuilder, Empty, View};
 use rpc::schema_registry::{schema_registry_client::SchemaRegistryClient, types::SchemaType};
+use serde::Serialize;
+use serde_json::Value;
+use std::{collections::HashMap, convert::TryInto, pin::Pin};
+use tonic::transport::Channel;
 use utils::communication::{consumer::ConsumerHandler, message::CommunicationMessage};
-use utils::{
-    metrics::{self, counter},
-    types::materialization,
-};
+use utils::{metrics::{self, counter}, types::materialization,};
+use uuid::Uuid;
 
 pub mod args;
 
@@ -86,6 +82,22 @@ impl ObjectBuilderImpl {
     }
 }
 
+impl TryInto<RpcRowDefinition> for RowDefinition {
+    type Error = serde_json::Error;
+
+    fn try_into(self) -> Result<RpcRowDefinition, Self::Error> {
+        let fields = self
+            .fields
+            .into_iter()
+            .map(|(key, value)| Ok((key, serde_json::to_string(&value)?)))
+            .collect::<serde_json::Result<_>>()?;
+        Ok(RpcRowDefinition {
+            object_id: self.object_id.to_string(),
+            fields,
+        })
+    }
+}
+
 impl TryInto<MaterializedView> for Output {
     type Error = serde_json::Error;
 
@@ -93,62 +105,16 @@ impl TryInto<MaterializedView> for Output {
         let rows = self
             .rows
             .into_iter()
-            .map(|row| {
-                let fields = row
-                    .fields
-                    .into_iter()
-                    .map(|(key, value)| Ok((key, serde_json::to_string(&value)?)))
-                    .collect::<serde_json::Result<_>>()?;
-                Ok(RpcRowDefinition {
-                    object_id: row.object_id.to_string(),
-                    fields,
-                })
-            })
+            .map(|row| row.try_into())
             .collect::<serde_json::Result<_>>()?;
 
         Ok(MaterializedView {
             view_id: self.view_id.to_string(),
-            options: serde_json::to_string(&self.options)?,
+            options: Options {
+                options: serde_json::to_string(&self.options)?,
+            },
             rows,
         })
-    }
-}
-
-#[tonic::async_trait]
-impl ObjectBuilder for ObjectBuilderImpl {
-    #[tracing::instrument(skip(self))]
-    async fn materialize(
-        &self,
-        request: tonic::Request<View>,
-    ) -> Result<tonic::Response<MaterializedView>, tonic::Status> {
-        utils::tracing::grpc::set_parent_span(&request);
-
-        let view: View = request.into_inner();
-
-        let request: materialization::Request = view
-            .try_into()
-            .map_err(|_| tonic::Status::invalid_argument("view"))?;
-
-        let output = self
-            .build_output(request)
-            .await
-            .map_err(|err| tonic::Status::internal(format!("{}", err)))?;
-
-        let rpc_output = output.try_into().map_err(|err| {
-            tracing::error!("Could not serialize materialized view: {:?}", err);
-            tonic::Status::internal("Could not serialize materialized view")
-        })?;
-
-        Ok(tonic::Response::new(rpc_output))
-    }
-
-    #[tracing::instrument(skip(self))]
-    async fn heartbeat(
-        &self,
-        _request: tonic::Request<Empty>,
-    ) -> Result<tonic::Response<Empty>, tonic::Status> {
-        //empty
-        Ok(tonic::Response::new(Empty {}))
     }
 }
 
@@ -169,7 +135,7 @@ impl ConsumerHandler for ObjectBuilderImpl {
 
         let rpc_output: MaterializedView = output.try_into()?;
 
-        rpc::materializer::connect(view.materializer_address)
+        rpc::materializer_general::connect(view.materializer_addr)
             .await?
             .upsert_view(utils::tracing::grpc::inject_span(rpc_output))
             .await?;
@@ -178,7 +144,61 @@ impl ConsumerHandler for ObjectBuilderImpl {
     }
 }
 
+#[tonic::async_trait]
+impl ObjectBuilder for ObjectBuilderImpl {
+    type MaterializeStream = Pin<
+        Box<dyn Stream<Item = Result<RpcRowDefinition, tonic::Status>> + Send + Sync + 'static>,
+    >;
+
+    #[tracing::instrument(skip(self))]
+    async fn materialize(
+        &self,
+        request: tonic::Request<View>,
+    ) -> Result<tonic::Response<Self::MaterializeStream>, tonic::Status> {
+        utils::tracing::grpc::set_parent_span(&request);
+
+        let view: View = request.into_inner();
+
+        let request: materialization::Request = view
+            .try_into()
+            .map_err(|_| tonic::Status::invalid_argument("view"))?;
+
+        let output = self
+            .build_output(request) // TODO use another method because we dont need MaterializerOptions here.
+            .await
+            .map_err(|err| tonic::Status::internal(format!("{}", err)))?;
+
+        let iter = output.rows.into_iter().map(|row| {
+            row.try_into().map_err(|err| {
+                tracing::error!("Could not serialize materialized row: {:?}", err);
+                tonic::Status::internal("Could not serialize materialized row")
+            })
+        });
+
+        // TODO: This is just an example how could we leverage streaming API.
+        // In theory we could go further and make our `rpc::query_service::query_multiple` an streaming method.
+        // Then you could start processing views without collecting all objects.
+        //
+        // Of course its not a trivial task, especially when there are joins. The solution would have to handle waiting
+        // for the all connected objects before sending the row.
+        // Still an iterator could be a little bit benefitial.
+        let stream = Box::pin(futures::stream::iter(iter));
+
+        Ok(tonic::Response::new(stream))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn heartbeat(
+        &self,
+        _request: tonic::Request<Empty>,
+    ) -> Result<tonic::Response<Empty>, tonic::Status> {
+        //empty
+        Ok(tonic::Response::new(Empty {}))
+    }
+}
+
 impl ObjectBuilderImpl {
+    //TODO: We should no longer use one method to handle both RPC request and message queues, because the responsibilites splitted.
     #[tracing::instrument(skip(self))]
     async fn build_output(&self, request: materialization::Request) -> anyhow::Result<Output> {
         tracing::debug!(?request, "Handling");

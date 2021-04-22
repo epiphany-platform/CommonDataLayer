@@ -1,12 +1,6 @@
 syntax = "proto2";
 package common;
 
-message MaterializedView {
-  required string view_id = 1;
-  required string options = 2;
-  repeated RowDefinition rows = 3;
-}
-
 message RowDefinition {
   required string object_id = 1;
   map<string, string> fields = 2;

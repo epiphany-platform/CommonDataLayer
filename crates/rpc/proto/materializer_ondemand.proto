@@ -1,13 +1,13 @@
 syntax = "proto2";
-package object_builder;
+package materializer_ondemand;
 import "common.proto";
 
-service ObjectBuilder {
-  rpc Materialize(View) returns (stream common.RowDefinition);
+service OnDemandMaterializer {
+  rpc Materialize(OnDemandRequest) returns (stream common.RowDefinition);
   rpc Heartbeat (Empty) returns (Empty);
 }
 
-message View {
+message OnDemandRequest {
   required string view_id = 1;
   map<string, Schema> schemas = 2;
 }

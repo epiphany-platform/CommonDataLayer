@@ -1,4 +1,13 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MaterializedView {
+    #[prost(string, required, tag = "1")]
+    pub view_id: ::prost::alloc::string::String,
+    #[prost(message, required, tag = "2")]
+    pub options: Options,
+    #[prost(message, repeated, tag = "3")]
+    pub rows: ::prost::alloc::vec::Vec<super::common::RowDefinition>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Options {
     #[prost(string, required, tag = "1")]
     pub options: ::prost::alloc::string::String,
@@ -6,13 +15,13 @@ pub struct Options {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Empty {}
 #[doc = r" Generated client implementations."]
-pub mod materializer_client {
+pub mod general_materializer_client {
     #![allow(unused_variables, dead_code, missing_docs)]
     use tonic::codegen::*;
-    pub struct MaterializerClient<T> {
+    pub struct GeneralMaterializerClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl MaterializerClient<tonic::transport::Channel> {
+    impl GeneralMaterializerClient<tonic::transport::Channel> {
         #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -23,7 +32,7 @@ pub mod materializer_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> MaterializerClient<T>
+    impl<T> GeneralMaterializerClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::ResponseBody: Body + HttpBody + Send + 'static,
@@ -49,13 +58,14 @@ pub mod materializer_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/materializer.Materializer/ValidateOptions");
+            let path = http::uri::PathAndQuery::from_static(
+                "/materializer_general.GeneralMaterializer/ValidateOptions",
+            );
             self.inner.unary(request.into_request(), path, codec).await
         }
         pub async fn upsert_view(
             &mut self,
-            request: impl tonic::IntoRequest<super::super::common::MaterializedView>,
+            request: impl tonic::IntoRequest<super::MaterializedView>,
         ) -> Result<tonic::Response<super::Empty>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -64,46 +74,47 @@ pub mod materializer_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/materializer.Materializer/UpsertView");
+            let path = http::uri::PathAndQuery::from_static(
+                "/materializer_general.GeneralMaterializer/UpsertView",
+            );
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
-    impl<T: Clone> Clone for MaterializerClient<T> {
+    impl<T: Clone> Clone for GeneralMaterializerClient<T> {
         fn clone(&self) -> Self {
             Self {
                 inner: self.inner.clone(),
             }
         }
     }
-    impl<T> std::fmt::Debug for MaterializerClient<T> {
+    impl<T> std::fmt::Debug for GeneralMaterializerClient<T> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "MaterializerClient {{ ... }}")
+            write!(f, "GeneralMaterializerClient {{ ... }}")
         }
     }
 }
 #[doc = r" Generated server implementations."]
-pub mod materializer_server {
+pub mod general_materializer_server {
     #![allow(unused_variables, dead_code, missing_docs)]
     use tonic::codegen::*;
-    #[doc = "Generated trait containing gRPC methods that should be implemented for use with MaterializerServer."]
+    #[doc = "Generated trait containing gRPC methods that should be implemented for use with GeneralMaterializerServer."]
     #[async_trait]
-    pub trait Materializer: Send + Sync + 'static {
+    pub trait GeneralMaterializer: Send + Sync + 'static {
         async fn validate_options(
             &self,
             request: tonic::Request<super::Options>,
         ) -> Result<tonic::Response<super::Empty>, tonic::Status>;
         async fn upsert_view(
             &self,
-            request: tonic::Request<super::super::common::MaterializedView>,
+            request: tonic::Request<super::MaterializedView>,
         ) -> Result<tonic::Response<super::Empty>, tonic::Status>;
     }
     #[derive(Debug)]
-    pub struct MaterializerServer<T: Materializer> {
+    pub struct GeneralMaterializerServer<T: GeneralMaterializer> {
         inner: _Inner<T>,
     }
     struct _Inner<T>(Arc<T>, Option<tonic::Interceptor>);
-    impl<T: Materializer> MaterializerServer<T> {
+    impl<T: GeneralMaterializer> GeneralMaterializerServer<T> {
         pub fn new(inner: T) -> Self {
             let inner = Arc::new(inner);
             let inner = _Inner(inner, None);
@@ -115,9 +126,9 @@ pub mod materializer_server {
             Self { inner }
         }
     }
-    impl<T, B> Service<http::Request<B>> for MaterializerServer<T>
+    impl<T, B> Service<http::Request<B>> for GeneralMaterializerServer<T>
     where
-        T: Materializer,
+        T: GeneralMaterializer,
         B: HttpBody + Send + Sync + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -130,10 +141,10 @@ pub mod materializer_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/materializer.Materializer/ValidateOptions" => {
+                "/materializer_general.GeneralMaterializer/ValidateOptions" => {
                     #[allow(non_camel_case_types)]
-                    struct ValidateOptionsSvc<T: Materializer>(pub Arc<T>);
-                    impl<T: Materializer> tonic::server::UnaryService<super::Options> for ValidateOptionsSvc<T> {
+                    struct ValidateOptionsSvc<T: GeneralMaterializer>(pub Arc<T>);
+                    impl<T: GeneralMaterializer> tonic::server::UnaryService<super::Options> for ValidateOptionsSvc<T> {
                         type Response = super::Empty;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
@@ -161,18 +172,17 @@ pub mod materializer_server {
                     };
                     Box::pin(fut)
                 }
-                "/materializer.Materializer/UpsertView" => {
+                "/materializer_general.GeneralMaterializer/UpsertView" => {
                     #[allow(non_camel_case_types)]
-                    struct UpsertViewSvc<T: Materializer>(pub Arc<T>);
-                    impl<T: Materializer>
-                        tonic::server::UnaryService<super::super::common::MaterializedView>
-                        for UpsertViewSvc<T>
+                    struct UpsertViewSvc<T: GeneralMaterializer>(pub Arc<T>);
+                    impl<T: GeneralMaterializer>
+                        tonic::server::UnaryService<super::MaterializedView> for UpsertViewSvc<T>
                     {
                         type Response = super::Empty;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::super::common::MaterializedView>,
+                            request: tonic::Request<super::MaterializedView>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move { (*inner).upsert_view(request).await };
@@ -206,13 +216,13 @@ pub mod materializer_server {
             }
         }
     }
-    impl<T: Materializer> Clone for MaterializerServer<T> {
+    impl<T: GeneralMaterializer> Clone for GeneralMaterializerServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self { inner }
         }
     }
-    impl<T: Materializer> Clone for _Inner<T> {
+    impl<T: GeneralMaterializer> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(self.0.clone(), self.1.clone())
         }
@@ -222,7 +232,7 @@ pub mod materializer_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: Materializer> tonic::transport::NamedService for MaterializerServer<T> {
-        const NAME: &'static str = "materializer.Materializer";
+    impl<T: GeneralMaterializer> tonic::transport::NamedService for GeneralMaterializerServer<T> {
+        const NAME: &'static str = "materializer_general.GeneralMaterializer";
     }
 }

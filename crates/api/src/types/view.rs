@@ -87,8 +87,6 @@ impl ViewUpdate {
 pub struct MaterializedView {
     /// Source view's UUID
     pub id: Uuid,
-    /// Materializer-specific options, available only for debugging purposes.
-    pub materializer_options: Json<Value>,
     /// Materialized objects
     pub rows: Vec<RowDefinition>,
 }
@@ -117,7 +115,7 @@ pub struct Schema {
     pub object_ids: Vec<Uuid>,
 }
 
-impl From<OnDemandViewRequest> for rpc::object_builder::View {
+impl From<OnDemandViewRequest> for rpc::materializer_ondemand::OnDemandRequest {
     fn from(val: OnDemandViewRequest) -> Self {
         let schemas = val
             .schemas
@@ -125,7 +123,7 @@ impl From<OnDemandViewRequest> for rpc::object_builder::View {
             .map(|schema| {
                 (
                     schema.id.to_string(),
-                    rpc::object_builder::Schema {
+                    rpc::materializer_ondemand::Schema {
                         object_ids: schema
                             .object_ids
                             .into_iter()

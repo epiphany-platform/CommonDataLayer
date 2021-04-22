@@ -1,5 +1,5 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct View {
+pub struct OnDemandRequest {
     #[prost(string, required, tag = "1")]
     pub view_id: ::prost::alloc::string::String,
     #[prost(map = "string, message", tag = "2")]
@@ -13,13 +13,13 @@ pub struct Schema {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Empty {}
 #[doc = r" Generated client implementations."]
-pub mod object_builder_client {
+pub mod on_demand_materializer_client {
     #![allow(unused_variables, dead_code, missing_docs)]
     use tonic::codegen::*;
-    pub struct ObjectBuilderClient<T> {
+    pub struct OnDemandMaterializerClient<T> {
         inner: tonic::client::Grpc<T>,
     }
-    impl ObjectBuilderClient<tonic::transport::Channel> {
+    impl OnDemandMaterializerClient<tonic::transport::Channel> {
         #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
         pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
         where
@@ -30,7 +30,7 @@ pub mod object_builder_client {
             Ok(Self::new(conn))
         }
     }
-    impl<T> ObjectBuilderClient<T>
+    impl<T> OnDemandMaterializerClient<T>
     where
         T: tonic::client::GrpcService<tonic::body::BoxBody>,
         T::ResponseBody: Body + HttpBody + Send + 'static,
@@ -47,7 +47,7 @@ pub mod object_builder_client {
         }
         pub async fn materialize(
             &mut self,
-            request: impl tonic::IntoRequest<super::View>,
+            request: impl tonic::IntoRequest<super::OnDemandRequest>,
         ) -> Result<
             tonic::Response<tonic::codec::Streaming<super::super::common::RowDefinition>>,
             tonic::Status,
@@ -59,8 +59,9 @@ pub mod object_builder_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/object_builder.ObjectBuilder/Materialize");
+            let path = http::uri::PathAndQuery::from_static(
+                "/materializer_ondemand.OnDemandMaterializer/Materialize",
+            );
             self.inner
                 .server_streaming(request.into_request(), path, codec)
                 .await
@@ -76,31 +77,32 @@ pub mod object_builder_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/object_builder.ObjectBuilder/Heartbeat");
+            let path = http::uri::PathAndQuery::from_static(
+                "/materializer_ondemand.OnDemandMaterializer/Heartbeat",
+            );
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
-    impl<T: Clone> Clone for ObjectBuilderClient<T> {
+    impl<T: Clone> Clone for OnDemandMaterializerClient<T> {
         fn clone(&self) -> Self {
             Self {
                 inner: self.inner.clone(),
             }
         }
     }
-    impl<T> std::fmt::Debug for ObjectBuilderClient<T> {
+    impl<T> std::fmt::Debug for OnDemandMaterializerClient<T> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "ObjectBuilderClient {{ ... }}")
+            write!(f, "OnDemandMaterializerClient {{ ... }}")
         }
     }
 }
 #[doc = r" Generated server implementations."]
-pub mod object_builder_server {
+pub mod on_demand_materializer_server {
     #![allow(unused_variables, dead_code, missing_docs)]
     use tonic::codegen::*;
-    #[doc = "Generated trait containing gRPC methods that should be implemented for use with ObjectBuilderServer."]
+    #[doc = "Generated trait containing gRPC methods that should be implemented for use with OnDemandMaterializerServer."]
     #[async_trait]
-    pub trait ObjectBuilder: Send + Sync + 'static {
+    pub trait OnDemandMaterializer: Send + Sync + 'static {
         #[doc = "Server streaming response type for the Materialize method."]
         type MaterializeStream: futures_core::Stream<Item = Result<super::super::common::RowDefinition, tonic::Status>>
             + Send
@@ -108,7 +110,7 @@ pub mod object_builder_server {
             + 'static;
         async fn materialize(
             &self,
-            request: tonic::Request<super::View>,
+            request: tonic::Request<super::OnDemandRequest>,
         ) -> Result<tonic::Response<Self::MaterializeStream>, tonic::Status>;
         async fn heartbeat(
             &self,
@@ -116,11 +118,11 @@ pub mod object_builder_server {
         ) -> Result<tonic::Response<super::Empty>, tonic::Status>;
     }
     #[derive(Debug)]
-    pub struct ObjectBuilderServer<T: ObjectBuilder> {
+    pub struct OnDemandMaterializerServer<T: OnDemandMaterializer> {
         inner: _Inner<T>,
     }
     struct _Inner<T>(Arc<T>, Option<tonic::Interceptor>);
-    impl<T: ObjectBuilder> ObjectBuilderServer<T> {
+    impl<T: OnDemandMaterializer> OnDemandMaterializerServer<T> {
         pub fn new(inner: T) -> Self {
             let inner = Arc::new(inner);
             let inner = _Inner(inner, None);
@@ -132,9 +134,9 @@ pub mod object_builder_server {
             Self { inner }
         }
     }
-    impl<T, B> Service<http::Request<B>> for ObjectBuilderServer<T>
+    impl<T, B> Service<http::Request<B>> for OnDemandMaterializerServer<T>
     where
-        T: ObjectBuilder,
+        T: OnDemandMaterializer,
         B: HttpBody + Send + Sync + 'static,
         B::Error: Into<StdError> + Send + 'static,
     {
@@ -147,15 +149,21 @@ pub mod object_builder_server {
         fn call(&mut self, req: http::Request<B>) -> Self::Future {
             let inner = self.inner.clone();
             match req.uri().path() {
-                "/object_builder.ObjectBuilder/Materialize" => {
+                "/materializer_ondemand.OnDemandMaterializer/Materialize" => {
                     #[allow(non_camel_case_types)]
-                    struct MaterializeSvc<T: ObjectBuilder>(pub Arc<T>);
-                    impl<T: ObjectBuilder> tonic::server::ServerStreamingService<super::View> for MaterializeSvc<T> {
+                    struct MaterializeSvc<T: OnDemandMaterializer>(pub Arc<T>);
+                    impl<T: OnDemandMaterializer>
+                        tonic::server::ServerStreamingService<super::OnDemandRequest>
+                        for MaterializeSvc<T>
+                    {
                         type Response = super::super::common::RowDefinition;
                         type ResponseStream = T::MaterializeStream;
                         type Future =
                             BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
-                        fn call(&mut self, request: tonic::Request<super::View>) -> Self::Future {
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::OnDemandRequest>,
+                        ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move { (*inner).materialize(request).await };
                             Box::pin(fut)
@@ -177,10 +185,10 @@ pub mod object_builder_server {
                     };
                     Box::pin(fut)
                 }
-                "/object_builder.ObjectBuilder/Heartbeat" => {
+                "/materializer_ondemand.OnDemandMaterializer/Heartbeat" => {
                     #[allow(non_camel_case_types)]
-                    struct HeartbeatSvc<T: ObjectBuilder>(pub Arc<T>);
-                    impl<T: ObjectBuilder> tonic::server::UnaryService<super::Empty> for HeartbeatSvc<T> {
+                    struct HeartbeatSvc<T: OnDemandMaterializer>(pub Arc<T>);
+                    impl<T: OnDemandMaterializer> tonic::server::UnaryService<super::Empty> for HeartbeatSvc<T> {
                         type Response = super::Empty;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(&mut self, request: tonic::Request<super::Empty>) -> Self::Future {
@@ -216,13 +224,13 @@ pub mod object_builder_server {
             }
         }
     }
-    impl<T: ObjectBuilder> Clone for ObjectBuilderServer<T> {
+    impl<T: OnDemandMaterializer> Clone for OnDemandMaterializerServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self { inner }
         }
     }
-    impl<T: ObjectBuilder> Clone for _Inner<T> {
+    impl<T: OnDemandMaterializer> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(self.0.clone(), self.1.clone())
         }
@@ -232,7 +240,7 @@ pub mod object_builder_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: ObjectBuilder> tonic::transport::NamedService for ObjectBuilderServer<T> {
-        const NAME: &'static str = "object_builder.ObjectBuilder";
+    impl<T: OnDemandMaterializer> tonic::transport::NamedService for OnDemandMaterializerServer<T> {
+        const NAME: &'static str = "materializer_ondemand.OnDemandMaterializer";
     }
 }

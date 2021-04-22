@@ -58,13 +58,13 @@ services:
       OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
   postgres_materializer:
-    image: cdl-materializer:latest
-    command: "/bin/materializer postgres"
+    image: cdl-materializer-general:latest
+    command: "/bin/materializer-general postgres"
     build:
       context: ../..
       dockerfile: Dockerfile
       args:
-        - BIN=materializer
+        - BIN=materializer_general
         - ENV=DEV
     ports:
       - "50203:50203"
@@ -76,7 +76,7 @@ services:
       POSTGRES_DBNAME: postgres
       POSTGRES_SCHEMA: cdl
       INPUT_PORT: 50203
-      RUST_LOG: info,materializer=trace
+      RUST_LOG: info,materializer_general=trace
       OTEL_SERVICE_NAME: "postgres-materializer"
       OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
       OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"

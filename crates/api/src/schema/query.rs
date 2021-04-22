@@ -5,8 +5,10 @@ use itertools::Itertools;
 use semver::VersionReq;
 use uuid::Uuid;
 
-use crate::error::Result;
-use crate::schema::context::{EdgeRegistryPool, ObjectBuilderPool, SchemaRegistryPool};
+use rpc::schema_registry::Empty;
+
+use crate::error::{Error, Result};
+use crate::schema::context::{EdgeRegistryPool, OnDemandMaterializerPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
 use crate::types::schema::{Definition, FullSchema};
@@ -315,7 +317,12 @@ impl QueryRoot {
         context: &Context<'_>,
         request: OnDemandViewRequest,
     ) -> FieldResult<MaterializedView> {
-        let mut conn = context.data_unchecked::<ObjectBuilderPool>().get().await?;
+        use futures::TryStreamExt;
+
+        let mut conn = context
+            .data_unchecked::<OnDemandMaterializerPool>()
+            .get()
+            .await?;
         let view_id = request.view_id;
         let materialized = conn
             .materialize(utils::tracing::grpc::inject_span(request.into()))
@@ -323,9 +330,8 @@ impl QueryRoot {
             .into_inner();
 
         let rows = materialized
-            .rows
-            .into_iter()
-            .map(|row| {
+            .map_err(async_graphql::Error::from)
+            .and_then(|row| async move {
                 let fields = row
                     .fields
                     .into_iter()
@@ -340,14 +346,9 @@ impl QueryRoot {
                     fields,
                 })
             })
-            .collect::<Result<_, async_graphql::Error>>()?;
+            .try_collect::<_>()
+            .await?; //In the future we could probably use graphQL @stream directive when its standarized.
 
-        let options = serde_json::from_str(&materialized.options)?;
-
-        Ok(MaterializedView {
-            id: view_id,
-            materializer_options: Json(options),
-            rows,
-        })
+        Ok(MaterializedView { id: view_id, rows })
     }
 }

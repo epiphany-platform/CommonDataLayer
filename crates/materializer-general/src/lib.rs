@@ -3,8 +3,8 @@ mod plugins;
 
 use crate::args::MaterializerArgs;
 use plugins::{MaterializerPlugin, PostgresMaterializer};
-use rpc::common::MaterializedView;
-use rpc::materializer::{materializer_server::Materializer, Empty, Options};
+use rpc::materializer_general::MaterializedView;
+use rpc::materializer_general::{general_materializer_server::GeneralMaterializer, Empty, Options};
 
 pub struct MaterializerImpl {
     materializer: std::sync::Arc<dyn MaterializerPlugin>,
@@ -31,7 +31,7 @@ impl MaterializerImpl {
 }
 
 #[tonic::async_trait]
-impl Materializer for MaterializerImpl {
+impl GeneralMaterializer for MaterializerImpl {
     #[tracing::instrument(skip(self))]
     async fn validate_options(
         &self,

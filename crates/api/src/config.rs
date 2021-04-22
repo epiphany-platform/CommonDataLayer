@@ -9,9 +9,9 @@ pub struct Config {
     /// Address of edge registry gRPC API
     #[clap(long, env)]
     pub edge_registry_addr: String,
-    /// Address of object builder gRPC API
+    /// Address of on demand materializer gRPC API
     #[clap(long, env)]
-    pub object_builder_addr: String,
+    pub on_demand_materializer_addr: String,
     /// Address of query router REST API
     #[clap(long, env)]
     pub query_router_addr: String,

@@ -1,5 +1,5 @@
 [package]
-name = "materializer"
+name = "materializer-general"
 authors = ["CDL Team"]
 version = "0.1.0"
 edition = "2018"

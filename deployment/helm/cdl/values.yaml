@@ -52,7 +52,7 @@ partialUpdateEngine:
 postgres-document:
   commandServiceReplicaCount: 1
   queryServiceReplicaCount: 1
-  materializerReplicaCount: 1
+  materializerGeneralReplicaCount: 1
   postgresUsername: postgres
   postgresPassword: postgres
   postgresHost: 10.1.1.5

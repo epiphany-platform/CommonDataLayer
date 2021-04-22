@@ -10,7 +10,7 @@ use bb8_postgres::{
 };
 use futures::pin_mut;
 use itertools::Itertools;
-use rpc::common::MaterializedView;
+use rpc::materializer_general::MaterializedView;
 use serde::Deserialize;
 use serde_json::Value;
 use utils::metrics::{self, counter};
@@ -42,7 +42,7 @@ impl TryFrom<MaterializedView> for PsqlView {
     type Error = anyhow::Error;
 
     fn try_from(view: MaterializedView) -> Result<Self, Self::Error> {
-        let options = serde_json::from_str(&view.options)?;
+        let options = serde_json::from_str(&view.options.options)?;
 
         let rows = view
             .rows

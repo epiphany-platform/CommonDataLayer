@@ -3,7 +3,8 @@
 pub mod common;
 pub mod edge_registry;
 pub mod generic_rpc;
-pub mod materializer;
+pub mod materializer_general;
+pub mod materializer_ondemand;
 pub mod object_builder;
 pub mod query_service;
 pub mod query_service_ts;
