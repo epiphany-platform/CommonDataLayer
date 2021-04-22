@@ -1,7 +1,14 @@
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ViewId {
+pub struct View {
     #[prost(string, required, tag = "1")]
     pub view_id: ::prost::alloc::string::String,
+    #[prost(map = "string, message", tag = "2")]
+    pub schemas: ::std::collections::HashMap<::prost::alloc::string::String, Schema>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Schema {
+    #[prost(string, repeated, tag = "1")]
+    pub object_ids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Empty {}
@@ -40,7 +47,7 @@ pub mod object_builder_client {
         }
         pub async fn materialize(
             &mut self,
-            request: impl tonic::IntoRequest<super::ViewId>,
+            request: impl tonic::IntoRequest<super::View>,
         ) -> Result<tonic::Response<super::super::common::MaterializedView>, tonic::Status>
         {
             self.inner.ready().await.map_err(|e| {
@@ -92,7 +99,7 @@ pub mod object_builder_server {
     pub trait ObjectBuilder: Send + Sync + 'static {
         async fn materialize(
             &self,
-            request: tonic::Request<super::ViewId>,
+            request: tonic::Request<super::View>,
         ) -> Result<tonic::Response<super::super::common::MaterializedView>, tonic::Status>;
         async fn heartbeat(
             &self,
@@ -134,10 +141,10 @@ pub mod object_builder_server {
                 "/object_builder.ObjectBuilder/Materialize" => {
                     #[allow(non_camel_case_types)]
                     struct MaterializeSvc<T: ObjectBuilder>(pub Arc<T>);
-                    impl<T: ObjectBuilder> tonic::server::UnaryService<super::ViewId> for MaterializeSvc<T> {
+                    impl<T: ObjectBuilder> tonic::server::UnaryService<super::View> for MaterializeSvc<T> {
                         type Response = super::super::common::MaterializedView;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
-                        fn call(&mut self, request: tonic::Request<super::ViewId>) -> Self::Future {
+                        fn call(&mut self, request: tonic::Request<super::View>) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move { (*inner).materialize(request).await };
                             Box::pin(fut)

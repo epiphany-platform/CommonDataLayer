@@ -5,16 +5,15 @@ use itertools::Itertools;
 use num_traits::FromPrimitive;
 use uuid::Uuid;
 
-use rpc::object_builder::ViewId;
 use rpc::schema_registry::Empty;
 
-use crate::config::Config;
 use crate::error::{Error, Result};
 use crate::schema::context::{EdgeRegistryPool, ObjectBuilderPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
 use crate::types::schema::{Definition, Schema, SchemaType, View};
 use crate::types::view::{MaterializedView, RowDefinition};
+use crate::{config::Config, types::view::OnDemandViewRequest};
 
 #[Object]
 /// Schema is the format in which data is to be sent to the Common Data Layer.
@@ -392,13 +391,12 @@ impl QueryRoot {
     async fn on_demand_view(
         &self,
         context: &Context<'_>,
-        view_id: Uuid,
+        request: OnDemandViewRequest,
     ) -> FieldResult<MaterializedView> {
         let mut conn = context.data_unchecked::<ObjectBuilderPool>().get().await?;
+        let view_id = request.view_id;
         let materialized = conn
-            .materialize(utils::tracing::grpc::inject_span(ViewId {
-                view_id: view_id.to_string(),
-            }))
+            .materialize(utils::tracing::grpc::inject_span(request.into()))
             .await?
             .into_inner();
 

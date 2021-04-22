@@ -7,7 +7,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::types::{extract_vertex_property, SchemaType};
-pub use utils::types::FieldDefinition;
+pub use utils::types::materialization::FieldDefinition;
 
 pub trait Vertex: Sized {
     fn into_properties<'a>(self) -> Vec<(&'a str, Value)>;
