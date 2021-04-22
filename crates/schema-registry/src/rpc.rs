@@ -450,6 +450,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         request: Request<rpc::schema_registry::NewView>,
     ) -> Result<Response<Id>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
+        //TODO: Request materializer validation for the options
         let request = request.into_inner();
         let new_view = NewView {
             schema_id: parse_uuid(&request.schema_id)?,
