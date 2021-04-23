@@ -4,6 +4,8 @@ metadata:
   name: infrastructure-postgres-migrations
 data:
   0.init.sql:
+    SET search_path TO public;
+
     CREATE TABLE IF NOT EXISTS data (
       object_id UUID NOT NULL,
       version BIGINT NOT NULL,
