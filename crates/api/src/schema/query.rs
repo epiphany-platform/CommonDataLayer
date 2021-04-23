@@ -5,19 +5,15 @@ use itertools::Itertools;
 use semver::VersionReq;
 use uuid::Uuid;
 
-use crate::config::Config;
 use crate::error::Result;
-use crate::error::{Error, Result};
 use crate::schema::context::{EdgeRegistryPool, ObjectBuilderPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
 use crate::types::schema::{Definition, FullSchema};
 use crate::types::view::View;
 use crate::types::view::{MaterializedView, RowDefinition};
-use rpc::object_builder::ViewId;
-use rpc::schema_registry::Empty;
-use rpc::schema_registry::types::SchemaType;
 use crate::{config::Config, types::view::OnDemandViewRequest};
+use rpc::schema_registry::types::SchemaType;
 
 #[Object]
 /// Schema is the format in which data is to be sent to the Common Data Layer.

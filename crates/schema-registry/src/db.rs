@@ -17,7 +17,7 @@ use crate::types::view::{NewView, View, ViewUpdate};
 use crate::types::DbExport;
 use crate::types::VersionedUuid;
 use crate::utils::build_full_schema;
-use utils::types::FieldDefinition;
+use utils::types::materialization::FieldDefinition;
 
 const SCHEMAS_LISTEN_CHANNEL: &str = "schemas";
 const VIEWS_LISTEN_CHANNEL: &str = "views";

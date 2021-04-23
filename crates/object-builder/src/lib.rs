@@ -2,10 +2,13 @@ use std::{collections::HashMap, convert::TryInto};
 
 use anyhow::Context;
 use async_trait::async_trait;
+use bb8::{Pool, PooledConnection};
 use serde::Serialize;
 use serde_json::Value;
 use tonic::transport::Channel;
+use uuid::Uuid;
 
+use crate::args::Args;
 use rpc::common::MaterializedView;
 use rpc::common::RowDefinition as RpcRowDefinition;
 use rpc::object_builder::{object_builder_server::ObjectBuilder, Empty, View};
@@ -191,8 +194,11 @@ impl ObjectBuilderImpl {
         let objects = self.get_objects(schema_id, schema).await?;
         tracing::debug!(?objects, "Objects");
 
-        let fields_defs: HashMap<String, materialization::FieldDefinition> =
-            serde_json::from_str(&view.fields)?;
+        let fields_defs: HashMap<String, materialization::FieldDefinition> = view
+            .fields
+            .into_iter()
+            .map(|(key, field)| Ok((key, serde_json::from_str(&field)?)))
+            .collect::<anyhow::Result<HashMap<_, _>>>()?;
 
         let rows = objects
             .into_iter()
@@ -252,7 +258,7 @@ impl ObjectBuilderImpl {
         schema_id: Uuid,
         schema: materialization::Schema,
     ) -> anyhow::Result<HashMap<Uuid, Value>> {
-        let schema_meta = self.get_base_schema(schema_id).await?;
+        let schema_meta = self.get_schema_metadata(schema_id).await?;
 
         let query_address = schema_meta.query_address.clone();
         let schema_type = schema_meta.schema_type().into();
@@ -301,14 +307,14 @@ impl ObjectBuilderImpl {
     }
 
     #[tracing::instrument(skip(self))]
-    // TODO: Change name to `get_schema_metadata`
-    async fn get_base_schema(
+    async fn get_schema_metadata(
         &self,
         schema_id: Uuid,
-    ) -> anyhow::Result<rpc::schema_registry::Schema> {
+    ) -> anyhow::Result<rpc::schema_registry::SchemaMetadata> {
         let schema = self
-            .schema_registry
-            .clone()
+            .pool
+            .get()
+            .await?
             .get_schema_metadata(rpc::schema_registry::Id {
                 id: schema_id.to_string(),
             })

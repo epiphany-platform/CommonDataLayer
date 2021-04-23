@@ -1,4 +1,3 @@
-
 use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
@@ -10,13 +9,6 @@ use tokio::time::Duration;
 use tonic::transport::Server;
 
 use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
-use schema_registry::{
-    error::RegistryError,
-    replication::CommunicationMethod,
-    replication::{ReplicationMethodConfig, ReplicationRole},
-    rpc::SchemaRegistryImpl,
-    AmqpConfig, CommunicationMethodConfig, KafkaConfig,
-};
 use schema_registry::config::{communication_config, Config};
 use schema_registry::rpc::SchemaRegistryImpl;
 use utils::{metrics, status_endpoints};

@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use cache::SchemaRegistryCache;
 use clap::Clap;
 use uuid::Uuid;
 use warp::Filter;

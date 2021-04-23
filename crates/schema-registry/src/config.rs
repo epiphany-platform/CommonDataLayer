@@ -57,7 +57,7 @@ pub struct Config {
     pub db_schema: String,
 
     /// The method of communication with external services.
-    #[clap(long, env = "COMMUNICATION_METHOD", possible_values = CommunicationMethodType::VARIANTS)]
+    #[clap(long, env = "COMMUNICATION_METHOD", arg_enum)]
     pub communication_method: CommunicationMethodType,
     /// Address of Kafka brokers
     #[clap(long, env)]
@@ -114,7 +114,7 @@ pub fn communication_config(config: &Config) -> anyhow::Result<CommunicationMeth
                 consumer_tag,
             })
         }
-        CommunicationMethodType::Grpc => CommunicationMethodConfig::Grpc,
+        CommunicationMethodType::GRpc => CommunicationMethodConfig::Grpc,
     };
     Ok(config)
 }

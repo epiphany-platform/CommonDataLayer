@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::types::Json;
-use utils::types::FieldDefinition;
+use utils::types::materialization::FieldDefinition;
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
