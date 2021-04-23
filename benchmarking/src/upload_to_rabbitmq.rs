@@ -1,4 +1,5 @@
 use anyhow::Context;
+use clap::Clap;
 use lapin::{
     options::BasicPublishOptions, BasicProperties, Channel, Connection, ConnectionProperties,
 };
@@ -6,7 +7,6 @@ use pbr::ProgressBar;
 use std::io::Stdout;
 use std::sync::Arc;
 use std::time::Duration;
-use structopt::StructOpt;
 use tokio::sync::mpsc::{channel, Sender};
 use tokio::sync::Mutex;
 use tokio::time::sleep;
@@ -14,19 +14,19 @@ use uuid::Uuid;
 
 mod utils;
 
-#[derive(StructOpt)]
+#[derive(Clap)]
 struct Args {
-    #[structopt(short, long)]
+    #[clap(short, long)]
     address: String,
-    #[structopt(short, long)]
+    #[clap(short, long)]
     exchange: String,
-    #[structopt(short, long)]
+    #[clap(short, long)]
     queue: String,
-    #[structopt(short, long)]
+    #[clap(short, long)]
     schema_id: Uuid,
-    #[structopt(short, long)]
+    #[clap(short, long)]
     count: usize,
-    #[structopt(short, long, default_value = "50")]
+    #[clap(short, long, default_value = "50")]
     window: usize,
 }
 
@@ -40,7 +40,7 @@ struct HandleMessageContext {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let args = Args::from_args();
+    let args = Args::parse();
     let pb = utils::create_progress_bar(args.count as u64);
     let (status_sender, mut status_receiver) = channel::<anyhow::Result<()>>(args.window);
 

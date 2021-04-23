@@ -1,16 +1,16 @@
-use structopt::StructOpt;
+use clap::Clap;
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Clap)]
 pub struct DruidOutputConfig {
     /// Kafka brokers
-    #[structopt(
+    #[clap(
         name = "druid-brokers",
         long = "druid-output-brokers",
         env = "DRUID_OUTPUT_BROKERS"
     )]
     pub brokers: String,
     /// Kafka topic
-    #[structopt(
+    #[clap(
         name = "druid-topic",
         long = "druid-output-topic",
         env = "DRUID_OUTPUT_TOPIC"

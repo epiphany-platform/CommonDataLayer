@@ -1,19 +1,19 @@
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
+use clap::Clap;
 use reqwest::Client;
 use rpc::query_service_ts::{
     query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
 };
 use serde_json::{json, Value};
-use structopt::StructOpt;
 use tonic::{Request, Response, Status};
 use utils::metrics::{self, counter};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Clap)]
 pub struct DruidConfig {
-    #[structopt(long = "druid-query-url", env = "DRUID_QUERY_URL")]
+    #[clap(long = "druid-query-url", env = "DRUID_QUERY_URL")]
     druid_url: String,
-    #[structopt(long = "druid-table-name", env = "DRUID_TABLE_NAME")]
+    #[clap(long = "druid-table-name", env = "DRUID_TABLE_NAME")]
     druid_table_name: String,
 }
 

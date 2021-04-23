@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::Context;
-use structopt::{clap::arg_enum, StructOpt};
+use clap::Clap;
 
 use utils::metrics;
 
@@ -23,68 +23,67 @@ pub struct AmqpConfig {
     pub consumer_tag: String,
 }
 
-arg_enum! {
-    #[derive(Clone, Debug)]
-    pub enum CommunicationMethodType {
-        Amqp,
-        Kafka,
-        Grpc,
-    }
+#[derive(Clap, Clone, Debug)]
+pub enum CommunicationMethodType {
+    Amqp,
+    Kafka,
+    #[clap(alias = "grpc")]
+    GRpc,
 }
 
-#[derive(StructOpt)]
+#[derive(Clap)]
 pub struct Config {
     /// Port to listen on
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub input_port: u16,
 
     /// Postgres username
-    #[structopt(long, env = "POSTGRES_USERNAME")]
+    #[clap(long, env = "POSTGRES_USERNAME")]
     pub db_username: String,
     /// Postgres password
-    #[structopt(long, env = "POSTGRES_PASSWORD")]
+    #[clap(long, env = "POSTGRES_PASSWORD")]
     pub db_password: String,
     /// Host of the postgres server
-    #[structopt(long, env = "POSTGRES_HOST")]
+    #[clap(long, env = "POSTGRES_HOST")]
     pub db_host: String,
     /// Port on which postgres server listens
-    #[structopt(long, env = "POSTGRES_PORT", default_value = "5432")]
+    #[clap(long, env = "POSTGRES_PORT", default_value = "5432")]
     pub db_port: u16,
     /// Database name
-    #[structopt(long, env = "POSTGRES_DBNAME")]
+    #[clap(long, env = "POSTGRES_DBNAME")]
     pub db_name: String,
     /// SQL schema available for service
-    #[structopt(long, env = "POSTGRES_SCHEMA", default_value = "public")]
+    #[clap(long, env = "POSTGRES_SCHEMA", default_value = "public")]
     pub db_schema: String,
 
     /// The method of communication with external services.
-    #[structopt(long, env = "COMMUNICATION_METHOD", possible_values = &CommunicationMethodType::variants(), case_insensitive = true)]
+    #[clap(long, env = "COMMUNICATION_METHOD", possible_values = CommunicationMethodType::VARIANTS)]
     pub communication_method: CommunicationMethodType,
     /// Address of Kafka brokers
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_brokers: Option<String>,
     /// Group ID of the consumer
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_group_id: Option<String>,
     /// Connection URL to AMQP server
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub amqp_connection_string: Option<String>,
     /// Consumer tag
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub amqp_consumer_tag: Option<String>,
 
     /// Directory to save state of the database. The state is saved in newly created folder with timestamp
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub export_dir: Option<PathBuf>,
     /// JSON file from which SR should load initial state. If the state already exists this env variable witll be ignored
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub import_file: Option<PathBuf>,
 
     /// Port to listen on for Prometheus requests
-    #[structopt(long, env, default_value = metrics::DEFAULT_PORT)]
+    #[clap(long, env, default_value = metrics::DEFAULT_PORT)]
     pub metrics_port: u16,
     /// Port exposing status of the application
-    #[structopt(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
+    #[clap(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]
     pub status_port: u16,
 }
 

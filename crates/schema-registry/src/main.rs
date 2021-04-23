@@ -1,22 +1,31 @@
-use anyhow::Context;
+
 use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
-use structopt::StructOpt;
+
+use anyhow::Context;
+use clap::Clap;
 use tokio::time::sleep;
 use tokio::time::Duration;
 use tonic::transport::Server;
-use utils::{metrics, status_endpoints};
 
 use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
+use schema_registry::{
+    error::RegistryError,
+    replication::CommunicationMethod,
+    replication::{ReplicationMethodConfig, ReplicationRole},
+    rpc::SchemaRegistryImpl,
+    AmqpConfig, CommunicationMethodConfig, KafkaConfig,
+};
 use schema_registry::config::{communication_config, Config};
 use schema_registry::rpc::SchemaRegistryImpl;
+use utils::{metrics, status_endpoints};
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
-    let config = Config::from_args();
+    let config = Config::parse();
 
     sleep(Duration::from_millis(500)).await;
 

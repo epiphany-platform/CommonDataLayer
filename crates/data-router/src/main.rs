@@ -1,14 +1,13 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::process;
-use std::sync::Arc;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use anyhow::Context;
 use async_trait::async_trait;
+use clap::Clap;
 use lru_cache::LruCache;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use structopt::{clap::arg_enum, StructOpt};
 use tracing::{debug, error, trace};
 
 use rpc::schema_registry::Id;
@@ -31,49 +30,48 @@ use utils::{
 };
 use uuid::Uuid;
 
-arg_enum! {
-    #[derive(Deserialize, Debug, Serialize)]
-    enum CommunicationMethod {
-        Kafka,
-        Amqp,
-        Grpc
-    }
+#[derive(Clap, Deserialize, Debug, Serialize)]
+enum CommunicationMethod {
+    Kafka,
+    Amqp,
+    #[clap(alias = "grpc")]
+    GRpc,
 }
 
-#[derive(StructOpt, Deserialize, Debug, Serialize)]
+#[derive(Clap, Deserialize, Debug, Serialize)]
 struct Config {
     /// The method of communication with external services
-    #[structopt(long, env, possible_values = &CommunicationMethod::variants(), case_insensitive = true)]
+    #[clap(long, env, arg_enum, case_insensitive = true)]
     pub communication_method: CommunicationMethod,
     /// Address of Kafka brokers
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_brokers: Option<String>,
     /// Group ID of the consumer
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_group_id: Option<String>,
     /// Connection URL to AMQP Server
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub amqp_connection_string: Option<String>,
     /// Consumer tag
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub amqp_consumer_tag: Option<String>,
     /// Kafka topic or AMQP queue
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub input_source: Option<String>,
     /// Address of schema registry gRPC API
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub schema_registry_addr: String,
     /// How many entries the cache can hold
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub cache_capacity: usize,
     /// Max requests handled in parallel
-    #[structopt(long, env, default_value = "128")]
+    #[clap(long, env, default_value = "128")]
     pub task_limit: usize,
     /// Port to listen on for Prometheus requests
-    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
+    #[clap(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
     /// Port to listen on when communication method is `grpc`
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub grpc_port: Option<u16>,
 }
 
@@ -82,7 +80,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config: Config = Config::from_args();
+    let config: Config = Config::parse();
 
     debug!("Environment {:?}", config);
 
@@ -220,7 +218,7 @@ async fn new_producer(config: &Config) -> anyhow::Result<CommonPublisher> {
                 .context("amqp connection string was not specified")?;
             CommonPublisher::new_amqp(connection_string).await?
         }
-        CommunicationMethod::Grpc => CommonPublisher::new_grpc("command_service").await?,
+        CommunicationMethod::GRpc => CommonPublisher::new_grpc("command_service").await?,
     })
 }
 
@@ -273,7 +271,7 @@ async fn new_consumer(config: &Config) -> anyhow::Result<ParallelCommonConsumer>
                 options: None,
             }
         }
-        CommunicationMethod::Grpc => {
+        CommunicationMethod::GRpc => {
             let port = config
                 .grpc_port
                 .clone()

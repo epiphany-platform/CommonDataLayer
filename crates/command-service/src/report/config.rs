@@ -1,9 +1,9 @@
-use structopt::StructOpt;
+use clap::Clap;
 
-#[derive(Clone, Debug, StructOpt)]
+#[derive(Clone, Debug, Clap)]
 pub struct ReportServiceConfig {
     /// Kafka topic/AMQP exchange/callback URL to send notifications to (reporting disabled when empty)
-    #[structopt(
+    #[clap(
         name = "report-destination",
         long = "report-destination",
         env = "REPORT_DESTINATION"

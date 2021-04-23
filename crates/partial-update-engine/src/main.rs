@@ -4,6 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
+use clap::Clap;
 use rdkafka::{
     consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
     message::{BorrowedMessage, OwnedHeaders},
@@ -11,35 +12,37 @@ use rdkafka::{
     ClientConfig, Message, Offset, TopicPartitionList,
 };
 use serde::{Deserialize, Serialize};
-use structopt::StructOpt;
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
 use tracing::{debug, trace, Instrument};
-use utils::metrics::{self};
+use utils::{
+    metrics::{self},
+    types::materialization,
+};
 use uuid::Uuid;
 
-#[derive(StructOpt, Deserialize, Debug, Serialize)]
+#[derive(Clap, Deserialize, Debug, Serialize)]
 struct Config {
     /// Address of Kafka brokers
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_brokers: String,
     /// Group ID of the consumer
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub kafka_group_id: String,
     /// Kafka topic for notifications
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub notification_topic: String,
     /// Kafka topic for object builder input
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub object_builder_topic: String,
     /// Address of schema registry gRPC API
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub schema_registry_addr: String,
     /// Port to listen on for Prometheus requests
-    #[structopt(default_value = metrics::DEFAULT_PORT, env)]
+    #[clap(default_value = metrics::DEFAULT_PORT, env)]
     pub metrics_port: u16,
     /// Duration of sleep phase in seconds
-    #[structopt(long, env)]
+    #[clap(long, env)]
     pub sleep_phase_length: u64,
 }
 
@@ -54,7 +57,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config: Config = Config::from_args();
+    let config: Config = Config::parse();
 
     debug!("Environment {:?}", config);
 
@@ -143,46 +146,67 @@ async fn process_changes(
     changes: &mut HashSet<PartialNotification>,
 ) -> Result<()> {
     trace!("processing changes {:#?}", changes);
-    let schemas: HashSet<_> = changes.iter().map(|x| x.schema_id).collect();
-
     let mut client = rpc::schema_registry::connect(config.schema_registry_addr.to_owned()).await?;
-    let mut views: HashSet<Uuid> = HashSet::new();
-    trace!("schemas {:#?}", schemas);
-    for schema in schemas {
-        trace!("schema loop: {:#?}", schema);
-        let response = client
-            .get_all_views_of_schema(rpc::schema_registry::Id {
-                id: schema.to_string(),
-            })
-            .await?;
-        trace!("response: {:#?}", response);
-        let schema_in_views = response
-            .into_inner()
-            .views
-            .iter()
-            .map(|view| Ok(view.id.parse()?))
-            .collect::<Result<Vec<Uuid>>>()?;
-        trace!("schema_in_views: {:#?}", schema_in_views);
-        for view in schema_in_views {
-            views.insert(view);
+    let mut schema_cache: HashMap<Uuid, Vec<Uuid>> // (Schema_ID, Vec<View_ID>)
+        = Default::default();
+
+    let mut requests: HashMap<Uuid, materialization::Request> = Default::default();
+
+    for PartialNotification {
+        object_id,
+        schema_id,
+    } in std::mem::take(changes).into_iter()
+    {
+        let entry = schema_cache.entry(schema_id);
+        let view_ids = match entry {
+            std::collections::hash_map::Entry::Occupied(ref entry) => entry.get(),
+            std::collections::hash_map::Entry::Vacant(entry) => {
+                let response = client
+                    .get_all_views_of_schema(rpc::schema_registry::Id {
+                        id: schema_id.to_string(),
+                    })
+                    .await?;
+
+                trace!(?response, "Response");
+
+                let view_ids = response
+                    .into_inner()
+                    .views
+                    .iter()
+                    .map(|view| Ok(view.0.parse()?))
+                    .collect::<Result<Vec<Uuid>>>()?;
+
+                entry.insert(view_ids)
+            }
+        };
+
+        for view_id in view_ids {
+            requests
+                .entry(*view_id)
+                .or_insert_with(|| materialization::Request::new(*view_id))
+                .schemas
+                .entry(schema_id)
+                .or_default()
+                .object_ids
+                .insert(object_id);
         }
     }
-    trace!("views {:#?}", views);
 
-    for view in views {
-        let payload = view.to_string();
+    trace!(?requests, "Requests");
+
+    for request in requests.values() {
+        let payload = serde_json::to_string(&request)?;
         producer
             .send(
                 FutureRecord::to(config.object_builder_topic.as_str())
                     .payload(payload.as_str())
-                    .key(&view.to_string())
+                    .key(&request.view_id.to_string())
                     .headers(utils::tracing::kafka::inject_span(OwnedHeaders::new())),
                 Duration::from_secs(5),
             )
             .await
             .map_err(|err| anyhow::anyhow!("Error sending message to Kafka {:?}", err))?;
     }
-    changes.clear();
     Ok(())
 }
 

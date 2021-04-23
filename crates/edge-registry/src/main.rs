@@ -1,8 +1,8 @@
+use clap::Clap;
 use edge_registry::args::RegistryConfig;
 use edge_registry::EdgeRegistryImpl;
 use rpc::edge_registry::edge_registry_server::EdgeRegistryServer;
 use std::process;
-use structopt::StructOpt;
 use tonic::transport::Server;
 use tracing::{debug, error, info};
 use utils::communication::consumer::CommonConsumer;
@@ -13,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config = RegistryConfig::from_args();
+    let config = RegistryConfig::parse();
 
     debug!("Environment: {:?}", config);
 

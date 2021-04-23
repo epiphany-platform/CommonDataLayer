@@ -1,31 +1,31 @@
 use anyhow::Context;
+use clap::Clap;
 use postgres::{Client, Config, NoTls, Row};
 use serde_json::Value as JsonValue;
-use structopt::StructOpt;
 use uuid::Uuid;
 
 use tracing::{debug, info, trace};
 
-#[derive(Debug, Clone, StructOpt)]
+#[derive(Debug, Clone, Clap)]
 struct Opts {
-    #[structopt(long, env = "POSTGRES_USERNAME")]
+    #[clap(long, env = "POSTGRES_USERNAME")]
     username: String,
-    #[structopt(long, env = "POSTGRES_PASSWORD")]
+    #[clap(long, env = "POSTGRES_PASSWORD")]
     password: String,
-    #[structopt(long, env = "POSTGRES_HOST")]
+    #[clap(long, env = "POSTGRES_HOST")]
     host: String,
-    #[structopt(long, env = "POSTGRES_PORT", default_value = "5432")]
+    #[clap(long, env = "POSTGRES_PORT", default_value = "5432")]
     port: u16,
-    #[structopt(long, env = "POSTGRES_DBNAME")]
+    #[clap(long, env = "POSTGRES_DBNAME")]
     dbname: String,
-    #[structopt(long, env = "POSTGRES_SCHEMA", default_value = "public")]
+    #[clap(long, env = "POSTGRES_SCHEMA", default_value = "public")]
     schema: String,
 }
 
 /// This app is called by some external scheduler (eg. cron),
 /// It merges all documents with same object_id into one.
 fn main() -> anyhow::Result<()> {
-    let opts = Opts::from_args();
+    let opts = Opts::parse();
 
     utils::tracing::init();
 

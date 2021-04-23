@@ -1,6 +1,6 @@
+use clap::Clap;
 use object_builder::{args::Args, ObjectBuilderImpl};
 use rpc::object_builder::object_builder_server::ObjectBuilderServer;
-use structopt::StructOpt;
 use tonic::transport::Server;
 use utils::communication::consumer::CommonConsumer;
 
@@ -9,7 +9,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let args: Args = Args::from_args();
+    let args: Args = Args::parse();
 
     tracing::debug!(?args, "command-line arguments");
 
