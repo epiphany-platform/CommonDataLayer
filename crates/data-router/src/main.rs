@@ -1,15 +1,19 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::process;
 use std::sync::Arc;
+use std::sync::Mutex;
 
 use anyhow::Context;
 use async_trait::async_trait;
+use lru_cache::LruCache;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use structopt::{clap::arg_enum, StructOpt};
 use tracing::{debug, error, trace};
 
+use rpc::schema_registry::Id;
 use utils::{
+    abort_on_poison,
     communication::{
         get_order_group_id,
         message::CommunicationMessage,
@@ -25,6 +29,7 @@ use utils::{
     parallel_task_queue::ParallelTaskQueue,
     task_limiter::TaskLimiter,
 };
+use uuid::Uuid;
 
 arg_enum! {
     #[derive(Deserialize, Debug, Serialize)]
@@ -85,12 +90,15 @@ async fn main() -> anyhow::Result<()> {
 
     let consumer = new_consumer(&config).await?;
     let producer = Arc::new(new_producer(&config).await?);
+
+    let cache = Arc::new(Mutex::new(LruCache::new(config.cache_capacity)));
     let schema_registry_addr = Arc::new(config.schema_registry_addr);
 
     let task_queue = Arc::new(ParallelTaskQueue::default());
 
     consumer
         .par_run(Handler {
+            cache,
             producer,
             schema_registry_addr,
             task_queue,
@@ -103,6 +111,7 @@ async fn main() -> anyhow::Result<()> {
 }
 
 struct Handler {
+    cache: Arc<Mutex<LruCache<Uuid, String>>>,
     producer: Arc<CommonPublisher>,
     schema_registry_addr: Arc<String>,
     task_queue: Arc<ParallelTaskQueue>,
@@ -139,6 +148,7 @@ impl ParallelConsumerHandler for Handler {
 
                 for entry in maybe_array.iter() {
                     let r = route(
+                        &self.cache,
                         &entry,
                         &message_key,
                         &self.producer,
@@ -164,6 +174,7 @@ impl ParallelConsumerHandler for Handler {
                         "Payload deserialization failed, message is not a valid cdl message",
                     )?;
                 let result = route(
+                    &self.cache,
                     &owned,
                     &message_key,
                     &self.producer,
@@ -277,6 +288,7 @@ async fn new_consumer(config: &Config) -> anyhow::Result<ParallelCommonConsumer>
 
 #[tracing::instrument(skip(producer))]
 async fn route(
+    cache: &Mutex<LruCache<Uuid, String>>,
     event: &DataRouterInsertMessage<'_>,
     message_key: &str,
     producer: &CommonPublisher,
@@ -306,6 +318,43 @@ async fn route(
     )
     .await;
     Ok(())
+}
+
+#[tracing::instrument(skip(cache))]
+async fn get_schema_insert_destination(
+    cache: &Mutex<LruCache<Uuid, String>>,
+    schema_id: Uuid,
+    schema_addr: &str,
+) -> anyhow::Result<String> {
+    let recv_channel = cache
+        .lock()
+        .unwrap_or_else(abort_on_poison)
+        .get_mut(&schema_id)
+        .cloned();
+    if let Some(val) = recv_channel {
+        trace!("Retrieved insert destination for {} from cache", schema_id);
+        return Ok(val);
+    }
+
+    let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
+    let channel = client
+        .get_schema_metadata(utils::tracing::grpc::inject_span(Id {
+            id: schema_id.to_string(),
+        }))
+        .await?
+        .into_inner()
+        .insert_destination;
+
+    trace!(
+        "Retrieved insert destination for {} from schema registry",
+        schema_id
+    );
+    cache
+        .lock()
+        .unwrap_or_else(abort_on_poison)
+        .insert(schema_id, channel.clone());
+
+    Ok(channel)
 }
 
 #[tracing::instrument(skip(producer))]

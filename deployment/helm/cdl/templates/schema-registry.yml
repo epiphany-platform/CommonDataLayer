@@ -37,6 +37,8 @@ spec:
           value: "{{ .Values.schemaRegistry.postgresPort }}"
         - name: POSTGRES_DBNAME
           value: {{ .Values.schemaRegistry.postgresDbname }}
+        - name: POSTGRES_SCHEMA
+          value: {{ .Values.schemaRegistry.postgresSchema }}
         - name: REPLICATION_ROLE
           value: "slave"
         {{- if eq .Values.global.communicationMethod "kafka" }}

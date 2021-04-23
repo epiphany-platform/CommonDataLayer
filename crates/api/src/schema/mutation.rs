@@ -52,21 +52,6 @@ impl MutationRoot {
     }
 
     #[tracing::instrument(skip(self, context))]
-    async fn update_schema(
-        &self,
-        context: &Context<'_>,
-        id: Uuid,
-        update: UpdateSchema,
-    ) -> FieldResult<FullSchema> {
-        let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
-
-        conn.update_schema(update.into_rpc(id))
-            .await
-            .map_err(rpc::error::schema_registry_error)?;
-        get_schema(&mut conn, id).await
-    }
-
-    #[tracing::instrument(skip(self, context))]
     async fn add_view(
         &self,
         context: &Context<'_>,
@@ -111,6 +96,21 @@ impl MutationRoot {
             .map_err(rpc::error::schema_registry_error)?;
 
         get_view(&mut conn, id).await
+    }
+
+    #[tracing::instrument(skip(self, context))]
+    async fn update_schema(
+        &self,
+        context: &Context<'_>,
+        id: Uuid,
+        update: UpdateSchema,
+    ) -> FieldResult<FullSchema> {
+        let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
+
+        conn.update_schema(update.into_rpc(id))
+            .await
+            .map_err(rpc::error::schema_registry_error)?;
+        get_schema(&mut conn, id).await
     }
 
     #[tracing::instrument(skip(self, context))]

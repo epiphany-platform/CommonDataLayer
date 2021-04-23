@@ -2,9 +2,10 @@ use std::collections::HashMap;
 
 use semver::Version;
 use serde_json::Value;
+use sqlx::pool::PoolConnection;
 use sqlx::postgres::{PgConnectOptions, PgListener, PgPool, PgPoolOptions};
 use sqlx::types::Json;
-use sqlx::{Acquire, Connection};
+use sqlx::{Acquire, Connection, Postgres};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 use tracing::{trace, warn};
 use uuid::Uuid;
@@ -12,20 +13,22 @@ use uuid::Uuid;
 use crate::config::Config;
 use crate::error::{RegistryError, RegistryResult};
 use crate::types::schema::{FullSchema, NewSchema, Schema, SchemaDefinition, SchemaUpdate};
-use crate::types::view::{FieldDefinition, NewView, View, ViewUpdate};
+use crate::types::view::{NewView, View, ViewUpdate};
 use crate::types::DbExport;
 use crate::types::VersionedUuid;
 use crate::utils::build_full_schema;
+use utils::types::FieldDefinition;
 
 const SCHEMAS_LISTEN_CHANNEL: &str = "schemas";
 const VIEWS_LISTEN_CHANNEL: &str = "views";
 
 pub struct SchemaRegistryDb {
     pool: PgPool,
+    db_schema: String,
 }
 
 impl SchemaRegistryDb {
-    pub async fn connect(config: &Config) -> RegistryResult<Self> {
+    pub async fn new(config: &Config) -> RegistryResult<Self> {
         let options = PgConnectOptions::new()
             .host(&config.db_host)
             .port(config.db_port)
@@ -38,41 +41,66 @@ impl SchemaRegistryDb {
                 .connect_with(options)
                 .await
                 .map_err(RegistryError::ConnectionError)?,
+            db_schema: config.db_schema.clone(),
         })
     }
 
+    async fn connect(&self) -> RegistryResult<PoolConnection<Postgres>> {
+        let mut conn = self.pool.acquire().await?;
+        self.set_schema_for_connection(&mut conn).await?;
+
+        Ok(conn)
+    }
+
+    // TODO: remove need to set schema on each connection
+    async fn set_schema_for_connection(
+        &self,
+        conn: &mut PoolConnection<Postgres>,
+    ) -> RegistryResult<()> {
+        sqlx::query(&format!("SET search_path TO {}", &self.db_schema))
+            .execute(conn)
+            .await?;
+
+        Ok(())
+    }
+
     pub async fn get_schema(&self, id: Uuid) -> RegistryResult<Schema> {
+        let mut conn = self.connect().await?;
+
         sqlx::query_as!(
             Schema,
             "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\"
              FROM schemas WHERE id = $1",
             id
         )
-        .fetch_optional(&self.pool)
+        .fetch_optional(&mut conn)
         .await?
         .ok_or(RegistryError::NoSchemaWithId(id))
     }
 
     pub async fn get_base_schema_of_view(&self, id: Uuid) -> RegistryResult<Schema> {
+        let mut conn = self.connect().await?;
+
         sqlx::query_as!(
             Schema,
             "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\"
              FROM schemas WHERE id = (SELECT schema FROM views WHERE id = $1)",
             id
         )
-        .fetch_one(&self.pool)
+        .fetch_one(&mut conn)
         .await
         .map_err(RegistryError::DbError)
     }
 
     pub async fn get_full_schema(&self, id: Uuid) -> RegistryResult<FullSchema> {
+        let mut conn = self.connect().await?;
         let schema = self.get_schema(id).await?;
 
         let definitions = sqlx::query!(
             "SELECT version, definition FROM definitions WHERE schema = $1",
             id
         )
-        .fetch_all(&self.pool)
+        .fetch_all(&mut conn)
         .await?
         .into_iter()
         .map(|row| {
@@ -89,7 +117,7 @@ impl SchemaRegistryDb {
              FROM views WHERE schema = $1",
             id
         )
-        .fetch_all(&self.pool)
+        .fetch_all(&mut conn)
         .await?;
 
         Ok(FullSchema {
@@ -107,45 +135,53 @@ impl SchemaRegistryDb {
         &self,
         id: &VersionedUuid,
     ) -> RegistryResult<(Version, Value)> {
+        let mut conn = self.connect().await?;
+
         let version = self.get_latest_valid_schema_version(id).await?;
         let row = sqlx::query!(
             "SELECT definition FROM definitions WHERE schema = $1 and version = $2",
             id.id,
             version.to_string()
         )
-        .fetch_one(&self.pool)
+        .fetch_one(&mut conn)
         .await?;
 
         Ok((version, row.definition))
     }
 
     pub async fn get_view(&self, id: Uuid) -> RegistryResult<View> {
+        let mut conn = self.connect().await?;
+
         sqlx::query_as!(
             View,
             "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
              FROM views WHERE id = $1",
             id
         )
-        .fetch_optional(&self.pool)
+        .fetch_optional(&mut conn)
         .await?
         .ok_or(RegistryError::NoViewWithId(id))
     }
 
     pub async fn get_all_views_of_schema(&self, schema_id: Uuid) -> RegistryResult<Vec<View>> {
+        let mut conn = self.connect().await?;
+
         sqlx::query_as!(
             View,
             "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
              FROM views WHERE schema = $1",
             schema_id
         )
-        .fetch_all(&self.pool)
+        .fetch_all(&mut conn)
         .await
         .map_err(RegistryError::DbError)
     }
 
     pub async fn get_schema_versions(&self, id: Uuid) -> RegistryResult<Vec<Version>> {
+        let mut conn = self.connect().await?;
+
         sqlx::query!("SELECT version FROM definitions WHERE schema = $1", id)
-            .fetch_all(&self.pool)
+            .fetch_all(&mut conn)
             .await
             .map_err(RegistryError::DbError)?
             .into_iter()
@@ -163,30 +199,34 @@ impl SchemaRegistryDb {
     }
 
     pub async fn get_all_schemas(&self) -> RegistryResult<Vec<Schema>> {
+        let mut conn = self.connect().await?;
+
         sqlx::query_as!(
             Schema,
             "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\" \
              FROM schemas ORDER BY name"
         )
-        .fetch_all(&self.pool)
+        .fetch_all(&mut conn)
         .await
         .map_err(RegistryError::DbError)
     }
 
     pub async fn get_all_full_schemas(&self) -> RegistryResult<Vec<FullSchema>> {
+        let mut conn = self.connect().await?;
+
         let all_schemas = sqlx::query_as!(
             Schema,
             "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\" FROM schemas"
         )
-        .fetch_all(&self.pool)
+        .fetch_all(&mut conn)
         .await?;
         let mut all_definitions =
             sqlx::query!("SELECT version, definition, schema FROM definitions")
-                .fetch_all(&self.pool)
+                .fetch_all(&mut conn)
                 .await?;
         let mut all_views =
             sqlx::query!("SELECT id, name, materializer_address, materializer_options, fields, schema FROM views",)
-                .fetch_all(&self.pool)
+                .fetch_all(&mut conn)
                 .await?;
 
         all_schemas
@@ -233,12 +273,12 @@ impl SchemaRegistryDb {
     }
 
     pub async fn add_schema(&self, mut schema: NewSchema) -> RegistryResult<Uuid> {
+        let mut conn = self.connect().await?;
+
         let new_id = Uuid::new_v4();
         build_full_schema(&mut schema.definition, self).await?;
 
-        self.pool
-            .acquire()
-            .await?
+        conn
             .transaction::<_, _, RegistryError>(move |c| {
                 Box::pin(async move {
                     sqlx::query!(
@@ -273,6 +313,7 @@ impl SchemaRegistryDb {
     }
 
     pub async fn add_view_to_schema(&self, new_view: NewView) -> RegistryResult<Uuid> {
+        let mut conn = self.connect().await?;
         let new_id = Uuid::new_v4();
 
         sqlx::query!(
@@ -284,13 +325,14 @@ impl SchemaRegistryDb {
             new_view.materializer_address,
             serde_json::to_value(&new_view.fields).map_err(RegistryError::MalformedViewFields)?,
         )
-        .execute(&self.pool)
+        .execute(&mut conn)
         .await?;
 
         Ok(new_id)
     }
 
     pub async fn update_schema(&self, id: Uuid, update: SchemaUpdate) -> RegistryResult<()> {
+        let mut conn = self.connect().await?;
         let old_schema = self.get_schema(id).await?;
 
         sqlx::query!(
@@ -301,13 +343,14 @@ impl SchemaRegistryDb {
             update.query_address.unwrap_or(old_schema.query_address),
             id
         )
-        .execute(&self.pool)
+        .execute(&mut conn)
         .await?;
 
         Ok(())
     }
 
     pub async fn update_view(&self, id: Uuid, update: ViewUpdate) -> RegistryResult<()> {
+        let mut conn = self.connect().await?;
         let old = self.get_view(id).await?;
 
         sqlx::query!(
@@ -321,7 +364,7 @@ impl SchemaRegistryDb {
                 .map_err(RegistryError::MalformedViewFields)?,
             id,
         )
-        .execute(&self.pool)
+        .execute(&mut conn)
         .await?;
 
         Ok(())
@@ -332,6 +375,7 @@ impl SchemaRegistryDb {
         id: Uuid,
         new_version: SchemaDefinition,
     ) -> RegistryResult<()> {
+        let mut conn = self.connect().await?;
         self.get_schema(id).await?;
 
         if let Some(max_version) = self.get_schema_versions(id).await?.into_iter().max() {
@@ -349,7 +393,7 @@ impl SchemaRegistryDb {
             new_version.definition,
             id
         )
-        .execute(&self.pool)
+        .execute(&mut conn)
         .await?;
 
         Ok(())
@@ -433,14 +477,13 @@ impl SchemaRegistryDb {
     }
 
     pub async fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
+        let mut conn = self.connect().await?;
         if !self.get_all_schemas().await?.is_empty() {
             warn!("[IMPORT] Database is not empty, skipping importing");
             return Ok(());
         }
 
-        self.pool
-            .acquire()
-            .await?
+        conn
             .transaction::<_, _, RegistryError>(move |c| {
                 Box::pin(async move {
                     for schema in imported.schemas {

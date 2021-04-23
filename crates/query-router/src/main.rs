@@ -1,8 +1,13 @@
+use std::sync::Arc;
+
 use structopt::StructOpt;
-use utils::metrics;
 use uuid::Uuid;
 use warp::Filter;
 
+use cache::SchemaRegistryCache;
+use utils::metrics;
+
+pub mod cache;
 pub mod error;
 pub mod handler;
 
@@ -11,6 +16,9 @@ struct Config {
     /// Address of schema registry gRPC API
     #[structopt(long, env = "SCHEMA_REGISTRY_ADDR")]
     schema_registry_addr: String,
+    /// How many entries the cache can hold
+    #[structopt(long, env = "CACHE_CAPACITY")]
+    cache_capacity: usize,
     /// Port to listen on
     #[structopt(long, env = "INPUT_PORT")]
     input_port: u16,
@@ -28,27 +36,31 @@ async fn main() {
 
     metrics::serve(config.metrics_port);
 
-    let addr = config.schema_registry_addr;
-    let address_filter = warp::any().map(move || addr.clone());
+    let schema_registry_cache = Arc::new(SchemaRegistryCache::new(
+        config.schema_registry_addr,
+        config.cache_capacity,
+    ));
+
+    let cache_filter = warp::any().map(move || schema_registry_cache.clone());
     let schema_id_filter = warp::header::header::<Uuid>("SCHEMA_ID");
     let body_filter = warp::body::content_length_limit(1024 * 32).and(warp::body::json());
 
     let single_route = warp::path!("single" / Uuid)
         .and(schema_id_filter)
-        .and(address_filter.clone())
+        .and(cache_filter.clone())
         .and(body_filter)
         .and_then(handler::query_single);
     let multiple_route = warp::path!("multiple" / String)
         .and(schema_id_filter)
-        .and(address_filter.clone())
+        .and(cache_filter.clone())
         .and_then(handler::query_multiple);
     let schema_route = warp::path!("schema")
         .and(schema_id_filter)
-        .and(address_filter.clone())
+        .and(cache_filter.clone())
         .and_then(handler::query_by_schema);
     let raw_route = warp::path!("raw")
         .and(schema_id_filter)
-        .and(address_filter.clone())
+        .and(cache_filter.clone())
         .and(body_filter)
         .and_then(handler::query_raw);
 

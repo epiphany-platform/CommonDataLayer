@@ -20,8 +20,6 @@ pub enum RegistryError {
     InvalidSchemaType,
     #[error("Invalid version retrieved from database: {0}")]
     InvalidVersion(semver::SemVerError),
-    #[error("No topic found named \"{0}\"")]
-    NoTopic(String),
     #[error("No version of schema with id {} matches the given requirement {}", .0.id, .0.version_req)]
     NoVersionMatchesRequirement(VersionedUuid),
     #[error(
@@ -81,7 +79,6 @@ impl From<RegistryError> for Status {
             | RegistryError::InvalidVersion(_)
             | RegistryError::NoVersionMatchesRequirement(_)
             | RegistryError::InvalidData(_)
-            | RegistryError::NoTopic(_)
             | RegistryError::InvalidJsonSchema(_) => Status::invalid_argument(error.to_string()),
             RegistryError::ConnectionError(_)
             | RegistryError::DbError(_)

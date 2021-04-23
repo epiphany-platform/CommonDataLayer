@@ -33,7 +33,7 @@ impl SchemaRegistryImpl {
         config: &Config,
         communication_config: CommunicationMethodConfig,
     ) -> anyhow::Result<Self> {
-        let db = SchemaRegistryDb::connect(config).await?;
+        let db = SchemaRegistryDb::new(config).await?;
         let mq_metadata = match &communication_config {
             CommunicationMethodConfig::Kafka(kafka) => {
                 MetadataFetcher::new_kafka(&kafka.brokers).await?
@@ -80,7 +80,9 @@ impl SchemaRegistry for SchemaRegistryImpl {
                 .await
                 .map_err(RegistryError::from)?
         {
-            return Err(RegistryError::NoTopic(new_schema.insert_destination.clone()).into());
+            return Err(
+                RegistryError::NoInsertDestination(new_schema.insert_destination.clone()).into(),
+            );
         }
 
         let new_id = self.db.add_schema(new_schema).await?;
@@ -132,7 +134,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
                 .await
                 .map_err(RegistryError::from)?
             {
-                return Err(RegistryError::NoTopic(destination.clone()).into());
+                return Err(RegistryError::NoInsertDestination(destination.clone()).into());
             }
         }
 

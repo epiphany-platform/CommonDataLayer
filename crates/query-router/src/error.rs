@@ -8,6 +8,7 @@ pub enum Error {
     SingleQueryMissingValue,
     RawQueryMissingValue,
     WrongValueFormat,
+    InvalidSchemaType(rpc::tonic::Status),
 }
 
 impl Reject for Error {}
@@ -20,6 +21,7 @@ pub fn recover(rejection: Rejection) -> Result<impl warp::Reply, Rejection> {
             Error::SingleQueryMissingValue => "Value not returned from query".to_owned(),
             Error::WrongValueFormat => "Value incorrectly formatted".to_owned(),
             Error::RawQueryMissingValue => "Value not returned from query".to_owned(),
+            Error::InvalidSchemaType(err) => format!("Failed to parse schema type: {}", err),
         };
 
         Ok(warp::reply::with_status(

@@ -53,6 +53,9 @@ pub struct Config {
     /// Database name
     #[structopt(long, env = "POSTGRES_DBNAME")]
     pub db_name: String,
+    /// SQL schema available for service
+    #[structopt(long, env = "POSTGRES_SCHEMA", default_value = "public")]
+    pub db_schema: String,
 
     /// The method of communication with external services.
     #[structopt(long, env = "COMMUNICATION_METHOD", possible_values = &CommunicationMethodType::variants(), case_insensitive = true)]

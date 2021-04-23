@@ -785,6 +785,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "lru-cache",
  "rpc",
  "serde",
  "serde_json",

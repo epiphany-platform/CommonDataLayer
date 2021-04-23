@@ -28,6 +28,7 @@ schemaRegistry:
   postgresHost: infrastructure-postgresql
   postgresPort: 5432
   postgresDbname: CDL
+  postgresSchema: public
 
 edgeRegistry:
   postgresUsername: postgres
