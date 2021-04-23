@@ -1,4 +1,4 @@
-SET search_path TO public;
+SET SCHEMA 'public';
 
 DROP TABLE IF EXISTS schemas CASCADE;
 DROP TABLE IF EXISTS views CASCADE;

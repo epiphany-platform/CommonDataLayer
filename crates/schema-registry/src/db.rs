@@ -57,7 +57,7 @@ impl SchemaRegistryDb {
         &self,
         conn: &mut PoolConnection<Postgres>,
     ) -> RegistryResult<()> {
-        sqlx::query(&format!("SET search_path TO {}", &self.db_schema))
+        sqlx::query(&format!("SET SCHEMA '{}'", &self.db_schema))
             .execute(conn)
             .await?;
 
