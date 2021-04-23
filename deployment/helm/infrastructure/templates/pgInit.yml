@@ -4,7 +4,7 @@ metadata:
   name: infrastructure-postgres-migrations
 data:
   0.init.sql:
-    SET SCHEMA 'public';
+    SET SCHEMA 'cdl';
 
     CREATE TABLE IF NOT EXISTS data (
       object_id UUID NOT NULL,
