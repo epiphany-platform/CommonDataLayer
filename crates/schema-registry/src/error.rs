@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 #[derive(Debug, Error)]
 pub enum RegistryError {
+    // TODO: ensure that no sensitive info is leaked here
     #[error("Unable to connect to database: {0}")]
     ConnectionError(sqlx::Error),
     #[error("Error occurred while accessing database: {0}")]
