@@ -1,14 +1,13 @@
-use async_graphql::{Context, FieldResult, Object};
-use uuid::Uuid;
-
 use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
 use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
 use crate::types::data::{InputMessage, ObjectRelations};
 use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
 use crate::types::view::{NewView, View, ViewUpdate};
 use crate::{config::Config, error::Error};
+use async_graphql::{Context, FieldResult, Object};
 use utils::current_timestamp;
 use utils::message_types::OwnedInsertMessage;
+use uuid::Uuid;
 
 pub struct MutationRoot;
 
