@@ -13,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config = RegistryConfig::parse();
+    let config: RegistryConfig = RegistryConfig::parse();
 
     debug!("Environment: {:?}", config);
 

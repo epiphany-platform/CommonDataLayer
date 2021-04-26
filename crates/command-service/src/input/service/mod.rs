@@ -51,10 +51,7 @@ where
 
         trace!("Received message {:?}", generic_message);
 
-        self.message_router
-            .handle_message(generic_message)
-            .await
-            .map_err(Error::CommunicationError)?;
+        self.message_router.handle_message(generic_message).await?;
 
         Ok(())
     }
