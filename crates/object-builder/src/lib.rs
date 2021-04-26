@@ -1,7 +1,7 @@
+use crate::args::Args;
 use anyhow::Context;
 use async_trait::async_trait;
 use bb8::{Pool, PooledConnection};
-use crate::args::Args;
 use futures::Stream;
 use rpc::common::RowDefinition as RpcRowDefinition;
 use rpc::materializer_general::{MaterializedView, Options};
@@ -12,7 +12,10 @@ use serde_json::Value;
 use std::{collections::HashMap, convert::TryInto, pin::Pin};
 use tonic::transport::Channel;
 use utils::communication::{consumer::ConsumerHandler, message::CommunicationMessage};
-use utils::{metrics::{self, counter}, types::materialization,};
+use utils::{
+    metrics::{self, counter},
+    types::materialization,
+};
 use uuid::Uuid;
 
 pub mod args;
@@ -135,7 +138,7 @@ impl ConsumerHandler for ObjectBuilderImpl {
 
         let rpc_output: MaterializedView = output.try_into()?;
 
-        rpc::materializer_general::connect(view.materializer_addr)
+        rpc::materializer_general::connect(view.materializer_address)
             .await?
             .upsert_view(utils::tracing::grpc::inject_span(rpc_output))
             .await?;

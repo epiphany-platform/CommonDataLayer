@@ -5,9 +5,7 @@ use itertools::Itertools;
 use semver::VersionReq;
 use uuid::Uuid;
 
-use rpc::schema_registry::Empty;
-
-use crate::error::{Error, Result};
+use crate::error::Result;
 use crate::schema::context::{EdgeRegistryPool, OnDemandMaterializerPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
