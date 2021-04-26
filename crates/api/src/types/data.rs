@@ -1,4 +1,5 @@
 use async_graphql::{InputObject, Json, SimpleObject};
+use serde_json::value::RawValue;
 use serde_json::Value;
 use uuid::Uuid;
 
@@ -9,7 +10,7 @@ pub struct InputMessage {
     /// Schema ID
     pub schema_id: Uuid,
     /// JSON-encoded payload
-    pub payload: Json<Value>,
+    pub payload: Json<Box<RawValue>>,
 }
 
 #[derive(serde::Deserialize, SimpleObject)]

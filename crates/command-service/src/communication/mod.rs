@@ -2,7 +2,7 @@ use crate::communication::resolution::Resolution;
 use crate::output::OutputPlugin;
 use std::sync::Arc;
 use tracing::trace;
-use utils::message_types::BorrowedInsertMessage;
+use utils::message_types::{BorrowedInsertMessage, OwnedInsertMessage};
 use utils::metrics::*;
 use utils::notification::NotificationSender;
 
@@ -10,7 +10,7 @@ pub mod config;
 pub mod resolution;
 
 pub struct MessageRouter<P: OutputPlugin> {
-    notification_sender: NotificationSender,
+    notification_sender: NotificationSender<OwnedInsertMessage>,
     output_plugin: Arc<P>,
 }
 
@@ -24,7 +24,7 @@ impl<P: OutputPlugin> Clone for MessageRouter<P> {
 }
 
 impl<P: OutputPlugin> MessageRouter<P> {
-    pub fn new(report_sender: NotificationSender, output_plugin: P) -> Self {
+    pub fn new(report_sender: NotificationSender<OwnedInsertMessage>, output_plugin: P) -> Self {
         Self {
             notification_sender: report_sender,
             output_plugin: Arc::new(output_plugin),

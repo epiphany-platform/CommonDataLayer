@@ -1,40 +1,50 @@
 use crate::communication::publisher::CommonPublisher;
-use crate::message_types::OwnedInsertMessage;
 use crate::notification::NotificationService;
 use anyhow::Context;
 use serde::Serialize;
-use serde_json::Value;
+use std::marker::PhantomData;
 use std::sync::Arc;
 use tracing::{debug, trace};
-use uuid::Uuid;
 
 #[derive(Clone)]
-pub struct FullNotificationSenderBase {
+pub struct FullNotificationSenderBase<T>
+where
+    T: Serialize + Send + Sync + 'static,
+{
     pub publisher: CommonPublisher,
     pub destination: Arc<String>,
     pub context: Arc<String>,
     pub application: &'static str,
+    _phantom: PhantomData<T>,
 }
 
-pub struct FullNotificationSender {
+pub struct FullNotificationSender<T>
+where
+    T: Serialize + Send + Sync + 'static,
+{
     pub producer: CommonPublisher,
     pub destination: Arc<String>,
     pub context: Arc<String>,
-    pub msg: OwnedInsertMessage,
+    pub msg: T,
     pub application: &'static str,
 }
 
 #[derive(Serialize)]
-struct NotificationBody<'a> {
+struct NotificationBody<'a, T>
+where
+    T: Serialize + Send + Sync + 'static,
+{
     application: &'static str,
     context: &'a str,
     description: &'a str,
-    schema_id: Uuid,
-    object_id: Uuid,
-    payload: Value,
+    #[serde(flatten)]
+    msg: T,
 }
 
-impl FullNotificationSenderBase {
+impl<T> FullNotificationSenderBase<T>
+where
+    T: Serialize + Send + Sync + 'static,
+{
     pub async fn new(
         publisher: CommonPublisher,
         destination: String,
@@ -51,16 +61,21 @@ impl FullNotificationSenderBase {
             destination: Arc::new(destination),
             context: Arc::new(context),
             application,
+            _phantom: PhantomData,
         }
     }
 }
 
 #[async_trait::async_trait]
-impl NotificationService for FullNotificationSender {
+impl<T> NotificationService for FullNotificationSender<T>
+where
+    T: Serialize + Send + Sync + 'static,
+{
     async fn notify(self: Box<Self>, description: &str) -> anyhow::Result<()> {
         trace!(
-            "Notification for id `{}` - `{}`",
-            self.msg.object_id,
+            "Notification `{}` - `{}`",
+            serde_json::to_string(&self.msg)
+                .unwrap_or_else(|err| format!("failed to serialize json {}", err)),
             description
         );
 
@@ -68,9 +83,7 @@ impl NotificationService for FullNotificationSender {
             application: self.application,
             context: self.context.as_str(),
             description,
-            schema_id: self.msg.schema_id,
-            object_id: self.msg.object_id,
-            payload: self.msg.data,
+            msg: self.msg,
         };
 
         self.producer

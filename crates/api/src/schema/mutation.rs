@@ -1,6 +1,5 @@
 use async_graphql::{Context, FieldResult, Object};
 use num_traits::ToPrimitive;
-use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
 
 use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
@@ -9,6 +8,7 @@ use crate::types::data::{InputMessage, ObjectRelations};
 use crate::types::schema::*;
 use crate::{config::Config, error::Error};
 use utils::current_timestamp;
+use utils::message_types::OwnedInsertMessage;
 
 pub struct MutationRoot;
 

@@ -147,7 +147,7 @@ impl ParallelConsumerHandler for Handler {
                 for entry in maybe_array.iter() {
                     let r = route(
                         &self.cache,
-                        &entry,
+                        entry,
                         &message_key,
                         &self.producer,
                         &self.schema_registry_addr,

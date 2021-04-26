@@ -1,15 +1,19 @@
-use crate::message_types::BorrowedInsertMessage;
+use crate::message_types::OwnMessage;
 use crate::notification::full_notification_sender::{
     FullNotificationSender, FullNotificationSenderBase,
 };
 pub use config::NotificationServiceConfig;
+use serde::Serialize;
 
 mod config;
 pub mod full_notification_sender;
 
 #[derive(Clone)]
-pub enum NotificationSender {
-    Full(FullNotificationSenderBase),
+pub enum NotificationSender<T>
+where
+    T: Serialize + Send + Sync + 'static,
+{
+    Full(FullNotificationSenderBase<T>),
     Disabled,
 }
 
@@ -25,15 +29,21 @@ impl NotificationService for () {
     }
 }
 
-impl NotificationSender {
-    pub fn with_message_body(self, msg: &BorrowedInsertMessage) -> Box<dyn NotificationService> {
+impl<T> NotificationSender<T>
+where
+    T: Serialize + Send + Sync + 'static,
+{
+    pub fn with_message_body<U>(self, msg: &U) -> Box<dyn NotificationService>
+    where
+        U: OwnMessage<Owned = T>,
+    {
         match self {
             NotificationSender::Full(config) => Box::new(FullNotificationSender {
                 application: config.application,
                 producer: config.publisher,
                 destination: config.destination,
                 context: config.context,
-                msg: msg.to_owned(),
+                msg: msg.to_owned_message(),
             }),
             NotificationSender::Disabled => Box::new(()),
         }
