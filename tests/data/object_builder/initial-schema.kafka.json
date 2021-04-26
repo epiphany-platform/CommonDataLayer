@@ -1,62 +1,52 @@
 {
-  "schema_views": [
-    {
-      "view_id": "ec8cc976-412b-11eb-8000-000000000000",
-      "schema_id": "2cfad3c7-411a-11eb-8000-000000000000"
-    }
-  ],
-  "schema_definitions": [
-    {
-      "version": "1.0.0",
-      "definition_id": "2cfad4e7-411a-11eb-8001-000000000000",
-      "schema_id": "2cfad3c7-411a-11eb-8000-000000000000"
-    },
-    {
-      "version": "1.0.0",
-      "definition_id": "a5e0c96b-412c-11eb-8001-000000000000",
-      "schema_id": "a5e0c7e2-412c-11eb-8000-000000000000"
-    }
-  ],
-  "views": {
-    "ec8cc976-412b-11eb-8000-000000000000": {
-      "materializer_addr": "http://localhost:1234",
-      "name": "new view",
-      "materializer_options": {},
-      "fields": {
-        "foo": {
-          "field_name": "name"
+    "schemas": [
+        {
+            "id": "2cfad3c7-411a-11eb-8000-000000000000",
+            "type": "DocumentStorage",
+            "query_address": "http://localhost:50102",
+            "insert_destination": "cdl.document.data",
+            "name": "new schema",
+            "views": [
+                {
+                    "id": "ec8cc976-412b-11eb-8000-000000000000",
+                    "materializer_address": "http://localhost:1234",
+                    "name": "new view",
+                    "materializer_options": {},
+                    "fields": {
+                        "foo": {
+                            "field_name": "name"
+                        },
+                        "department": {
+                            "field_name": "department"
+                        }
+                    }
+                }
+            ],
+            "definitions": [
+                {
+                    "version": "1.0.0",
+                    "definition": {
+                        "b": "string"
+                    }
+                }
+            ]
         },
-        "department": {
-          "field_name": "department"
+        {
+            "id": "a5e0c7e2-412c-11eb-8000-000000000000",
+            "type": "DocumentStorage",
+            "query_address": "http://localhost:50102",
+            "insert_destination": "cdl.document.data",
+            "name": "second schema",
+            "views": [],
+            "definitions": [
+                {
+                    "version": "1.0.0",
+                    "definition": {
+                        "name": "string",
+                        "department": "string"
+                    }
+                }
+            ]
         }
-      }
-    }
-  },
-  "definitions": {
-    "a5e0c96b-412c-11eb-8001-000000000000": {
-      "definition": {
-        "b": "string"
-      }
-    },
-    "2cfad4e7-411a-11eb-8001-000000000000": {
-      "definition": {
-        "name": "string",
-        "department": "string"
-      }
-    }
-  },
-  "schemas": {
-    "2cfad3c7-411a-11eb-8000-000000000000": {
-      "schema_type": "DocumentStorage",
-      "query_address": "http://localhost:50102",
-      "insert_destination": "cdl.document.data",
-      "name": "new schema"
-    },
-    "a5e0c7e2-412c-11eb-8000-000000000000": {
-      "schema_type": "DocumentStorage",
-      "query_address": "http://localhost:50102",
-      "insert_destination": "cdl.document.data",
-      "name": "second schema"
-    }
-  }
+    ]
 }

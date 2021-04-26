@@ -1,9 +1,11 @@
-use cache::SchemaRegistryCache;
-use clap::Clap;
 use std::sync::Arc;
-use utils::metrics;
+
+use clap::Clap;
 use uuid::Uuid;
 use warp::Filter;
+
+use cache::SchemaRegistryCache;
+use utils::metrics;
 
 pub mod cache;
 pub mod error;
@@ -39,26 +41,26 @@ async fn main() {
         config.cache_capacity,
     ));
 
-    let address_filter = warp::any().map(move || schema_registry_cache.clone());
+    let cache_filter = warp::any().map(move || schema_registry_cache.clone());
     let schema_id_filter = warp::header::header::<Uuid>("SCHEMA_ID");
     let body_filter = warp::body::content_length_limit(1024 * 32).and(warp::body::json());
 
     let single_route = warp::path!("single" / Uuid)
         .and(schema_id_filter)
-        .and(address_filter.clone())
+        .and(cache_filter.clone())
         .and(body_filter)
         .and_then(handler::query_single);
     let multiple_route = warp::path!("multiple" / String)
         .and(schema_id_filter)
-        .and(address_filter.clone())
+        .and(cache_filter.clone())
         .and_then(handler::query_multiple);
     let schema_route = warp::path!("schema")
         .and(schema_id_filter)
-        .and(address_filter.clone())
+        .and(cache_filter.clone())
         .and_then(handler::query_by_schema);
     let raw_route = warp::path!("raw")
         .and(schema_id_filter)
-        .and(address_filter.clone())
+        .and(cache_filter.clone())
         .and(body_filter)
         .and_then(handler::query_raw);
 

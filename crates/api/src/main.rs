@@ -14,7 +14,9 @@ use warp::{http::Response as HttpResponse, hyper::header::CONTENT_TYPE, hyper::M
 
 use crate::schema::context::EdgeRegistryConnectionManager;
 use config::Config;
-use schema::context::{MQEvents, ObjectBuilderConnectionManager, SchemaRegistryConnectionManager};
+use schema::context::{
+    MQEvents, OnDemandMaterializerConnectionManager, SchemaRegistryConnectionManager,
+};
 use schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
 
 #[tokio::main]
@@ -44,9 +46,9 @@ async fn main() {
         .await
         .unwrap();
 
-    let ob_pool = bb8::Pool::builder()
-        .build(ObjectBuilderConnectionManager {
-            address: config.object_builder_addr.clone(),
+    let odm_pool = bb8::Pool::builder()
+        .build(OnDemandMaterializerConnectionManager {
+            address: config.on_demand_materializer_addr.clone(),
         })
         .await
         .unwrap();
@@ -55,7 +57,7 @@ async fn main() {
         .data(config)
         .data(sr_pool)
         .data(er_pool)
-        .data(ob_pool)
+        .data(odm_pool)
         .data(MQEvents {
             events: Default::default(),
         })

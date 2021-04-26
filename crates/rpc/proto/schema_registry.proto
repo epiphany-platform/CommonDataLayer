@@ -5,97 +5,97 @@ package schema_registry;
 service SchemaRegistry {
     rpc AddSchema (NewSchema) returns (Id);
     rpc AddSchemaVersion (NewSchemaVersion) returns (Empty);
-    rpc UpdateSchemaMetadata (SchemaMetadataUpdate) returns (Empty);
-    rpc AddViewToSchema (NewSchemaView) returns (Id);
-    rpc UpdateView (UpdatedView) returns (View);
-    rpc GetSchema (VersionedId) returns (SchemaDefinition);
-    rpc GetSchemaMetadata (Id) returns (Schema);
-    rpc GetSchemaInsertDestination (Id) returns (SchemaInsertDestination);
-    rpc GetSchemaQueryAddress (Id) returns (SchemaQueryAddress);
+    rpc UpdateSchema (SchemaMetadataUpdate) returns (Empty);
+    rpc AddViewToSchema (NewView) returns (Id);
+    rpc UpdateView (ViewUpdate) returns (Empty);
+    rpc GetSchemaMetadata (Id) returns (SchemaMetadata);
     rpc GetSchemaVersions (Id) returns (SchemaVersions);
-    rpc GetSchemaType(Id) returns (SchemaType);
+    rpc GetSchemaDefinition (VersionedId) returns (SchemaDefinition);
+    rpc GetFullSchema (Id) returns (FullSchema);
     rpc GetView (Id) returns (View);
     rpc GetAllSchemas (Empty) returns (Schemas);
-    rpc GetAllSchemaNames (Empty) returns (SchemaNames);
+    rpc GetAllFullSchemas (Empty) returns (FullSchemas);
     rpc GetAllViewsOfSchema (Id) returns (SchemaViews);
-    rpc GetBaseSchemaOfView (Id) returns (ViewSchema);
+    rpc GetBaseSchemaOfView (Id) returns (Schema);
     rpc ValidateValue (ValueToValidate) returns (Errors);
-    rpc PromoteToMaster (Empty) returns (PodName);
-    rpc Heartbeat (Empty) returns (Empty);
+    rpc WatchAllSchemaUpdates (Empty) returns (stream Schema);
+    rpc Ping (Empty) returns (Empty);
 }
 
 message NewSchema {
-    // for replication (empty for master, UUID for slaves)
-    required string id = 1;
-    required string name = 2;
-    required string query_address = 3;
-    required string insert_destination = 4;
-    required string definition = 5;
-    required SchemaType.Type schema_type = 6;
+    required SchemaMetadata metadata = 1;
+    required bytes definition = 2;
 }
 
-message Schema {
+message SchemaMetadata {
     required string name = 1;
     required string insert_destination = 2;
     required string query_address = 3;
     required SchemaType.Type schema_type = 4;
 }
 
+message SchemaMetadataPatch {
+    optional string name = 1;
+    optional string query_address = 2;
+    optional string insert_destination = 3;
+    optional SchemaType.Type schema_type = 4;
+}
+
+message Schema {
+    required string id = 1;
+    required SchemaMetadata metadata = 2;
+}
+
+message View {
+    required string id = 1;
+    required string name = 2;
+    required string materializer_address = 3;
+    required string materializer_options = 4;
+    map<string, string> fields = 5;
+}
+
+message NewView {
+    required string schema_id = 1;
+    required string name = 2;
+    required string materializer_address = 3;
+    required string materializer_options = 4;
+    map<string, string> fields = 5;
+}
+
+message ViewUpdate {
+    required string id = 1;
+    optional string name = 2;
+    optional string materializer_address = 3;
+    required string materializer_options = 4;
+    map<string, string> fields = 5;
+    required bool update_fields = 6;
+}
+
+message FullSchema {
+    required string id = 1;
+    required SchemaMetadata metadata = 2;
+    repeated SchemaDefinition definitions = 3;
+    repeated View views = 4;
+}
+
 message NewSchemaVersion {
     required string id = 1;
-    required string version = 2;
-    required string definition = 3;
+    required SchemaDefinition definition = 2;
 }
 
 message SchemaMetadataUpdate {
     required string id = 1;
-    optional string name = 2;
-    optional string insert_destination = 3;
-    optional string address = 4;
-    optional SchemaType.Type schema_type = 5;
-}
-
-message NewSchemaView {
-    required string schema_id = 1;
-    // for replication (empty for master, UUID for slaves)
-    required string view_id = 2;
-    required string name = 3;
-    required string materializer_addr = 4;
-    required string materializer_options = 5;
-    required string fields = 6;
-}
-
-message UpdatedView {
-    required string id = 1;
-    optional string name = 2;
-    optional string materializer_addr = 3;
-    optional string materializer_options = 4;
-    optional string fields = 5;
-}
-
-message View {
-    required string name = 1;
-    required string materializer_addr = 2;
-    required string materializer_options = 3;
-    required string fields = 4;
+    required SchemaMetadataPatch patch = 2;
 }
 
 message VersionedId {
     required string id = 1;
-    required string version_req = 2;
+    optional string version_req = 2;
 }
 
 message SchemaDefinition {
     required string version = 1;
-    required string definition = 2;
-}
-
-message SchemaInsertDestination {
-    required string insert_destination = 1;
-}
-
-message SchemaQueryAddress {
-    required string address = 1;
+    required bytes definition = 2;
 }
 
 message Id {
@@ -107,33 +107,24 @@ message SchemaVersions {
 }
 
 message Schemas {
-    map<string, Schema> schemas = 1;
+    repeated Schema schemas = 1;
 }
 
-message SchemaNames {
-    map<string, string> names = 1;
+message FullSchemas {
+    repeated FullSchema schemas = 1;
 }
 
 message SchemaViews {
-    map<string, View> views = 1;
-}
-
-message ViewSchema {
-    required string schema_id = 1;
-    required Schema schema = 2;
+    repeated View views = 1;
 }
 
 message ValueToValidate {
-    required string schema_id = 1;
-    required string value = 2;
+    required VersionedId schema_id = 1;
+    required bytes value = 2;
 }
 
 message Errors {
     repeated string errors = 1;
-}
-
-message PodName {
-    required string name = 1;
 }
 
 message SchemaType {

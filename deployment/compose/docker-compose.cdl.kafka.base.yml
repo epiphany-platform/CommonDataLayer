@@ -126,6 +126,25 @@ services:
       OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
       OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
+  materializer_ondemand:
+    image: cdl-materializer-ondemand:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=materializer-ondemand
+        - ENV=DEV
+    command: "/bin/materializer-ondemand"
+    ports:
+      - "50108:50108"
+    environment:
+      INPUT_PORT: "50108"
+      OBJECT_BUILDER_ADDR: "http://object_builder:50107"
+      RUST_LOG: info,materializer_ondemand=trace
+      OTEL_SERVICE_NAME: "materializer-ondemand"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+
   partial_update_engine:
     image: cdl-partial-update-engine:latest
     build:
@@ -162,7 +181,7 @@ services:
       RUST_LOG: info,api=trace
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       EDGE_REGISTRY_ADDR: "http://edge_registry:50110"
-      OBJECT_BUILDER_ADDR: "http://object_builder:50107"
+      ON_DEMAND_MATERIALIZER_ADDR: "http://materializer_ondemand:50108"
       QUERY_ROUTER_ADDR: "http://query_router:50103"
       COMMUNICATION_METHOD: "kafka"
       KAFKA_BROKERS: "kafka:9093"

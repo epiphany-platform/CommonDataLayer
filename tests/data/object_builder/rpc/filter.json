@@ -45,17 +45,13 @@
       }
     }
   ],
-  "expected": {
-    "viewId": "ec8cc976-412b-11eb-8000-000000000000",
-    "options": "{}",
-    "rows": [
-      {
-        "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
-        "fields": {
-          "foo": "\"John\"",
-          "department": "\"ACC\""
-        }
+  "expected": [
+    {
+      "objectId": "6793227c-1b5a-413c-b310-1a86dc2d3c78",
+      "fields": {
+        "foo": "\"John\"",
+        "department": "\"ACC\""
       }
-    ]
-  }
+    }
+  ]
 }

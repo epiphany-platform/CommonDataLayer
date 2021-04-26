@@ -28,4 +28,5 @@ docker-compose \
     query_router \
     data_router \
     partial_update_engine \
-    object_builder
+    object_builder \
+    materializer_ondemand

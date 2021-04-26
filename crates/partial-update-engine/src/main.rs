@@ -147,7 +147,6 @@ async fn process_changes(
 ) -> Result<()> {
     trace!("processing changes {:#?}", changes);
     let mut client = rpc::schema_registry::connect(config.schema_registry_addr.to_owned()).await?;
-
     let mut schema_cache: HashMap<Uuid, Vec<Uuid>> // (Schema_ID, Vec<View_ID>)
         = Default::default();
 
@@ -174,7 +173,7 @@ async fn process_changes(
                     .into_inner()
                     .views
                     .iter()
-                    .map(|view| Ok(view.0.parse()?))
+                    .map(|view| Ok(view.id.parse()?))
                     .collect::<Result<Vec<Uuid>>>()?;
 
                 entry.insert(view_ids)

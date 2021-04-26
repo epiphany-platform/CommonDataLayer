@@ -22,9 +22,12 @@ queryRouter:
   port: 30153
 
 schemaRegistry:
-  storageClass: standard
-  storageSize: 3Gi
   port: 30150
+  postgresUsername: postgres
+  postgresPassword: postgres
+  postgresHost: 10.1.1.5
+  postgresPort: 5432
+  postgresDbname: cdldb
 
 edgeRegistry:
   postgresUsername: postgres
@@ -40,6 +43,9 @@ edgeRegistry:
 objectBuilder:
   inputPort: 50111
 
+materializerOnDemand:
+  inputPort: 50112
+
 webAdmin:
   port: 30151
 
@@ -49,7 +55,7 @@ partialUpdateEngine:
 postgres-document:
   commandServiceReplicaCount: 1
   queryServiceReplicaCount: 1
-  materializerReplicaCount: 1
+  materializerGeneralReplicaCount: 1
   postgresUsername: postgres
   postgresPassword: postgres
   postgresHost: 10.1.1.5

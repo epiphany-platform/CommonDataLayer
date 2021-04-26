@@ -1,5 +1,10 @@
-use rpc::schema_registry::{Id, NewSchemaView, UpdatedView};
+use std::collections::HashMap;
+use std::path::PathBuf;
+
+use rpc::schema_registry::{Id, NewView, ViewUpdate};
 use uuid::Uuid;
+
+use crate::utils::read_json;
 
 pub async fn get_view(view_id: Uuid, registry_addr: String) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
@@ -12,7 +17,7 @@ pub async fn get_view(view_id: Uuid, registry_addr: String) -> anyhow::Result<()
 
     println!(
         "Name: {}, Materializer Address: {}",
-        view.name, view.materializer_addr
+        view.name, view.materializer_address
     );
 
     Ok(())
@@ -21,19 +26,20 @@ pub async fn get_view(view_id: Uuid, registry_addr: String) -> anyhow::Result<()
 pub async fn add_view_to_schema(
     schema_id: Uuid,
     name: String,
-    materializer_addr: String,
+    materializer_address: String,
     materializer_options: String,
+    fields: Option<PathBuf>,
     registry_addr: String,
-    fields: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
-    let view = NewSchemaView {
-        view_id: "".into(),
+
+    let fields = read_json(fields)?;
+    let view = NewView {
         schema_id: schema_id.to_string(),
         name: name.clone(),
-        materializer_addr,
+        materializer_address,
         materializer_options,
-        fields,
+        fields: serde_json::from_value(fields)?,
     };
 
     let response = client.add_view_to_schema(view).await?;
@@ -51,26 +57,31 @@ pub async fn add_view_to_schema(
 pub async fn update_view(
     view_id: Uuid,
     name: Option<String>,
-    materializer_addr: Option<String>,
+    materializer_address: Option<String>,
     materializer_options: Option<String>,
-    fields: Option<String>,
+    fields: Option<PathBuf>,
+    update_fields: bool,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
-    let view = UpdatedView {
+
+    let fields = if update_fields {
+        serde_json::from_value(read_json(fields)?)?
+    } else {
+        HashMap::default()
+    };
+    let view = ViewUpdate {
         id: view_id.to_string(),
         name,
-        materializer_addr,
-        materializer_options,
+        materializer_address,
+        materializer_options: materializer_options.unwrap_or_default(),
+        update_fields,
         fields,
     };
 
-    let old_view = client.update_view(view).await?.into_inner();
+    client.update_view(view).await?.into_inner();
 
-    println!(
-        "Old Name: {}, Old Materializer_Addr: {}",
-        old_view.name, old_view.materializer_addr
-    );
+    eprintln!("Successfully updated view.");
 
     Ok(())
 }
@@ -89,8 +100,8 @@ pub async fn get_schema_views(schema_id: Uuid, registry_addr: String) -> anyhow:
         anyhow::bail!("No views exist yet for the given schema in the schema registry.");
     }
 
-    for (id, view) in views {
-        println!("ID: {}, Name: {}", id, view.name);
+    for view in views {
+        println!("ID: {}, Name: {}", view.id, view.name);
     }
 
     Ok(())

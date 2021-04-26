@@ -48,8 +48,10 @@ pub mod object_builder_client {
         pub async fn materialize(
             &mut self,
             request: impl tonic::IntoRequest<super::View>,
-        ) -> Result<tonic::Response<super::super::common::MaterializedView>, tonic::Status>
-        {
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::super::common::RowDefinition>>,
+            tonic::Status,
+        > {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -59,7 +61,9 @@ pub mod object_builder_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/object_builder.ObjectBuilder/Materialize");
-            self.inner.unary(request.into_request(), path, codec).await
+            self.inner
+                .server_streaming(request.into_request(), path, codec)
+                .await
         }
         pub async fn heartbeat(
             &mut self,
@@ -97,10 +101,15 @@ pub mod object_builder_server {
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with ObjectBuilderServer."]
     #[async_trait]
     pub trait ObjectBuilder: Send + Sync + 'static {
+        #[doc = "Server streaming response type for the Materialize method."]
+        type MaterializeStream: futures_core::Stream<Item = Result<super::super::common::RowDefinition, tonic::Status>>
+            + Send
+            + Sync
+            + 'static;
         async fn materialize(
             &self,
             request: tonic::Request<super::View>,
-        ) -> Result<tonic::Response<super::super::common::MaterializedView>, tonic::Status>;
+        ) -> Result<tonic::Response<Self::MaterializeStream>, tonic::Status>;
         async fn heartbeat(
             &self,
             request: tonic::Request<super::Empty>,
@@ -141,9 +150,11 @@ pub mod object_builder_server {
                 "/object_builder.ObjectBuilder/Materialize" => {
                     #[allow(non_camel_case_types)]
                     struct MaterializeSvc<T: ObjectBuilder>(pub Arc<T>);
-                    impl<T: ObjectBuilder> tonic::server::UnaryService<super::View> for MaterializeSvc<T> {
-                        type Response = super::super::common::MaterializedView;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                    impl<T: ObjectBuilder> tonic::server::ServerStreamingService<super::View> for MaterializeSvc<T> {
+                        type Response = super::super::common::RowDefinition;
+                        type ResponseStream = T::MaterializeStream;
+                        type Future =
+                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
                         fn call(&mut self, request: tonic::Request<super::View>) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move { (*inner).materialize(request).await };
@@ -152,7 +163,7 @@ pub mod object_builder_server {
                     }
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let interceptor = inner.1.clone();
+                        let interceptor = inner.1;
                         let inner = inner.0;
                         let method = MaterializeSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
@@ -161,7 +172,7 @@ pub mod object_builder_server {
                         } else {
                             tonic::server::Grpc::new(codec)
                         };
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

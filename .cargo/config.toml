@@ -1,2 +1,5 @@
+[env]
+SQLX_OFFLINE = true
+
 [alias]
 xtask = "run --package xtask --"

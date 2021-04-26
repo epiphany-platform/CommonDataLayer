@@ -1,16 +1,16 @@
+use std::net::{Ipv4Addr, SocketAddrV4};
+use std::process;
+use std::sync::{Arc, Mutex};
+
 use anyhow::Context;
 use async_trait::async_trait;
 use clap::Clap;
 use lru_cache::LruCache;
-use rpc::schema_registry::Id;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{
-    net::{Ipv4Addr, SocketAddrV4},
-    process,
-    sync::{Arc, Mutex},
-};
 use tracing::{debug, error, trace};
+
+use rpc::schema_registry::Id;
 use utils::{
     abort_on_poison,
     communication::{
@@ -21,12 +21,13 @@ use utils::{
         },
         publisher::CommonPublisher,
     },
+    current_timestamp,
     message_types::BorrowedInsertMessage,
+    message_types::DataRouterInsertMessage,
     metrics::{self, counter},
     parallel_task_queue::ParallelTaskQueue,
     task_limiter::TaskLimiter,
 };
-use utils::{current_timestamp, message_types::DataRouterInsertMessage};
 use uuid::Uuid;
 
 #[derive(Clap, Deserialize, Debug, Serialize)]
@@ -89,7 +90,6 @@ async fn main() -> anyhow::Result<()> {
     let producer = Arc::new(new_producer(&config).await?);
 
     let cache = Arc::new(Mutex::new(LruCache::new(config.cache_capacity)));
-
     let schema_registry_addr = Arc::new(config.schema_registry_addr);
 
     let task_queue = Arc::new(ParallelTaskQueue::default());
@@ -284,7 +284,7 @@ async fn new_consumer(config: &Config) -> anyhow::Result<ParallelCommonConsumer>
     Ok(ParallelCommonConsumer::new(config).await?)
 }
 
-#[tracing::instrument(skip(cache, producer))]
+#[tracing::instrument(skip(producer))]
 async fn route(
     cache: &Mutex<LruCache<Uuid, String>>,
     event: &DataRouterInsertMessage<'_>,
@@ -298,12 +298,19 @@ async fn route(
         timestamp: current_timestamp(),
         data: event.data,
     };
-    let insert_destination =
-        get_schema_insert_destination(&cache, payload.schema_id, &schema_registry_addr).await?;
+
+    let mut conn = rpc::schema_registry::connect(schema_registry_addr.to_owned()).await?;
+    let schema = conn
+        .get_schema_metadata(rpc::schema_registry::Id {
+            id: event.schema_id.to_string(),
+        })
+        .await
+        .context("failed to get schema metadata")?
+        .into_inner();
 
     send_message(
         producer,
-        &insert_destination,
+        &schema.insert_destination,
         message_key,
         serde_json::to_vec(&payload)?,
     )
@@ -329,7 +336,7 @@ async fn get_schema_insert_destination(
 
     let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
     let channel = client
-        .get_schema_insert_destination(utils::tracing::grpc::inject_span(Id {
+        .get_schema_metadata(utils::tracing::grpc::inject_span(Id {
             id: schema_id.to_string(),
         }))
         .await?

@@ -9,7 +9,7 @@ from tests.common.query_service import QueryService
 from tests.common.kafka import KafkaInputConfig, create_kafka_topic, delete_kafka_topic
 from tests.rpc.proto import object_builder_pb2_grpc
 from tests.rpc.proto.object_builder_pb2 import View
-from tests.rpc.proto.common_pb2 import MaterializedView, RowDefinition
+from tests.rpc.proto.common_pb2 import RowDefinition
 from tests.common.postgres import clear_data, insert_data, PostgresConfig
 
 TOPIC = "cdl.object_builder.tests_data"
@@ -32,7 +32,11 @@ def prepare(request, tmp_path):
 
     insert_data(postgres_config, data)
 
-    sr = SchemaRegistry(str(tmp_path), kafka_config.brokers, initial_schema = "data/object_builder/initial-schema.kafka.json")
+    sr = SchemaRegistry(
+        str(tmp_path),
+        kafka_config.brokers,
+        postgres_config,
+        initial_schema="data/object_builder/initial-schema.kafka.json")
     qs = QueryService(db_config=postgres_config)
 
     ob = ObjectBuilder(f"http://localhost:{sr.input_port}", kafka_config)
@@ -49,7 +53,7 @@ def prepare(request, tmp_path):
     qs.stop()
     sr.stop()
 
-    # cleanup environmeFt
+    # cleanup environment
     delete_kafka_topic(kafka_config, TOPIC)
     clear_data(postgres_config)
 
@@ -58,11 +62,14 @@ def test_materialization(prepare):
     request, ob, expected, expectedError = prepare
 
     try:
-        response = ob.Materialize(request)
+        it = []
+        responses = ob.Materialize(request)
+        for response in responses:
+            it.append(MessageToDict(response))
 
-        response.rows.sort(key=lambda elem: elem.object_id)
+        it.sort(key=lambda elem: elem['objectId'])
 
-        assert_json(MessageToDict(response), expected)
+        assert_json(it, expected)
     except grpc.RpcError as rpc_error:
         error_str = f"{rpc_error}"
         if expectedError is not None:

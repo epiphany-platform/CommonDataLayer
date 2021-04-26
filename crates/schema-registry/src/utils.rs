@@ -1,15 +1,10 @@
-use crate::{
-    db::SchemaDb, error::RegistryResult, types::storage::vertices::Definition, types::VersionedUuid,
-};
-use indradb::Datastore;
+use crate::error::{RegistryError, RegistryResult};
+use crate::{db::SchemaRegistryDb, types::VersionedUuid};
 use jsonschema::JSONSchema;
 use serde_json::Value;
 use uuid::Uuid;
 
-pub fn build_full_schema<D: Datastore>(
-    mut schema: Value,
-    db: &SchemaDb<D>,
-) -> RegistryResult<Definition> {
+pub async fn build_full_schema(schema: &mut Value, conn: &SchemaRegistryDb) -> RegistryResult<()> {
     if let Some(defs) = schema
         .get_mut("definitions")
         .and_then(|val| val.as_object_mut())
@@ -25,12 +20,13 @@ pub fn build_full_schema<D: Datastore>(
             .collect();
 
         for (key, id) in schemas_to_retrieve {
-            let schema = db.get_schema_definition(&VersionedUuid::any(id))?;
-            defs[&key] = schema.definition;
+            let (_version, definition) =
+                conn.get_schema_definition(&VersionedUuid::any(id)).await?;
+            defs[&key] = definition;
         }
     }
 
-    JSONSchema::compile(&schema)?;
+    JSONSchema::compile(&schema).map_err(RegistryError::InvalidJsonSchema)?;
 
-    Ok(Definition { definition: schema })
+    Ok(())
 }

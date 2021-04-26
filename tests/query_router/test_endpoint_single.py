@@ -24,7 +24,7 @@ def prepare_postgres(tmp_path):
     postgres_config = PostgresConfig()
 
     qs = QueryService(db_config=postgres_config)
-    sr = SchemaRegistry(str(tmp_path), kafka_input_config.brokers)
+    sr = SchemaRegistry(str(tmp_path), kafka_input_config.brokers, postgres_config)
 
     # prepare environment
     psql_clear_data(postgres_config)
@@ -53,9 +53,10 @@ def prepare_victoria_metrics(tmp_path):
     # declare environment
     kafka_input_config = KafkaInputConfig(TOPIC)
     victoria_metrics_config = VictoriaMetricsConfig()
+    postgres_config = PostgresConfig()
 
     qs = QueryServiceTs(db_config=victoria_metrics_config)
-    sr = SchemaRegistry(str(tmp_path), kafka_input_config.brokers)
+    sr = SchemaRegistry(str(tmp_path), kafka_input_config.brokers, postgres_config)
 
     # prepare environment
     vm_clear_data(victoria_metrics_config)

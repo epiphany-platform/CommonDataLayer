@@ -50,7 +50,6 @@ jobs:
           cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
       - name: deploy infrastructure
         run: helm install --values ./deployment/helm/infrastructure/values.yaml infrastructure ./deployment/helm/infrastructure
-
       - name: Get Date
         id: get-date
         run: |
@@ -93,6 +92,11 @@ jobs:
         run: |
           kubectl get pods
           [[ -z `kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}"` ]]
+      - name: logging support for k8s
+        if: ${{ failure() }}
+        run: |
+          kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}" | xargs -n 1 -t  kubectl logs
+          kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}" | xargs -n 1 -t  kubectl describe pod
       - name: uninstall cdl kafka
         run: helm uninstall cdl
       - name: wait

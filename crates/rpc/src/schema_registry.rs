@@ -14,11 +14,16 @@ pub async fn connect(addr: String) -> Result<SchemaRegistryClient<Channel>, Clie
 }
 
 pub mod types {
-    use super::schema_type;
-    use serde::{Deserialize, Serialize};
+    use std::convert::TryFrom;
 
-    #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-    #[repr(i32)]
+    use async_graphql::Enum;
+    use serde::{Deserialize, Serialize};
+    use tonic::Status;
+
+    use super::schema_type;
+
+    #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, sqlx::Type, Enum)]
+    #[sqlx(type_name = "schema_type_enum", rename_all = "lowercase")]
     pub enum SchemaType {
         DocumentStorage,
         Timeseries,
@@ -60,6 +65,25 @@ pub mod types {
                 "Timeseries" => Ok(SchemaType::Timeseries),
                 invalid => Err(anyhow::anyhow!("Invalid schema type: {}", invalid)),
             }
+        }
+    }
+
+    impl TryFrom<i32> for SchemaType {
+        type Error = Status;
+
+        fn try_from(variant: i32) -> Result<Self, Self::Error> {
+            match variant {
+                0 => Ok(SchemaType::DocumentStorage),
+                1 => Ok(SchemaType::Timeseries),
+                _ => Err(Status::invalid_argument("Invalid Schema Type")),
+            }
+        }
+    }
+
+    impl From<SchemaType> for i32 {
+        fn from(r#type: SchemaType) -> i32 {
+            let r#type: schema_type::Type = r#type.into();
+            r#type as i32
         }
     }
 }

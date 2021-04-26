@@ -2,22 +2,22 @@ use std::collections::HashMap;
 
 use async_graphql::{Context, FieldResult, Json, Object};
 use itertools::Itertools;
-use num_traits::FromPrimitive;
+use semver::VersionReq;
 use uuid::Uuid;
 
-use rpc::schema_registry::Empty;
-
-use crate::error::{Error, Result};
-use crate::schema::context::{EdgeRegistryPool, ObjectBuilderPool, SchemaRegistryPool};
+use crate::error::Result;
+use crate::schema::context::{EdgeRegistryPool, OnDemandMaterializerPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
-use crate::types::schema::{Definition, Schema, SchemaType, View};
+use crate::types::schema::{Definition, FullSchema};
+use crate::types::view::View;
 use crate::types::view::{MaterializedView, RowDefinition};
 use crate::{config::Config, types::view::OnDemandViewRequest};
+use rpc::schema_registry::types::SchemaType;
 
 #[Object]
 /// Schema is the format in which data is to be sent to the Common Data Layer.
-impl Schema {
+impl FullSchema {
     /// Random UUID assigned on creation
     async fn id(&self) -> &Uuid {
         &self.id
@@ -38,6 +38,7 @@ impl Schema {
         &self.query_address
     }
 
+    /// Whether this schema represents documents or timeseries data.
     #[graphql(name = "type")]
     async fn schema_type(&self) -> SchemaType {
         self.schema_type
@@ -46,93 +47,25 @@ impl Schema {
     /// Returns schema definition for given version.
     /// Schema is following semantic versioning, querying for "2.1.0" will return "2.1.1" if exist,
     /// querying for "=2.1.0" will return "2.1.0" if exist
-    #[tracing::instrument(skip(self, context), fields(id))]
-    async fn definition(&self, context: &Context<'_>, version: String) -> FieldResult<Definition> {
-        let id = self.id.to_string();
-        // For unknown reason i couldn't do fields(self.id = ?self.id) even tho documentation says I should
-        // (https://docs.rs/tracing/0.1.25/tracing/attr.instrument.html#examples-2)...
-        // So this is way around it.
-        tracing::Span::current().record("id", &id.as_str());
-        let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
-        let schema_def = conn
-            .get_schema(rpc::schema_registry::VersionedId {
-                id,
-                version_req: version,
-            })
-            .await
-            .map_err(rpc::error::schema_registry_error)?
-            .into_inner();
+    #[tracing::instrument(skip(self))]
+    async fn definition(&self, version_req: String) -> FieldResult<&Definition> {
+        let version_req = VersionReq::parse(&version_req)?;
+        let definition = self
+            .get_definition(version_req)
+            .ok_or("No definition matches the given requirement")?;
 
-        Ok(Definition {
-            version: schema_def.version,
-            definition: Json(serde_json::from_str(&schema_def.definition)?),
-        })
+        Ok(definition)
     }
 
     /// All definitions connected to this schema.
     /// Each schema can have only one active definition, under latest version but also contains history for backward compability.
-    #[tracing::instrument(skip(self, context), fields(id))]
-    async fn definitions(&self, context: &Context<'_>) -> FieldResult<Vec<Definition>> {
-        let id = self.id.to_string();
-        tracing::Span::current().record("id", &id.as_str());
-
-        let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
-        let rpc_id = rpc::schema_registry::Id { id: id.clone() };
-
-        let versions = conn
-            .get_schema_versions(rpc_id)
-            .await
-            .map_err(rpc::error::schema_registry_error)?
-            .into_inner()
-            .versions;
-
-        let mut definitions = vec![];
-        for version in versions {
-            let schema_def = conn
-                .get_schema(rpc::schema_registry::VersionedId {
-                    id: id.clone(),
-                    version_req: format!("={}", version),
-                })
-                .await
-                .map_err(rpc::error::schema_registry_error)?
-                .into_inner();
-
-            definitions.push(Definition {
-                version: schema_def.version,
-                definition: Json(serde_json::from_str(&schema_def.definition)?),
-            });
-        }
-
-        Ok(definitions)
+    async fn definitions(&self) -> &Vec<Definition> {
+        &self.definitions
     }
 
-    /// All views connected to this schema
-    #[tracing::instrument(skip(self, context), fields(id))]
-    async fn views(&self, context: &Context<'_>) -> FieldResult<Vec<View>> {
-        let id = self.id.to_string();
-        tracing::Span::current().record("id", &id.as_str());
-
-        let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
-        let rpc_id = rpc::schema_registry::Id { id: id.clone() };
-
-        let views = conn
-            .get_all_views_of_schema(rpc_id.clone())
-            .await
-            .map_err(rpc::error::schema_registry_error)?
-            .into_inner()
-            .views
-            .into_iter()
-            .map(|(id, view)| {
-                Ok(View {
-                    id: id.parse()?,
-                    name: view.name,
-                    materializer_addr: view.materializer_addr,
-                    fields: serde_json::from_str(&view.fields).map_err(Error::ViewFieldError)?,
-                })
-            })
-            .collect::<Result<_>>()?;
-
-        Ok(views)
+    /// All views belonging to this schema.
+    async fn views(&self) -> &Vec<View> {
+        &self.views
     }
 }
 
@@ -142,35 +75,24 @@ pub struct QueryRoot;
 impl QueryRoot {
     /// Return single schema for given id
     #[tracing::instrument(skip(self, context))]
-    async fn schema(&self, context: &Context<'_>, id: Uuid) -> FieldResult<Schema> {
+    async fn schema(&self, context: &Context<'_>, id: Uuid) -> FieldResult<FullSchema> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
+
         get_schema(&mut conn, id).await
     }
 
     /// Return all schemas in database
     #[tracing::instrument(skip(self, context))]
-    async fn schemas(&self, context: &Context<'_>) -> FieldResult<Vec<Schema>> {
+    async fn schemas(&self, context: &Context<'_>) -> FieldResult<Vec<FullSchema>> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
-        let schemas = conn
-            .get_all_schemas(Empty {})
-            .await
-            .map_err(rpc::error::schema_registry_error)?
-            .into_inner()
-            .schemas
-            .into_iter()
-            .map(|(schema_id, schema)| {
-                Ok(Schema {
-                    id: schema_id.parse()?,
-                    name: schema.name,
-                    insert_destination: schema.insert_destination,
-                    query_address: schema.query_address,
-                    schema_type: SchemaType::from_i32(schema.schema_type)
-                        .ok_or(Error::InvalidSchemaType(schema.schema_type))?,
-                })
-            })
-            .collect::<Result<_>>()?;
 
-        Ok(schemas)
+        let schemas = conn
+            .get_all_full_schemas(rpc::schema_registry::Empty {})
+            .await?
+            .into_inner()
+            .schemas;
+
+        schemas.into_iter().map(FullSchema::from_rpc).collect()
     }
 
     /// Return single view for given id
@@ -393,7 +315,12 @@ impl QueryRoot {
         context: &Context<'_>,
         request: OnDemandViewRequest,
     ) -> FieldResult<MaterializedView> {
-        let mut conn = context.data_unchecked::<ObjectBuilderPool>().get().await?;
+        use futures::TryStreamExt;
+
+        let mut conn = context
+            .data_unchecked::<OnDemandMaterializerPool>()
+            .get()
+            .await?;
         let view_id = request.view_id;
         let materialized = conn
             .materialize(utils::tracing::grpc::inject_span(request.into()))
@@ -401,9 +328,8 @@ impl QueryRoot {
             .into_inner();
 
         let rows = materialized
-            .rows
-            .into_iter()
-            .map(|row| {
+            .map_err(async_graphql::Error::from)
+            .and_then(|row| async move {
                 let fields = row
                     .fields
                     .into_iter()
@@ -418,14 +344,9 @@ impl QueryRoot {
                     fields,
                 })
             })
-            .collect::<Result<_, async_graphql::Error>>()?;
+            .try_collect::<_>()
+            .await?; //In the future we could probably use graphQL @stream directive when its standarized.
 
-        let options = serde_json::from_str(&materialized.options)?;
-
-        Ok(MaterializedView {
-            id: view_id,
-            materializer_options: Json(options),
-            rows,
-        })
+        Ok(MaterializedView { id: view_id, rows })
     }
 }

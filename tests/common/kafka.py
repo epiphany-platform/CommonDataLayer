@@ -6,7 +6,7 @@ from kafka.admin import NewTopic
 
 
 class KafkaInputConfig:
-    def __init__(self, topic, brokers='localhost:9092', group_id=None):
+    def __init__(self, topic, brokers='127.0.0.1:9092', group_id=None):
         self.topic = topic
         self.brokers = brokers
         self.group_id = group_id or str(uuid.uuid1())

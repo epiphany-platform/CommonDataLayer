@@ -22,9 +22,13 @@ queryRouter:
   port: 30153
 
 schemaRegistry:
-  storageClass:
-  storageSize: 3Gi
   port: 30150
+  postgresUsername: postgres
+  postgresPassword: CHANGEME
+  postgresHost: infrastructure-postgresql
+  postgresPort: 5432
+  postgresDbname: CDL
+  postgresSchema: public
 
 edgeRegistry:
   postgresUsername: postgres
@@ -39,6 +43,9 @@ edgeRegistry:
 
 objectBuilder:
   inputPort: 50111
+
+materializerOnDemand:
+  inputPort: 50112
 
 webAdmin:
   port: 30151

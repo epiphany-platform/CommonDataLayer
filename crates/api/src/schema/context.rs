@@ -2,21 +2,21 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use bb8::{Pool, PooledConnection};
+
+use crate::{config::Config, events::EventStream, events::EventSubscriber};
 use rpc::edge_registry::edge_registry_client::EdgeRegistryClient;
-use rpc::object_builder::object_builder_client::ObjectBuilderClient;
+use rpc::materializer_ondemand::on_demand_materializer_client::OnDemandMaterializerClient;
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
 use rpc::tonic::transport::Channel;
 use tokio::sync::Mutex;
 
-use crate::{config::Config, events::EventStream, events::EventSubscriber};
-
 pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
 pub type EdgeRegistryPool = Pool<EdgeRegistryConnectionManager>;
-pub type ObjectBuilderPool = Pool<ObjectBuilderConnectionManager>;
+pub type OnDemandMaterializerPool = Pool<OnDemandMaterializerConnectionManager>;
 
 pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;
 pub type EdgeRegistryConn = EdgeRegistryClient<Channel>;
-pub type ObjectBuilderConn = ObjectBuilderClient<Channel>;
+pub type OnDemandMaterializerConn = OnDemandMaterializerClient<Channel>;
 
 #[derive(Clone)]
 pub struct MQEvents {
@@ -31,7 +31,7 @@ pub struct EdgeRegistryConnectionManager {
     pub address: String,
 }
 
-pub struct ObjectBuilderConnectionManager {
+pub struct OnDemandMaterializerConnectionManager {
     pub address: String,
 }
 
@@ -81,7 +81,7 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
     }
 
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        conn.heartbeat(rpc::schema_registry::Empty {})
+        conn.ping(rpc::schema_registry::Empty {})
             .await
             .map_err(rpc::error::schema_registry_error)?;
 
@@ -118,18 +118,18 @@ impl bb8::ManageConnection for EdgeRegistryConnectionManager {
 }
 
 #[async_trait::async_trait]
-impl bb8::ManageConnection for ObjectBuilderConnectionManager {
-    type Connection = ObjectBuilderConn;
+impl bb8::ManageConnection for OnDemandMaterializerConnectionManager {
+    type Connection = OnDemandMaterializerConn;
     type Error = rpc::error::ClientError;
 
     async fn connect(&self) -> Result<Self::Connection, Self::Error> {
         tracing::debug!("Connecting to object builder");
 
-        rpc::object_builder::connect(self.address.clone()).await
+        rpc::materializer_ondemand::connect(self.address.clone()).await
     }
 
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        conn.heartbeat(rpc::object_builder::Empty {})
+        conn.heartbeat(rpc::materializer_ondemand::Empty {})
             .await
             .map_err(rpc::error::object_builder_error)?;
 

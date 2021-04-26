@@ -1,32 +1,69 @@
-use async_graphql::{Enum, InputObject, Json, SimpleObject};
-use num_derive::{FromPrimitive, ToPrimitive};
+use std::convert::TryInto;
+
+use async_graphql::{FieldResult, InputObject, Json, SimpleObject};
+use semver::{Version, VersionReq};
 use serde_json::Value;
 use uuid::Uuid;
 
-#[derive(Debug)]
-/// Schema is the format in which data is to be sent to the Common Data Layer.
-pub struct Schema {
-    /// Random UUID assigned on creation
+use crate::types::view::View;
+use rpc::schema_registry::types::SchemaType;
+
+pub struct FullSchema {
     pub id: Uuid,
-    /// The name is not required to be unique among all schemas (as `id` is the identifier)
     pub name: String,
-    /// Destination to which data is inserted by data-router.
     pub insert_destination: String,
-    /// Address of the query service responsible for retrieving data from DB
     pub query_address: String,
     pub schema_type: SchemaType,
+
+    pub definitions: Vec<Definition>,
+    pub views: Vec<View>,
 }
 
-#[derive(Debug, Enum, Clone, Copy, PartialEq, Eq, FromPrimitive, ToPrimitive)]
-/// Schema type, describes what kind of query service and command service is going to be used, as timeseries databases are quite different than others.
-pub enum SchemaType {
-    DocumentStorage = 0,
-    Timeseries = 1,
+impl FullSchema {
+    pub fn get_definition(&self, version_req: VersionReq) -> Option<&Definition> {
+        self.definitions
+            .iter()
+            .filter(|d| {
+                Version::parse(&d.version)
+                    .map(|v| version_req.matches(&v))
+                    .unwrap_or(false)
+            })
+            .max_by_key(|d| &d.version)
+    }
+
+    pub fn from_rpc(schema: rpc::schema_registry::FullSchema) -> FieldResult<Self> {
+        let schema_type: rpc::schema_registry::types::SchemaType =
+            schema.metadata.schema_type.try_into()?;
+
+        Ok(FullSchema {
+            id: Uuid::parse_str(&schema.id)?,
+            name: schema.metadata.name,
+            insert_destination: schema.metadata.insert_destination,
+            query_address: schema.metadata.query_address,
+            schema_type,
+            definitions: schema
+                .definitions
+                .into_iter()
+                .map(|definition| {
+                    Ok(Definition {
+                        version: definition.version,
+                        definition: serde_json::from_slice(&definition.definition)?,
+                    })
+                })
+                .collect::<FieldResult<Vec<_>>>()?,
+            views: schema
+                .views
+                .into_iter()
+                .map(View::from_rpc)
+                .collect::<FieldResult<Vec<_>>>()?,
+        })
+    }
 }
 
 #[derive(Debug, SimpleObject)]
 /// Schema definition stores information about data structure used to push object to database.
-/// Each schema can have only one active definition, under latest version but also contains history for backward compability.
+/// Each schema can have only one active definition, under latest version but also contains
+/// history for backward compability.
 pub struct Definition {
     /// Definition is stored as a JSON value and therefore needs to be valid JSON.
     pub definition: Json<Value>,
@@ -34,20 +71,8 @@ pub struct Definition {
     pub version: String,
 }
 
-/// An expression used to retrieve more complex queries
-#[derive(Debug, SimpleObject)]
-pub struct View {
-    /// Unique identifier of view
-    pub id: Uuid,
-    /// The name is not required to be unique among all views (as `id` is the identifier)
-    pub name: String,
-    /// Materializer's address
-    pub materializer_addr: String,
-    /// Fields definition encoded in JSON
-    pub fields: Json<Value>,
-}
-
-/// Input object which creates new schema and new definition. Each schema has to contain at least one definition, which can be later overriden.
+/// Input object which creates new schema and new definition. Each schema has to
+/// contain at least one definition, which can be later overriden.
 #[derive(Debug, InputObject)]
 pub struct NewSchema {
     /// The name is not required to be unique among all schemas (as `id` is the identifier)
@@ -58,34 +83,38 @@ pub struct NewSchema {
     pub insert_destination: String,
     /// Definition is stored as a JSON value and therefore needs to be valid JSON.
     pub definition: Json<Value>,
+    /// Whether the schema stores documents or timeseries data.
     #[graphql(name = "type")]
     pub schema_type: SchemaType,
 }
 
-/// Input object which creates new view.
-#[derive(Debug, Clone, InputObject)]
-pub struct NewView {
-    /// The name is not required to be unique among all views (as `id` is the identifier)
-    pub name: String,
-    /// Materializer's address
-    pub materializer_addr: String,
-    /// Materializer's options encoded in JSON
-    pub materializer_options: Json<Value>,
-    /// Fields definition encoded in JSON
-    pub fields: Json<Value>,
+impl NewSchema {
+    pub fn into_rpc(self) -> FieldResult<rpc::schema_registry::NewSchema> {
+        Ok(rpc::schema_registry::NewSchema {
+            metadata: rpc::schema_registry::SchemaMetadata {
+                name: self.name,
+                schema_type: self.schema_type.into(),
+                insert_destination: self.insert_destination,
+                query_address: self.query_address,
+            },
+            definition: serde_json::to_vec(&self.definition)?,
+        })
+    }
 }
 
 /// Input object which creates new version of existing schema.
 #[derive(Debug, InputObject)]
 pub struct NewVersion {
-    /// Schema is following semantic versioning, querying for "2.1.0" will return "2.1.1" if exist
-    /// When updating, new version has to be higher than highest stored version in DB for given schema.
+    /// Schema is following semantic versioning, querying for "2.1.0" will
+    /// return "2.1.1" if it exists. When updating, new version has to be higher
+    /// than highest stored version in DB for given schema.
     pub version: String,
     /// Definition is stored as a JSON value and therefore needs to be valid JSON.
     pub definition: Json<Value>,
 }
 
-/// Input object which updates fields in schema. All fields are optional, therefore one may update only `topic` or `queryAddress` or all of them.
+/// Input object which updates fields in schema. All fields are optional,
+/// therefore one may update only `topic` or `queryAddress` or all of them.
 #[derive(Debug, InputObject)]
 pub struct UpdateSchema {
     /// The name is not required to be unique among all schemas (as `id` is the identifier)
@@ -94,19 +123,21 @@ pub struct UpdateSchema {
     pub query_address: Option<String>,
     /// Destination to which data is inserted by data-router.
     pub insert_destination: Option<String>,
+    /// Whether the schema stores documents or timeseries data.
     #[graphql(name = "type")]
     pub schema_type: Option<SchemaType>,
 }
 
-/// Input object which updates fields in view. All fields are optional, therefore one may update only `name` or `expression` or all of them.
-#[derive(Debug, InputObject)]
-pub struct UpdateView {
-    /// The name is not required to be unique among all views (as `id` is the identifier)
-    pub name: Option<String>,
-    /// Materializer's address
-    pub materializer_addr: Option<String>,
-    /// Materializer's options encoded in JSON
-    pub materializer_options: Option<Json<Value>>,
-    /// Fields definition encoded in JSON
-    pub fields: Option<Json<Value>>,
+impl UpdateSchema {
+    pub fn into_rpc(self, id: Uuid) -> rpc::schema_registry::SchemaMetadataUpdate {
+        rpc::schema_registry::SchemaMetadataUpdate {
+            id: id.to_string(),
+            patch: rpc::schema_registry::SchemaMetadataPatch {
+                name: self.name,
+                insert_destination: self.insert_destination,
+                query_address: self.query_address,
+                schema_type: self.schema_type.map(Into::into),
+            },
+        }
+    }
 }

@@ -68,6 +68,7 @@ impl CommonConsumer {
             .set("enable.auto.commit", "true")
             .set("enable.auto.offset.store", "false")
             .set("auto.offset.reset", "earliest")
+            .set("allow.auto.create.topics", "true")
             .create()
             .context("Consumer creation failed")?;
 

@@ -1,45 +1,40 @@
-use crate::{
-    db::SchemaDb,
-    error::{RegistryError, RegistryResult},
-    replication::ReplicationMethodConfig,
-    replication::{ReplicationEvent, ReplicationRole, ReplicationState},
-    types::DbExport,
-    types::ViewUpdate,
-    types::{NewSchema, NewSchemaVersion, VersionedUuid},
-    CommunicationMethodConfig, View,
-};
-use indradb::SledDatastore;
-use rpc::schema_registry::{
-    schema_registry_server::SchemaRegistry, Empty, Errors, Id, NewSchemaView, PodName, Schema,
-    SchemaInsertDestination, SchemaMetadataUpdate, SchemaNames, SchemaQueryAddress, SchemaVersions,
-    SchemaViews, Schemas, UpdatedView, ValueToValidate, VersionedId, ViewSchema,
-};
+use std::collections::HashMap;
+use std::convert::TryInto;
+use std::pin::Pin;
+
 use semver::Version;
 use semver::VersionReq;
-use serde_json::Value;
-use std::sync::{Arc, Mutex};
+use sqlx::types::Json;
+use tokio_stream::{Stream, StreamExt};
 use tonic::{Request, Response, Status};
-use utils::communication::metadata_fetcher::MetadataFetcher;
-use utils::{abort_on_poison, communication::Result};
 use uuid::Uuid;
 
+use crate::config::CommunicationMethodConfig;
+use crate::config::Config;
+use crate::db::SchemaRegistryDb;
+use crate::error::{RegistryError, RegistryResult};
+use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
+use crate::types::view::{NewView, ViewUpdate};
+use crate::types::{DbExport, VersionedUuid};
+use rpc::schema_registry::{
+    schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate,
+    ValueToValidate, VersionedId,
+};
+use utils::communication::metadata_fetcher::MetadataFetcher;
+use utils::communication::Result;
+
 pub struct SchemaRegistryImpl {
-    pub db: Arc<SchemaDb>,
-    pub mq_metadata: Arc<MetadataFetcher>,
-    pub replication: Option<Arc<Mutex<ReplicationState>>>,
-    pub pod_name: Option<String>,
+    pub db: SchemaRegistryDb,
+    pub mq_metadata: MetadataFetcher,
 }
 
 impl SchemaRegistryImpl {
     pub async fn new(
-        db: SledDatastore,
-        replication_role: ReplicationRole,
+        config: &Config,
         communication_config: CommunicationMethodConfig,
-        replication_config: Option<ReplicationMethodConfig>,
-        pod_name: Option<String>,
-    ) -> Result<Self> {
-        let child_db = Arc::new(SchemaDb { db });
-        let mq_metadata = Arc::new(match &communication_config {
+    ) -> anyhow::Result<Self> {
+        let db = SchemaRegistryDb::new(config).await?;
+        let mq_metadata = match &communication_config {
             CommunicationMethodConfig::Kafka(kafka) => {
                 MetadataFetcher::new_kafka(&kafka.brokers).await?
             }
@@ -47,46 +42,17 @@ impl SchemaRegistryImpl {
                 MetadataFetcher::new_amqp(&amqp.connection_string).await?
             }
             CommunicationMethodConfig::Grpc => MetadataFetcher::new_grpc("command_service").await?,
-        });
-        let schema_registry = Self {
-            db: child_db.clone(),
-            mq_metadata,
-            replication: replication_config.map(|replication_config| {
-                Arc::new(Mutex::new(ReplicationState::new(
-                    replication_config,
-                    child_db,
-                )))
-            }),
-            pod_name,
         };
-        schema_registry.set_replication_role(replication_role);
-        Ok(schema_registry)
+
+        Ok(Self { db, mq_metadata })
     }
 
-    pub fn set_replication_role(&self, role: ReplicationRole) {
-        if let Some(replication) = self.replication.as_ref() {
-            replication
-                .lock()
-                .unwrap_or_else(abort_on_poison)
-                .set_role(role);
-        }
+    pub async fn export_all(&self) -> RegistryResult<DbExport> {
+        self.db.export_all().await
     }
 
-    fn replicate_message(&self, event: ReplicationEvent) {
-        if let Some(replication) = self.replication.as_ref() {
-            replication
-                .lock()
-                .unwrap_or_else(abort_on_poison)
-                .replicate_message(event)
-        }
-    }
-
-    pub fn export_all(&self) -> RegistryResult<DbExport> {
-        self.db.export_all()
-    }
-
-    pub fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
-        self.db.import_all(imported)
+    pub async fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
+        self.db.import_all(imported).await
     }
 }
 
@@ -99,31 +65,27 @@ impl SchemaRegistry for SchemaRegistryImpl {
     ) -> Result<Response<Id>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
-        let schema_id = parse_optional_uuid(&request.id)?;
-        let schema_type = request.schema_type().into();
-
         let new_schema = NewSchema {
-            name: request.name,
-            definition: parse_json(&request.definition)?,
-            query_address: request.query_address,
-            insert_destination: request.insert_destination,
-            schema_type,
+            name: request.metadata.name,
+            definition: parse_json_and_deserialize(&request.definition)?,
+            query_address: request.metadata.query_address,
+            insert_destination: request.metadata.insert_destination,
+            schema_type: request.metadata.schema_type.try_into()?,
         };
 
-        if !self
-            .mq_metadata
-            .destination_exists(&new_schema.insert_destination)
-            .await
-            .map_err(RegistryError::from)?
+        if !new_schema.insert_destination.is_empty()
+            && !self
+                .mq_metadata
+                .destination_exists(&new_schema.insert_destination)
+                .await
+                .map_err(RegistryError::from)?
         {
-            return Err(RegistryError::NoInsertDestination(new_schema.insert_destination).into());
+            return Err(
+                RegistryError::NoInsertDestination(new_schema.insert_destination.clone()).into(),
+            );
         }
 
-        let new_id = self.db.add_schema(new_schema.clone(), schema_id)?;
-        self.replicate_message(ReplicationEvent::AddSchema {
-            id: new_id,
-            schema: new_schema,
-        });
+        let new_id = self.db.add_schema(new_schema).await?;
 
         Ok(Response::new(Id {
             id: new_id.to_string(),
@@ -138,23 +100,20 @@ impl SchemaRegistry for SchemaRegistryImpl {
         utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
-        let new_version = NewSchemaVersion {
-            version: parse_version(&request.version)?,
-            definition: parse_json(&request.definition)?,
+        let new_version = SchemaDefinition {
+            version: parse_version(&request.definition.version)?,
+            definition: parse_json_and_deserialize(&request.definition.definition)?,
         };
 
         self.db
-            .add_new_version_of_schema(schema_id, new_version.clone())?;
-        self.replicate_message(ReplicationEvent::AddSchemaVersion {
-            id: schema_id,
-            new_version,
-        });
+            .add_new_version_of_schema(schema_id, new_version)
+            .await?;
 
         Ok(Response::new(Empty {}))
     }
 
     #[tracing::instrument(skip(self))]
-    async fn update_schema_metadata(
+    async fn update_schema(
         &self,
         request: Request<SchemaMetadataUpdate>,
     ) -> Result<Response<Empty>, Status> {
@@ -162,7 +121,13 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
 
-        if let Some(destination) = request.insert_destination.as_ref() {
+        let schema_type = if let Some(st) = request.patch.schema_type {
+            Some(st.try_into()?)
+        } else {
+            None
+        };
+
+        if let Some(destination) = request.patch.insert_destination.as_ref() {
             if !self
                 .mq_metadata
                 .destination_exists(&destination)
@@ -173,197 +138,240 @@ impl SchemaRegistry for SchemaRegistryImpl {
             }
         }
 
-        if let Some(name) = request.name.as_ref() {
-            self.db.update_schema_name(schema_id, name.clone())?;
-        }
-        if let Some(insert_destination) = request.insert_destination.as_ref() {
-            self.db
-                .update_schema_insert_destination(schema_id, insert_destination.clone())?;
-        }
-        if let Some(address) = request.address.as_ref() {
-            self.db
-                .update_schema_query_address(schema_id, address.clone())?;
-        }
-
-        // Previously we were using method `schema_type()` but it has implicit conversion which may hit us in the bottom:
-        // `from_i32().unwrap_or_default()`
-        // Therefore its better to return an error when we expect `1` or `2` but we get `3` than assume that `3` is `1`.
-        if let Some(schema_type) = request.schema_type {
-            let schema_type = rpc::schema_registry::schema_type::Type::from_i32(schema_type)
-                .ok_or(RegistryError::InvalidSchemaType)?;
-            self.db.update_schema_type(schema_id, schema_type.into())?;
-        }
-
-        self.replicate_message(ReplicationEvent::UpdateSchemaMetadata {
-            id: schema_id,
-            name: request.name,
-            insert_destination: request.insert_destination,
-            query_address: request.address,
-            schema_type: None,
-        });
+        self.db
+            .update_schema(
+                schema_id,
+                SchemaUpdate {
+                    name: request.patch.name,
+                    query_address: request.patch.query_address,
+                    insert_destination: request.patch.insert_destination,
+                    schema_type,
+                },
+            )
+            .await?;
 
         Ok(Response::new(Empty {}))
     }
 
     #[tracing::instrument(skip(self))]
-    async fn add_view_to_schema(
+    async fn get_schema_metadata(
         &self,
-        request: Request<NewSchemaView>,
-    ) -> Result<Response<Id>, Status> {
+        request: Request<Id>,
+    ) -> Result<Response<rpc::schema_registry::SchemaMetadata>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
-        //TODO: request materializer::validate_options() to see if JSON has valid format.
         let request = request.into_inner();
-        let schema_id = parse_uuid(&request.schema_id)?;
-        let replicated_view_id = parse_optional_uuid(&request.view_id)?;
-        let view = View {
-            name: request.name,
-            materializer_addr: request.materializer_addr,
-            materializer_options: parse_json_and_deserialize(&request.materializer_options)?,
-            fields: parse_json_and_deserialize(&request.fields)?,
-        };
+        let id = parse_uuid(&request.id)?;
 
-        let view_id = self
-            .db
-            .add_view_to_schema(schema_id, view.clone(), replicated_view_id)?;
-        self.replicate_message(ReplicationEvent::AddViewToSchema {
-            schema_id,
-            view,
-            view_id,
-        });
+        let schema = self.db.get_schema(id).await?;
 
-        Ok(Response::new(Id {
-            id: view_id.to_string(),
+        Ok(Response::new(rpc::schema_registry::SchemaMetadata {
+            name: schema.name,
+            insert_destination: schema.insert_destination,
+            query_address: schema.query_address,
+            schema_type: schema.schema_type.into(),
         }))
     }
 
     #[tracing::instrument(skip(self))]
-    async fn update_view(
+    async fn get_base_schema_of_view(
         &self,
-        request: Request<UpdatedView>,
-    ) -> Result<Response<rpc::schema_registry::View>, Status> {
+        request: Request<Id>,
+    ) -> Result<Response<rpc::schema_registry::Schema>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
-        //TODO: request materializer::validate_options() to see if JSON has valid format.
         let request = request.into_inner();
-        let view_id = parse_uuid(&request.id)?;
-        let fields = request
-            .fields
-            .as_ref()
-            .map(|fields| parse_json_and_deserialize(fields))
-            .transpose()?;
-        let view = ViewUpdate {
-            name: request.name,
-            materializer_addr: request.materializer_addr,
-            materializer_options: request
-                .materializer_options
-                .as_deref()
-                .map(|options| parse_json_and_deserialize(options))
-                .transpose()?,
-            fields,
-        };
+        let id = parse_uuid(&request.id)?;
 
-        let old_view = self.db.update_view(view_id, view.clone())?;
-        self.replicate_message(ReplicationEvent::UpdateView { id: view_id, view });
+        let schema = self.db.get_base_schema_of_view(id).await?;
 
-        Ok(Response::new(rpc::schema_registry::View {
-            name: old_view.name,
-            materializer_addr: old_view.materializer_addr,
-            materializer_options: serialize_json(&old_view.materializer_options)?,
-            fields: serialize_json(&old_view.fields)?,
+        Ok(Response::new(rpc::schema_registry::Schema {
+            id: schema.id.to_string(),
+            metadata: rpc::schema_registry::SchemaMetadata {
+                name: schema.name,
+                insert_destination: schema.insert_destination,
+                query_address: schema.query_address,
+                schema_type: schema.schema_type.into(),
+            },
         }))
     }
 
     #[tracing::instrument(skip(self))]
-    async fn get_schema(
+    async fn get_schema_definition(
         &self,
         request: Request<VersionedId>,
     ) -> Result<Response<rpc::schema_registry::SchemaDefinition>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
-        let id = VersionedUuid::new(
-            parse_uuid(&request.id)?,
-            parse_version_req(&request.version_req)?,
-        );
-        let definition = self.db.get_schema_definition(&id)?;
-
-        Ok(Response::new(rpc::schema_registry::SchemaDefinition {
-            version: definition.version.to_string(),
-            definition: serialize_json(&definition.definition)?,
-        }))
-    }
-
-    #[tracing::instrument(skip(self))]
-    async fn get_schema_metadata(&self, request: Request<Id>) -> Result<Response<Schema>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
-        let request = request.into_inner();
-        let schema_id = parse_uuid(&request.id)?;
-        let schema = self.db.get_schema(schema_id)?;
-
-        let schema = Schema {
-            name: schema.name,
-            insert_destination: schema.insert_destination,
-            query_address: schema.query_address,
-            schema_type: schema.schema_type as i32,
+        let versioned_id = VersionedUuid {
+            id: parse_uuid(&request.id)?,
+            version_req: parse_optional_version_req(&request.version_req)?
+                .unwrap_or_else(VersionReq::any),
         };
 
-        Ok(Response::new(schema))
-    }
+        let (version, definition) = self.db.get_schema_definition(&versioned_id).await?;
 
-    #[tracing::instrument(skip(self))]
-    async fn get_schema_insert_destination(
-        &self,
-        request: Request<Id>,
-    ) -> Result<Response<SchemaInsertDestination>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
-        let request = request.into_inner();
-        let schema_id = parse_uuid(&request.id)?;
-        let insert_destination = self.db.get_schema_insert_destination(schema_id)?;
-
-        Ok(Response::new(SchemaInsertDestination {
-            insert_destination,
+        Ok(Response::new(rpc::schema_registry::SchemaDefinition {
+            version: version.to_string(),
+            definition: serialize_json(&definition)?,
         }))
-    }
-
-    #[tracing::instrument(skip(self))]
-    async fn get_schema_query_address(
-        &self,
-        request: Request<Id>,
-    ) -> Result<Response<SchemaQueryAddress>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
-        let request = request.into_inner();
-        let schema_id = parse_uuid(&request.id)?;
-        let address = self.db.get_schema_query_address(schema_id)?;
-
-        Ok(Response::new(SchemaQueryAddress { address }))
     }
 
     #[tracing::instrument(skip(self))]
     async fn get_schema_versions(
         &self,
         request: Request<Id>,
-    ) -> Result<Response<SchemaVersions>, Status> {
+    ) -> Result<Response<rpc::schema_registry::SchemaVersions>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
-        let schema_id = parse_uuid(&request.into_inner().id)?;
-        let all_versions = self.db.get_schema_versions(schema_id)?;
-        let versions = all_versions
-            .into_iter()
-            .map(|(version, _vertex_id)| version.to_string())
-            .collect();
+        let request = request.into_inner();
+        let id = parse_uuid(&request.id)?;
 
-        Ok(Response::new(SchemaVersions { versions }))
+        let versions = self.db.get_schema_versions(id).await?;
+
+        Ok(Response::new(rpc::schema_registry::SchemaVersions {
+            versions: versions.into_iter().map(|v| v.to_string()).collect(),
+        }))
     }
 
     #[tracing::instrument(skip(self))]
-    async fn get_schema_type(
+    async fn get_full_schema(
         &self,
         request: Request<Id>,
-    ) -> Result<Response<rpc::schema_registry::SchemaType>, Status> {
+    ) -> Result<Response<rpc::schema_registry::FullSchema>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
-        let schema_id = parse_uuid(&request.id)?;
-        let schema_type = self.db.get_schema_type(schema_id)? as i32;
+        let id = parse_uuid(&request.id)?;
 
-        Ok(Response::new(rpc::schema_registry::SchemaType {
-            schema_type,
+        let schema = self.db.get_full_schema(id).await?;
+
+        Ok(Response::new(rpc::schema_registry::FullSchema {
+            id: request.id,
+            metadata: rpc::schema_registry::SchemaMetadata {
+                name: schema.name,
+                insert_destination: schema.insert_destination,
+                query_address: schema.query_address,
+                schema_type: schema.schema_type.into(),
+            },
+            definitions: schema
+                .definitions
+                .into_iter()
+                .map(|definition| {
+                    Ok(rpc::schema_registry::SchemaDefinition {
+                        version: definition.version.to_string(),
+                        definition: serialize_json(&definition.definition)?,
+                    })
+                })
+                .collect::<Result<Vec<_>, Status>>()?,
+            views: schema
+                .views
+                .into_iter()
+                .map(|view| {
+                    Ok(rpc::schema_registry::View {
+                        id: view.id.to_string(),
+                        name: view.name,
+                        materializer_address: view.materializer_address,
+                        materializer_options: serde_json::to_string(&view.materializer_options)
+                            .map_err(RegistryError::MalformedViewFields)?,
+                        fields: view
+                            .fields
+                            .0
+                            .into_iter()
+                            .map(|(name, value)| {
+                                Ok((
+                                    name,
+                                    serde_json::to_string(&value)
+                                        .map_err(RegistryError::MalformedViewFields)?,
+                                ))
+                            })
+                            .collect::<RegistryResult<HashMap<_, _>>>()?,
+                    })
+                })
+                .collect::<RegistryResult<Vec<_>>>()?,
+        }))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn get_all_schemas(
+        &self,
+        request: Request<Empty>,
+    ) -> Result<Response<rpc::schema_registry::Schemas>, Status> {
+        utils::tracing::grpc::set_parent_span(&request);
+        let schemas = self.db.get_all_schemas().await?;
+
+        Ok(Response::new(rpc::schema_registry::Schemas {
+            schemas: schemas
+                .into_iter()
+                .map(|schema| rpc::schema_registry::Schema {
+                    id: schema.id.to_string(),
+                    metadata: rpc::schema_registry::SchemaMetadata {
+                        name: schema.name,
+                        insert_destination: schema.insert_destination,
+                        query_address: schema.query_address,
+                        schema_type: schema.schema_type.into(),
+                    },
+                })
+                .collect(),
+        }))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn get_all_full_schemas(
+        &self,
+        request: Request<Empty>,
+    ) -> Result<Response<rpc::schema_registry::FullSchemas>, Status> {
+        utils::tracing::grpc::set_parent_span(&request);
+        let schemas = self.db.get_all_full_schemas().await?;
+
+        Ok(Response::new(rpc::schema_registry::FullSchemas {
+            schemas: schemas
+                .into_iter()
+                .map(|schema| {
+                    Ok(rpc::schema_registry::FullSchema {
+                        id: schema.id.to_string(),
+                        metadata: rpc::schema_registry::SchemaMetadata {
+                            name: schema.name,
+                            insert_destination: schema.insert_destination,
+                            query_address: schema.query_address,
+                            schema_type: schema.schema_type.into(),
+                        },
+                        definitions: schema
+                            .definitions
+                            .into_iter()
+                            .map(|definition| {
+                                Ok(rpc::schema_registry::SchemaDefinition {
+                                    version: definition.version.to_string(),
+                                    definition: serialize_json(&definition.definition)?,
+                                })
+                            })
+                            .collect::<Result<Vec<_>, Status>>()?,
+                        views: schema
+                            .views
+                            .into_iter()
+                            .map(|view| {
+                                Ok(rpc::schema_registry::View {
+                                    id: view.id.to_string(),
+                                    name: view.name,
+                                    materializer_address: view.materializer_address,
+                                    materializer_options: serde_json::to_string(
+                                        &view.materializer_options,
+                                    )
+                                    .map_err(RegistryError::MalformedViewFields)?,
+                                    fields: view
+                                        .fields
+                                        .0
+                                        .into_iter()
+                                        .map(|(name, value)| {
+                                            Ok((
+                                                name,
+                                                serde_json::to_string(&value)
+                                                    .map_err(RegistryError::MalformedViewFields)?,
+                                            ))
+                                        })
+                                        .collect::<RegistryResult<HashMap<_, _>>>()?,
+                                })
+                            })
+                            .collect::<RegistryResult<Vec<_>>>()?,
+                    })
+                })
+                .collect::<Result<Vec<_>, Status>>()?,
         }))
     }
 
@@ -373,73 +381,29 @@ impl SchemaRegistry for SchemaRegistryImpl {
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::View>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
-        let view_id = parse_uuid(&request.into_inner().id)?;
-        let view = self.db.get_view(view_id)?;
+        let request = request.into_inner();
+        let id = parse_uuid(&request.id)?;
+
+        let view = self.db.get_view(id).await?;
 
         Ok(Response::new(rpc::schema_registry::View {
+            id: request.id,
             name: view.name,
-            materializer_addr: view.materializer_addr,
-            materializer_options: serialize_json(&view.materializer_options)?,
-            fields: serialize_json(&view.fields)?,
-        }))
-    }
-
-    #[tracing::instrument(skip(self))]
-    async fn get_all_schemas(&self, request: Request<Empty>) -> Result<Response<Schemas>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
-        let schemas = self.db.get_all_schemas()?;
-
-        Ok(Response::new(Schemas {
-            schemas: schemas
+            materializer_address: view.materializer_address,
+            materializer_options: serde_json::to_string(&view.materializer_options)
+                .map_err(RegistryError::MalformedViewFields)?,
+            fields: view
+                .fields
+                .0
                 .into_iter()
-                .map(|(schema_id, schema)| {
-                    (
-                        schema_id.to_string(),
-                        Schema {
-                            name: schema.name,
-                            insert_destination: schema.insert_destination,
-                            query_address: schema.query_address,
-                            schema_type: schema.schema_type as i32,
-                        },
-                    )
+                .map(|(key, value)| {
+                    Ok((
+                        key,
+                        serde_json::to_string(&value)
+                            .map_err(RegistryError::MalformedViewFields)?,
+                    ))
                 })
-                .collect(),
-        }))
-    }
-
-    #[tracing::instrument(skip(self))]
-    async fn get_all_schema_names(
-        &self,
-        request: Request<Empty>,
-    ) -> Result<Response<SchemaNames>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
-        let names = self.db.get_all_schema_names()?;
-
-        Ok(Response::new(SchemaNames {
-            names: names
-                .into_iter()
-                .map(|(schema_id, name)| (schema_id.to_string(), name))
-                .collect(),
-        }))
-    }
-
-    #[tracing::instrument(skip(self))]
-    async fn get_base_schema_of_view(
-        &self,
-        request: Request<Id>,
-    ) -> Result<Response<ViewSchema>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
-        let view_id = parse_uuid(&request.into_inner().id)?;
-        let (base_schema_id, base_schema) = self.db.get_base_schema_of_view(view_id)?;
-
-        Ok(Response::new(ViewSchema {
-            schema_id: base_schema_id.to_string(),
-            schema: Schema {
-                name: base_schema.name,
-                query_address: base_schema.query_address,
-                schema_type: base_schema.schema_type as i32,
-                insert_destination: base_schema.insert_destination,
-            },
+                .collect::<RegistryResult<_>>()?,
         }))
     }
 
@@ -447,44 +411,139 @@ impl SchemaRegistry for SchemaRegistryImpl {
     async fn get_all_views_of_schema(
         &self,
         request: Request<Id>,
-    ) -> Result<Response<SchemaViews>, Status> {
+    ) -> Result<Response<rpc::schema_registry::SchemaViews>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
-        let schema_id = parse_uuid(&request.into_inner().id)?;
-        let views = self.db.get_all_views_of_schema(schema_id)?;
+        let request = request.into_inner();
+        let schema_id = parse_uuid(&request.id)?;
 
-        Ok(Response::new(SchemaViews {
+        let views = self.db.get_all_views_of_schema(schema_id).await?;
+
+        Ok(Response::new(rpc::schema_registry::SchemaViews {
             views: views
                 .into_iter()
-                .map(|(view_id, view)| {
-                    Ok((
-                        view_id.to_string(),
-                        rpc::schema_registry::View {
-                            name: view.name,
-                            materializer_addr: view.materializer_addr,
-                            materializer_options: serialize_json(&view.materializer_options)?,
-                            fields: serialize_json(&view.fields)?,
-                        },
-                    ))
+                .map(|view| {
+                    Ok(rpc::schema_registry::View {
+                        id: view.id.to_string(),
+                        name: view.name,
+                        materializer_address: view.materializer_address,
+                        materializer_options: serde_json::to_string(&view.materializer_options)
+                            .map_err(RegistryError::MalformedViewFields)?,
+                        fields: view
+                            .fields
+                            .0
+                            .into_iter()
+                            .map(|(key, value)| {
+                                Ok((
+                                    key,
+                                    serde_json::to_string(&value)
+                                        .map_err(RegistryError::MalformedViewFields)?,
+                                ))
+                            })
+                            .collect::<RegistryResult<_>>()?,
+                    })
                 })
-                .collect::<Result<_, Status>>()?,
+                .collect::<RegistryResult<Vec<_>>>()?,
         }))
     }
 
     #[tracing::instrument(skip(self))]
+    async fn add_view_to_schema(
+        &self,
+        request: Request<rpc::schema_registry::NewView>,
+    ) -> Result<Response<Id>, Status> {
+        utils::tracing::grpc::set_parent_span(&request);
+        //TODO: Request materializer validation for the options
+        let request = request.into_inner();
+        let new_view = NewView {
+            schema_id: parse_uuid(&request.schema_id)?,
+            name: request.name,
+            materializer_address: request.materializer_address,
+            materializer_options: serde_json::from_str(&request.materializer_options)
+                .map_err(RegistryError::MalformedViewFields)?,
+            fields: Json(
+                request
+                    .fields
+                    .into_iter()
+                    .map(|(key, value)| {
+                        Ok((
+                            key,
+                            serde_json::from_str(&value)
+                                .map_err(RegistryError::MalformedViewFields)?,
+                        ))
+                    })
+                    .collect::<RegistryResult<HashMap<_, _>>>()?,
+            ),
+        };
+
+        let new_id = self.db.add_view_to_schema(new_view).await?;
+
+        Ok(Response::new(Id {
+            id: new_id.to_string(),
+        }))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn update_view(
+        &self,
+        request: Request<rpc::schema_registry::ViewUpdate>,
+    ) -> Result<Response<Empty>, Status> {
+        utils::tracing::grpc::set_parent_span(&request);
+        let request = request.into_inner();
+        let id = parse_uuid(&request.id)?;
+
+        //TODO: Request materializer validation for the options
+        let fields = if request.update_fields {
+            Some(Json(
+                request
+                    .fields
+                    .into_iter()
+                    .map(|(key, value)| {
+                        Ok((
+                            key,
+                            serde_json::from_str(&value)
+                                .map_err(RegistryError::MalformedViewFields)?,
+                        ))
+                    })
+                    .collect::<RegistryResult<HashMap<_, _>>>()?,
+            ))
+        } else {
+            None
+        };
+        let update = ViewUpdate {
+            name: request.name,
+            materializer_address: request.materializer_address,
+            materializer_options: if !request.materializer_options.is_empty() {
+                Some(
+                    serde_json::from_str(&request.materializer_options)
+                        .map_err(RegistryError::MalformedViewFields)?,
+                )
+            } else {
+                None
+            },
+            fields,
+        };
+
+        self.db.update_view(id, update).await?;
+
+        Ok(Response::new(Empty {}))
+    }
+
     async fn validate_value(
         &self,
         request: Request<ValueToValidate>,
     ) -> Result<Response<Errors>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
-        let schema_id = parse_uuid(&request.schema_id)?;
-        let json = parse_json(&request.value)?;
+        let versioned_id = VersionedUuid {
+            id: parse_uuid(&request.schema_id.id)?,
+            version_req: parse_optional_version_req(&request.schema_id.version_req)?
+                .unwrap_or_else(VersionReq::any),
+        };
+        let json = parse_json_and_deserialize(&request.value)?;
 
-        let full_schema = self
-            .db
-            .get_schema_definition(&VersionedUuid::any(schema_id))?;
-        let schema = jsonschema::JSONSchema::compile(&full_schema.definition)
-            .map_err(|_err| RegistryError::InvalidSchema)?;
+        let (_version, definition) = self.db.get_schema_definition(&versioned_id).await?;
+        let schema = jsonschema::JSONSchema::compile(&definition)
+            .map_err(RegistryError::InvalidJsonSchema)?;
         let errors = match schema.validate(&json) {
             Ok(()) => vec![],
             Err(errors) => errors.map(|err| err.to_string()).collect(),
@@ -493,36 +552,50 @@ impl SchemaRegistry for SchemaRegistryImpl {
         Ok(Response::new(Errors { errors }))
     }
 
-    #[tracing::instrument(skip(self))]
-    async fn promote_to_master(
+    type WatchAllSchemaUpdatesStream = Pin<
+        Box<
+            dyn Stream<Item = Result<rpc::schema_registry::Schema, Status>> + Send + Sync + 'static,
+        >,
+    >;
+
+    async fn watch_all_schema_updates(
         &self,
         request: Request<Empty>,
-    ) -> Result<Response<PodName>, Status> {
+    ) -> Result<Response<Self::WatchAllSchemaUpdatesStream>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
-        if let Some(replication) = self.replication.as_ref() {
-            replication
-                .lock()
-                .unwrap_or_else(abort_on_poison)
-                .set_role(ReplicationRole::Master);
-        }
+        let schema_rx = self.db.listen_to_schema_updates().await?;
 
-        Ok(Response::new(PodName {
-            name: self.pod_name.clone().unwrap_or_default(),
-        }))
+        Ok(Response::new(Box::pin(
+            tokio_stream::wrappers::UnboundedReceiverStream::new(schema_rx).map(|schema| {
+                let schema = schema?;
+
+                Ok(rpc::schema_registry::Schema {
+                    id: schema.id.to_string(),
+                    metadata: rpc::schema_registry::SchemaMetadata {
+                        name: schema.name,
+                        insert_destination: schema.insert_destination,
+                        query_address: schema.query_address,
+                        schema_type: schema.schema_type.into(),
+                    },
+                })
+            }),
+        )))
     }
 
-    #[tracing::instrument(skip(self))]
-    async fn heartbeat(&self, request: Request<Empty>) -> Result<Response<Empty>, Status> {
+    async fn ping(&self, request: Request<Empty>) -> Result<Response<Empty>, Status> {
         utils::tracing::grpc::set_parent_span(&request);
-        //empty
         Ok(Response::new(Empty {}))
     }
 }
 
-fn parse_version_req(req: &str) -> Result<VersionReq, Status> {
-    VersionReq::parse(req).map_err(|err| {
-        Status::invalid_argument(format!("Invalid version requirement provided: {}", err))
-    })
+fn parse_optional_version_req(req: &Option<String>) -> Result<Option<VersionReq>, Status> {
+    if let Some(req) = req.as_ref() {
+        Ok(Some(VersionReq::parse(req).map_err(|err| {
+            Status::invalid_argument(format!("Invalid version requirement provided: {}", err))
+        })?))
+    } else {
+        Ok(None)
+    }
 }
 
 fn parse_version(req: &str) -> Result<Version, Status> {
@@ -530,13 +603,9 @@ fn parse_version(req: &str) -> Result<Version, Status> {
         .map_err(|err| Status::invalid_argument(format!("Invalid version provided: {}", err)))
 }
 
-fn parse_json_and_deserialize<T: serde::de::DeserializeOwned>(json: &str) -> Result<T, Status> {
-    serde_json::from_str(json)
+fn parse_json_and_deserialize<T: serde::de::DeserializeOwned>(json: &[u8]) -> Result<T, Status> {
+    serde_json::from_slice(json)
         .map_err(|err| Status::invalid_argument(format!("Invalid JSON provided: {}", err)))
-}
-
-fn parse_json(json: &str) -> Result<Value, Status> {
-    parse_json_and_deserialize(json)
 }
 
 fn parse_uuid(id: &str) -> Result<Uuid, Status> {
@@ -544,17 +613,7 @@ fn parse_uuid(id: &str) -> Result<Uuid, Status> {
         .map_err(|err| Status::invalid_argument(format!("Failed to parse UUID: {}", err)))
 }
 
-fn parse_optional_uuid(id: &str) -> Result<Option<Uuid>, Status> {
-    if id.is_empty() {
-        Ok(None)
-    } else {
-        Ok(Some(Uuid::parse_str(id).map_err(|err| {
-            Status::invalid_argument(format!("Failed to parse optional UUID: {}", err))
-        })?))
-    }
-}
-
-fn serialize_json<T: serde::Serialize>(json: &T) -> Result<String, Status> {
-    serde_json::to_string(json)
+fn serialize_json<T: serde::Serialize>(json: &T) -> Result<Vec<u8>, Status> {
+    serde_json::to_vec(json)
         .map_err(|err| Status::internal(format!("Unable to serialize JSON: {}", err)))
 }

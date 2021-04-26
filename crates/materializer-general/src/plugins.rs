@@ -1,4 +1,4 @@
-use rpc::common::MaterializedView;
+use rpc::materializer_general::MaterializedView;
 use serde_json::Value;
 
 #[async_trait::async_trait]

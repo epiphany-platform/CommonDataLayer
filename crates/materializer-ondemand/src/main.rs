@@ -1,6 +1,6 @@
 use clap::Clap;
-use materializer::{args::Args, MaterializerImpl};
-use rpc::materializer::materializer_server::MaterializerServer;
+use materializer_ondemand::{args::Args, MaterializerImpl};
+use rpc::materializer_ondemand::on_demand_materializer_server::OnDemandMaterializerServer;
 use tonic::transport::Server;
 
 #[tokio::main]
@@ -15,12 +15,12 @@ async fn main() -> anyhow::Result<()> {
     utils::status_endpoints::serve(args.status_port);
     utils::metrics::serve(args.metrics_port);
 
-    let materializer = MaterializerImpl::new(&args.materializer).await?;
+    let materializer = MaterializerImpl::new(&args).await?;
 
     utils::status_endpoints::mark_as_started();
 
     Server::builder()
-        .add_service(MaterializerServer::new(materializer))
+        .add_service(OnDemandMaterializerServer::new(materializer))
         .serve(([0, 0, 0, 0], args.input_port).into())
         .await?;
 

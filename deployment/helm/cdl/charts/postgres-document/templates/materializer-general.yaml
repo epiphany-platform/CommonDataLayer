@@ -1,28 +1,28 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Release.Name }}-postgres-materializer
+  name: {{ .Release.Name }}-postgres-materializer-general
   labels:
-    app: {{ .Release.Name }}-postgres-materializer
+    app: {{ .Release.Name }}-postgres-materializer-general
 spec:
-  replicas: {{ .Values.materializerReplicaCount }}
+  replicas: {{ .Values.materializerGeneralReplicaCount }}
   selector:
     matchLabels:
-      app: {{ .Release.Name }}-postgres-materializer
+      app: {{ .Release.Name }}-postgres-materializer-general
   template:
     metadata:
       labels:
-        app: {{ .Release.Name }}-postgres-materializer
+        app: {{ .Release.Name }}-postgres-materializer-general
       annotations:
         prometheus.io/scrape: 'true'
         prometheus.io/port: '51805'
         prometheus.io/path: '/metrics'
     spec:
       containers:
-      - name: cdl-postgres-materializer
-        image: "{{ .Values.global.imageRepositoryPath }}cdl-materializer:{{ .Values.global.imageVersion }}"
+      - name: cdl-postgres-materializer-general
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-materializer-general:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/materializer","postgres"]
+        command: ["/bin/materializer-general","postgres"]
         env:
         - name: POSTGRES_USERNAME
           value: {{ .Values.postgresUsername }}
@@ -39,7 +39,7 @@ spec:
         - name: INPUT_PORT
           value: "6400"
         - name: RUST_LOG
-          value: "info,materializer=debug"
+          value: "info,materializer-general=debug"
         ports:
         - containerPort: 51805
       imagePullSecrets:
@@ -49,11 +49,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Release.Name }}-postgres-materializer
+  name: {{ .Release.Name }}-postgres-materializer-general
 spec:
   type: ClusterIP
   selector:
-    app: {{ .Release.Name }}-postgres-materializer
+    app: {{ .Release.Name }}-postgres-materializer-general
   ports:
     - port: 6400
       targetPort: 6400

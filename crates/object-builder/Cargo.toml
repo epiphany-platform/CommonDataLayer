@@ -19,6 +19,7 @@ utils       = { path = "../utils" }
 # Crates.io
 anyhow      = "1.0"
 async-trait = "0.1"
+bb8         = "0.7"
 clap        = "3.0.0-beta.2"
 futures     = "0.3"
 serde       = { version = "1.0", features = ["derive"] }

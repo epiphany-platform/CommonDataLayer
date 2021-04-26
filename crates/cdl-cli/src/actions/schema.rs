@@ -1,29 +1,32 @@
-use crate::utils::*;
-use rpc::schema_registry::{
-    types::SchemaType, Empty, Id, NewSchema, NewSchemaVersion, SchemaMetadataUpdate,
-    ValueToValidate, VersionedId,
-};
+use std::convert::TryInto;
+use std::path::PathBuf;
+
 use semver::{Version, VersionReq};
 use serde_json::Value;
-use std::path::PathBuf;
 use uuid::Uuid;
 
-pub async fn get_schema(
+use crate::utils::*;
+use rpc::schema_registry::{
+    types::SchemaType, Empty, Id, NewSchema, NewSchemaVersion, SchemaDefinition, SchemaMetadata,
+    SchemaMetadataPatch, SchemaMetadataUpdate, ValueToValidate, VersionedId,
+};
+
+pub async fn get_schema_definition(
     schema_id: Uuid,
     version: Option<VersionReq>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let response = client
-        .get_schema(VersionedId {
+        .get_schema_definition(VersionedId {
             id: schema_id.to_string(),
-            version_req: version.unwrap_or_else(VersionReq::any).to_string(),
+            version_req: version.map(|v| v.to_string()),
         })
         .await?;
 
     println!(
         "{:#}",
-        serde_json::from_str::<Value>(&response.into_inner().definition)?
+        serde_json::from_slice::<Value>(&response.into_inner().definition)?
     );
 
     Ok(())
@@ -34,20 +37,21 @@ pub async fn add_schema(
     insert_destination: String,
     query_address: String,
     file: Option<PathBuf>,
-    registry_addr: String,
     schema_type: SchemaType,
+    registry_addr: String,
 ) -> anyhow::Result<()> {
     let definition = read_json(file)?;
 
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let response = client
         .add_schema(NewSchema {
-            id: "".into(),
-            name: schema_name.clone(),
-            definition: serde_json::to_string(&definition)?,
-            query_address,
-            insert_destination,
-            schema_type: schema_type as i32,
+            metadata: SchemaMetadata {
+                name: schema_name.clone(),
+                query_address,
+                insert_destination,
+                schema_type: schema_type.into(),
+            },
+            definition: serde_json::to_vec(&definition)?,
         })
         .await?;
 
@@ -84,68 +88,24 @@ pub async fn get_schema_versions(schema_id: Uuid, registry_addr: String) -> anyh
     Ok(())
 }
 
-pub async fn set_schema_name(
-    schema_id: Uuid,
-    name: String,
+pub async fn update_schema(
+    id: Uuid,
+    name: Option<String>,
+    insert_destination: Option<String>,
+    query_address: Option<String>,
+    schema_type: Option<SchemaType>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     client
-        .update_schema_metadata(SchemaMetadataUpdate {
-            id: schema_id.to_string(),
-            name: Some(name),
-            ..Default::default()
-        })
-        .await?;
-
-    Ok(())
-}
-
-pub async fn set_schema_insert_destination(
-    schema_id: Uuid,
-    insert_destination: String,
-    registry_addr: String,
-) -> anyhow::Result<()> {
-    let mut client = rpc::schema_registry::connect(registry_addr).await?;
-    client
-        .update_schema_metadata(SchemaMetadataUpdate {
-            id: schema_id.to_string(),
-            insert_destination: Some(insert_destination),
-            ..Default::default()
-        })
-        .await?;
-
-    Ok(())
-}
-
-pub async fn set_schema_query_address(
-    schema_id: Uuid,
-    query_address: String,
-    registry_addr: String,
-) -> anyhow::Result<()> {
-    let mut client = rpc::schema_registry::connect(registry_addr).await?;
-    client
-        .update_schema_metadata(SchemaMetadataUpdate {
-            id: schema_id.to_string(),
-            address: Some(query_address),
-            ..Default::default()
-        })
-        .await?;
-
-    Ok(())
-}
-
-pub async fn set_schema_type(
-    schema_id: Uuid,
-    schema_type: SchemaType,
-    registry_addr: String,
-) -> anyhow::Result<()> {
-    let mut client = rpc::schema_registry::connect(registry_addr).await?;
-    client
-        .update_schema_metadata(SchemaMetadataUpdate {
-            id: schema_id.to_string(),
-            schema_type: Some(schema_type as i32),
-            ..Default::default()
+        .update_schema(SchemaMetadataUpdate {
+            id: id.to_string(),
+            patch: SchemaMetadataPatch {
+                name,
+                insert_destination,
+                query_address,
+                schema_type: schema_type.map(|t| t.into()),
+            },
         })
         .await?;
 
@@ -159,10 +119,13 @@ pub async fn add_schema_version(
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let definition = read_json(file)?;
+
     let schema = NewSchemaVersion {
         id: schema_id.to_string(),
-        version: version.to_string(),
-        definition: serde_json::to_string(&definition)?,
+        definition: SchemaDefinition {
+            version: version.to_string(),
+            definition: serde_json::to_vec(&definition)?,
+        },
     };
 
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
@@ -173,70 +136,39 @@ pub async fn add_schema_version(
 
 pub async fn get_schema_names(registry_addr: String) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
-    let schemas = client
-        .get_all_schema_names(Empty {})
-        .await?
-        .into_inner()
-        .names;
+    let mut schemas = client.get_all_schemas(Empty {}).await?.into_inner().schemas;
 
     if schemas.is_empty() {
         anyhow::bail!("No schemas exist yet in the schema registry.");
     }
 
-    for (id, name) in schemas {
-        println!("ID: {}, Name: {}", id, name);
+    schemas.sort_by_key(|schema| schema.metadata.name.clone());
+    for schema in schemas {
+        println!("ID: {}, Name: {}", schema.id, schema.metadata.name);
     }
 
     Ok(())
 }
 
-pub async fn get_schema_insert_destination(
-    schema_id: Uuid,
-    registry_addr: String,
-) -> anyhow::Result<()> {
+pub async fn get_schema_metadata(id: Uuid, registry_addr: String) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
-    let response = client
-        .get_schema_insert_destination(Id {
-            id: schema_id.to_string(),
-        })
-        .await?;
+    let metadata = client
+        .get_schema_metadata(Id { id: id.to_string() })
+        .await?
+        .into_inner();
+    let schema_type: SchemaType = metadata.schema_type.try_into()?;
 
-    println!("{}", response.into_inner().insert_destination);
-
-    Ok(())
-}
-
-pub async fn get_schema_query_address(
-    schema_id: Uuid,
-    registry_addr: String,
-) -> anyhow::Result<()> {
-    let mut client = rpc::schema_registry::connect(registry_addr).await?;
-    let response = client
-        .get_schema_query_address(Id {
-            id: schema_id.to_string(),
-        })
-        .await?;
-
-    println!("{}", response.into_inner().address);
-
-    Ok(())
-}
-
-pub async fn get_schema_type(schema_id: Uuid, registry_addr: String) -> anyhow::Result<()> {
-    let mut client = rpc::schema_registry::connect(registry_addr).await?;
-    let response = client
-        .get_schema_type(Id {
-            id: schema_id.to_string(),
-        })
-        .await?;
-
-    println!("{}", SchemaType::from(response.into_inner().schema_type()));
+    println!("Name: {}", metadata.name);
+    println!("Topic or Queue: {}", metadata.insert_destination);
+    println!("Query Address: {}", metadata.query_address);
+    println!("Type: {}", schema_type);
 
     Ok(())
 }
 
 pub async fn validate_value(
     schema_id: Uuid,
+    version_req: Option<VersionReq>,
     file: Option<PathBuf>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
@@ -245,8 +177,11 @@ pub async fn validate_value(
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
     let errors = client
         .validate_value(ValueToValidate {
-            schema_id: schema_id.to_string(),
-            value: serde_json::to_string(&value)?,
+            schema_id: VersionedId {
+                id: schema_id.to_string(),
+                version_req: version_req.map(|v| v.to_string()),
+            },
+            value: serde_json::to_vec(&value)?,
         })
         .await?
         .into_inner()

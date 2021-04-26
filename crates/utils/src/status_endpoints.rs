@@ -49,6 +49,7 @@ async fn serve_status(port: u16) -> Result<(), Box<dyn std::error::Error + Send 
     }));
 
     server.await?; // TODO: What if error
+
     Ok(())
 }
 async fn handle_requests(req: Request<Body>) -> Result<Response<Body>, Infallible> {

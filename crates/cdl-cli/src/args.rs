@@ -1,8 +1,10 @@
-use clap::Clap;
-use rpc::schema_registry::types::SchemaType;
-use semver::{Version, VersionReq};
 use std::path::PathBuf;
+
+use clap::Clap;
+use semver::{Version, VersionReq};
 use uuid::Uuid;
+
+use rpc::schema_registry::types::SchemaType;
 
 /// A tool to interact with services in the Common Data Layer.
 #[derive(Clap)]
@@ -40,45 +42,31 @@ pub enum SchemaAction {
     /// Get a schema from the registry and print it as JSON. By default, this
     /// retrieves the latest version, but you can pass a semver range to get
     /// a specific version.
-    Get {
+    Definition {
         /// The id of the schema.
         #[clap(short, long)]
-        schema_id: Uuid,
+        id: Uuid,
 
         /// An optional version requirement on the schema.
         #[clap(short, long)]
         version: Option<VersionReq>,
     },
 
-    /// Get a schema's kafka insert_destination from the registry.
-    GetInsertDestination {
+    /// Get a schema's metadata from the registry.
+    Metadata {
         /// The id of the schema.
         #[clap(short, long)]
-        schema_id: Uuid,
-    },
-
-    /// Get a schema's query address from the registry.
-    GetQueryAddress {
-        /// The id of the schema.
-        #[clap(short, long)]
-        schema_id: Uuid,
-    },
-
-    /// Get a schema's type from the registry.
-    GetSchemaType {
-        /// The id of the schema.
-        #[clap(short, long)]
-        schema_id: Uuid,
+        id: Uuid,
     },
 
     /// List all semantic versions of a schema in the registry.
     Versions {
         /// The id of the schema.
         #[clap(short, long)]
-        schema_id: Uuid,
+        id: Uuid,
     },
 
-    /// Add a schema to the registry. It is assigned version `1.0.0`.
+    /// Add a schema to the registry. Its definition is assigned version `1.0.0`.
     Add {
         /// The name of the schema.
         #[clap(short, long)]
@@ -90,11 +78,11 @@ pub enum SchemaAction {
         #[clap(short, long, default_value = "")]
         query_address: String,
         /// The file containing the JSON Schema. If not provided,
-        /// the schema will be read from stdin.
+        /// the schema definition will be read from stdin.
         #[clap(short, long, parse(from_os_str))]
         file: Option<PathBuf>,
         /// The type of schema. Possible values: DocumentStorage, Timeseries.
-        #[clap(short, long, default_value = "DocumentStorage")]
+        #[clap(short, long = "type", default_value = "DocumentStorage")]
         schema_type: SchemaType,
     },
 
@@ -102,54 +90,33 @@ pub enum SchemaAction {
     AddVersion {
         /// The id of the schema.
         #[clap(short, long)]
-        schema_id: Uuid,
+        id: Uuid,
         /// The new version of the schema. Must be greater than all existing versions.
         #[clap(short, long)]
         version: Version,
         /// The file containing the JSON Schema. If not provided,
-        /// the schema will be read from stdin.
+        /// the schema definition will be read from stdin.
         #[clap(short, long, parse(from_os_str))]
         file: Option<PathBuf>,
     },
 
-    /// Update a schema's name in the registry.
-    SetName {
+    /// Update a schema's metadata in the registry. Only the provided fields will be updated.
+    Update {
         /// The id of the schema.
         #[clap(short, long)]
         id: Uuid,
         /// The new name of the schema.
         #[clap(short, long)]
-        name: String,
-    },
-
-    /// Update a schema's insert_destination in the registry.
-    SetInsertDestination {
-        /// The id of the schema.
-        #[clap(short, long)]
-        id: Uuid,
+        name: Option<String>,
         /// The new insert_destination of the schema.
         #[clap(short, long)]
-        insert_destination: String,
-    },
-
-    /// Update a schema's query address in the registry.
-    SetQueryAddress {
-        /// The id of the schema.
-        #[clap(short, long)]
-        id: Uuid,
+        insert_destination: Option<String>,
         /// The new query address of the schema.
         #[clap(short, long)]
-        query_address: String,
-    },
-
-    /// Update a schema's type in the registry.
-    SetSchemaType {
-        /// The id of the schema.
-        #[clap(short, long)]
-        id: Uuid,
+        query_address: Option<String>,
         /// The new type of the schema. Possible values: DocumentStorage, Timeseries.
-        #[clap(short, long)]
-        schema_type: SchemaType,
+        #[clap(short, long = "type")]
+        schema_type: Option<SchemaType>,
     },
 
     /// Validate that a JSON value is valid under the format of the
@@ -157,7 +124,10 @@ pub enum SchemaAction {
     Validate {
         /// The id of the schema.
         #[clap(short, long)]
-        schema_id: Uuid,
+        id: Uuid,
+        /// An optional version requirement on the schema. Uses the latest by default.
+        #[clap(short, long)]
+        version: Option<VersionReq>,
         /// The file containing the JSON value. If not provided,
         /// the value will be read from stdin.
         #[clap(short, long, parse(from_os_str))]
@@ -192,17 +162,18 @@ pub enum ViewAction {
         name: String,
         /// Materializer's address
         #[clap(short, long)]
-        materializer_addr: String,
+        materializer_address: String,
         /// Materializer's options encoded in JSON
         #[clap(short, long)]
         materializer_options: String,
-        /// Fields definition encoded in JSON
-        #[clap(short, long)]
-        fields: String,
+        /// The file containing the fields definition encoded in JSON.
+        /// If not provided, the value will be read from STDIN.
+        #[clap(short, long, parse(from_os_str))]
+        fields: Option<PathBuf>,
     },
 
     /// Update an existing view in the registry,
-    /// and print the old view.
+    /// and print the old view. Only the provided properties will be updated.
     Update {
         /// The id of the view.
         #[clap(short, long)]
@@ -212,12 +183,16 @@ pub enum ViewAction {
         name: Option<String>,
         /// Materializer's address
         #[clap(short, long)]
-        materializer_addr: Option<String>,
+        materializer_address: Option<String>,
+        /// Whether to update the fields property.
+        #[clap(short, long)]
+        update_fields: bool,
+        /// The optional file containing the fields definition encoded in JSON.
+        /// If not provided, the value will be read from STDIN.
+        #[clap(short, long, parse(from_os_str))]
+        fields: Option<PathBuf>,
         /// Materializer's options encoded in JSON
         #[clap(short, long)]
         materializer_options: Option<String>,
-        /// Fields definition encoded in JSON
-        #[clap(short, long)]
-        fields: Option<String>,
     },
 }

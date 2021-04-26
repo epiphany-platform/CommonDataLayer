@@ -42,3 +42,17 @@ pub struct ObjectRelations {
     /// Relation children
     pub child_object_ids: Vec<Uuid>,
 }
+
+impl ObjectRelations {
+    pub fn into_edge_rpc(self) -> rpc::edge_registry::Edge {
+        rpc::edge_registry::Edge {
+            relation_id: self.relation_id.to_string(),
+            parent_object_id: self.parent_object_id.to_string(),
+            child_object_ids: self
+                .child_object_ids
+                .into_iter()
+                .map(|id| id.to_string())
+                .collect(),
+        }
+    }
+}

@@ -1,316 +1,385 @@
-use super::{
-    schema::build_full_schema,
-    types::{
-        storage::edges::{
-            Edge, SchemaDefinition as SchemaDefinitionEdge, SchemaView as SchemaViewEdge,
-        },
-        storage::vertices::{Definition, Schema, Vertex, View},
-        NewSchema, NewSchemaVersion, VersionedUuid,
-    },
-};
-use crate::{
-    error::{MalformedError, RegistryError, RegistryResult},
-    types::DbExport,
-    types::SchemaDefinition,
-    types::ViewUpdate,
-};
-use indradb::{
-    Datastore, EdgeQueryExt, RangeVertexQuery, SledDatastore, SpecificEdgeQuery,
-    SpecificVertexQuery, Transaction, VertexQueryExt,
-};
-use rpc::schema_registry::types::SchemaType;
+use std::collections::HashMap;
+
 use semver::Version;
 use serde_json::Value;
-use std::collections::HashMap;
+use sqlx::pool::PoolConnection;
+use sqlx::postgres::{PgConnectOptions, PgListener, PgPool, PgPoolOptions};
+use sqlx::types::Json;
+use sqlx::{Acquire, Connection, Postgres};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 use tracing::{trace, warn};
 use uuid::Uuid;
 
-pub struct SchemaDb<D: Datastore = SledDatastore> {
-    pub db: D,
+use crate::config::Config;
+use crate::error::{RegistryError, RegistryResult};
+use crate::types::schema::{FullSchema, NewSchema, Schema, SchemaDefinition, SchemaUpdate};
+use crate::types::view::{NewView, View, ViewUpdate};
+use crate::types::DbExport;
+use crate::types::VersionedUuid;
+use crate::utils::build_full_schema;
+use utils::types::materialization::FieldDefinition;
+
+const SCHEMAS_LISTEN_CHANNEL: &str = "schemas";
+const VIEWS_LISTEN_CHANNEL: &str = "views";
+
+pub struct SchemaRegistryDb {
+    pool: PgPool,
+    db_schema: String,
 }
 
-impl<D: Datastore> SchemaDb<D> {
-    fn connect(&self) -> RegistryResult<D::Trans> {
-        self.db
-            .transaction()
-            .map_err(RegistryError::ConnectionError)
+impl SchemaRegistryDb {
+    pub async fn new(config: &Config) -> RegistryResult<Self> {
+        let options = PgConnectOptions::new()
+            .host(&config.db_host)
+            .port(config.db_port)
+            .username(&config.db_username)
+            .password(&config.db_password)
+            .database(&config.db_name);
+
+        Ok(Self {
+            pool: PgPoolOptions::new()
+                .connect_with(options)
+                .await
+                .map_err(RegistryError::ConnectionError)?,
+            db_schema: config.db_schema.clone(),
+        })
     }
 
-    fn create_vertex_with_properties<V: Vertex>(
-        &self,
-        vertex: V,
-        uuid: Option<Uuid>,
-    ) -> RegistryResult<Uuid> {
-        let conn = self.connect()?;
-        let properties = vertex.into_properties();
-        let new_id = if let Some(uuid) = uuid {
-            let vertex = indradb::Vertex {
-                id: uuid,
-                t: V::db_type(),
-            };
-            let inserted = conn.create_vertex(&vertex)?;
-            if !inserted {
-                return Err(RegistryError::DuplicatedUuid(uuid));
-            }
-            uuid
-        } else {
-            conn.create_vertex_from_type(V::db_type())?
-        };
+    async fn connect(&self) -> RegistryResult<PoolConnection<Postgres>> {
+        let mut conn = self.pool.acquire().await?;
+        self.set_schema_for_connection(&mut conn).await?;
 
-        for (name, value) in properties {
-            conn.set_vertex_properties(SpecificVertexQuery::single(new_id).property(name), &value)?;
-        }
-
-        Ok(new_id)
+        Ok(conn)
     }
 
-    fn set_vertex_properties<'a>(
+    // TODO: remove need to set schema on each connection
+    async fn set_schema_for_connection(
         &self,
-        id: Uuid,
-        properties: impl IntoIterator<Item = &'a (&'a str, Value)>,
+        conn: &mut PoolConnection<Postgres>,
     ) -> RegistryResult<()> {
-        let conn = self.connect()?;
-        for (name, value) in properties {
-            conn.set_vertex_properties(SpecificVertexQuery::single(id).property(*name), &value)?;
-        }
+        sqlx::query(&format!("SET SCHEMA '{}'", &self.db_schema))
+            .execute(conn)
+            .await?;
 
         Ok(())
     }
 
-    fn set_edge_properties(&self, edge: impl Edge) -> RegistryResult<()> {
-        let conn = self.connect()?;
-        let (key, properties) = edge.edge_info();
-        conn.create_edge(&key)?;
-        for (name, value) in properties {
-            conn.set_edge_properties(
-                SpecificEdgeQuery::single(key.clone()).property(name),
-                &value,
-            )?;
-        }
+    pub async fn get_schema(&self, id: Uuid) -> RegistryResult<Schema> {
+        let mut conn = self.connect().await?;
 
-        Ok(())
+        sqlx::query_as!(
+            Schema,
+            "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\"
+             FROM schemas WHERE id = $1",
+            id
+        )
+        .fetch_optional(&mut conn)
+        .await?
+        .ok_or(RegistryError::NoSchemaWithId(id))
     }
 
-    pub fn ensure_schema_exists(&self, id: Uuid) -> RegistryResult<()> {
-        let conn = self.connect()?;
-        let vertices = conn.get_vertices(SpecificVertexQuery::single(id))?;
+    pub async fn get_base_schema_of_view(&self, id: Uuid) -> RegistryResult<Schema> {
+        let mut conn = self.connect().await?;
 
-        if vertices.is_empty() {
-            Err(RegistryError::NoSchemaWithId(id))
-        } else {
-            Ok(())
-        }
+        sqlx::query_as!(
+            Schema,
+            "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\"
+             FROM schemas WHERE id = (SELECT schema FROM views WHERE id = $1)",
+            id
+        )
+        .fetch_one(&mut conn)
+        .await
+        .map_err(RegistryError::DbError)
     }
 
-    pub fn ensure_view_exists(&self, id: Uuid) -> RegistryResult<()> {
-        let conn = self.connect()?;
-        let vertices = conn.get_vertices(SpecificVertexQuery::single(id))?;
+    pub async fn get_full_schema(&self, id: Uuid) -> RegistryResult<FullSchema> {
+        let mut conn = self.connect().await?;
+        let schema = self.get_schema(id).await?;
 
-        if vertices.is_empty() {
-            Err(RegistryError::NoViewWithId(id))
-        } else {
-            Ok(())
-        }
-    }
-
-    pub fn get_schema(&self, id: Uuid) -> RegistryResult<Schema> {
-        let conn = self.connect()?;
-        let props = conn
-            .get_all_vertex_properties(SpecificVertexQuery::single(id))?
-            .into_iter()
-            .next()
-            .ok_or(RegistryError::NoSchemaWithId(id))?;
-
-        let schema_id = props.vertex.id;
-        Schema::from_properties(props)
-            .map(|(_, schema)| schema)
-            .ok_or_else(|| MalformedError::MalformedSchema(schema_id).into())
-    }
-
-    pub fn get_schema_definition(&self, id: &VersionedUuid) -> RegistryResult<SchemaDefinition> {
-        let conn = self.connect()?;
-        let (version, version_vertex_id) = self.get_latest_valid_schema_version(id)?;
-        let query = SpecificVertexQuery::single(version_vertex_id).property(Definition::VALUE);
-
-        let prop = conn
-            .get_vertex_properties(query)?
-            .into_iter()
-            .next()
-            .ok_or_else(|| RegistryError::NoVersionMatchesRequirement(id.clone()))?;
-
-        Ok(SchemaDefinition {
-            version,
-            definition: prop.value,
-        })
-    }
-
-    /// Returns a schema's versions and their respective vertex ID's
-    pub fn get_schema_versions(&self, id: Uuid) -> RegistryResult<Vec<(Version, Uuid)>> {
-        let conn = self.connect()?;
-        conn.get_edge_properties(
-            SpecificVertexQuery::single(id)
-                .outbound()
-                .t(SchemaDefinitionEdge::db_type())
-                .property(SchemaDefinitionEdge::VERSION),
-        )?
+        let definitions = sqlx::query!(
+            "SELECT version, definition FROM definitions WHERE schema = $1",
+            id
+        )
+        .fetch_all(&mut conn)
+        .await?
         .into_iter()
-        .map(|prop| {
-            let version = serde_json::from_value(prop.value)
-                .map_err(|_| MalformedError::MalformedSchemaVersion(id))?;
-
-            Ok((version, prop.key.inbound_id))
+        .map(|row| {
+            Ok(SchemaDefinition {
+                version: Version::parse(&row.version).map_err(RegistryError::InvalidVersion)?,
+                definition: row.definition,
+            })
         })
-        .collect()
+        .collect::<RegistryResult<Vec<SchemaDefinition>>>()?;
+
+        let views = sqlx::query_as!(
+            View,
+            "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
+             FROM views WHERE schema = $1",
+            id
+        )
+        .fetch_all(&mut conn)
+        .await?;
+
+        Ok(FullSchema {
+            id: schema.id,
+            name: schema.name,
+            schema_type: schema.schema_type,
+            insert_destination: schema.insert_destination,
+            query_address: schema.query_address,
+            definitions,
+            views,
+        })
     }
 
-    pub fn get_schema_insert_destination(&self, id: Uuid) -> RegistryResult<String> {
-        let conn = self.connect()?;
-        let insert_destination_property = conn
-            .get_vertex_properties(
-                SpecificVertexQuery::single(id).property(Schema::INSERT_DESTINATION),
-            )?
-            .into_iter()
-            .next()
-            .ok_or(RegistryError::NoSchemaWithId(id))?;
-
-        serde_json::from_value(insert_destination_property.value)
-            .map_err(|_| MalformedError::MalformedSchema(id).into())
-    }
-
-    pub fn get_schema_query_address(&self, id: Uuid) -> RegistryResult<String> {
-        let conn = self.connect()?;
-        let query_address_property = conn
-            .get_vertex_properties(SpecificVertexQuery::single(id).property(Schema::QUERY_ADDRESS))?
-            .into_iter()
-            .next()
-            .ok_or(RegistryError::NoSchemaWithId(id))?;
-
-        serde_json::from_value(query_address_property.value)
-            .map_err(|_| MalformedError::MalformedSchema(id).into())
-    }
-
-    pub fn get_schema_type(&self, id: Uuid) -> RegistryResult<SchemaType> {
-        let conn = self.connect()?;
-        let type_property = conn
-            .get_vertex_properties(SpecificVertexQuery::single(id).property(Schema::SCHEMA_TYPE))?
-            .into_iter()
-            .next()
-            .ok_or(RegistryError::NoSchemaWithId(id))?;
-
-        serde_json::from_value(type_property.value)
-            .map_err(|_| MalformedError::MalformedSchema(id).into())
-    }
-
-    fn get_latest_valid_schema_version(
+    pub async fn get_schema_definition(
         &self,
         id: &VersionedUuid,
-    ) -> RegistryResult<(Version, Uuid)> {
-        self.get_schema_versions(id.id)?
+    ) -> RegistryResult<(Version, Value)> {
+        let mut conn = self.connect().await?;
+
+        let version = self.get_latest_valid_schema_version(id).await?;
+        let row = sqlx::query!(
+            "SELECT definition FROM definitions WHERE schema = $1 and version = $2",
+            id.id,
+            version.to_string()
+        )
+        .fetch_one(&mut conn)
+        .await?;
+
+        Ok((version, row.definition))
+    }
+
+    pub async fn get_view(&self, id: Uuid) -> RegistryResult<View> {
+        let mut conn = self.connect().await?;
+
+        sqlx::query_as!(
+            View,
+            "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
+             FROM views WHERE id = $1",
+            id
+        )
+        .fetch_optional(&mut conn)
+        .await?
+        .ok_or(RegistryError::NoViewWithId(id))
+    }
+
+    pub async fn get_all_views_of_schema(&self, schema_id: Uuid) -> RegistryResult<Vec<View>> {
+        let mut conn = self.connect().await?;
+
+        sqlx::query_as!(
+            View,
+            "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
+             FROM views WHERE schema = $1",
+            schema_id
+        )
+        .fetch_all(&mut conn)
+        .await
+        .map_err(RegistryError::DbError)
+    }
+
+    pub async fn get_schema_versions(&self, id: Uuid) -> RegistryResult<Vec<Version>> {
+        let mut conn = self.connect().await?;
+
+        sqlx::query!("SELECT version FROM definitions WHERE schema = $1", id)
+            .fetch_all(&mut conn)
+            .await
+            .map_err(RegistryError::DbError)?
             .into_iter()
-            .filter(|(version, _vertex_id)| id.version_req.matches(version))
-            .max_by_key(|(version, _vertex_id)| version.clone())
+            .map(|row| Version::parse(&row.version).map_err(RegistryError::InvalidVersion))
+            .collect()
+    }
+
+    async fn get_latest_valid_schema_version(&self, id: &VersionedUuid) -> RegistryResult<Version> {
+        self.get_schema_versions(id.id)
+            .await?
+            .into_iter()
+            .filter(|version| id.version_req.matches(version))
+            .max()
             .ok_or_else(|| RegistryError::NoVersionMatchesRequirement(id.clone()))
     }
 
-    pub fn get_view(&self, id: Uuid) -> RegistryResult<View> {
-        let conn = self.connect()?;
-        let db_type = View::db_type();
-        let properties = conn
-            .get_all_vertex_properties(SpecificVertexQuery::single(id))?
-            .into_iter()
-            .next()
-            .filter(|props| props.vertex.t == db_type)
-            .ok_or(RegistryError::NoViewWithId(id))?;
+    pub async fn get_all_schemas(&self) -> RegistryResult<Vec<Schema>> {
+        let mut conn = self.connect().await?;
 
-        View::from_properties(properties)
-            .ok_or_else(|| MalformedError::MalformedView(id).into())
-            .map(|(_id, view)| view)
+        sqlx::query_as!(
+            Schema,
+            "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\" \
+             FROM schemas ORDER BY name"
+        )
+        .fetch_all(&mut conn)
+        .await
+        .map_err(RegistryError::DbError)
     }
 
-    pub fn add_schema(&self, schema: NewSchema, new_id: Option<Uuid>) -> RegistryResult<Uuid> {
-        let (schema, definition) = schema.vertex();
-        let full_schema = build_full_schema(definition, &self)?;
+    pub async fn get_all_full_schemas(&self) -> RegistryResult<Vec<FullSchema>> {
+        let mut conn = self.connect().await?;
 
-        let new_id = self.create_vertex_with_properties(schema, new_id)?;
-        let new_definition_vertex_id = self.create_vertex_with_properties(full_schema, None)?;
+        let all_schemas = sqlx::query_as!(
+            Schema,
+            "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\" FROM schemas"
+        )
+        .fetch_all(&mut conn)
+        .await?;
+        let mut all_definitions =
+            sqlx::query!("SELECT version, definition, schema FROM definitions")
+                .fetch_all(&mut conn)
+                .await?;
+        let mut all_views =
+            sqlx::query!("SELECT id, name, materializer_address, materializer_options, fields, schema FROM views",)
+                .fetch_all(&mut conn)
+                .await?;
 
-        self.set_edge_properties(SchemaDefinitionEdge {
-            schema_id: new_id,
-            definition_id: new_definition_vertex_id,
-            version: Version::new(1, 0, 0),
-        })?;
+        all_schemas
+            .into_iter()
+            .map(|schema: Schema| {
+                let definitions = all_definitions
+                    .drain_filter(|d| d.schema == schema.id)
+                    .map(|row| {
+                        Ok(SchemaDefinition {
+                            version: Version::parse(&row.version)
+                                .map_err(RegistryError::InvalidVersion)?,
+                            definition: row.definition,
+                        })
+                    })
+                    .collect::<RegistryResult<Vec<SchemaDefinition>>>()?;
+                let views = all_views
+                    .drain_filter(|v| v.schema == schema.id)
+                    .map(|row| {
+                        Ok(View {
+                            id: row.id,
+                            name: row.name,
+                            materializer_address: row.materializer_address,
+                            materializer_options: row.materializer_options,
+                            fields:
+                                serde_json::from_value::<Json<HashMap<String, FieldDefinition>>>(
+                                    row.fields,
+                                )
+                                .map_err(RegistryError::MalformedViewFields)?,
+                        })
+                    })
+                    .collect::<RegistryResult<Vec<View>>>()?;
+
+                Ok(FullSchema {
+                    id: schema.id,
+                    name: schema.name,
+                    schema_type: schema.schema_type,
+                    insert_destination: schema.insert_destination,
+                    query_address: schema.query_address,
+                    definitions,
+                    views,
+                })
+            })
+            .collect()
+    }
+
+    pub async fn add_schema(&self, mut schema: NewSchema) -> RegistryResult<Uuid> {
+        let mut conn = self.connect().await?;
+
+        let new_id = Uuid::new_v4();
+        build_full_schema(&mut schema.definition, self).await?;
+
+        conn
+            .transaction::<_, _, RegistryError>(move |c| {
+                Box::pin(async move {
+                    sqlx::query!(
+                        "INSERT INTO schemas(id, name, schema_type, insert_destination, query_address) \
+                         VALUES($1, $2, $3, $4, $5)",
+                        &new_id,
+                        &schema.name,
+                        &schema.schema_type as &rpc::schema_registry::types::SchemaType,
+                        &schema.insert_destination,
+                        &schema.query_address,
+                    )
+                    .execute(c.acquire().await?)
+                    .await?;
+
+                    sqlx::query!(
+                        "INSERT INTO definitions(version, definition, schema) \
+                         VALUES('1.0.0', $1, $2)",
+                        schema.definition,
+                        new_id
+                    )
+                    .execute(c)
+                    .await?;
+
+                    Ok(())
+                })
+            })
+            .await?;
+
         trace!("Add schema {}", new_id);
+
         Ok(new_id)
     }
 
-    pub fn update_schema_name(&self, id: Uuid, new_name: String) -> RegistryResult<()> {
-        self.ensure_schema_exists(id)?;
+    pub async fn add_view_to_schema(&self, new_view: NewView) -> RegistryResult<Uuid> {
+        let mut conn = self.connect().await?;
+        let new_id = Uuid::new_v4();
 
-        self.set_vertex_properties(id, &[(Schema::NAME, Value::String(new_name))])?;
+        sqlx::query!(
+            "INSERT INTO views(id, schema, name, materializer_address, fields)
+             VALUES ($1, $2, $3, $4, $5)",
+            new_id,
+            new_view.schema_id,
+            new_view.name,
+            new_view.materializer_address,
+            serde_json::to_value(&new_view.fields).map_err(RegistryError::MalformedViewFields)?,
+        )
+        .execute(&mut conn)
+        .await?;
+
+        Ok(new_id)
+    }
+
+    pub async fn update_schema(&self, id: Uuid, update: SchemaUpdate) -> RegistryResult<()> {
+        let mut conn = self.connect().await?;
+        let old_schema = self.get_schema(id).await?;
+
+        sqlx::query!(
+            "UPDATE schemas SET name = $1, schema_type = $2, insert_destination = $3, query_address = $4 WHERE id = $5",
+            update.name.unwrap_or(old_schema.name),
+            update.schema_type.unwrap_or(old_schema.schema_type) as _,
+            update.insert_destination.unwrap_or(old_schema.insert_destination),
+            update.query_address.unwrap_or(old_schema.query_address),
+            id
+        )
+        .execute(&mut conn)
+        .await?;
 
         Ok(())
     }
 
-    pub fn update_schema_insert_destination(
+    pub async fn update_view(&self, id: Uuid, update: ViewUpdate) -> RegistryResult<()> {
+        let mut conn = self.connect().await?;
+        let old = self.get_view(id).await?;
+
+        sqlx::query!(
+            "UPDATE views SET name = $1, materializer_address = $2, fields = $3
+             WHERE id = $4",
+            update.name.unwrap_or(old.name),
+            update
+                .materializer_address
+                .unwrap_or(old.materializer_address),
+            serde_json::to_value(&update.fields.unwrap_or(old.fields))
+                .map_err(RegistryError::MalformedViewFields)?,
+            id,
+        )
+        .execute(&mut conn)
+        .await?;
+
+        Ok(())
+    }
+
+    pub async fn add_new_version_of_schema(
         &self,
         id: Uuid,
-        new_insert_destination: String,
+        new_version: SchemaDefinition,
     ) -> RegistryResult<()> {
-        self.ensure_schema_exists(id)?;
+        let mut conn = self.connect().await?;
+        self.get_schema(id).await?;
 
-        self.set_vertex_properties(
-            id,
-            &[(
-                Schema::INSERT_DESTINATION,
-                Value::String(new_insert_destination),
-            )],
-        )?;
-
-        Ok(())
-    }
-
-    pub fn update_schema_query_address(
-        &self,
-        id: Uuid,
-        new_query_address: String,
-    ) -> RegistryResult<()> {
-        self.ensure_schema_exists(id)?;
-
-        self.set_vertex_properties(
-            id,
-            &[(Schema::QUERY_ADDRESS, Value::String(new_query_address))],
-        )?;
-
-        Ok(())
-    }
-
-    pub fn update_schema_type(&self, id: Uuid, new_schema_type: SchemaType) -> RegistryResult<()> {
-        self.ensure_schema_exists(id)?;
-
-        self.set_vertex_properties(
-            id,
-            &[(
-                Schema::SCHEMA_TYPE,
-                Value::String(new_schema_type.to_string()),
-            )],
-        )?;
-
-        Ok(())
-    }
-
-    pub fn add_new_version_of_schema(
-        &self,
-        id: Uuid,
-        schema: NewSchemaVersion,
-    ) -> RegistryResult<()> {
-        self.ensure_schema_exists(id)?;
-
-        if let Some((max_version, _vertex_id)) = self
-            .get_schema_versions(id)?
-            .into_iter()
-            .max_by_key(|(version, _vertex_id)| version.clone())
-        {
-            if max_version >= schema.version {
+        if let Some(max_version) = self.get_schema_versions(id).await?.into_iter().max() {
+            if max_version >= new_version.version {
                 return Err(RegistryError::NewVersionMustBeGreatest {
                     schema_id: id,
                     max_version,
@@ -318,460 +387,158 @@ impl<D: Datastore> SchemaDb<D> {
             }
         }
 
-        let full_schema = build_full_schema(schema.definition, &self)?;
-        let new_definition_vertex_id = self.create_vertex_with_properties(full_schema, None)?;
-
-        self.set_edge_properties(SchemaDefinitionEdge {
-            version: schema.version,
-            schema_id: id,
-            definition_id: new_definition_vertex_id,
-        })?;
+        sqlx::query!(
+            "INSERT INTO definitions(version, definition, schema) VALUES($1, $2, $3)",
+            new_version.version.to_string(),
+            new_version.definition,
+            id
+        )
+        .execute(&mut conn)
+        .await?;
 
         Ok(())
     }
 
-    pub fn add_view_to_schema(
+    pub async fn validate_data_with_schema(
         &self,
-        schema_id: Uuid,
-        view: View,
-        view_id: Option<Uuid>,
-    ) -> RegistryResult<Uuid> {
-        self.ensure_schema_exists(schema_id)?;
+        schema_id: VersionedUuid,
+        json: &Value,
+    ) -> RegistryResult<()> {
+        let (_version, definition) = self.get_schema_definition(&schema_id).await?;
+        let schema = jsonschema::JSONSchema::compile(&definition)
+            .map_err(RegistryError::InvalidJsonSchema)?;
 
-        let view_id = self.create_vertex_with_properties(view, view_id)?;
+        let result = match schema.validate(&json) {
+            Ok(()) => Ok(()),
+            Err(errors) => Err(RegistryError::InvalidData(
+                errors.map(|err| err.to_string()).collect(),
+            )),
+        };
 
-        self.set_edge_properties(SchemaViewEdge { schema_id, view_id })?;
-
-        Ok(view_id)
+        result
     }
 
-    pub fn update_view(&self, id: Uuid, view: ViewUpdate) -> RegistryResult<View> {
-        let old_view = self.get_view(id)?;
+    pub async fn listen_to_schema_updates(
+        &self,
+    ) -> RegistryResult<UnboundedReceiver<RegistryResult<Schema>>> {
+        let (tx, rx) = unbounded_channel::<RegistryResult<Schema>>();
+        let mut listener = PgListener::connect_with(&self.pool)
+            .await
+            .map_err(RegistryError::ConnectionError)?;
+        listener.listen(SCHEMAS_LISTEN_CHANNEL).await?;
 
-        if let Some(name) = view.name {
-            self.set_vertex_properties(id, &[(View::NAME, Value::String(name))])?;
-        }
+        tokio::spawn(async move {
+            loop {
+                let notification = listener
+                    .recv()
+                    .await
+                    .map_err(RegistryError::NotificationError);
+                let schema = notification.and_then(|n| {
+                    serde_json::from_str::<Schema>(n.payload())
+                        .map_err(RegistryError::MalformedNotification)
+                });
 
-        if let Some(materializer_addr) = view.materializer_addr {
-            self.set_vertex_properties(
-                id,
-                &[(View::MATERIALIZER_ADDR, Value::String(materializer_addr))],
-            )?;
-        }
+                if tx.send(schema).is_err() {
+                    return;
+                }
+            }
+        });
 
-        if let Some(fields) = view.fields {
-            let fields = serde_json::to_value(fields).unwrap();
-            self.set_vertex_properties(id, &[(View::FIELDS, fields)])?;
-        }
-
-        Ok(old_view)
+        Ok(rx)
     }
 
-    pub fn get_all_schemas(&self) -> RegistryResult<HashMap<Uuid, Schema>> {
-        let conn = self.connect()?;
-        let all_schemas =
-            conn.get_all_vertex_properties(RangeVertexQuery::new().t(Schema::db_type()))?;
+    pub async fn listen_to_view_updates(
+        &self,
+    ) -> RegistryResult<UnboundedReceiver<RegistryResult<View>>> {
+        let (tx, rx) = unbounded_channel::<RegistryResult<View>>();
+        let mut listener = PgListener::connect_with(&self.pool)
+            .await
+            .map_err(RegistryError::ConnectionError)?;
+        listener.listen(VIEWS_LISTEN_CHANNEL).await?;
 
-        all_schemas
-            .into_iter()
-            .map(|props| {
-                let schema_id = props.vertex.id;
-                Schema::from_properties(props)
-                    .ok_or_else(|| MalformedError::MalformedSchema(schema_id).into())
-            })
-            .collect()
+        tokio::spawn(async move {
+            loop {
+                let notification = listener
+                    .recv()
+                    .await
+                    .map_err(RegistryError::NotificationError);
+                let view = notification.and_then(|n| {
+                    serde_json::from_str::<View>(n.payload())
+                        .map_err(RegistryError::MalformedNotification)
+                });
+
+                if tx.send(view).is_err() {
+                    return;
+                }
+            }
+        });
+
+        Ok(rx)
     }
 
-    pub fn get_all_schema_names(&self) -> RegistryResult<HashMap<Uuid, String>> {
-        let conn = self.connect()?;
-        let all_names = conn.get_vertex_properties(
-            RangeVertexQuery::new()
-                .t(Schema::db_type())
-                .property(Schema::NAME),
-        )?;
-
-        all_names
-            .into_iter()
-            .map(|props| {
-                let schema_id = props.id;
-                let name = serde_json::from_value(props.value)
-                    .map_err(|_| MalformedError::MalformedSchema(schema_id))?;
-
-                Ok((schema_id, name))
-            })
-            .collect()
-    }
-
-    pub fn get_base_schema_of_view(&self, view_id: Uuid) -> RegistryResult<(Uuid, Schema)> {
-        let conn = self.connect()?;
-        self.ensure_view_exists(view_id)?;
-
-        let all_schemas = conn.get_all_vertex_properties(
-            SpecificVertexQuery::single(view_id)
-                .inbound()
-                .t(SchemaViewEdge::db_type())
-                .outbound(),
-        )?;
-
-        let props = all_schemas.into_iter().next().ok_or_else(|| {
-            RegistryError::InvalidView(format!("Missing base schema for view: {:?}", view_id))
-        })?;
-
-        let schema_id = props.vertex.id;
-        let schema =
-            Schema::from_properties(props).ok_or(MalformedError::MalformedSchema(schema_id))?;
-
-        Ok(schema)
-    }
-
-    pub fn get_all_views_of_schema(&self, schema_id: Uuid) -> RegistryResult<HashMap<Uuid, View>> {
-        let conn = self.connect()?;
-        self.ensure_schema_exists(schema_id)?;
-
-        let all_views = conn.get_all_vertex_properties(
-            SpecificVertexQuery::single(schema_id)
-                .outbound()
-                .t(SchemaViewEdge::db_type())
-                .inbound(),
-        )?;
-
-        all_views
-            .into_iter()
-            .map(|props| {
-                let view_id = props.vertex.id;
-
-                View::from_properties(props)
-                    .ok_or_else(|| MalformedError::MalformedView(view_id).into())
-            })
-            .collect()
-    }
-
-    pub fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
-        if !self.get_all_schema_names()?.is_empty() {
+    pub async fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
+        let mut conn = self.connect().await?;
+        if !self.get_all_schemas().await?.is_empty() {
             warn!("[IMPORT] Database is not empty, skipping importing");
             return Ok(());
         }
 
-        for (schema_id, schema) in imported.schemas {
-            self.create_vertex_with_properties(schema, Some(schema_id))?;
-        }
+        conn
+            .transaction::<_, _, RegistryError>(move |c| {
+                Box::pin(async move {
+                    for schema in imported.schemas {
+                        sqlx::query!(
+                            "INSERT INTO schemas(id, name, schema_type, insert_destination, query_address) \
+                             VALUES($1, $2, $3, $4, $5)",
+                            schema.id,
+                            schema.name,
+                            schema.schema_type as _,
+                            schema.insert_destination,
+                            schema.query_address
+                        )
+                        .execute(c.acquire().await?)
+                        .await?;
 
-        for (definition_id, def) in imported.definitions {
-            self.create_vertex_with_properties(def, Some(definition_id))?;
-        }
+                        for definition in schema.definitions {
+                            sqlx::query!(
+                                "INSERT INTO definitions(version, definition, schema) \
+                                 VALUES($1, $2, $3)",
+                                definition.version.to_string(),
+                                definition.definition,
+                                schema.id
+                            )
+                            .execute(c.acquire().await?)
+                            .await?;
+                        }
 
-        for (view_id, view) in imported.views {
-            self.create_vertex_with_properties(view, Some(view_id))?;
-        }
+                        for view in schema.views {
+                            sqlx::query!(
+                                "INSERT INTO views(id, schema, name, materializer_address, materializer_options, fields) \
+                                 VALUES($1, $2, $3, $4, $5, $6)",
+                                 view.id,
+                                 schema.id,
+                                 view.name,
+                                 view.materializer_address,
+                                 view.materializer_options,
+                                 serde_json::to_value(&view.fields)
+                                    .map_err(RegistryError::MalformedViewFields)?,
+                            )
+                            .execute(c.acquire().await?)
+                            .await?;
+                        }
+                     }
 
-        for schema_definition in imported.schema_definitions {
-            self.set_edge_properties(schema_definition)?;
-        }
-
-        for schema_view in imported.schema_views {
-            self.set_edge_properties(schema_view)?;
-        }
+                    Ok(())
+                })
+            })
+            .await?;
 
         Ok(())
     }
 
-    pub fn export_all(&self) -> RegistryResult<DbExport> {
-        let conn = self.connect()?;
-
-        let all_definitions =
-            conn.get_all_vertex_properties(RangeVertexQuery::new().t(Definition::db_type()))?;
-
-        let all_schemas =
-            conn.get_all_vertex_properties(RangeVertexQuery::new().t(Schema::db_type()))?;
-
-        let all_views =
-            conn.get_all_vertex_properties(RangeVertexQuery::new().t(View::db_type()))?;
-
-        let all_schema_definitions = conn.get_all_edge_properties(
-            RangeVertexQuery::new()
-                .outbound()
-                .t(SchemaDefinitionEdge::db_type()),
-        )?;
-
-        let all_schema_views = conn.get_all_edge_properties(
-            RangeVertexQuery::new()
-                .outbound()
-                .t(SchemaViewEdge::db_type()),
-        )?;
-
-        let definitions = all_definitions
-            .into_iter()
-            .map(|props| {
-                let definition_id = props.vertex.id;
-                Definition::from_properties(props)
-                    .ok_or_else(|| MalformedError::MalformedDefinition(definition_id).into())
-            })
-            .collect::<RegistryResult<HashMap<Uuid, Definition>>>()?;
-
-        let schemas = all_schemas
-            .into_iter()
-            .map(|props| {
-                let schema_id = props.vertex.id;
-                Schema::from_properties(props)
-                    .ok_or_else(|| MalformedError::MalformedSchema(schema_id).into())
-            })
-            .collect::<RegistryResult<HashMap<Uuid, Schema>>>()?;
-
-        let views = all_views
-            .into_iter()
-            .map(|props| {
-                let view_id = props.vertex.id;
-                View::from_properties(props)
-                    .ok_or_else(|| MalformedError::MalformedView(view_id).into())
-            })
-            .collect::<RegistryResult<HashMap<Uuid, View>>>()?;
-
-        let schema_definitions = all_schema_definitions
-            .into_iter()
-            .map(|props| {
-                let schema_id = props.edge.key.outbound_id;
-                SchemaDefinitionEdge::from_properties(props)
-                    .ok_or_else(|| MalformedError::MalformedSchemaVersion(schema_id).into())
-            })
-            .collect::<RegistryResult<Vec<SchemaDefinitionEdge>>>()?;
-
-        let schema_views = all_schema_views
-            .into_iter()
-            .map(|props| {
-                SchemaViewEdge::from_properties(props).unwrap() // View edge has no params, always passes
-            })
-            .collect::<Vec<SchemaViewEdge>>();
-
+    pub async fn export_all(&self) -> RegistryResult<DbExport> {
         Ok(DbExport {
-            schemas,
-            definitions,
-            views,
-            schema_definitions,
-            schema_views,
+            schemas: self.get_all_full_schemas().await?,
         })
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::error::RegistryResult;
-    use crate::types::storage::vertices::FieldDefinition;
-    use indradb::MemoryDatastore;
-    use maplit::hashmap;
-    use serde_json::json;
-
-    #[test]
-    fn import_non_empty() -> RegistryResult<()> {
-        let (to_import, schema1_id, view1_id) = prepare_db_export()?;
-
-        let db = SchemaDb {
-            db: MemoryDatastore::default(),
-        };
-        let schema2_id = db.add_schema(schema2(), None)?;
-        let view2_id = db.add_view_to_schema(schema2_id, view2(), None)?;
-
-        db.ensure_schema_exists(schema2_id)?;
-        assert!(db.ensure_schema_exists(schema1_id).is_err());
-        db.get_view(view2_id)?;
-        assert!(db.get_view(view1_id).is_err());
-
-        db.import_all(to_import)?;
-
-        // Ensure nothing changed
-        db.ensure_schema_exists(schema2_id)?;
-        assert!(db.ensure_schema_exists(schema1_id).is_err());
-        db.get_view(view2_id)?;
-        assert!(db.get_view(view1_id).is_err());
-
-        Ok(())
-    }
-
-    #[test]
-    fn import_all() -> RegistryResult<()> {
-        let (original_result, original_schema_id, original_view_id) = prepare_db_export()?;
-
-        let db = SchemaDb {
-            db: MemoryDatastore::default(),
-        };
-
-        db.import_all(original_result)?;
-
-        db.ensure_schema_exists(original_schema_id)?;
-
-        let (schema_id, schema_name) = db.get_all_schema_names()?.into_iter().next().unwrap();
-        assert_eq!(original_schema_id, schema_id);
-        assert_eq!("test", schema_name);
-
-        let defs = db.get_schema_definition(&VersionedUuid::any(original_schema_id))?;
-        assert_eq!(Version::new(1, 0, 0), defs.version);
-        assert_eq!(
-            r#"{"definitions":{"def1":{"a":"number"},"def2":{"b":"string"}}}"#,
-            serde_json::to_string(&defs.definition).unwrap()
-        );
-
-        let (view_id, view) = db
-            .get_all_views_of_schema(original_schema_id)?
-            .into_iter()
-            .next()
-            .unwrap();
-        assert_eq!(original_view_id, view_id);
-        assert_eq!("https://localhost:1234", view.materializer_addr);
-
-        Ok(())
-    }
-
-    #[test]
-    fn import_export_all() -> RegistryResult<()> {
-        let original_result = prepare_db_export()?.0;
-
-        let db = SchemaDb {
-            db: MemoryDatastore::default(),
-        };
-        db.import_all(original_result.clone())?;
-
-        let new_result = db.export_all()?;
-
-        assert_eq!(original_result, new_result);
-
-        Ok(())
-    }
-
-    #[test]
-    fn export_all() -> RegistryResult<()> {
-        let (result, original_schema_id, original_view_id) = prepare_db_export()?;
-
-        let (schema_id, schema) = result.schemas.into_iter().next().unwrap();
-        assert_eq!(original_schema_id, schema_id);
-        assert_eq!("test", schema.name);
-
-        let (definition_id, definition) = result.definitions.into_iter().next().unwrap();
-        assert!(definition.definition.is_object());
-        assert_eq!(
-            r#"{"definitions":{"def1":{"a":"number"},"def2":{"b":"string"}}}"#,
-            serde_json::to_string(&definition.definition).unwrap()
-        );
-
-        let (view_id, view) = result.views.into_iter().next().unwrap();
-        assert_eq!(original_view_id, view_id);
-        assert_eq!("https://localhost:1234", view.materializer_addr);
-
-        let schema_definition = result.schema_definitions.into_iter().next().unwrap();
-        assert_eq!(schema_id, schema_definition.schema_id);
-        assert_eq!(definition_id, schema_definition.definition_id);
-        assert_eq!(Version::new(1, 0, 0), schema_definition.version);
-
-        let schema_view = result.schema_views.into_iter().next().unwrap();
-        assert_eq!(schema_id, schema_view.schema_id);
-        assert_eq!(view_id, schema_view.view_id);
-
-        Ok(())
-    }
-
-    #[test]
-    fn get_schema_type() -> RegistryResult<()> {
-        let db = SchemaDb {
-            db: MemoryDatastore::default(),
-        };
-        let schema_id = db.add_schema(schema1(), None)?;
-
-        let schema_type = db.get_schema_type(schema_id)?;
-        assert_eq!(SchemaType::DocumentStorage, schema_type);
-
-        Ok(())
-    }
-
-    #[test]
-    fn update_schema_type() -> RegistryResult<()> {
-        let db = SchemaDb {
-            db: MemoryDatastore::default(),
-        };
-        let schema_id = db.add_schema(schema1(), None)?;
-
-        let schema_type = db.get_schema_type(schema_id)?;
-        assert_eq!(SchemaType::DocumentStorage, schema_type);
-
-        db.update_schema_type(schema_id, SchemaType::Timeseries)?;
-
-        let schema_type = db.get_schema_type(schema_id)?;
-        assert_eq!(SchemaType::Timeseries, schema_type);
-
-        Ok(())
-    }
-
-    fn schema1() -> NewSchema {
-        NewSchema {
-            name: "test".into(),
-            definition: json! ({
-                "definitions": {
-                    "def1": {
-                        "a": "number"
-                    },
-                    "def2": {
-                        "b": "string"
-                    }
-                }
-            }),
-            insert_destination: "insert_destination1".into(),
-            query_address: "query1".into(),
-            schema_type: SchemaType::DocumentStorage,
-        }
-    }
-
-    fn view1() -> View {
-        View {
-            name: "view1".into(),
-            materializer_addr: "https://localhost:1234".into(),
-            materializer_options: json!({}),
-            fields: hashmap! {
-                "a".into() => FieldDefinition::FieldName("a".into())
-            },
-        }
-    }
-
-    fn schema2() -> NewSchema {
-        NewSchema {
-            name: "test2".into(),
-            definition: json! ({
-                "definitions": {
-                    "def3": {
-                        "a": "number"
-                    },
-                    "def4": {
-                        "b": "string"
-                    }
-                }
-            }),
-            insert_destination: "insert_destination2".into(),
-            query_address: "query2".into(),
-            schema_type: SchemaType::DocumentStorage,
-        }
-    }
-
-    fn view2() -> View {
-        View {
-            name: "view2".into(),
-            materializer_addr: "https://localhost:1234".into(),
-            materializer_options: json!({}),
-            fields: hashmap! {
-                "a".into() => FieldDefinition::FieldName("a".into())
-            },
-        }
-    }
-
-    fn prepare_db_export() -> RegistryResult<(DbExport, Uuid, Uuid)> {
-        // SchemaId, ViewId
-        let db = SchemaDb {
-            db: MemoryDatastore::default(),
-        };
-
-        let schema_id = db.add_schema(schema1(), None)?;
-
-        let view = view1();
-        let view_id = db.add_view_to_schema(schema_id, view, None)?;
-
-        let exported = db.export_all()?;
-
-        Ok((exported, schema_id, view_id))
     }
 }

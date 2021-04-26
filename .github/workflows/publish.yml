@@ -34,7 +34,7 @@ jobs:
 
     - name: Build and push crates
       run: |
-        crates=(command-service data-router leader-elector query-service query-service-ts schema-registry query-router api edge-registry partial-update-engine object-builder materializer)
+        crates=(command-service data-router query-service query-service-ts schema-registry query-router api edge-registry partial-update-engine object-builder materializer)
         for crate in "${crates[@]}"
         do
         docker build . --build-arg BIN=$crate -t epiphanyplatform/cdl-$crate:${{ steps.get_version.outputs.VERSION }}
