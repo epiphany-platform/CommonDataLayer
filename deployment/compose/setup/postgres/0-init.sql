@@ -1,5 +1,5 @@
 SET search_path to 'public,cdlgrpc,cdlkafka';
-
+\set ON_ERROR_STOP off
 -- database specific
 DROP EXTENSION "uuid-ossp";
 CREATE EXTENSION "uuid-ossp" WITH SCHEMA public;
