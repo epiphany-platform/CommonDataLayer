@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   name: infrastructure-postgres-migrations
 data:
-  0.init.sql:
+  0.init.sql: |
     SET search_path to 'public,cdlgrpc,cdlkafka';
 
     -- database specific
