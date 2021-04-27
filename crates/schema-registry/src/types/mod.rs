@@ -2,8 +2,6 @@ use semver::{Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use self::schema::FullSchema;
-
 pub mod schema;
 pub mod view;
 
@@ -31,9 +29,4 @@ impl VersionedUuid {
             version_req: VersionReq::any(),
         }
     }
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct DbExport {
-    pub schemas: Vec<FullSchema>,
 }

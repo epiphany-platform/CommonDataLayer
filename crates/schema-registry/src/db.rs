@@ -7,14 +7,13 @@ use sqlx::postgres::{PgConnectOptions, PgListener, PgPool, PgPoolOptions};
 use sqlx::types::Json;
 use sqlx::{Acquire, Connection, Postgres};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
-use tracing::{trace, warn};
+use tracing::trace;
 use uuid::Uuid;
 
 use crate::config::Config;
 use crate::error::{RegistryError, RegistryResult};
 use crate::types::schema::{FullSchema, NewSchema, Schema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{NewView, View, ViewUpdate};
-use crate::types::DbExport;
 use crate::types::VersionedUuid;
 use crate::utils::build_full_schema;
 use utils::types::materialization::FieldDefinition;
@@ -474,71 +473,5 @@ impl SchemaRegistryDb {
         });
 
         Ok(rx)
-    }
-
-    pub async fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
-        let mut conn = self.connect().await?;
-        if !self.get_all_schemas().await?.is_empty() {
-            warn!("[IMPORT] Database is not empty, skipping importing");
-            return Ok(());
-        }
-
-        conn
-            .transaction::<_, _, RegistryError>(move |c| {
-                Box::pin(async move {
-                    for schema in imported.schemas {
-                        sqlx::query!(
-                            "INSERT INTO schemas(id, name, schema_type, insert_destination, query_address) \
-                             VALUES($1, $2, $3, $4, $5)",
-                            schema.id,
-                            schema.name,
-                            schema.schema_type as _,
-                            schema.insert_destination,
-                            schema.query_address
-                        )
-                        .execute(c.acquire().await?)
-                        .await?;
-
-                        for definition in schema.definitions {
-                            sqlx::query!(
-                                "INSERT INTO definitions(version, definition, schema) \
-                                 VALUES($1, $2, $3)",
-                                definition.version.to_string(),
-                                definition.definition,
-                                schema.id
-                            )
-                            .execute(c.acquire().await?)
-                            .await?;
-                        }
-
-                        for view in schema.views {
-                            sqlx::query!(
-                                "INSERT INTO views(id, schema, name, materializer_address, materializer_options, fields) \
-                                 VALUES($1, $2, $3, $4, $5, $6)",
-                                 view.id,
-                                 schema.id,
-                                 view.name,
-                                 view.materializer_address,
-                                 view.materializer_options,
-                                 serde_json::to_value(&view.fields)
-                                    .map_err(RegistryError::MalformedViewFields)?,
-                            )
-                            .execute(c.acquire().await?)
-                            .await?;
-                        }
-                     }
-
-                    Ok(())
-                })
-            })
-            .await?;
-
-        Ok(())
-    }
-
-    pub async fn export_all(&self) -> RegistryResult<DbExport> {
-        Ok(DbExport {
-            schemas: self.get_all_full_schemas().await?,
-        })
     }
 }

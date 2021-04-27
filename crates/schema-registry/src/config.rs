@@ -1,5 +1,3 @@
-use std::path::PathBuf;
-
 use anyhow::Context;
 use clap::Clap;
 
@@ -71,13 +69,6 @@ pub struct Config {
     /// Consumer tag
     #[clap(long, env)]
     pub amqp_consumer_tag: Option<String>,
-
-    /// Directory to save state of the database. The state is saved in newly created folder with timestamp
-    #[clap(long, env)]
-    pub export_dir: Option<PathBuf>,
-    /// JSON file from which SR should load initial state. If the state already exists this env variable witll be ignored
-    #[clap(long, env)]
-    pub import_file: Option<PathBuf>,
 
     /// Port to listen on for Prometheus requests
     #[clap(long, env, default_value = metrics::DEFAULT_PORT)]

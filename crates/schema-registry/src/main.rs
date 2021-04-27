@@ -1,6 +1,4 @@
-use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
-use std::path::PathBuf;
 
 use anyhow::Context;
 use clap::Clap;
@@ -34,12 +32,4 @@ pub async fn main() -> anyhow::Result<()> {
         .serve(addr.into())
         .await
         .context("gRPC server failed")
-}
-
-fn export_path(export_dir_path: PathBuf) -> PathBuf {
-    let timestamp = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("Invalid system time");
-
-    export_dir_path.join(format!("export_{:?}.json", timestamp.as_secs()))
 }

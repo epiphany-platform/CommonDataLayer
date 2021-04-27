@@ -15,7 +15,7 @@ use crate::db::SchemaRegistryDb;
 use crate::error::{RegistryError, RegistryResult};
 use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{NewView, ViewUpdate};
-use crate::types::{DbExport, VersionedUuid};
+use crate::types::VersionedUuid;
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate,
     ValueToValidate, VersionedId,
