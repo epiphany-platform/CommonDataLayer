@@ -10,7 +10,7 @@ class PostgresConfig:
                  host='localhost',
                  port='5432',
                  dbname='postgres',
-                 schema='cdl'):
+                 schema='cdlgrpc'):
         self.user = user
         self.password = password
         self.host = host
@@ -60,7 +60,7 @@ def insert_data(config: PostgresConfig, data):
 
     for entry in data:
         curr.execute(
-            'INSERT INTO cdl.data (object_id, version, schema_id, payload) VALUES (%s, %s, %s, %s)',
+            'INSERT INTO cdlgrpc.data (object_id, version, schema_id, payload) VALUES (%s, %s, %s, %s)',
             (entry['object_id'], entry['version'], entry['schema_id'],
              json.dumps(entry['payload'])))
     db.commit()
@@ -72,7 +72,7 @@ def clear_data(config: PostgresConfig):
     db = connect_to_postgres(config)
     curr = db.cursor()
 
-    curr.execute('DELETE FROM cdl.data')
+    curr.execute('DELETE FROM cdlgrpc.data')
 
     db.commit()
     curr.close()
@@ -83,8 +83,8 @@ def clear_relations(config: PostgresConfig):
     db = connect_to_postgres(config)
     curr = db.cursor()
 
-    curr.execute('DELETE FROM cdl.edges')
-    curr.execute('DELETE FROM cdl.relations')
+    curr.execute('DELETE FROM cdlgrpc.edges')
+    curr.execute('DELETE FROM cdlgrpc.relations')
 
     db.commit()
     curr.close()
