@@ -4,6 +4,7 @@ metadata:
   name: infrastructure-postgres-migrations
 data:
   0.init.sql: |
+    \set ON_ERROR_STOP off
     SET search_path to 'public,cdlgrpc,cdlkafka';
 
     -- database specific
