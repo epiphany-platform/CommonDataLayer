@@ -46,14 +46,6 @@ impl SchemaRegistryImpl {
 
         Ok(Self { db, mq_metadata })
     }
-
-    pub async fn export_all(&self) -> RegistryResult<DbExport> {
-        self.db.export_all().await
-    }
-
-    pub async fn import_all(&self, imported: DbExport) -> RegistryResult<()> {
-        self.db.import_all(imported).await
-    }
 }
 
 #[tonic::async_trait]

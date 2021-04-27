@@ -27,21 +27,6 @@ pub async fn main() -> anyhow::Result<()> {
     let comms_config = communication_config(&config)?;
     let registry = SchemaRegistryImpl::new(&config, comms_config).await?;
 
-    if let Some(export_filename) = config.export_dir.map(export_path) {
-        let exported = registry.export_all().await?;
-        let file = File::create(export_filename)?;
-        serde_json::to_writer_pretty(&file, &exported)?;
-    }
-
-    if let Some(import_path) = config.import_file {
-        let imported = File::open(import_path).map_err(|err| anyhow::anyhow!("{}", err))?;
-        let imported = serde_json::from_reader(imported)?;
-        registry
-            .import_all(imported)
-            .await
-            .map_err(|err| anyhow::anyhow!("Failed to import database: {}", err))?;
-    }
-
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.input_port);
     status_endpoints::mark_as_started();
     Server::builder()
