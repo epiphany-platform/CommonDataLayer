@@ -41,7 +41,7 @@ def fetch_data(config: PostgresConfig):
     db = connect_to_postgres(config)
     curr = db.cursor()
 
-    curr.execute('SELECT * FROM cdl.data ORDER BY version')
+    curr.execute('SELECT * FROM cdlgrpc.data ORDER BY version')
     rows = curr.fetchall()
     rows = [{
         'object_id': row[0],
