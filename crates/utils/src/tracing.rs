@@ -4,7 +4,8 @@ use tokio::runtime::Handle;
 use tracing_subscriber::prelude::*;
 
 pub mod grpc;
-pub mod kafka; // Used mostly in common publisher and [parallel_]consumer
+pub mod http;
+pub mod kafka;
 
 pub fn init() {
     global::set_text_map_propagator(TraceContextPropagator::new());

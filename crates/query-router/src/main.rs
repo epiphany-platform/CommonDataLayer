@@ -50,14 +50,17 @@ async fn main() {
         .and(cache_filter.clone())
         .and(body_filter)
         .and_then(handler::query_single);
+
     let multiple_route = warp::path!("multiple" / String)
         .and(schema_id_filter)
         .and(cache_filter.clone())
         .and_then(handler::query_multiple);
+
     let schema_route = warp::path!("schema")
         .and(schema_id_filter)
         .and(cache_filter.clone())
         .and_then(handler::query_by_schema);
+
     let raw_route = warp::path!("raw")
         .and(schema_id_filter)
         .and(cache_filter.clone())
@@ -68,7 +71,5 @@ async fn main() {
         .and(single_route.or(raw_route))
         .or(warp::get().and(multiple_route.or(schema_route)));
 
-    warp::serve(routes)
-        .run(([0, 0, 0, 0], config.input_port))
-        .await;
+    utils::tracing::http::serve(routes, ([0, 0, 0, 0], config.input_port)).await;
 }

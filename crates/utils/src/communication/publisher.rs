@@ -1,3 +1,4 @@
+use crate::tracing::http::RequestBuilderTracingExt;
 use lapin::{options::BasicPublishOptions, BasicProperties, Channel};
 use rdkafka::{
     message::OwnedHeaders,
@@ -88,7 +89,7 @@ impl CommonPublisher {
             CommonPublisher::Rest { url, client } => {
                 let url = url.join(&format!("{}/{}", destination, key)).unwrap();
 
-                client.post(url).body(payload).send().await?;
+                client.post(url).body(payload).inject_span().send().await?;
 
                 Ok(())
             }

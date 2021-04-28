@@ -1949,6 +1949,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "opentelemetry-http"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ba72bd27f28377a2e4f0f15a040c06ab0e70ea73df0689f8adf4d22d04591a1a"
+dependencies = [
+ "async-trait",
+ "http",
+ "opentelemetry",
+ "thiserror",
+]
+
+[[package]]
 name = "opentelemetry-jaeger"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3710,6 +3722,7 @@ dependencies = [
  "metrics",
  "metrics-exporter-prometheus",
  "opentelemetry",
+ "opentelemetry-http",
  "opentelemetry-jaeger",
  "rdkafka",
  "reqwest",
@@ -3721,6 +3734,7 @@ dependencies = [
  "tokio",
  "tokio-amqp",
  "tonic",
+ "tower-service",
  "tracing",
  "tracing-futures",
  "tracing-opentelemetry",
@@ -3728,6 +3742,7 @@ dependencies = [
  "url",
  "uuid",
  "vec_map",
+ "warp",
 ]
 
 [[package]]

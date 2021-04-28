@@ -5,7 +5,7 @@ use crate::{
 };
 use async_trait::async_trait;
 use futures::future::try_join_all;
-use std::{process, sync::Arc};
+use std::sync::Arc;
 use tracing::{error, trace};
 use utils::communication::get_order_group_id;
 use utils::communication::{
@@ -108,7 +108,6 @@ impl<P: OutputPlugin> Service<P> {
 
         if let Err(err) = try_join_all(futures).await {
             error!("Failed to handle message: {}", err);
-            process::abort();
         }
 
         trace!("Stream closed");

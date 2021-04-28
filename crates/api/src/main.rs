@@ -82,5 +82,6 @@ async fn main() {
         .and(graphql_subscription(schema))
         .or(graphql_playground)
         .or(warp::path!("graphql").and(graphql_post).with(cors));
-    warp::serve(routes).run(([0, 0, 0, 0], input_port)).await;
+
+    utils::tracing::http::serve(routes, ([0, 0, 0, 0], input_port)).await;
 }
