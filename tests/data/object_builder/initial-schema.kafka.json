@@ -2,7 +2,7 @@
     "schemas": [
         {
             "id": "2cfad3c7-411a-11eb-8000-000000000000",
-            "type": "DocumentStorage",
+            "type": "documentstorage",
             "query_address": "http://localhost:50102",
             "insert_destination": "cdl.document.data",
             "name": "new schema",
@@ -33,7 +33,7 @@
         },
         {
             "id": "a5e0c7e2-412c-11eb-8000-000000000000",
-            "type": "DocumentStorage",
+            "type": "documentstorage",
             "query_address": "http://localhost:50102",
             "insert_destination": "cdl.document.data",
             "name": "second schema",
