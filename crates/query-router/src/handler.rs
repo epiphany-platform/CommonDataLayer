@@ -80,12 +80,22 @@ pub async fn query_multiple(
     schema_id: Uuid,
     cache: Arc<SchemaRegistryCache>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let (query_address, _) = cache.get_schema_info(schema_id).await?;
+    let (query_address, schema_type) = cache.get_schema_info(schema_id).await?;
 
     let object_ids = object_ids.split(',').map(str::to_owned).collect();
-    let values = rpc::query_service::query_multiple(object_ids, query_address.clone())
-        .await
-        .map_err(Error::ClientError)?;
+
+    let values = match schema_type {
+        SchemaType::DocumentStorage => {
+            rpc::query_service::query_multiple(object_ids, query_address.clone())
+                .await
+                .map_err(Error::ClientError)?
+        }
+        _ => {
+            return Err(warp::Rejection::from(Error::ExpectedSchemaType(
+                SchemaType::DocumentStorage,
+            )));
+        }
+    };
 
     Ok(warp::reply::with_header(
         serde_json::to_vec(&byte_map_to_json_map(values)?).map_err(Error::JsonError)?,
