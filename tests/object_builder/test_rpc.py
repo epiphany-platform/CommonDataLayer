@@ -23,7 +23,7 @@ def prepare(request, tmp_path):
     request = ParseDict(case['request'], View())
 
     # declare environment
-    postgres_config = PostgresConfig()
+    postgres_config = PostgresConfig(schema='cdlgrpc')
     kafka_config = KafkaInputConfig(TOPIC)
 
     # prepare environment
