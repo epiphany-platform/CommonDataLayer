@@ -13,6 +13,7 @@ use crate::types::schema::{Definition, FullSchema};
 use crate::types::view::View;
 use crate::types::view::{MaterializedView, RowDefinition};
 use crate::{config::Config, types::view::OnDemandViewRequest};
+use rpc::materializer_ondemand::OnDemandRequest;
 use rpc::schema_registry::types::SchemaType;
 use utils::tracing::http::RequestBuilderTracingExt;
 
@@ -327,7 +328,7 @@ impl QueryRoot {
             .await?;
         let view_id = request.view_id;
         let materialized = conn
-            .materialize(utils::tracing::grpc::inject_span(request.into()))
+            .materialize(OnDemandRequest::from(request))
             .await?
             .into_inner();
 

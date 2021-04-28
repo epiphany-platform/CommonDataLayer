@@ -335,9 +335,9 @@ async fn get_schema_insert_destination(
 
     let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
     let channel = client
-        .get_schema_metadata(utils::tracing::grpc::inject_span(Id {
+        .get_schema_metadata(Id {
             id: schema_id.to_string(),
-        }))
+        })
         .await?
         .into_inner()
         .insert_destination;

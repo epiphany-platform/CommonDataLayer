@@ -2699,6 +2699,7 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tonic",
+ "tracing_tools",
 ]
 
 [[package]]
@@ -3570,6 +3571,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "tracing_tools"
+version = "0.1.0"
+dependencies = [
+ "futures-util",
+ "hyper",
+ "opentelemetry",
+ "opentelemetry-http",
+ "opentelemetry-jaeger",
+ "rdkafka",
+ "reqwest",
+ "tokio",
+ "tonic",
+ "tower-service",
+ "tracing",
+ "tracing-futures",
+ "tracing-opentelemetry",
+ "tracing-subscriber",
+ "warp",
+]
+
+[[package]]
 name = "try-lock"
 version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3720,9 +3742,6 @@ dependencies = [
  "lazy_static",
  "metrics",
  "metrics-exporter-prometheus",
- "opentelemetry",
- "opentelemetry-http",
- "opentelemetry-jaeger",
  "rdkafka",
  "reqwest",
  "rpc",
@@ -3733,15 +3752,12 @@ dependencies = [
  "tokio",
  "tokio-amqp",
  "tonic",
- "tower-service",
  "tracing",
  "tracing-futures",
- "tracing-opentelemetry",
- "tracing-subscriber",
+ "tracing_tools",
  "url",
  "uuid",
  "vec_map",
- "warp",
 ]
 
 [[package]]

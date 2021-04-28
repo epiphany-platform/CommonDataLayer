@@ -3,8 +3,11 @@ use opentelemetry::sdk::propagation::TraceContextPropagator;
 use tokio::runtime::Handle;
 use tracing_subscriber::prelude::*;
 
+#[cfg(feature = "grpc")]
 pub mod grpc;
+#[cfg(feature = "http")]
 pub mod http;
+#[cfg(feature = "kafka")]
 pub mod kafka;
 
 pub fn init() {

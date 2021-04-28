@@ -37,8 +37,6 @@ impl GeneralMaterializer for MaterializerImpl {
         &self,
         request: tonic::Request<Options>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
-        utils::tracing::grpc::set_parent_span(&request);
-
         let options: Options = request.into_inner();
         tracing::debug!(?options, "Options to validate");
 
@@ -53,8 +51,6 @@ impl GeneralMaterializer for MaterializerImpl {
         &self,
         request: tonic::Request<MaterializedView>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
-        utils::tracing::grpc::set_parent_span(&request);
-
         let materialized_view = request.into_inner();
         tracing::debug!(?materialized_view, "materialized view");
 
