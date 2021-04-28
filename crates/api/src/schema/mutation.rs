@@ -8,6 +8,7 @@ use async_graphql::{Context, FieldResult, Object};
 use utils::current_timestamp;
 use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
+use serde_json::value::to_raw_value;
 
 pub struct MutationRoot;
 
@@ -122,7 +123,7 @@ impl MutationRoot {
         let payload = serde_json::to_vec(&OwnedInsertMessage {
             object_id: message.object_id,
             schema_id: message.schema_id,
-            data: message.payload.0,
+            data: to_raw_value(&message.payload.0).unwrap(), // serde_json::Value -> RawValue should never fail
             timestamp: current_timestamp(),
         })?;
 
@@ -150,7 +151,7 @@ impl MutationRoot {
             let payload = serde_json::to_vec(&OwnedInsertMessage {
                 object_id: message.object_id,
                 schema_id: message.schema_id,
-                data: message.payload.0,
+                data: to_raw_value(&message.payload.0).unwrap(), // serde_json::Value -> RawValue should never fail
                 timestamp: current_timestamp(),
             })?;
 

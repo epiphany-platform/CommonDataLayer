@@ -10,7 +10,7 @@ pub struct InputMessage {
     /// Schema ID
     pub schema_id: Uuid,
     /// JSON-encoded payload
-    pub payload: Json<Box<RawValue>>,
+    pub payload: Json<Value>,
 }
 
 #[derive(serde::Deserialize, SimpleObject)]
