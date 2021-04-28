@@ -1,4 +1,5 @@
 use rpc::error::ClientError;
+use rpc::schema_registry::types::SchemaType;
 use warp::{hyper::StatusCode, reject::Reject, Rejection};
 
 #[derive(Debug)]
@@ -9,6 +10,7 @@ pub enum Error {
     RawQueryMissingValue,
     WrongValueFormat,
     InvalidSchemaType(rpc::tonic::Status),
+    ExpectedSchemaType(SchemaType),
 }
 
 impl Reject for Error {}
@@ -22,11 +24,24 @@ pub fn recover(rejection: Rejection) -> Result<impl warp::Reply, Rejection> {
             Error::WrongValueFormat => "Value incorrectly formatted".to_owned(),
             Error::RawQueryMissingValue => "Value not returned from query".to_owned(),
             Error::InvalidSchemaType(err) => format!("Failed to parse schema type: {}", err),
+            Error::ExpectedSchemaType(expected) => {
+                format!("This route expects schema type: {:?}", expected)
+            }
+        };
+
+        let code = match error {
+            Error::ExpectedSchemaType(_) => StatusCode::BAD_REQUEST,
+            Error::ClientError(_)
+            | Error::JsonError(_)
+            | Error::SingleQueryMissingValue
+            | Error::RawQueryMissingValue
+            | Error::WrongValueFormat
+            | Error::InvalidSchemaType(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
         Ok(warp::reply::with_status(
             warp::reply::json(&serde_json::json!({ "message": message })),
-            StatusCode::INTERNAL_SERVER_ERROR,
+            code,
         ))
     } else {
         Err(rejection)
