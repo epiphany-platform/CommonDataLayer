@@ -1,5 +1,4 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
-use std::process;
 use std::sync::{Arc, Mutex};
 
 use anyhow::Context;
@@ -372,7 +371,7 @@ async fn send_message(
             "Fatal error, delivery status for message not received.  Insert destination: `{}`, Key: `{}`, Payload len: `{}`, {:?}",
             insert_destination, key, payload_len, delivery_status
         );
-        process::abort();
-    };
-    counter!("cdl.data-router.output-singleok", 1);
+    } else {
+        counter!("cdl.data-router.output-singleok", 1);
+    }
 }

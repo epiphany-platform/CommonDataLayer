@@ -32,6 +32,8 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
 
+            tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
+
             std::process::abort();
         });
     }

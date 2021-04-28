@@ -35,6 +35,7 @@ async fn main() -> anyhow::Result<()> {
                 error!("MQ consumer returned with error: {:?}", err);
             }
         }
+        tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
         process::abort();
     });
 
@@ -44,6 +45,8 @@ async fn main() -> anyhow::Result<()> {
         .add_service(EdgeRegistryServer::new(registry))
         .serve(([0, 0, 0, 0], config.rpc_port).into())
         .await?;
+
+    tokio::time::sleep(tokio::time::Duration::from_secs(3)).await;
 
     Ok(())
 }

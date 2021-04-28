@@ -211,8 +211,7 @@ impl ParallelCommonConsumer {
                                         ack_queue.ack(&message.message, consumer.as_ref());
                                     }
                                     Err(e) => {
-                                        tracing::error!("Couldn't process message: {:?}", e);
-                                        std::process::abort();
+                                        tracing::error!(?e, "Couldn't process message");
                                     }
                                 }
                             }
@@ -239,13 +238,11 @@ impl ParallelCommonConsumer {
                                         )
                                         .await
                                     {
-                                        tracing::error!("Couldn't ack message: {:?}", e);
-                                        std::process::abort();
+                                        tracing::error!(?e, "Couldn't ack message");
                                     }
                                 }
                                 Err(e) => {
-                                    tracing::error!("Couldn't process message: {:?}", e);
-                                    std::process::abort();
+                                    tracing::error!(?e, "Couldn't process message");
                                 }
                             }
                         })

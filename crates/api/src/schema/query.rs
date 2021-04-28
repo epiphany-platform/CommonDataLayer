@@ -14,6 +14,7 @@ use crate::types::view::View;
 use crate::types::view::{MaterializedView, RowDefinition};
 use crate::{config::Config, types::view::OnDemandViewRequest};
 use rpc::schema_registry::types::SchemaType;
+use utils::tracing::http::RequestBuilderTracingExt;
 
 #[Object]
 /// Schema is the format in which data is to be sent to the Common Data Layer.
@@ -120,6 +121,7 @@ impl QueryRoot {
             ))
             .header("SCHEMA_ID", schema_id.to_string())
             .body("{}")
+            .inject_span()
             .send()
             .await?
             .bytes()
@@ -150,6 +152,7 @@ impl QueryRoot {
                 id_list
             ))
             .header("SCHEMA_ID", schema_id.to_string())
+            .inject_span()
             .send()
             .await?
             .json()
@@ -179,6 +182,7 @@ impl QueryRoot {
                 &context.data_unchecked::<Config>().query_router_addr,
             ))
             .header("SCHEMA_ID", schema_id.to_string())
+            .inject_span()
             .send()
             .await?
             .json()
