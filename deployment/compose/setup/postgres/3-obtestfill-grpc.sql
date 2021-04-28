@@ -1,4 +1,4 @@
-SET SCHEMA 'cdlkafka';
+SET SCHEMA 'cdlobgrpc';
 
 INSERT INTO schemas(id, name, schema_type, insert_destination, query_address) VALUES('2cfad3c7-411a-11eb-8000-000000000000', 'new schema', 'documentstorage', 'cdl.document.data', 'http://localhost:50102');
 INSERT INTO definitions(version, definition, schema) VALUES('1.0.0', '{"version": "1.0.0","definition": {"a": "string"}}', '2cfad3c7-411a-11eb-8000-000000000000');
