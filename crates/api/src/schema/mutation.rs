@@ -5,10 +5,10 @@ use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, Update
 use crate::types::view::{NewView, View, ViewUpdate};
 use crate::{config::Config, error::Error};
 use async_graphql::{Context, FieldResult, Object};
+use serde_json::value::to_raw_value;
 use utils::current_timestamp;
 use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
-use serde_json::value::to_raw_value;
 
 pub struct MutationRoot;
 
