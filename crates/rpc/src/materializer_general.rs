@@ -5,10 +5,21 @@ use tonic::transport::Channel;
 pub use crate::codegen::materializer_general::*;
 
 pub async fn connect(addr: String) -> Result<GeneralMaterializerClient<Channel>, ClientError> {
-    GeneralMaterializerClient::connect(addr)
+    connect_inner(addr)
         .await
         .map_err(|err| ClientError::ConnectionError {
             service: "materializer_general",
             source: err,
         })
+}
+
+async fn connect_inner(
+    addr: String,
+) -> Result<GeneralMaterializerClient<Channel>, tonic::transport::Error> {
+    let conn = tonic::transport::Endpoint::new(addr)?.connect().await?;
+
+    Ok(GeneralMaterializerClient::with_interceptor(
+        conn,
+        tracing_tools::grpc::interceptor(),
+    ))
 }

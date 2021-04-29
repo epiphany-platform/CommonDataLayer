@@ -28,6 +28,7 @@ async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Resul
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
 
     Server::builder()
+        .trace_fn(utils::tracing::grpc::trace_fn)
         .add_service(QueryServiceTsServer::new(service))
         .serve(addr.into())
         .await

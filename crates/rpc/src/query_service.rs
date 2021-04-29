@@ -6,12 +6,23 @@ use tonic::transport::Channel;
 pub use crate::codegen::query_service::*;
 
 pub async fn connect(addr: String) -> Result<QueryServiceClient<Channel>, ClientError> {
-    QueryServiceClient::connect(addr)
+    connect_inner(addr)
         .await
         .map_err(|err| ClientError::ConnectionError {
             service: "query service",
             source: err,
         })
+}
+
+async fn connect_inner(
+    addr: String,
+) -> Result<QueryServiceClient<Channel>, tonic::transport::Error> {
+    let conn = tonic::transport::Endpoint::new(addr)?.connect().await?;
+
+    Ok(QueryServiceClient::with_interceptor(
+        conn,
+        tracing_tools::grpc::interceptor(),
+    ))
 }
 
 pub async fn query_multiple(

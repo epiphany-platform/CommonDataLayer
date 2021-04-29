@@ -140,7 +140,7 @@ impl ConsumerHandler for ObjectBuilderImpl {
 
         rpc::materializer_general::connect(view.materializer_address)
             .await?
-            .upsert_view(utils::tracing::grpc::inject_span(rpc_output))
+            .upsert_view(rpc_output)
             .await?;
 
         Ok(())
@@ -158,8 +158,6 @@ impl ObjectBuilder for ObjectBuilderImpl {
         &self,
         request: tonic::Request<View>,
     ) -> Result<tonic::Response<Self::MaterializeStream>, tonic::Status> {
-        utils::tracing::grpc::set_parent_span(&request);
-
         let view: View = request.into_inner();
 
         let request: materialization::Request = view

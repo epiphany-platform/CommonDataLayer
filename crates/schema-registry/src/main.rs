@@ -45,6 +45,7 @@ pub async fn main() -> anyhow::Result<()> {
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.input_port);
     status_endpoints::mark_as_started();
     Server::builder()
+        .trace_fn(utils::tracing::grpc::trace_fn)
         .add_service(SchemaRegistryServer::new(registry))
         .serve(addr.into())
         .await

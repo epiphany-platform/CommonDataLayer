@@ -39,7 +39,6 @@ where
         &self,
         request: tonic::Request<proto::Message>,
     ) -> Result<tonic::Response<proto::Empty>, tonic::Status> {
-        crate::tracing::grpc::set_parent_span(&request);
         let msg = request.into_inner();
 
         match self.handler.handle(&msg).await {
