@@ -58,8 +58,6 @@ async fn main() -> anyhow::Result<()> {
 
     let settings: Settings = load_settings()?;
 
-    debug!("Environment {:?}", settings);
-
     metrics::serve(&settings.monitoring);
 
     let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()

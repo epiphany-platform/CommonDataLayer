@@ -31,8 +31,6 @@ async fn main() -> anyhow::Result<()> {
 
     let settings: Settings = load_settings()?;
 
-    tracing::debug!(?settings, "Settings");
-
     metrics::serve(&settings.monitoring);
 
     spawn_server(

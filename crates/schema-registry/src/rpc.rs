@@ -9,7 +9,7 @@ use tokio_stream::{Stream, StreamExt};
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
-use crate::config::Settings;
+use crate::settings::Settings;
 use crate::db::SchemaRegistryDb;
 use crate::error::{RegistryError, RegistryResult};
 use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};

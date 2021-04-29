@@ -10,7 +10,7 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 use tracing::{trace, warn};
 use uuid::Uuid;
 
-use crate::config::Settings;
+use crate::settings::Settings;
 use crate::error::{RegistryError, RegistryResult};
 use crate::types::schema::{FullSchema, NewSchema, Schema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{NewView, View, ViewUpdate};

@@ -19,8 +19,6 @@ async fn main() -> anyhow::Result<()> {
 
     let settings: Settings = load_settings()?;
 
-    debug!("Environment: {:?}", settings);
-
     metrics::serve(&settings.monitoring);
 
     let consumers = settings.consumers(settings.async_task_limit).await?;

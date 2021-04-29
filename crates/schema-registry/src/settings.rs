@@ -12,10 +12,15 @@ pub struct Settings {
 
     pub postgres: PostgresSettings,
 
-    pub kafka: Option<PublisherKafkaSettings>,
+    pub kafka: Option<KafkaSettings>,
     pub amqp: Option<AmqpSettings>,
 
     pub monitoring: MonitoringSettings,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct KafkaSettings {
+    pub brokers: String,
 }
 
 impl Settings {

@@ -28,9 +28,11 @@ use utils::{
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
 enum CommunicationMethod {
     Kafka,
     Amqp,
+    #[serde(rename = "grpc")]
     GRpc,
 }
 
@@ -38,7 +40,7 @@ enum CommunicationMethod {
 struct Settings {
     communication_method: CommunicationMethod,
     cache_capacity: usize,
-    task_limit: usize,
+    async_task_limit: usize,
 
     kafka: Option<ConsumerKafkaSettings>,
     amqp: Option<AmqpSettings>,
@@ -64,11 +66,11 @@ impl Settings {
         ) {
             (Some(kafka), _, _, CommunicationMethod::Kafka) => {
                 kafka
-                    .parallel_consumer(TaskLimiter::new(self.task_limit))
+                    .parallel_consumer(TaskLimiter::new(self.async_task_limit))
                     .await
             }
             (_, Some(amqp), _, CommunicationMethod::Amqp) => {
-                amqp.parallel_consumer(TaskLimiter::new(self.task_limit))
+                amqp.parallel_consumer(TaskLimiter::new(self.async_task_limit))
                     .await
             }
             (_, _, Some(grpc), CommunicationMethod::GRpc) => grpc.parallel_consumer().await,
@@ -103,8 +105,6 @@ async fn main() -> anyhow::Result<()> {
     utils::tracing::init();
 
     let settings: Settings = load_settings()?;
-
-    debug!("Environment {:?}", settings);
 
     metrics::serve(&settings.monitoring);
 

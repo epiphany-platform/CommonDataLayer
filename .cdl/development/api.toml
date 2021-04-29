@@ -1,5 +1,5 @@
 input_port = 50106
-data_router_entry_topic = "cdl.data.input"
+insert_destination = "cdl.data.input"
 
 [kafka]
 group_id = "api"

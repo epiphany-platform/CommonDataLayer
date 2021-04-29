@@ -1,6 +1,6 @@
 #![feature(drain_filter)]
 
-pub mod config;
+pub mod settings;
 pub mod db;
 pub mod error;
 pub mod rpc;

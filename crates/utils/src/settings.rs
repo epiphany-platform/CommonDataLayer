@@ -12,6 +12,7 @@ use lapin::options::BasicConsumeOptions;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::net::SocketAddrV4;
+use std::fmt::Debug;
 
 #[derive(Clone, Copy, Debug, Deserialize, Display, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -82,7 +83,7 @@ pub struct LogSettings {
     pub rust_log: String,
 }
 
-pub fn load_settings<'de, T: Deserialize<'de>>() -> Result<T, ConfigError> {
+pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> Result<T, ConfigError> {
     let env = env::var("ENVIRONMENT").unwrap_or_else(|_| "development".to_string());
     let exe = env::current_exe()
         .map(|f| f.file_name().map(ToOwned::to_owned))
@@ -111,7 +112,11 @@ pub fn load_settings<'de, T: Deserialize<'de>>() -> Result<T, ConfigError> {
         &exe.replace("-", "_").to_uppercase(),
     ))?;
 
-    s.try_into()
+    let settings = s.try_into()?;
+
+    tracing::debug!(?settings, "command-line arguments");
+
+    Ok(settings)
 }
 pub async fn publisher<'a>(
     kafka: Option<&'a str>,

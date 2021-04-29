@@ -46,6 +46,7 @@ pub struct ServicesSettings {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum CommunicationMethod {
     Kafka,
     Amqp,

@@ -7,7 +7,7 @@ pub struct Settings {
     pub communication_method: CommunicationMethod,
     pub input_port: u16,
 
-    pub kafka: Option<ConsumerKafkaSettings>,
+    pub kafka: Option<KafkaSettings>,
     pub amqp: Option<AmqpSettings>,
 
     pub services: ServicesSettings,
@@ -27,6 +27,12 @@ pub struct ServicesSettings {
 #[derive(Deserialize, Debug)]
 pub struct NotificationConsumerSettings {
     pub source: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct KafkaSettings {
+    pub brokers: String,
+    pub group_id: String,
 }
 
 impl Settings {

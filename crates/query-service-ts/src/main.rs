@@ -40,9 +40,9 @@ async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Resul
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
+    utils::tracing::init();
 
     let settings: Settings = load_settings()?;
-    utils::tracing::init();
     metrics::serve(&settings.monitoring);
 
     match settings.repository_kind {

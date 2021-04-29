@@ -10,8 +10,6 @@ async fn main() -> anyhow::Result<()> {
 
     let settings: Settings = load_settings()?;
 
-    tracing::debug!(?settings, "command-line arguments");
-
     utils::status_endpoints::serve(&settings.monitoring);
     utils::metrics::serve(&settings.monitoring);
 

@@ -18,8 +18,6 @@ async fn main() -> anyhow::Result<()> {
 
     let settings: Settings = load_settings()?;
 
-    debug!("Environment: {:?}", settings);
-
     status_endpoints::serve(&settings.monitoring);
     metrics::serve(&settings.monitoring);
 

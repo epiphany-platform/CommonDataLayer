@@ -1,5 +1,4 @@
 input_port = 50101
-import_file = "../compose/setup/schema_registry/initial_schema.mq.json"
 
 [kafka]
 group_id = "schema_registry"
