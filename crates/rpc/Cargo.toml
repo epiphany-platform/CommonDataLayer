@@ -21,3 +21,4 @@ thiserror   = "1.0"
 sqlx        = { version = "0.5", features = ['runtime-tokio-rustls'] }
 serde       = { version = "1.0", features = ["derive"] }
 async-graphql           = { version = "2.6", features = ["uuid"] }
+futures-util            = "0.3"

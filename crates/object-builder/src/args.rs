@@ -10,6 +10,9 @@ pub enum MessageQueue {
 
 #[derive(Clap, Debug)]
 pub struct Args {
+    /// How big chunks should be when sending requests to materializer_general
+    #[clap(long, env, default_value = "1000")]
+    pub chunk_capacity: usize,
     /// The method of ingestion of messages via Message Queue
     #[clap(long, env, arg_enum, case_insensitive = true)]
     pub mq_method: Option<MessageQueue>,

@@ -2384,6 +2384,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "futures-util",
  "lru-cache",
  "rpc",
  "serde",
@@ -2404,6 +2405,7 @@ dependencies = [
  "bb8",
  "bb8-postgres",
  "clap",
+ "futures-util",
  "reqwest",
  "rpc",
  "serde",
@@ -2694,6 +2696,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-graphql",
+ "futures-util",
  "prost",
  "serde",
  "sqlx",
