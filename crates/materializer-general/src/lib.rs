@@ -1,24 +1,20 @@
-pub mod args;
 mod plugins;
+pub mod settings;
 
-use crate::args::MaterializerArgs;
 use plugins::{MaterializerPlugin, PostgresMaterializer};
 use rpc::materializer_general::MaterializedView;
 use rpc::materializer_general::{general_materializer_server::GeneralMaterializer, Empty, Options};
+use utils::settings::PostgresSettings;
 
 pub struct MaterializerImpl {
     materializer: std::sync::Arc<dyn MaterializerPlugin>,
 }
 
 impl MaterializerImpl {
-    pub async fn new(args: &MaterializerArgs) -> anyhow::Result<Self> {
-        let materializer = match args {
-            MaterializerArgs::Postgres(ref args) => {
-                std::sync::Arc::new(PostgresMaterializer::new(args).await?)
-            }
-        };
-
-        Ok(Self { materializer })
+    pub async fn new(args: PostgresSettings) -> anyhow::Result<Self> {
+        Ok(Self {
+            materializer: std::sync::Arc::new(PostgresMaterializer::new(&args).await?),
+        })
     }
 }
 

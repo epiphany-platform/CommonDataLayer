@@ -1,4 +1,4 @@
-pub mod args;
+pub mod settings;
 
 use std::pin::Pin;
 
@@ -14,9 +14,9 @@ pub struct MaterializerImpl {
 }
 
 impl MaterializerImpl {
-    pub async fn new(args: &args::Args) -> anyhow::Result<Self> {
+    pub async fn new(object_builder_addr: &str) -> anyhow::Result<Self> {
         Ok(Self {
-            object_builder_addr: args.object_builder_addr.clone(),
+            object_builder_addr: object_builder_addr.to_string(),
         })
     }
 }

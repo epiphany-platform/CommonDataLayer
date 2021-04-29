@@ -1,43 +1,43 @@
 use std::sync::Arc;
 
-use clap::Clap;
 use uuid::Uuid;
 use warp::Filter;
 
 use cache::SchemaRegistryCache;
+use serde::Deserialize;
 use utils::metrics;
+use utils::settings::{load_settings, MonitoringSettings};
 
 pub mod cache;
 pub mod error;
 pub mod handler;
 
-#[derive(Clap)]
-struct Config {
-    /// Address of schema registry gRPC API
-    #[clap(long, env = "SCHEMA_REGISTRY_ADDR")]
-    schema_registry_addr: String,
-    /// How many entries the cache can hold
-    #[clap(long, env = "CACHE_CAPACITY")]
+#[derive(Debug, Deserialize)]
+struct Settings {
     cache_capacity: usize,
-    /// Port to listen on
-    #[clap(long, env = "INPUT_PORT")]
     input_port: u16,
-    /// Port to listen on for Prometheus requests
-    #[clap(default_value = metrics::DEFAULT_PORT, env)]
-    pub metrics_port: u16,
+
+    services: ServicesSettings,
+
+    monitoring: MonitoringSettings,
+}
+
+#[derive(Debug, Deserialize)]
+struct ServicesSettings {
+    schema_registry_url: String,
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config = Config::parse();
+    let config: Settings = load_settings()?;
 
-    metrics::serve(config.metrics_port);
+    metrics::serve(&config.monitoring);
 
     let schema_registry_cache = Arc::new(SchemaRegistryCache::new(
-        config.schema_registry_addr,
+        config.services.schema_registry_url,
         config.cache_capacity,
     ));
 
@@ -72,4 +72,6 @@ async fn main() {
         .or(warp::get().and(multiple_route.or(schema_route)));
 
     utils::tracing::http::serve(routes, ([0, 0, 0, 0], config.input_port)).await;
+
+    Ok(())
 }

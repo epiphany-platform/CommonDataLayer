@@ -17,7 +17,7 @@ pub enum CommonPublisher {
     Kafka { producer: FutureProducer },
     Amqp { channel: Channel },
     Rest { url: Url, client: Client },
-    Grpc { service: &'static str },
+    Grpc,
 }
 impl CommonPublisher {
     pub async fn new_amqp(connection_string: &str) -> Result<Self> {
@@ -51,8 +51,8 @@ impl CommonPublisher {
         })
     }
 
-    pub async fn new_grpc(service: &'static str) -> Result<Self> {
-        Ok(Self::Grpc { service })
+    pub async fn new_grpc() -> Result<Self> {
+        Ok(Self::Grpc)
     }
 
     pub async fn publish_message(
@@ -93,9 +93,9 @@ impl CommonPublisher {
 
                 Ok(())
             }
-            CommonPublisher::Grpc { service } => {
+            CommonPublisher::Grpc => {
                 let addr = destination.into();
-                let mut client = rpc::generic::connect(addr, service).await?;
+                let mut client = rpc::generic::connect(addr).await?;
                 let response = client
                     .handle(crate::tracing::grpc::inject_span(rpc::generic::Message {
                         key: key.into(),

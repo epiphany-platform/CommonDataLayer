@@ -2,14 +2,12 @@ use crate::message_types::OwnMessage;
 use crate::notification::full_notification_sender::{
     FullNotificationSender, FullNotificationSenderBase,
 };
-pub use config::NotificationServiceConfig;
 use serde::Serialize;
 
-mod config;
 pub mod full_notification_sender;
 
 #[derive(Clone)]
-pub enum NotificationSender<T>
+pub enum NotificationPublisher<T>
 where
     T: Serialize + Send + Sync + 'static,
 {
@@ -29,7 +27,7 @@ impl NotificationService for () {
     }
 }
 
-impl<T> NotificationSender<T>
+impl<T> NotificationPublisher<T>
 where
     T: Serialize + Send + Sync + 'static,
 {
@@ -38,14 +36,14 @@ where
         U: OwnMessage<Owned = T>,
     {
         match self {
-            NotificationSender::Full(config) => Box::new(FullNotificationSender {
+            NotificationPublisher::Full(config) => Box::new(FullNotificationSender {
                 application: config.application,
                 producer: config.publisher,
                 destination: config.destination,
                 context: config.context,
                 msg: msg.to_owned_message(),
             }),
-            NotificationSender::Disabled => Box::new(()),
+            NotificationPublisher::Disabled => Box::new(()),
         }
     }
 }

@@ -16,7 +16,8 @@ rpc         = { path    = "../rpc" }
 # Crates.io
 anyhow      = "1.0"
 async-trait = "0.1"
-clap        = "3.0.0-beta.2"
+config      = "0.11"
+derive_more = { version = "0.99.13", features = ["display"] }
 hyper       = "0.14"
 lapin       = "1.7"
 lazy_static = "1.4"

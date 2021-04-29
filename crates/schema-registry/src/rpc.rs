@@ -9,8 +9,7 @@ use tokio_stream::{Stream, StreamExt};
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
-use crate::config::CommunicationMethodConfig;
-use crate::config::Config;
+use crate::config::Settings;
 use crate::db::SchemaRegistryDb;
 use crate::error::{RegistryError, RegistryResult};
 use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
@@ -29,20 +28,9 @@ pub struct SchemaRegistryImpl {
 }
 
 impl SchemaRegistryImpl {
-    pub async fn new(
-        config: &Config,
-        communication_config: CommunicationMethodConfig,
-    ) -> anyhow::Result<Self> {
-        let db = SchemaRegistryDb::new(config).await?;
-        let mq_metadata = match &communication_config {
-            CommunicationMethodConfig::Kafka(kafka) => {
-                MetadataFetcher::new_kafka(&kafka.brokers).await?
-            }
-            CommunicationMethodConfig::Amqp(amqp) => {
-                MetadataFetcher::new_amqp(&amqp.connection_string).await?
-            }
-            CommunicationMethodConfig::Grpc => MetadataFetcher::new_grpc("command_service").await?,
-        };
+    pub async fn new(settings: &Settings) -> anyhow::Result<Self> {
+        let mq_metadata = settings.metadata_fetcher().await?;
+        let db = SchemaRegistryDb::new(settings).await?;
 
         Ok(Self { db, mq_metadata })
     }

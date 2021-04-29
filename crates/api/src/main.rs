@@ -1,4 +1,4 @@
-pub mod config;
+pub mod settings;
 pub mod error;
 pub mod events;
 pub mod schema;
@@ -9,23 +9,23 @@ use std::convert::Infallible;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::Schema;
 use async_graphql_warp::{graphql_subscription, Response};
-use clap::Clap;
 use warp::{http::Response as HttpResponse, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
 
 use crate::schema::context::EdgeRegistryConnectionManager;
-use config::Config;
+use settings::Settings;
 use schema::context::{
     MQEvents, OnDemandMaterializerConnectionManager, SchemaRegistryConnectionManager,
 };
 use schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
+use utils::settings::load_settings;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config = Config::parse();
-    let input_port = config.input_port;
+    let settings: Settings = load_settings()?;
+    let input_port = settings.input_port;
 
     let cors = warp::cors()
         .allow_methods(&[Method::POST, Method::GET, Method::OPTIONS])
@@ -34,27 +34,27 @@ async fn main() {
 
     let sr_pool = bb8::Pool::builder()
         .build(SchemaRegistryConnectionManager {
-            address: config.schema_registry_addr.clone(),
+            address: settings.services.schema_registry_url.clone(),
         })
         .await
         .unwrap();
 
     let er_pool = bb8::Pool::builder()
         .build(EdgeRegistryConnectionManager {
-            address: config.edge_registry_addr.clone(),
+            address: settings.services.edge_registry_url.clone(),
         })
         .await
         .unwrap();
 
     let odm_pool = bb8::Pool::builder()
         .build(OnDemandMaterializerConnectionManager {
-            address: config.on_demand_materializer_addr.clone(),
+            address: settings.services.on_demand_materializer_url.clone(),
         })
         .await
         .unwrap();
 
     let schema = Schema::build(QueryRoot, MutationRoot, SubscriptionRoot)
-        .data(config)
+        .data(settings)
         .data(sr_pool)
         .data(er_pool)
         .data(odm_pool)
@@ -84,4 +84,6 @@ async fn main() {
         .or(warp::path!("graphql").and(graphql_post).with(cors));
 
     utils::tracing::http::serve(routes, ([0, 0, 0, 0], input_port)).await;
+
+    Ok(())
 }

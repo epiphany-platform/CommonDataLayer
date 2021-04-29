@@ -7,10 +7,7 @@ pub use crate::codegen::schema_registry::*;
 pub async fn connect(addr: String) -> Result<SchemaRegistryClient<Channel>, ClientError> {
     SchemaRegistryClient::connect(addr)
         .await
-        .map_err(|err| ClientError::ConnectionError {
-            service: "schema registry",
-            source: err,
-        })
+        .map_err(|err| ClientError::ConnectionError { source: err })
 }
 
 pub mod types {

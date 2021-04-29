@@ -1,0 +1,15 @@
+sleep_phase_length = 1000
+
+[notification_consumer]
+brokers = "localhost:9092"
+group_id = "partial_update_engine"
+source = "cdl.reports"
+
+[kafka]
+egest_topic = "cdl.materialize"
+
+[monitoring]
+otel_service_name = "partial-update-engine"
+
+[log]
+rust_log = "info,partial_update_engine=debug"

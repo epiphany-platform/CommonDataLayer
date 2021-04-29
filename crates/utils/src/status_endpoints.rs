@@ -1,3 +1,4 @@
+use crate::settings::MonitoringSettings;
 use hyper::service::{make_service_fn, service_fn};
 use hyper::{Body, Method, Request, Response, Server, StatusCode};
 use lazy_static::lazy_static;
@@ -12,8 +13,8 @@ lazy_static! {
     static ref READY_STATUS: RwLock<bool> = RwLock::new(true);
 }
 
-pub fn serve(port: u16) {
-    tokio::spawn(serve_status(port));
+pub fn serve(settings: &MonitoringSettings) {
+    tokio::spawn(serve_status(settings.stats_port));
 }
 pub fn get_health_status() -> bool {
     *HEALTH_STATUS.read().unwrap()

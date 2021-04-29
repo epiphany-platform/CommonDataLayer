@@ -4,14 +4,8 @@ use tonic::transport::Channel;
 
 pub use crate::codegen::generic_rpc::*;
 
-pub async fn connect(
-    addr: String,
-    service: &'static str,
-) -> Result<GenericRpcClient<Channel>, ClientError> {
+pub async fn connect(addr: String) -> Result<GenericRpcClient<Channel>, ClientError> {
     GenericRpcClient::connect(addr)
         .await
-        .map_err(|err| ClientError::ConnectionError {
-            service,
-            source: err,
-        })
+        .map_err(|err| ClientError::ConnectionError { source: err })
 }

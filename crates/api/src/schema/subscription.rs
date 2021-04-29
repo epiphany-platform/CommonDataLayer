@@ -4,7 +4,7 @@ use async_graphql::{Context, FieldError, FieldResult, Subscription};
 use futures::{Stream, TryStreamExt};
 use tracing::Instrument;
 
-use crate::config::Config;
+use crate::settings::Settings;
 use crate::schema::context::MQEvents;
 use crate::types::report::Report;
 
@@ -21,14 +21,13 @@ impl SubscriptionRoot {
 }
 
 async fn reports_inner(context: &Context<'_>) -> FieldResult<ReportStream> {
-    let config = &context.data_unchecked::<Config>();
-    let source = &config.report_source;
+    let settings = &context.data_unchecked::<Settings>();
 
-    match source {
-        Some(source) => {
+    match settings.notification_consumer {
+        Some(ref notifications) => {
             let stream = context
                 .data_unchecked::<MQEvents>()
-                .subscribe_on_communication_method(&source, config)
+                .subscribe_on_communication_method(&notifications.source, settings)
                 .await?
                 .try_filter_map(|ev| async move { Ok(ev.payload) })
                 .and_then(|payload| async move {

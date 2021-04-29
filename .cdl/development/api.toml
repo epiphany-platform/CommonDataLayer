@@ -1,0 +1,16 @@
+input_port = 50106
+data_router_entry_topic = "cdl.data.input"
+
+[kafka]
+group_id = "api"
+
+[notification_consumer]
+brokers = "localhost:9092"
+group_id = "partial_update_engine"
+source = "cdl.reports"
+
+[monitoring]
+otel_service_name = "api"
+
+[log]
+rust_log = "info,api=debug"

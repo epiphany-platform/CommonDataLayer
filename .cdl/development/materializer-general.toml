@@ -1,0 +1,7 @@
+input_port = 50203
+
+[monitoring]
+otel_service_name = "materializer-general"
+
+[log]
+rust_log = "info,materializer_general=debug"

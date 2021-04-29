@@ -39,12 +39,7 @@ impl SchemaRegistryCache {
                 id: schema_id.to_string(),
             })
             .await
-            .map_err(|err| {
-                Error::ClientError(ClientError::QueryError {
-                    service: "schema registry",
-                    source: err,
-                })
-            })?
+            .map_err(|err| Error::ClientError(ClientError::QueryError { source: err }))?
             .into_inner();
 
         let result = (

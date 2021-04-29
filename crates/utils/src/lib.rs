@@ -1,12 +1,13 @@
 #![feature(linked_list_cursors)]
 #![feature(box_syntax)]
 
-use ::tracing::error;
 use std::{
     panic, process,
     sync::PoisonError,
     time::{SystemTime, UNIX_EPOCH},
 };
+
+use ::tracing::error;
 
 pub mod communication;
 pub mod message_types;
@@ -15,6 +16,7 @@ pub mod notification;
 pub mod parallel_task_queue;
 pub mod psql;
 pub mod query_utils;
+pub mod settings;
 pub mod status_endpoints;
 pub mod task_limiter;
 pub mod tracing;

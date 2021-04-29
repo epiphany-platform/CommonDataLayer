@@ -1,0 +1,14 @@
+input_port = 50110
+
+[notifications]
+enabled = true
+
+[kafka]
+ingest_topic = "cdl.edge.input"
+group_id = "edge_registry"
+
+[monitoring]
+otel_service_name = "edge-registry"
+
+[log]
+rust_log = "info,edge_registry=debug"

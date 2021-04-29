@@ -1,8 +1,5 @@
 use crate::output::OutputPlugin;
-use crate::{
-    communication::{config::CommunicationConfig, MessageRouter},
-    input::Error,
-};
+use crate::{communication::MessageRouter, input::Error};
 use async_trait::async_trait;
 use futures::future::try_join_all;
 use std::sync::Arc;
@@ -71,24 +68,9 @@ impl<P: OutputPlugin> ServiceHandler<P> {
 
 impl<P: OutputPlugin> Service<P> {
     pub async fn new(
-        config: CommunicationConfig,
+        consumers: Vec<ParallelCommonConsumer>,
         message_router: MessageRouter<P>,
     ) -> Result<Self, Error> {
-        let mut consumers = Vec::new();
-        for ordered in config.ordered_configs() {
-            let consumer = ParallelCommonConsumer::new(ordered)
-                .await
-                .map_err(Error::ConsumerCreationFailed)?;
-            consumers.push(consumer);
-        }
-
-        for unordered in config.unordered_configs() {
-            let consumer = ParallelCommonConsumer::new(unordered)
-                .await
-                .map_err(Error::ConsumerCreationFailed)?;
-            consumers.push(consumer);
-        }
-
         Ok(Self {
             consumers,
             handler: ServiceHandler {

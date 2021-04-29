@@ -3,39 +3,17 @@ use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::config::Config as PgConfig;
 use bb8_postgres::tokio_postgres::{types::ToSql, NoTls, Row, SimpleQueryMessage};
 use bb8_postgres::PostgresConnectionManager;
-use clap::Clap;
 use rpc::query_service::query_service_server::QueryService;
 use rpc::query_service::{ObjectIds, RawStatement, SchemaId, ValueBytes, ValueMap};
 use serde_json::Value;
 use std::collections::HashMap;
 use tonic::{Request, Response, Status};
+use utils::settings::PostgresSettings;
 use utils::{
     metrics::{self, counter},
     psql::validate_schema,
 };
 use uuid::Uuid;
-
-#[derive(Debug, Clap)]
-pub struct PsqlConfig {
-    /// Postgres username
-    #[clap(long, env = "POSTGRES_USERNAME")]
-    username: String,
-    /// Postgres password
-    #[clap(long, env = "POSTGRES_PASSWORD")]
-    password: String,
-    /// Host of the postgres server
-    #[clap(long, env = "POSTGRES_HOST")]
-    host: String,
-    /// Port on which postgres server listens
-    #[clap(long, env = "POSTGRES_PORT", default_value = "5432")]
-    port: u16,
-    /// Database name
-    #[clap(long, env = "POSTGRES_DBNAME")]
-    dbname: String,
-    /// SQL schema available for service
-    #[clap(long, env = "POSTGRES_SCHEMA", default_value = "public")]
-    schema: String,
-}
 
 pub struct PsqlQuery {
     pool: Pool<PostgresConnectionManager<NoTls>>,
@@ -43,21 +21,21 @@ pub struct PsqlQuery {
 }
 
 impl PsqlQuery {
-    pub async fn load(config: PsqlConfig) -> anyhow::Result<Self> {
+    pub async fn load(settings: PostgresSettings) -> anyhow::Result<Self> {
         let mut pg_config = PgConfig::new();
         pg_config
-            .user(&config.username)
-            .password(&config.password)
-            .host(&config.host)
-            .port(config.port)
-            .dbname(&config.dbname);
+            .user(&settings.username)
+            .password(&settings.password)
+            .host(&settings.host)
+            .port(settings.port)
+            .dbname(&settings.dbname);
         let manager = PostgresConnectionManager::new(pg_config, NoTls);
         let pool = Pool::builder()
             .build(manager)
             .await
             .context("Failed to build connection pool")?;
 
-        let schema = config.schema;
+        let schema = settings.schema;
 
         if !validate_schema(&schema) {
             anyhow::bail!(

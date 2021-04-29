@@ -7,8 +7,5 @@ pub use crate::codegen::materializer_general::*;
 pub async fn connect(addr: String) -> Result<GeneralMaterializerClient<Channel>, ClientError> {
     GeneralMaterializerClient::connect(addr)
         .await
-        .map_err(|err| ClientError::ConnectionError {
-            service: "materializer_general",
-            source: err,
-        })
+        .map_err(|err| ClientError::ConnectionError { source: err })
 }

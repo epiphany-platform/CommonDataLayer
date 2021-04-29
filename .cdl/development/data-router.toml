@@ -1,0 +1,11 @@
+cache_capacity = 1000
+
+[kafka]
+ingest_topic = "cdl.data.input"
+group_id = "data_router"
+
+[monitoring]
+otel_service_name = "data-router"
+
+[log]
+rust_log = "info,data_router=debug"
