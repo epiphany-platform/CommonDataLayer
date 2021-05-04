@@ -6,7 +6,7 @@ use warp::Filter;
 use cache::SchemaRegistryCache;
 use serde::Deserialize;
 use utils::metrics;
-use utils::settings::{load_settings, MonitoringSettings};
+use utils::settings::{load_settings, MonitoringSettings, LogSettings};
 
 pub mod cache;
 pub mod error;
@@ -20,6 +20,8 @@ struct Settings {
     services: ServicesSettings,
 
     monitoring: MonitoringSettings,
+
+    log: LogSettings,
 }
 
 #[derive(Debug, Deserialize)]
@@ -30,15 +32,17 @@ struct ServicesSettings {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
-    let config: Settings = load_settings()?;
+    let settings: Settings = load_settings()?;
+    settings.log.init()?;
 
-    metrics::serve(&config.monitoring);
+    tracing::debug!(?settings, "command-line arguments");
+
+    metrics::serve(&settings.monitoring);
 
     let schema_registry_cache = Arc::new(SchemaRegistryCache::new(
-        config.services.schema_registry_url,
-        config.cache_capacity,
+        settings.services.schema_registry_url,
+        settings.cache_capacity,
     ));
 
     let cache_filter = warp::any().map(move || schema_registry_cache.clone());
@@ -71,7 +75,7 @@ async fn main() -> anyhow::Result<()> {
         .and(single_route.or(raw_route))
         .or(warp::get().and(multiple_route.or(schema_route)));
 
-    utils::tracing::http::serve(routes, ([0, 0, 0, 0], config.input_port)).await;
+    utils::tracing::http::serve(routes, ([0, 0, 0, 0], settings.input_port)).await;
 
     Ok(())
 }

@@ -12,6 +12,8 @@ pub struct Settings {
     input_port: u16,
 
     monitoring: MonitoringSettings,
+
+    log: LogSettings,
 }
 
 async fn spawn_server<Q: QueryService>(service: Q, port: u16) -> anyhow::Result<()> {
@@ -27,9 +29,11 @@ async fn spawn_server<Q: QueryService>(service: Q, port: u16) -> anyhow::Result<
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
     let settings: Settings = load_settings()?;
+    settings.log.init()?;
+
+    tracing::debug!(?settings, "command-line arguments");
 
     metrics::serve(&settings.monitoring);
 

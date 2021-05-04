@@ -112,7 +112,7 @@ impl Settings {
             (_, _, Some(grpc)) if self.communication_method == CommunicationMethod::GRpc => {
                 Ok(vec![grpc.parallel_consumer().await?])
             }
-            _ => todo!(),
+            _ => anyhow::bail!("Unsupported consumer specification"),
         }
     }
 

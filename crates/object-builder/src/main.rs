@@ -6,9 +6,11 @@ use utils::settings::load_settings;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
     let settings: Settings = load_settings()?;
+    settings.log.init()?;
+
+    tracing::debug!(?settings, "command-line arguments");
 
     utils::status_endpoints::serve(&settings.monitoring);
     utils::metrics::serve(&settings.monitoring);

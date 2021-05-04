@@ -14,6 +14,8 @@ pub struct Settings {
 
     pub notification_consumer: Option<NotificationConsumerSettings>,
     pub insert_destination: String,
+
+    pub log: LogSettings,
 }
 
 #[derive(Debug, Deserialize)]
@@ -47,7 +49,7 @@ impl Settings {
             (_, _, CommunicationMethod::GRpc) => {
                 Ok(CommonPublisher::new_grpc().await?)
             },
-            _ => todo!(),
+            _ => anyhow::bail!("Unsupported consumer specification"),
         }
     }
 }

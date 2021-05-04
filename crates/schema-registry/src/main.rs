@@ -14,8 +14,11 @@ use utils::{metrics, status_endpoints};
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
+
     let settings: Settings = load_settings()?;
+    settings.log.init()?;
+
+    tracing::debug!(?settings, "command-line arguments");
 
     sleep(Duration::from_millis(500)).await;
 

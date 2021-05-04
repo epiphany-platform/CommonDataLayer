@@ -17,6 +17,8 @@ pub struct Settings {
     victoria_metrics: Option<VictoriaMetricsSettings>,
 
     monitoring: MonitoringSettings,
+
+    log: LogSettings,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
@@ -40,9 +42,11 @@ async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Resul
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
     let settings: Settings = load_settings()?;
+    settings.log.init()?;
+
+    tracing::debug!(?settings, "command-line arguments");
     metrics::serve(&settings.monitoring);
 
     match settings.repository_kind {

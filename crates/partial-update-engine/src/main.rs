@@ -13,7 +13,7 @@ use rdkafka::{
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
-use tracing::{debug, trace, Instrument};
+use tracing::{trace, Instrument};
 use utils::settings::*;
 use utils::{
     metrics::{self},
@@ -31,6 +31,8 @@ struct Settings {
     services: ServicesSettings,
 
     monitoring: MonitoringSettings,
+
+    log: LogSettings,
 }
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -54,9 +56,11 @@ struct PartialNotification {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
     let settings: Settings = load_settings()?;
+    settings.log.init()?;
+
+    tracing::debug!(?settings, "command-line arguments");
 
     metrics::serve(&settings.monitoring);
 

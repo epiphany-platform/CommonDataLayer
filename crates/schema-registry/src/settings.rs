@@ -16,6 +16,8 @@ pub struct Settings {
     pub amqp: Option<AmqpSettings>,
 
     pub monitoring: MonitoringSettings,
+
+    pub log: LogSettings,
 }
 
 #[derive(Debug, Deserialize)]
@@ -35,7 +37,7 @@ impl Settings {
             (_, _, CommunicationMethod::GRpc) => {
                 MetadataFetcher::new_grpc()?
             }
-            _ => todo!(),
+            _ => anyhow::bail!("Unsupported consumer specification"),
         })
     }
 }

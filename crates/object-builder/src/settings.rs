@@ -13,6 +13,8 @@ pub struct Settings {
     pub services: ServicesSettings,
 
     pub monitoring: MonitoringSettings,
+
+    pub log: LogSettings,
 }
 
 impl Settings {
@@ -35,7 +37,7 @@ impl Settings {
                 })
                 .await?)
             }
-            _ => todo!(),
+            _ => anyhow::bail!("Unsupported consumer specification"),
         }
     }
 }

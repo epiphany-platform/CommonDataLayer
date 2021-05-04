@@ -22,9 +22,12 @@ use utils::settings::load_settings;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
     let settings: Settings = load_settings()?;
+    settings.log.init()?;
+
+    tracing::debug!(?settings, "command-line arguments");
+
     let input_port = settings.input_port;
 
     let cors = warp::cors()

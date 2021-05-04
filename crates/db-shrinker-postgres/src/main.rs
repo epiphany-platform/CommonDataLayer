@@ -27,7 +27,7 @@ struct Opts {
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
-    utils::tracing::init();
+    utils::tracing::init()?;
 
     info!("Running shrinker on PSQL with {:?}", opts);
 

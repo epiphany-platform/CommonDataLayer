@@ -81,7 +81,7 @@ impl EventSubscriber {
             (_, _, CommunicationMethod::GRpc) => {
                 anyhow::bail!("GRPC communication method does not support event subscription")
             },
-            _ => todo!(),
+            _ => anyhow::bail!("Unsupported consumer specification"),
         };
 
         let consumer = CommonConsumer::new(config).await?;

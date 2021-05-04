@@ -4,12 +4,10 @@ use lru_cache::LruCache;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::{Arc, Mutex};
-use tracing::{debug, error, trace};
+use tracing::{error, trace};
 
 use rpc::schema_registry::Id;
-use utils::settings::{
-    load_settings, AmqpSettings, ConsumerKafkaSettings, GRpcSettings, MonitoringSettings,
-};
+use utils::settings::{load_settings, AmqpSettings, ConsumerKafkaSettings, GRpcSettings, MonitoringSettings, LogSettings};
 use utils::{
     abort_on_poison,
     communication::{
@@ -49,6 +47,8 @@ struct Settings {
     monitoring: MonitoringSettings,
 
     services: ServicesSettings,
+
+    log: LogSettings,
 }
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -74,7 +74,7 @@ impl Settings {
                     .await
             }
             (_, _, Some(grpc), CommunicationMethod::GRpc) => grpc.parallel_consumer().await,
-            _ => todo!(),
+            _ => anyhow::bail!("Unsupported consumer specification"),
         }
     }
 
@@ -93,7 +93,7 @@ impl Settings {
                     CommonPublisher::new_amqp(&amqp.exchange_url).await?
                 }
                 (_, _, Some(_), CommunicationMethod::GRpc) => CommonPublisher::new_grpc().await?,
-                _ => todo!(),
+                _ => anyhow::bail!("Unsupported consumer specification"),
             },
         )
     }
@@ -102,9 +102,11 @@ impl Settings {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
     let settings: Settings = load_settings()?;
+    settings.log.init()?;
+
+    tracing::debug!(?settings, "command-line arguments");
 
     metrics::serve(&settings.monitoring);
 

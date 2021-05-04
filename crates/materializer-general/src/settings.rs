@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use utils::settings::{MonitoringSettings, PostgresSettings};
+use utils::settings::{MonitoringSettings, PostgresSettings, LogSettings};
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
@@ -8,4 +8,6 @@ pub struct Settings {
     pub postgres: PostgresSettings,
 
     pub monitoring: MonitoringSettings,
+
+    pub log: LogSettings,
 }

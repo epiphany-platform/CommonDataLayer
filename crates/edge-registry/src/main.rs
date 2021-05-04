@@ -7,16 +7,18 @@ use std::process;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::transport::Server;
-use tracing::{debug, error, info};
+use tracing::{error, info};
 use utils::settings::{load_settings, CommunicationMethod};
 use utils::{metrics, status_endpoints};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
     let settings: Settings = load_settings()?;
+    settings.log.init()?;
+
+    tracing::debug!(?settings, "command-line arguments");
 
     status_endpoints::serve(&settings.monitoring);
     metrics::serve(&settings.monitoring);

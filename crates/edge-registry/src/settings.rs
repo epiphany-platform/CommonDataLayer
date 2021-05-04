@@ -15,6 +15,8 @@ pub struct Settings {
     pub notifications: NotificationSettings,
 
     pub monitoring: MonitoringSettings,
+
+    pub log: LogSettings,
 }
 
 impl Settings {

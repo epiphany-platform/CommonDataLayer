@@ -6,13 +6,21 @@ use crate::communication::publisher::CommonPublisher;
 use crate::notification::full_notification_sender::FullNotificationSenderBase;
 use crate::notification::NotificationPublisher;
 use crate::task_limiter::TaskLimiter;
-use config::{Config, ConfigError, Environment, File};
+use anyhow::bail;
+use config::{Config, Environment, File};
 use derive_more::Display;
 use lapin::options::BasicConsumeOptions;
+use opentelemetry::global;
+use opentelemetry::sdk::propagation::TraceContextPropagator;
 use serde::{Deserialize, Serialize};
 use std::env;
-use std::net::SocketAddrV4;
 use std::fmt::Debug;
+use std::net::SocketAddrV4;
+use std::str::FromStr;
+use tokio::runtime::Handle;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::EnvFilter;
 
 #[derive(Clone, Copy, Debug, Deserialize, Display, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -83,22 +91,39 @@ pub struct LogSettings {
     pub rust_log: String,
 }
 
-pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> Result<T, ConfigError> {
+pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> anyhow::Result<T> {
     let env = env::var("ENVIRONMENT").unwrap_or_else(|_| "development".to_string());
-    let exe = env::current_exe()
-        .map(|f| f.file_name().map(ToOwned::to_owned))
-        .unwrap()
-        .unwrap()
-        .to_string_lossy()
-        .to_string();
-    let home = env::var("HOME").unwrap();
+    let exe = if let Some(exe) =
+        env::current_exe().map(|f| f.file_name().map(|s| s.to_string_lossy().to_string()))?
+    {
+        exe
+    } else {
+        bail!("Missing executable file name")
+    };
     let mut s = Config::new();
 
     s.merge(File::with_name("/etc/cdl/default.toml").required(false))?;
     s.merge(File::with_name(&format!("/etc/cdl/{}.toml", exe)).required(false))?;
 
-    s.merge(File::with_name(&format!("{}/.cdl/{}/default.toml", home, env)).required(false))?;
-    s.merge(File::with_name(&format!("{}/.cdl/{}/{}.toml", home, env, exe)).required(false))?;
+    if let Some(home) = dirs::home_dir() {
+        s.merge(
+            File::with_name(&format!(
+                "{}/.cdl/{}/default.toml",
+                home.to_string_lossy(),
+                env
+            ))
+            .required(false),
+        )?;
+        s.merge(
+            File::with_name(&format!(
+                "{}/.cdl/{}/{}.toml",
+                home.to_string_lossy(),
+                env,
+                exe
+            ))
+            .required(false),
+        )?;
+    }
 
     s.merge(File::with_name(&format!(".cdl/{}/default.toml", env)).required(false))?;
     s.merge(File::with_name(&format!(".cdl/{}/{}.toml", env, exe)).required(false))?;
@@ -114,8 +139,6 @@ pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> Result<T, ConfigErro
 
     let settings = s.try_into()?;
 
-    tracing::debug!(?settings, "command-line arguments");
-
     Ok(settings)
 }
 pub async fn publisher<'a>(
@@ -127,7 +150,7 @@ pub async fn publisher<'a>(
         (Some(brokers), _, _) => CommonPublisher::new_kafka(brokers).await?,
         (_, Some(exchange), _) => CommonPublisher::new_amqp(exchange).await?,
         (_, _, Some(_)) => CommonPublisher::new_grpc().await?,
-        _ => todo!(),
+        _ => anyhow::bail!("Unsupported publisher specification"),
     })
 }
 
@@ -241,22 +264,30 @@ impl NotificationSettings {
     }
 }
 
-// pub fn create_notification_service(communication_method: CommunicationMethod, notification_settings: NotificationSettings) {
-//     if notification_settings.enabled {
-//
-//     } else {
-//
-//     }
-//     match report_config.destination {
-//         Some(destination) => ReportSender::Full(
-//             FullReportSenderBase::new(
-//                 &communication_config,
-//                 destination,
-//                 output.name().to_string(),
-//             )
-//                 .await
-//                 .map_err(Error::FailedToInitializeReporting)?,
-//         ),
-//         None => ReportSender::Disabled,
-//     };
-// }
+impl LogSettings {
+    pub fn init(&self) -> anyhow::Result<()> {
+        global::set_text_map_propagator(TraceContextPropagator::new());
+
+        let opentelemetry = Handle::try_current()
+            .ok() // Check if Tokio runtime exists
+            .and_then(|_| {
+                opentelemetry_jaeger::new_pipeline()
+                    .install_batch(opentelemetry::runtime::Tokio)
+                    .ok()
+            })
+            .map(|tracer| tracing_opentelemetry::layer().with_tracer(tracer));
+
+        let fmt = tracing_subscriber::fmt::layer();
+
+        let filter = EnvFilter::from_str(&self.rust_log)?;
+
+        tracing_subscriber::registry()
+            .with(tracing_subscriber::EnvFilter::from_default_env())
+            .with(filter)
+            .with(fmt)
+            .with(opentelemetry)
+            .try_init()?;
+
+        Ok(())
+    }
+}

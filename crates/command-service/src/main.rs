@@ -15,9 +15,11 @@ use utils::settings::load_settings;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
     let settings: Settings = load_settings()?;
+    settings.log.init()?;
+
+    tracing::debug!(?settings, "command-line arguments");
 
     metrics::serve(&settings.monitoring);
 
@@ -62,7 +64,7 @@ async fn main() -> anyhow::Result<()> {
                 bail!("Druid setup requires [kafka] section")
             }
         }
-        _ => todo!(),
+        _ => anyhow::bail!("Unsupported consumer specification"),
     }?;
 
     Ok(())
