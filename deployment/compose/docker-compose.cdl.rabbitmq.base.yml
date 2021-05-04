@@ -99,6 +99,7 @@ services:
       CONSUMER_TAG: edge-registry
       CONSUMER_SOURCE: "cdl.edge.input"
       RUST_LOG: info,edge_registry=trace
+      REPORT_DESTINATION: "cdl.reports"
       OTEL_SERVICE_NAME: "edge-registry"
       OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
       OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"

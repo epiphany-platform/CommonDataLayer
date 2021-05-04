@@ -1,11 +1,16 @@
 use clap::Clap;
-use edge_registry::args::RegistryConfig;
+use edge_registry::args::{ConsumerMethod, RegistryConfig};
 use edge_registry::EdgeRegistryImpl;
 use rpc::edge_registry::edge_registry_server::EdgeRegistryServer;
 use std::process;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tonic::transport::Server;
 use tracing::{debug, error, info};
 use utils::communication::consumer::CommonConsumer;
+use utils::communication::publisher::CommonPublisher;
+use utils::notification::full_notification_sender::FullNotificationSenderBase;
+use utils::notification::NotificationSender;
 use utils::{metrics, status_endpoints};
 
 #[tokio::main]
@@ -13,14 +18,40 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
     utils::tracing::init();
 
-    let config = RegistryConfig::parse();
+    let config: RegistryConfig = RegistryConfig::parse();
 
     debug!("Environment: {:?}", config);
 
     status_endpoints::serve(config.status_port);
     metrics::serve(config.metrics_port);
 
-    let registry = EdgeRegistryImpl::new(&config).await?;
+    let notification_sender = match &config.notification_config.destination {
+        Some(destination) => {
+            let publisher = match config.consumer_config.consumer_method {
+                ConsumerMethod::Kafka => {
+                    CommonPublisher::new_kafka(&config.consumer_config.consumer_host).await?
+                }
+                ConsumerMethod::Amqp => {
+                    CommonPublisher::new_amqp(&config.consumer_config.consumer_host).await?
+                }
+            };
+
+            NotificationSender::Full(
+                FullNotificationSenderBase::new(
+                    publisher,
+                    destination.clone(),
+                    "Base".to_string(),
+                    "EdgeRegistry",
+                )
+                .await,
+            )
+        }
+        None => NotificationSender::Disabled,
+    };
+
+    let notification_sender = Arc::new(Mutex::new(notification_sender));
+
+    let registry = EdgeRegistryImpl::new(&config, notification_sender).await?;
 
     let consumer = CommonConsumer::new((&config.consumer_config).into()).await?;
 

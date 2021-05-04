@@ -1,10 +1,10 @@
 use crate::communication::config::CommunicationConfig;
 use crate::output::OutputArgs;
-use crate::report::ReportServiceConfig;
 use clap::Clap;
 use thiserror::Error;
 use url::Url;
 use utils::metrics;
+use utils::notification::NotificationServiceConfig;
 
 #[derive(Clone, Debug, Clap)]
 pub struct Args {
@@ -15,7 +15,7 @@ pub struct Args {
     pub output_config: OutputArgs,
 
     #[clap(flatten)]
-    pub report_config: ReportServiceConfig,
+    pub notification_config: NotificationServiceConfig,
 
     /// Port to listen on for Prometheus requests
     #[clap(default_value = metrics::DEFAULT_PORT, env)]

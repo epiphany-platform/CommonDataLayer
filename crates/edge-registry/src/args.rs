@@ -1,6 +1,7 @@
 use clap::Clap;
 use utils::communication::consumer::CommonConsumerConfig;
 use utils::metrics;
+use utils::notification::NotificationServiceConfig;
 
 #[derive(Clone, Debug, Clap)]
 pub struct RegistryConfig {
@@ -27,6 +28,9 @@ pub struct RegistryConfig {
     pub status_port: u16,
     #[clap(flatten)]
     pub consumer_config: ConsumerConfig,
+
+    #[clap(flatten)]
+    pub notification_config: NotificationServiceConfig,
 }
 
 #[derive(Clap, Clone, Debug)]

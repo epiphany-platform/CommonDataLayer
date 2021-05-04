@@ -12,21 +12,24 @@ use rpc::edge_registry::{
     RelationList, RelationQuery, RelationResponse, SchemaId, SchemaRelation, TreeObject, TreeQuery,
     TreeResponse,
 };
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::cmp::min;
 use std::convert::TryInto;
 use std::str::FromStr;
+use std::sync::Arc;
 use std::{fmt, time};
+use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 use tracing::{debug, error, trace};
 use utils::communication::consumer::ConsumerHandler;
 use utils::communication::message::CommunicationMessage;
 use utils::metrics::{self, counter};
+use utils::notification::NotificationSender;
 use uuid::Uuid;
 
 pub mod args;
 
-#[derive(Deserialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AddEdgesMessage {
     relation_id: Uuid,
     parent_object_id: Uuid,
@@ -37,10 +40,14 @@ pub struct AddEdgesMessage {
 pub struct EdgeRegistryImpl {
     pool: Pool<PostgresConnectionManager<NoTls>>,
     schema: String,
+    notification_sender: Arc<Mutex<NotificationSender<AddEdgesMessage>>>,
 }
 
 impl EdgeRegistryImpl {
-    pub async fn new(config: &RegistryConfig) -> anyhow::Result<Self> {
+    pub async fn new(
+        config: &RegistryConfig,
+        notification_sender: Arc<Mutex<NotificationSender<AddEdgesMessage>>>,
+    ) -> anyhow::Result<Self> {
         let mut pg_config = Config::new();
         pg_config
             .user(&config.postgres_username)
@@ -58,6 +65,7 @@ impl EdgeRegistryImpl {
         Ok(Self {
             pool,
             schema: config.postgres_schema.clone(),
+            notification_sender,
         })
     }
 
@@ -165,6 +173,8 @@ impl EdgeRegistryImpl {
     ) -> anyhow::Result<()> {
         counter!("cdl.edge-registry.add-edges", 1);
         let conn = self.connect().await?;
+        let notification_sender = self.notification_sender.clone();
+        let instance = notification_sender.lock().await;
 
         for relation in relations {
             trace!(
@@ -172,6 +182,11 @@ impl EdgeRegistryImpl {
                 relation.child_object_ids.len(),
                 relation.relation_id
             );
+            instance
+                .clone()
+                .with_message_body(&relation)
+                .notify("success")
+                .await?;
             for child_object_id in relation.child_object_ids {
                 conn
                     .query(
