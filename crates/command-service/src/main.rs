@@ -4,10 +4,12 @@ use command_service::input::{Error, Service};
 use command_service::output::{
     DruidOutputPlugin, OutputArgs, OutputPlugin, PostgresOutputPlugin, VictoriaMetricsOutputPlugin,
 };
-use command_service::report::{FullReportSenderBase, ReportSender, ReportServiceConfig};
 use command_service::{args::Args, communication::config::CommunicationConfig};
 use tracing::debug;
+use utils::communication::publisher::CommonPublisher;
 use utils::metrics;
+use utils::notification::full_notification_sender::FullNotificationSenderBase;
+use utils::notification::{NotificationSender, NotificationServiceConfig};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -26,7 +28,7 @@ async fn main() -> anyhow::Result<()> {
         OutputArgs::Postgres(postgres_config) => {
             start_services(
                 communication_config,
-                args.report_config,
+                args.notification_config,
                 PostgresOutputPlugin::new(postgres_config).await?,
             )
             .await
@@ -34,7 +36,7 @@ async fn main() -> anyhow::Result<()> {
         OutputArgs::Druid(druid_config) => {
             start_services(
                 communication_config,
-                args.report_config,
+                args.notification_config,
                 DruidOutputPlugin::new(druid_config).await?,
             )
             .await
@@ -42,7 +44,7 @@ async fn main() -> anyhow::Result<()> {
         OutputArgs::VictoriaMetrics(victoria_metrics_config) => {
             start_services(
                 communication_config,
-                args.report_config,
+                args.notification_config,
                 VictoriaMetricsOutputPlugin::new(victoria_metrics_config)?,
             )
             .await
@@ -54,20 +56,39 @@ async fn main() -> anyhow::Result<()> {
 
 async fn start_services(
     communication_config: CommunicationConfig,
-    report_config: ReportServiceConfig,
+    notification_config: NotificationServiceConfig,
     output: impl OutputPlugin,
 ) -> Result<(), Error> {
-    let report_service = match report_config.destination {
-        Some(destination) => ReportSender::Full(
-            FullReportSenderBase::new(
-                &communication_config,
-                destination,
-                output.name().to_string(),
+    let report_service = match notification_config.destination {
+        Some(destination) => {
+            let publisher = match &communication_config {
+                CommunicationConfig::Kafka { brokers, .. } => CommonPublisher::new_kafka(&brokers)
+                    .await
+                    .map_err(Error::ConsumerCreationFailed)?,
+                CommunicationConfig::Amqp {
+                    connection_string, ..
+                } => CommonPublisher::new_amqp(&connection_string)
+                    .await
+                    .map_err(Error::ConsumerCreationFailed)?,
+                CommunicationConfig::Grpc {
+                    report_endpoint_url,
+                    ..
+                } => CommonPublisher::new_rest(report_endpoint_url.clone())
+                    .await
+                    .map_err(Error::ConsumerCreationFailed)?,
+            };
+
+            NotificationSender::Full(
+                FullNotificationSenderBase::new(
+                    publisher,
+                    destination,
+                    output.name().to_string(),
+                    "CommandService",
+                )
+                .await,
             )
-            .await
-            .map_err(Error::FailedToInitializeReporting)?,
-        ),
-        None => ReportSender::Disabled,
+        }
+        None => NotificationSender::Disabled,
     };
 
     let message_router = MessageRouter::new(report_service, output);

@@ -1,14 +1,14 @@
-use async_graphql::{Context, FieldResult, Object};
-use utils::message_types::OwnedInsertMessage;
-use uuid::Uuid;
-
 use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
 use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
 use crate::types::data::{InputMessage, ObjectRelations};
 use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
 use crate::types::view::{NewView, View, ViewUpdate};
 use crate::{config::Config, error::Error};
+use async_graphql::{Context, FieldResult, Object};
+use serde_json::value::to_raw_value;
 use utils::current_timestamp;
+use utils::message_types::OwnedInsertMessage;
+use uuid::Uuid;
 
 pub struct MutationRoot;
 
@@ -123,7 +123,7 @@ impl MutationRoot {
         let payload = serde_json::to_vec(&OwnedInsertMessage {
             object_id: message.object_id,
             schema_id: message.schema_id,
-            data: message.payload.0,
+            data: to_raw_value(&message.payload.0).unwrap(), // serde_json::Value -> RawValue should never fail
             timestamp: current_timestamp(),
         })?;
 
@@ -151,7 +151,7 @@ impl MutationRoot {
             let payload = serde_json::to_vec(&OwnedInsertMessage {
                 object_id: message.object_id,
                 schema_id: message.schema_id,
-                data: message.payload.0,
+                data: to_raw_value(&message.payload.0).unwrap(), // serde_json::Value -> RawValue should never fail
                 timestamp: current_timestamp(),
             })?;
 

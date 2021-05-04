@@ -17,7 +17,8 @@ tracing_tools           = { path    = "../tracing_tools", features = ["kafka", "
 # Crates.io
 anyhow      = "1.0"
 async-trait = "0.1"
-hyper       = "0.14.7"
+clap        = "3.0.0-beta.2"
+hyper       = "0.14"
 lapin       = "1.7"
 lazy_static = "1.4"
 metrics     = { version = "0.14", features = ["std"] }

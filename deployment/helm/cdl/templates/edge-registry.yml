@@ -47,6 +47,8 @@ spec:
             - name: CONSUMER_HOST
               value: {{ .Values.global.amqpConnectionString }}
             {{- end }}
+            - name: REPORT_DESTINATION
+              value: {{ .Values.global.reportDestination }}
             - name: CONSUMER_TAG
               value: {{ .Values.edgeRegistry.consumerTag }}
             - name: CONSUMER_SOURCE

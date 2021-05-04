@@ -1,7 +1,7 @@
 use clap::Clap;
 
 #[derive(Clone, Debug, Clap)]
-pub struct ReportServiceConfig {
+pub struct NotificationServiceConfig {
     /// Kafka topic/AMQP exchange/callback URL to send notifications to (reporting disabled when empty)
     #[clap(
         name = "report-destination",

@@ -1,7 +1,7 @@
 use crate::communication::resolution::Resolution;
 pub use crate::output::druid::config::DruidOutputConfig;
-pub use crate::output::druid::error::Error;
 use crate::output::OutputPlugin;
+use anyhow::Context;
 use futures::stream::{self, StreamExt};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::ClientConfig;
@@ -14,7 +14,6 @@ use utils::metrics::{self, counter};
 use uuid::Uuid;
 
 mod config;
-mod error;
 
 #[derive(Deserialize)]
 struct TimeseriesInputMessage {
@@ -36,13 +35,13 @@ pub struct DruidOutputPlugin {
 }
 
 impl DruidOutputPlugin {
-    pub async fn new(args: DruidOutputConfig) -> Result<Self, Error> {
+    pub async fn new(args: DruidOutputConfig) -> anyhow::Result<Self> {
         Ok(Self {
             producer: ClientConfig::new()
                 .set("bootstrap.servers", &args.brokers)
                 .set("message.timeout.ms", "5000")
                 .create()
-                .map_err(Error::ProducerCreation)?,
+                .context("Producer creation")?,
             topic: args.topic,
         })
     }

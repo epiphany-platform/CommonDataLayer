@@ -23,7 +23,7 @@
       "name": "new view",
       "fields": {
         "foo": {
-          "field_name": "a"
+          "FieldName": "a"
         }
       }
     }
