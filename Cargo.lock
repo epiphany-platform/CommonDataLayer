@@ -1396,14 +1396,15 @@ dependencies = [
 
 [[package]]
 name = "jsonschema"
-version = "0.6.1"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a16a61c76ff526dd0b767720b2e386f7659cc69df89bee9f9dd92a3e62df137"
+checksum = "5f906ec4e0c3d77665524a9c67208bc39350820d4829fc3391aca9180d22a6fd"
 dependencies = [
  "ahash 0.7.2",
  "base64",
  "chrono",
  "idna",
+ "itoa",
  "lazy_static",
  "num-cmp",
  "parking_lot",
@@ -3474,9 +3475,9 @@ checksum = "360dfd1d6d30e05fda32ace2c8c70e9c0a9da713275777f5a4dbb8a1893930c6"
 
 [[package]]
 name = "tracing"
-version = "0.1.25"
+version = "0.1.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01ebdc2bb4498ab1ab5f5b73c5803825e60199229ccba0698170e3be0e7f959f"
+checksum = "09adeb8c97449311ccd28a427f96fb563e7fd31aabf994189879d9da2394b89d"
 dependencies = [
  "cfg-if 1.0.0",
  "log",
@@ -3498,9 +3499,9 @@ dependencies = [
 
 [[package]]
 name = "tracing-core"
-version = "0.1.17"
+version = "0.1.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f50de3927f93d202783f4513cda820ab47ef17f624b03c096e86ef00c67e6b5f"
+checksum = "a9ff14f98b1a4b289c6248a023c1c2fa1491062964e9fed67ab29c4e4da4a052"
 dependencies = [
  "lazy_static",
 ]
@@ -4007,18 +4008,18 @@ checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 
 [[package]]
 name = "xshell"
-version = "0.1.9"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f18102278453c8f70ea5c514ac78cb4c73a0ef72a8273d17094b52f9584c0c1"
+checksum = "aa25217c682f9f991d7889238a99e65eb8431c266d36e0f4e850a73773415473"
 dependencies = [
  "xshell-macros",
 ]
 
 [[package]]
 name = "xshell-macros"
-version = "0.1.9"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6093c460064572007f885facc70bb0ca5e40a83ea7ff8b16c1abbee56fd2e767"
+checksum = "4404d53d2113af4fa31c58326eb7b37d6d7bf11ba87520787cddeaff45385c72"
 
 [[package]]
 name = "xtask"
