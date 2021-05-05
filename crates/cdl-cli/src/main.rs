@@ -10,7 +10,7 @@ use clap::Clap;
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    ::utils::tracing::init()?;
+    ::utils::tracing::init(None)?;
 
     match args.action {
         Action::Schema { action } => match action {

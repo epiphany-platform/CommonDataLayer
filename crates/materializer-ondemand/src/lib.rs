@@ -31,7 +31,6 @@ impl OnDemandMaterializer for MaterializerImpl {
         &self,
         request: tonic::Request<rpc::materializer_ondemand::OnDemandRequest>,
     ) -> Result<tonic::Response<Self::MaterializeStream>, tonic::Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
 
         tracing::debug!(?request, "Handling");
@@ -46,7 +45,7 @@ impl OnDemandMaterializer for MaterializerImpl {
         let stream = rpc::object_builder::connect(self.object_builder_addr.as_str())
             .await
             .map_err(|e| tonic::Status::internal(format!("{}", e)))?
-            .materialize(utils::tracing::grpc::inject_span(View { view_id, schemas }))
+            .materialize(View { view_id, schemas })
             .await
             .map_err(|e| tonic::Status::internal(format!("{}", e)))?;
 

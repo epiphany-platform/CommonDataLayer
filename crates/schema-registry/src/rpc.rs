@@ -51,7 +51,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<rpc::schema_registry::NewSchema>,
     ) -> Result<Response<Id>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let new_schema = NewSchema {
             name: request.metadata.name,
@@ -85,7 +84,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<rpc::schema_registry::NewSchemaVersion>,
     ) -> Result<Response<Empty>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
         let new_version = SchemaDefinition {
@@ -105,7 +103,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<SchemaMetadataUpdate>,
     ) -> Result<Response<Empty>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
 
@@ -146,7 +143,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::SchemaMetadata>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
@@ -165,7 +161,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::Schema>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
@@ -187,7 +182,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<VersionedId>,
     ) -> Result<Response<rpc::schema_registry::SchemaDefinition>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let versioned_id = VersionedUuid {
             id: parse_uuid(&request.id)?,
@@ -208,7 +202,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::SchemaVersions>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
@@ -224,7 +217,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::FullSchema>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
@@ -279,9 +271,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
     #[tracing::instrument(skip(self))]
     async fn get_all_schemas(
         &self,
-        request: Request<Empty>,
+        _request: Request<Empty>,
     ) -> Result<Response<rpc::schema_registry::Schemas>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let schemas = self.db.get_all_schemas().await?;
 
         Ok(Response::new(rpc::schema_registry::Schemas {
@@ -303,9 +294,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
     #[tracing::instrument(skip(self))]
     async fn get_all_full_schemas(
         &self,
-        request: Request<Empty>,
+        _request: Request<Empty>,
     ) -> Result<Response<rpc::schema_registry::FullSchemas>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let schemas = self.db.get_all_full_schemas().await?;
 
         Ok(Response::new(rpc::schema_registry::FullSchemas {
@@ -368,7 +358,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::View>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
@@ -400,7 +389,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<Id>,
     ) -> Result<Response<rpc::schema_registry::SchemaViews>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
 
@@ -439,7 +427,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<rpc::schema_registry::NewView>,
     ) -> Result<Response<Id>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         //TODO: Request materializer validation for the options
         let request = request.into_inner();
         let new_view = NewView {
@@ -475,7 +462,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<rpc::schema_registry::ViewUpdate>,
     ) -> Result<Response<Empty>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
@@ -520,7 +506,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         &self,
         request: Request<ValueToValidate>,
     ) -> Result<Response<Errors>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let request = request.into_inner();
         let versioned_id = VersionedUuid {
             id: parse_uuid(&request.schema_id.id)?,
@@ -548,9 +533,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
     async fn watch_all_schema_updates(
         &self,
-        request: Request<Empty>,
+        _request: Request<Empty>,
     ) -> Result<Response<Self::WatchAllSchemaUpdatesStream>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
         let schema_rx = self.db.listen_to_schema_updates().await?;
 
         Ok(Response::new(Box::pin(
@@ -570,8 +554,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         )))
     }
 
-    async fn ping(&self, request: Request<Empty>) -> Result<Response<Empty>, Status> {
-        utils::tracing::grpc::set_parent_span(&request);
+    async fn ping(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
         Ok(Response::new(Empty {}))
     }
 }

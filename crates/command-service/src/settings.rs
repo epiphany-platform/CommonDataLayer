@@ -1,12 +1,12 @@
 use anyhow::bail;
 use serde::{Deserialize, Serialize};
+use utils::communication::consumer::BasicConsumeOptions;
 use utils::communication::parallel_consumer::{
     ParallelCommonConsumer, ParallelCommonConsumerConfig,
 };
 use utils::communication::publisher::CommonPublisher;
 use utils::settings::*;
 use utils::task_limiter::TaskLimiter;
-use utils::communication::consumer::BasicConsumeOptions;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
@@ -150,6 +150,32 @@ impl KafkaSettings {
                     group_id: &self.group_id,
                     topic,
                     task_limiter: task_limiter.clone(),
+                })
+                .await?,
+            )
+        }
+
+        Ok(result)
+    }
+}
+
+impl AmqpSettings {
+    pub async fn parallel_consumers<'a>(
+        &self,
+        ordered_sources: impl Iterator<Item = &'a str>,
+        unordered_sources: impl Iterator<Item = &'a str>,
+        task_limiter: TaskLimiter,
+    ) -> anyhow::Result<Vec<ParallelCommonConsumer>> {
+        let mut result = Vec::new();
+
+        for queue in ordered_sources.chain(unordered_sources) {
+            result.push(
+                ParallelCommonConsumer::new(ParallelCommonConsumerConfig::Amqp {
+                    connection_string: &self.exchange_url,
+                    consumer_tag: &self.tag,
+                    queue_name: queue,
+                    task_limiter: task_limiter.clone(),
+                    options: self.consume_options,
                 })
                 .await?,
             )

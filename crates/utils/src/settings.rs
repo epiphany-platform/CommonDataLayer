@@ -10,17 +10,10 @@ use anyhow::bail;
 use config::{Config, Environment, File};
 use derive_more::Display;
 use lapin::options::BasicConsumeOptions;
-use opentelemetry::global;
-use opentelemetry::sdk::propagation::TraceContextPropagator;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fmt::Debug;
 use std::net::SocketAddrV4;
-use std::str::FromStr;
-use tokio::runtime::Handle;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::util::SubscriberInitExt;
-use tracing_subscriber::EnvFilter;
 use url::Url;
 
 #[derive(Clone, Copy, Debug, Deserialize, Display, PartialEq, Serialize)]
@@ -208,30 +201,6 @@ impl AmqpSettings {
             .await?,
         )
     }
-
-    pub async fn parallel_consumers<'a>(
-        &self,
-        ordered_sources: impl Iterator<Item = &'a str>,
-        unordered_sources: impl Iterator<Item = &'a str>,
-        task_limiter: TaskLimiter,
-    ) -> anyhow::Result<Vec<ParallelCommonConsumer>> {
-        let mut result = Vec::new();
-
-        for queue in ordered_sources.chain(unordered_sources) {
-            result.push(
-                ParallelCommonConsumer::new(ParallelCommonConsumerConfig::Amqp {
-                    connection_string: &self.exchange_url,
-                    consumer_tag: &self.tag,
-                    queue_name: queue,
-                    task_limiter: task_limiter.clone(),
-                    options: self.consume_options,
-                })
-                .await?,
-            )
-        }
-
-        Ok(result)
-    }
 }
 
 impl GRpcSettings {
@@ -263,33 +232,5 @@ impl NotificationSettings {
         } else {
             NotificationPublisher::Disabled
         }
-    }
-}
-
-impl LogSettings {
-    pub fn init(&self) -> anyhow::Result<()> {
-        global::set_text_map_propagator(TraceContextPropagator::new());
-
-        let opentelemetry = Handle::try_current()
-            .ok() // Check if Tokio runtime exists
-            .and_then(|_| {
-                opentelemetry_jaeger::new_pipeline()
-                    .install_batch(opentelemetry::runtime::Tokio)
-                    .ok()
-            })
-            .map(|tracer| tracing_opentelemetry::layer().with_tracer(tracer));
-
-        let fmt = tracing_subscriber::fmt::layer();
-
-        let filter = EnvFilter::from_str(&self.rust_log)?;
-
-        tracing_subscriber::registry()
-            .with(tracing_subscriber::EnvFilter::from_default_env())
-            .with(filter)
-            .with(fmt)
-            .with(opentelemetry)
-            .try_init()?;
-
-        Ok(())
     }
 }

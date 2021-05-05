@@ -1,5 +1,3 @@
-#![feature(async_closure)]
-
 use edge_registry::settings::Settings;
 use edge_registry::EdgeRegistryImpl;
 use rpc::edge_registry::edge_registry_server::EdgeRegistryServer;
@@ -16,7 +14,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    settings.log.init()?;
+    ::utils::tracing::init(settings.log.rust_log.as_str())?;
 
     tracing::debug!(?settings, "command-line arguments");
 

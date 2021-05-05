@@ -8,7 +8,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    settings.log.init()?;
+    ::utils::tracing::init(settings.log.rust_log.as_str())?;
 
     tracing::debug!(?settings, "command-line arguments");
 
@@ -20,6 +20,7 @@ async fn main() -> anyhow::Result<()> {
     utils::status_endpoints::mark_as_started();
 
     Server::builder()
+        .trace_fn(utils::tracing::grpc::trace_fn)
         .add_service(OnDemandMaterializerServer::new(materializer))
         .serve(([0, 0, 0, 0], settings.input_port).into())
         .await?;

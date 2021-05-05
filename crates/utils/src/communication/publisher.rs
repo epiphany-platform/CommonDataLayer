@@ -97,10 +97,10 @@ impl CommonPublisher {
                 let addr = destination.into();
                 let mut client = rpc::generic::connect(addr).await?;
                 let response = client
-                    .handle(crate::tracing::grpc::inject_span(rpc::generic::Message {
+                    .handle(rpc::generic::Message {
                         key: key.into(),
                         payload,
-                    }))
+                    })
                     .await;
 
                 match response {

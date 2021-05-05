@@ -5,9 +5,20 @@ use tonic::transport::Channel;
 pub use crate::codegen::query_service_ts::*;
 
 pub async fn connect(addr: String) -> Result<QueryServiceTsClient<Channel>, ClientError> {
-    QueryServiceTsClient::connect(addr)
+    connect_inner(addr)
         .await
         .map_err(|err| ClientError::ConnectionError { source: err })
+}
+
+async fn connect_inner(
+    addr: String,
+) -> Result<QueryServiceTsClient<Channel>, tonic::transport::Error> {
+    let conn = tonic::transport::Endpoint::new(addr)?.connect().await?;
+
+    Ok(QueryServiceTsClient::with_interceptor(
+        conn,
+        tracing_tools::grpc::interceptor(),
+    ))
 }
 
 pub async fn query_by_range(

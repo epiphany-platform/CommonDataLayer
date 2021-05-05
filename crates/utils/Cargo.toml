@@ -12,6 +12,7 @@ path = "src/lib.rs"
 [dependencies]
 # Workspace
 rpc         = { path    = "../rpc" }
+tracing_tools           = { path    = "../tracing_tools", features = ["kafka", "grpc", "http"] } # TODO: Use these feature flags
 
 # Crates.io
 anyhow      = "1.0"
@@ -34,17 +35,10 @@ tracing     = "0.1"
 url         = "2.2"
 uuid        = { version = "0.8", features = ["v4", "serde"] }
 vec_map     = "0.8"
-warp        = "0.3"
 async-stream            = "0.3"
 futures-util            = "0.3"
-opentelemetry           = {version = "0.13.0", features = ["rt-tokio"] }
-opentelemetry-http      = "0.2.0"
-opentelemetry-jaeger    = {version = "0.12.1", features = ["tokio"] }
 tonic                   = "0.4"
-tower-service           = "0.3"
 tracing-futures         = "0.2"
-tracing-opentelemetry   = "0.12.0"
-tracing-subscriber      = "0.2"
 metrics-exporter-prometheus         = "0.3"
 
 [dev-dependencies]

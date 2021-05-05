@@ -16,7 +16,7 @@ pub async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    settings.log.init()?;
+    ::utils::tracing::init(settings.log.rust_log.as_str())?;
 
     tracing::debug!(?settings, "command-line arguments");
 
@@ -45,6 +45,7 @@ pub async fn main() -> anyhow::Result<()> {
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), settings.input_port);
     status_endpoints::mark_as_started();
     Server::builder()
+        .trace_fn(utils::tracing::grpc::trace_fn)
         .add_service(SchemaRegistryServer::new(registry))
         .serve(addr.into())
         .await

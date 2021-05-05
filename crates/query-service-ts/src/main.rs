@@ -33,6 +33,7 @@ async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Resul
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
 
     Server::builder()
+        .trace_fn(utils::tracing::grpc::trace_fn)
         .add_service(QueryServiceTsServer::new(service))
         .serve(addr.into())
         .await
@@ -43,8 +44,8 @@ async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Resul
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
-    let settings: Settings = load_settings_for_executable("query-service")?;
-    settings.log.init()?;
+    let settings: Settings = load_settings()?;
+    ::utils::tracing::init(settings.log.rust_log.as_str())?;
 
     tracing::debug!(?settings, "command-line arguments");
     metrics::serve(&settings.monitoring);

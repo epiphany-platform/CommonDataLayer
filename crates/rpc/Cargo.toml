@@ -10,6 +10,10 @@ name = "rpc"
 path = "src/lib.rs"
 
 [dependencies]
+# Workspace
+tracing_tools           = { path    = "../tracing_tools", features = ["grpc"] }
+
+# Crates.io
 tonic       = "0.4"
 prost       = "0.7"
 anyhow      = "1.0"

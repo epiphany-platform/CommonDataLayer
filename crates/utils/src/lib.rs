@@ -19,8 +19,9 @@ pub mod query_utils;
 pub mod settings;
 pub mod status_endpoints;
 pub mod task_limiter;
-pub mod tracing;
 pub mod types;
+
+pub use tracing_tools as tracing;
 
 pub fn abort_on_poison<T>(_e: PoisonError<T>) -> T {
     error!("Encountered mutex poisoning. Aborting.");
