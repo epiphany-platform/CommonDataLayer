@@ -128,7 +128,7 @@ impl CommonConsumer {
                     .instrument(span)
                     .await;
                     if let Err(e) = result {
-                        return Err(e.into());
+                        tracing::error!(?e, "Couldn't process message");
                     }
                 }
             }
@@ -142,7 +142,7 @@ impl CommonConsumer {
                                 .await?;
                         }
                         Err(e) => {
-                            return Err(e.into());
+                            tracing::error!(?e, "Couldn't process message");
                         }
                     }
                 }
