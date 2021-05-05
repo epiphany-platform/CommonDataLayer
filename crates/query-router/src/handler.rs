@@ -6,6 +6,7 @@ use warp::hyper::header::CONTENT_TYPE;
 
 use crate::cache::SchemaRegistryCache;
 use crate::error::Error;
+use futures_util::TryStreamExt;
 use rpc::schema_registry::types::SchemaType;
 use rpc::{query_service, query_service_ts};
 
@@ -36,10 +37,14 @@ pub async fn query_single(
 
     let values = match (&schema_type, request_body) {
         (SchemaType::DocumentStorage, _) => {
-            let mut values = rpc::query_service::query_multiple(
+            let mut values: HashMap<String, Vec<u8>> = rpc::query_service::query_multiple(
                 vec![object_id.to_string()],
                 query_address.clone(),
             )
+            .await
+            .map_err(Error::ClientError)?
+            .map_ok(|object| (object.object_id, object.payload))
+            .try_collect()
             .await
             .map_err(Error::ClientError)?;
 
@@ -86,9 +91,16 @@ pub async fn query_multiple(
 
     let values = match schema_type {
         SchemaType::DocumentStorage => {
-            rpc::query_service::query_multiple(object_ids, query_address.clone())
-                .await
-                .map_err(Error::ClientError)?
+            let values: HashMap<_, _> =
+                rpc::query_service::query_multiple(object_ids, query_address.clone())
+                    .await
+                    .map_err(Error::ClientError)?
+                    .map_ok(|o| (o.object_id, o.payload))
+                    .try_collect()
+                    .await
+                    .map_err(Error::ClientError)?;
+
+            values
         }
         _ => {
             return Err(warp::Rejection::from(Error::ExpectedSchemaType(
@@ -113,10 +125,15 @@ pub async fn query_by_schema(
 
     match &schema_type {
         SchemaType::DocumentStorage => {
-            let values =
+            let values: HashMap<_, _> =
                 rpc::query_service::query_by_schema(schema_id.to_string(), query_address.clone())
                     .await
+                    .map_err(Error::ClientError)?
+                    .map_ok(|o| (o.object_id, o.payload))
+                    .try_collect()
+                    .await
                     .map_err(Error::ClientError)?;
+
             Ok(warp::reply::with_header(
                 serde_json::to_vec(&byte_map_to_json_map(values)?).map_err(Error::JsonError)?,
                 CONTENT_TYPE,

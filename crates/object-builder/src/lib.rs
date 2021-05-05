@@ -2,13 +2,14 @@ use crate::args::Args;
 use anyhow::Context;
 use async_trait::async_trait;
 use bb8::{Pool, PooledConnection};
-use futures::Stream;
+use futures::{Stream, StreamExt, TryStreamExt};
 use rpc::common::RowDefinition as RpcRowDefinition;
-use rpc::materializer_general::{MaterializedView, Options};
+use rpc::materializer_general::{MaterializedView as RpcMaterializedView, Options};
 use rpc::object_builder::{object_builder_server::ObjectBuilder, Empty, View};
 use rpc::schema_registry::{schema_registry_client::SchemaRegistryClient, types::SchemaType};
 use serde::Serialize;
 use serde_json::Value;
+use std::sync::Arc;
 use std::{collections::HashMap, convert::TryInto, pin::Pin};
 use tonic::transport::Channel;
 use utils::communication::{consumer::ConsumerHandler, message::CommunicationMessage};
@@ -23,6 +24,7 @@ pub mod args;
 #[derive(Clone)]
 pub struct ObjectBuilderImpl {
     pool: Pool<SchemaRegistryConnectionManager>,
+    chunk_capacity: usize,
 }
 
 #[derive(Clone)]
@@ -32,6 +34,15 @@ pub struct SchemaRegistryConnectionManager {
 
 pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
 pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;
+
+type ObjectStream =
+    Pin<Box<dyn Stream<Item = Result<(Uuid, Value), anyhow::Error>> + Send + Sync + 'static>>;
+type RowStream =
+    Pin<Box<dyn Stream<Item = Result<RowDefinition, anyhow::Error>> + Send + Sync + 'static>>;
+type MaterializedChunksStream =
+    Pin<Box<dyn Stream<Item = Result<MaterializedView, anyhow::Error>> + Send + Sync + 'static>>;
+type MaterializeStream =
+    Pin<Box<dyn Stream<Item = Result<RpcRowDefinition, tonic::Status>> + Send + Sync + 'static>>;
 
 #[async_trait::async_trait]
 impl bb8::ManageConnection for SchemaRegistryConnectionManager {
@@ -59,7 +70,7 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
 
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
-struct Output {
+struct MaterializedView {
     view_id: Uuid,
     options: Value,
     rows: Vec<RowDefinition>,
@@ -81,7 +92,12 @@ impl ObjectBuilderImpl {
             .await
             .unwrap();
 
-        Ok(Self { pool })
+        let chunk_capacity = args.chunk_capacity;
+
+        Ok(Self {
+            pool,
+            chunk_capacity,
+        })
     }
 }
 
@@ -101,17 +117,17 @@ impl TryInto<RpcRowDefinition> for RowDefinition {
     }
 }
 
-impl TryInto<MaterializedView> for Output {
+impl TryInto<RpcMaterializedView> for MaterializedView {
     type Error = serde_json::Error;
 
-    fn try_into(self) -> Result<MaterializedView, Self::Error> {
+    fn try_into(self) -> Result<RpcMaterializedView, Self::Error> {
         let rows = self
             .rows
             .into_iter()
             .map(|row| row.try_into())
             .collect::<serde_json::Result<_>>()?;
 
-        Ok(MaterializedView {
+        Ok(RpcMaterializedView {
             view_id: self.view_id.to_string(),
             options: Options {
                 options: serde_json::to_string(&self.options)?,
@@ -132,16 +148,17 @@ impl ConsumerHandler for ObjectBuilderImpl {
         let view_id = request.view_id;
 
         let view = self.get_view(&view_id);
-        let output = self.build_output(request);
+        let chunks = self.build_materialized_chunks(request);
 
-        let (view, output) = futures::try_join!(view, output)?;
+        let (view, mut chunks) = futures::try_join!(view, chunks)?;
 
-        let rpc_output: MaterializedView = output.try_into()?;
+        let mut materializer =
+            rpc::materializer_general::connect(view.materializer_address).await?;
 
-        rpc::materializer_general::connect(view.materializer_address)
-            .await?
-            .upsert_view(rpc_output)
-            .await?;
+        while let Some(chunk) = chunks.try_next().await? {
+            let rpc_output: RpcMaterializedView = chunk.try_into()?;
+            materializer.upsert_view(rpc_output).await?;
+        }
 
         Ok(())
     }
@@ -149,9 +166,7 @@ impl ConsumerHandler for ObjectBuilderImpl {
 
 #[tonic::async_trait]
 impl ObjectBuilder for ObjectBuilderImpl {
-    type MaterializeStream = Pin<
-        Box<dyn Stream<Item = Result<RpcRowDefinition, tonic::Status>> + Send + Sync + 'static>,
-    >;
+    type MaterializeStream = MaterializeStream;
 
     #[tracing::instrument(skip(self))]
     async fn materialize(
@@ -164,26 +179,24 @@ impl ObjectBuilder for ObjectBuilderImpl {
             .try_into()
             .map_err(|_| tonic::Status::invalid_argument("view"))?;
 
-        let output = self
-            .build_output(request) // TODO use another method because we dont need MaterializerOptions here.
+        let rows = self
+            .build_rows(request)
             .await
             .map_err(|err| tonic::Status::internal(format!("{}", err)))?;
 
-        let iter = output.rows.into_iter().map(|row| {
-            row.try_into().map_err(|err| {
-                tracing::error!("Could not serialize materialized row: {:?}", err);
-                tonic::Status::internal("Could not serialize materialized row")
+        let stream = rows
+            .map_err(|err| {
+                tracing::error!("Could not build materialized row: {:?}", err);
+                tonic::Status::internal("Could not build materialized row")
             })
-        });
+            .and_then(|row| async move {
+                row.try_into().map_err(|err| {
+                    tracing::error!("Could not serialize materialized row: {:?}", err);
+                    tonic::Status::internal("Could not serialize materialized row")
+                })
+            });
 
-        // TODO: This is just an example how could we leverage streaming API.
-        // In theory we could go further and make our `rpc::query_service::query_multiple` an streaming method.
-        // Then you could start processing views without collecting all objects.
-        //
-        // Of course its not a trivial task, especially when there are joins. The solution would have to handle waiting
-        // for the all connected objects before sending the row.
-        // Still an iterator could be a little bit benefitial.
-        let stream = Box::pin(futures::stream::iter(iter));
+        let stream = Box::pin(stream);
 
         Ok(tonic::Response::new(stream))
     }
@@ -199,11 +212,45 @@ impl ObjectBuilder for ObjectBuilderImpl {
 }
 
 impl ObjectBuilderImpl {
-    //TODO: We should no longer use one method to handle both RPC request and message queues, because the responsibilites splitted.
     #[tracing::instrument(skip(self))]
-    async fn build_output(&self, request: materialization::Request) -> anyhow::Result<Output> {
+    async fn build_materialized_chunks(
+        &self,
+        request: materialization::Request,
+    ) -> anyhow::Result<MaterializedChunksStream> {
         tracing::debug!(?request, "Handling");
 
+        let view_id = request.view_id;
+
+        // TODO: We download view twice.
+        // First time here, second time in `build_rows()`
+        // Either use some kind of cache or extract `self.get_view() higher`
+        let view = self.get_view(&view_id).await?;
+        tracing::debug!(?view, "View");
+
+        let rows = self.build_rows(request).await?;
+        let rows = rows.chunks(self.chunk_capacity);
+
+        let options: Value = serde_json::from_str(&view.materializer_options)?;
+
+        let chunks = rows.map(move |rows: Vec<anyhow::Result<RowDefinition>>| {
+            let rows: Vec<RowDefinition> = rows.into_iter().collect::<anyhow::Result<_>>()?;
+
+            let materialized = MaterializedView {
+                view_id,
+                options: options.clone(),
+                rows,
+            };
+
+            Ok(materialized)
+        });
+
+        let stream = Box::pin(chunks) as MaterializedChunksStream;
+
+        Ok(stream)
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn build_rows(&self, request: materialization::Request) -> anyhow::Result<RowStream> {
         let materialization::Request { view_id, schemas } = request;
 
         let view = self.get_view(&view_id).await?;
@@ -213,7 +260,6 @@ impl ObjectBuilderImpl {
         // TODO: Handle empty filter for seeding view (maybe in another method)
         let (schema_id, schema) = schemas.into_iter().next().unwrap();
         let objects = self.get_objects(schema_id, schema).await?;
-        tracing::debug!(?objects, "Objects");
 
         let fields_defs: HashMap<String, materialization::FieldDefinition> = view
             .fields
@@ -221,22 +267,16 @@ impl ObjectBuilderImpl {
             .map(|(key, field)| Ok((key, serde_json::from_str(&field)?)))
             .collect::<anyhow::Result<HashMap<_, _>>>()?;
 
-        let rows = objects
-            .into_iter()
-            .map(|(object_id, object)| Self::build_row_def(object_id, object, &fields_defs))
-            .collect::<anyhow::Result<_>>()?;
+        let fields_defs = Arc::new(fields_defs);
 
-        let options = serde_json::from_str(&view.materializer_options)?;
+        let rows = objects.and_then(move |(object_id, object)| {
+            let fields_defs = fields_defs.clone();
+            async move { Self::build_row_def(object_id, object, &fields_defs) }
+        });
 
-        let output = Output {
-            view_id,
-            options,
-            rows,
-        };
+        let rows = Box::pin(rows) as RowStream;
 
-        tracing::debug!(?output, "Output");
-
-        Ok(output)
+        Ok(rows)
     }
 
     #[tracing::instrument]
@@ -278,7 +318,7 @@ impl ObjectBuilderImpl {
         &self,
         schema_id: Uuid,
         schema: materialization::Schema,
-    ) -> anyhow::Result<HashMap<Uuid, Value>> {
+    ) -> anyhow::Result<ObjectStream> {
         let schema_meta = self.get_schema_metadata(schema_id).await?;
 
         let query_address = schema_meta.query_address.clone();
@@ -296,13 +336,15 @@ impl ObjectBuilderImpl {
                 )
                 .await?;
 
-                values
-                    .into_iter()
-                    .map(|(object_id, value)| {
-                        let id: Uuid = object_id.parse()?;
-                        Ok((id, serde_json::from_slice(&value)?))
-                    })
-                    .collect()
+                let stream = Box::pin(values.map_err(anyhow::Error::from).and_then(
+                    |object| async move {
+                        let id: Uuid = object.object_id.parse()?;
+                        let payload: Value = serde_json::from_slice(&object.payload)?;
+                        Ok((id, payload))
+                    },
+                )) as ObjectStream;
+
+                Ok(stream)
             }
 
             SchemaType::Timeseries => {
