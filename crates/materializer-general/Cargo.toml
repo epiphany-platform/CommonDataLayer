@@ -23,5 +23,5 @@ tokio       = { version = "1.5", features = ["rt-multi-thread", "macros", "sync"
 tonic       = "0.4"
 tracing     = "0.1"
 uuid        = "0.8"
-bb8-postgres            = { version = "0.7", features = ["with-uuid-0_8"] }
+bb8-postgres            = { version = "0.7", features = ["with-uuid-0_8", "with-serde_json-1"] }
 tracing-futures         = "0.2"

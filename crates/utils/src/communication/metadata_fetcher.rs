@@ -85,8 +85,7 @@ impl MetadataFetcher {
                 Ok(metadata
                     .topics()
                     .iter()
-                    .map(|topic| topic.name())
-                    .any(|name| name == destination))
+                    .any(|topic| topic.name() == destination))
             }
             MetadataFetcher::Grpc => {
                 let client = rpc::generic::connect(owned_destination).await;

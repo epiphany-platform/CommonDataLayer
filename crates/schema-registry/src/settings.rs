@@ -25,6 +25,11 @@ pub struct KafkaSettings {
     pub brokers: String,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct AmqpSettings {
+    pub exchange_url: String,
+}
+
 impl Settings {
     pub async fn metadata_fetcher(&self) -> anyhow::Result<MetadataFetcher> {
         Ok(match (&self.kafka, &self.amqp, self.communication_method) {

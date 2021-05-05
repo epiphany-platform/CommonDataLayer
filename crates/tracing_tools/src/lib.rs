@@ -1,6 +1,5 @@
 use opentelemetry::global;
 use opentelemetry::sdk::propagation::TraceContextPropagator;
-use std::str::FromStr;
 use tokio::runtime::Handle;
 use tracing_subscriber::prelude::*;
 use tracing_subscriber::EnvFilter;
@@ -26,14 +25,9 @@ pub fn init<'a>(rust_log: impl Into<Option<&'a str>>) -> anyhow::Result<()> {
 
     let fmt = tracing_subscriber::fmt::layer();
 
-    let filter = if let Some(rust_log) = rust_log.into() {
-        Some(EnvFilter::from_str(rust_log)?)
-    } else {
-        None
-    };
+    let filter = rust_log.into().map(EnvFilter::new).unwrap_or_else(|| EnvFilter::from_default_env());
 
     tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::from_default_env())
         .with(filter)
         .with(fmt)
         .with(opentelemetry)

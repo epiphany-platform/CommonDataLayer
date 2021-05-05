@@ -128,8 +128,8 @@ pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> anyhow::Result<T> {
     }
 
     s.merge(Environment::with_prefix(
-        &exe.replace("-", "_").to_uppercase(),
-    ))?;
+        &exe.replace("-", "_"),
+    ).separator("__"))?;
 
     let settings = s.try_into()?;
 
