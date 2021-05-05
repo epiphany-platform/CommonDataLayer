@@ -16,7 +16,7 @@ pub struct View {
     /// Materializer's options encoded in JSON
     pub materializer_options: Json<Value>,
     /// The fields that this view maps with.
-    pub fields: Json<HashMap<String, String>>,
+    pub fields: Json<HashMap<String, Value>>,
 }
 
 impl View {
@@ -26,7 +26,12 @@ impl View {
             name: view.name,
             materializer_address: view.materializer_address,
             materializer_options: serde_json::from_str(&view.materializer_options)?,
-            fields: Json(view.fields),
+            fields: Json(
+                view.fields
+                    .into_iter()
+                    .map(|(k, v)| Ok((k, serde_json::from_str(&v)?)))
+                    .collect::<FieldResult<_>>()?,
+            ),
         })
     }
 }
@@ -34,8 +39,6 @@ impl View {
 /// A new view under a schema.
 #[derive(Clone, Debug, InputObject)]
 pub struct NewView {
-    /// The ID of the schema this view will belong to.
-    pub schema_id: Uuid,
     /// The name of the view.
     pub name: String,
     /// The address of the materializer this view caches data in.
@@ -43,7 +46,7 @@ pub struct NewView {
     /// Materializer's options encoded in JSON
     pub materializer_options: Json<Value>,
     /// The fields that this view maps with.
-    pub fields: Json<HashMap<String, String>>,
+    pub fields: Json<HashMap<String, Value>>,
 }
 
 /// An update to a view. Only the provided properties are updated.
@@ -56,13 +59,20 @@ pub struct ViewUpdate {
     /// Materializer's options encoded in JSON
     pub materializer_options: Option<Json<Value>>,
     /// The fields that this view maps with.
-    pub fields: Option<Json<HashMap<String, String>>>,
+    pub fields: Option<Json<HashMap<String, Value>>>,
 }
 
 impl ViewUpdate {
     pub fn into_rpc(self, id: Uuid) -> FieldResult<rpc::schema_registry::ViewUpdate> {
         let (update_fields, fields) = if let Some(fields) = self.fields {
-            (true, fields.0)
+            (
+                true,
+                fields
+                    .0
+                    .into_iter()
+                    .map(|(k, v)| (k, v.to_string()))
+                    .collect(),
+            )
         } else {
             (false, HashMap::default())
         };

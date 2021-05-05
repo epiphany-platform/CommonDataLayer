@@ -66,7 +66,12 @@ impl MutationRoot {
                 name: new_view.name.clone(),
                 materializer_address: new_view.materializer_address.clone(),
                 materializer_options: serde_json::to_string(&new_view.materializer_options)?,
-                fields: new_view.fields.0.clone(),
+                fields: new_view
+                    .fields
+                    .0
+                    .iter()
+                    .map(|(k, v)| (k.clone(), v.to_string()))
+                    .collect(),
             })
             .await
             .map_err(rpc::error::schema_registry_error)?
