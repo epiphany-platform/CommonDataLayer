@@ -36,10 +36,11 @@ pub async fn query_multiple(
         .await
         .map_err(|err| ClientError::QueryError { source: err })?;
 
-    let stream = Box::pin(stream.into_inner().map_err(|err| ClientError::QueryError {
-        service: "query service",
-        source: err,
-    }));
+    let stream = Box::pin(
+        stream
+            .into_inner()
+            .map_err(|err| ClientError::QueryError { source: err }),
+    );
 
     Ok(stream)
 }
@@ -51,10 +52,11 @@ pub async fn query_by_schema(schema_id: String, addr: String) -> Result<ObjectSt
         .await
         .map_err(|err| ClientError::QueryError { source: err })?;
 
-    let stream = Box::pin(stream.into_inner().map_err(|err| ClientError::QueryError {
-        service: "query service",
-        source: err,
-    }));
+    let stream = Box::pin(
+        stream
+            .into_inner()
+            .map_err(|err| ClientError::QueryError { source: err }),
+    );
 
     Ok(stream)
 }

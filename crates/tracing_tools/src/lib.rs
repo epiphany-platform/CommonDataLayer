@@ -25,7 +25,10 @@ pub fn init<'a>(rust_log: impl Into<Option<&'a str>>) -> anyhow::Result<()> {
 
     let fmt = tracing_subscriber::fmt::layer();
 
-    let filter = rust_log.into().map(EnvFilter::new).unwrap_or_else(|| EnvFilter::from_default_env());
+    let filter = rust_log
+        .into()
+        .map(EnvFilter::new)
+        .unwrap_or_else(EnvFilter::from_default_env);
 
     tracing_subscriber::registry()
         .with(filter)

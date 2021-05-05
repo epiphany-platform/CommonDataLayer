@@ -6,6 +6,7 @@ use utils::settings::*;
 pub struct Settings {
     pub communication_method: CommunicationMethod,
     pub input_port: u16,
+    pub chunk_capacity: usize,
 
     pub kafka: Option<ConsumerKafkaSettings>,
     pub amqp: Option<AmqpSettings>,

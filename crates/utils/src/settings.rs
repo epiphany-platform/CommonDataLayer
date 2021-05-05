@@ -127,9 +127,7 @@ pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> anyhow::Result<T> {
         s.merge(File::with_name(&format!("{}/{}/{}.toml", custom_dir, env, exe)).required(false))?;
     }
 
-    s.merge(Environment::with_prefix(
-        &exe.replace("-", "_"),
-    ).separator("__"))?;
+    s.merge(Environment::with_prefix(&exe.replace("-", "_")).separator("__"))?;
 
     let settings = s.try_into()?;
 

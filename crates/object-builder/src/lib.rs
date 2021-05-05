@@ -83,15 +83,13 @@ struct RowDefinition {
 }
 
 impl ObjectBuilderImpl {
-    pub async fn new(schema_registry_addr: &str) -> anyhow::Result<Self> {
+    pub async fn new(schema_registry_addr: &str, chunk_capacity: usize) -> anyhow::Result<Self> {
         let pool = Pool::builder()
             .build(SchemaRegistryConnectionManager {
                 address: schema_registry_addr.to_string(),
             })
             .await
             .unwrap();
-
-        let chunk_capacity = args.chunk_capacity;
 
         Ok(Self {
             pool,
