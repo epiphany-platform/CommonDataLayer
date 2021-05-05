@@ -3,7 +3,7 @@ use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{InputMessage, ObjectRelations};
 use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
 use crate::types::view::{NewView, View, ViewUpdate};
-use crate::{settings::Settings, error::Error};
+use crate::{error::Error, settings::Settings};
 use async_graphql::{Context, FieldResult, Object};
 use serde_json::value::to_raw_value;
 use utils::current_timestamp;
@@ -69,7 +69,7 @@ impl MutationRoot {
                 fields: new_view.fields.0.clone(),
             })
             .await
-            .map_err(|source| rpc::error::ClientError::QueryError {source})?
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?
             .into_inner()
             .id;
 
@@ -93,7 +93,7 @@ impl MutationRoot {
 
         conn.update_view(update.into_rpc(id)?)
             .await
-            .map_err(|source| rpc::error::ClientError::QueryError {source})?;
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
 
         get_view(&mut conn, id).await
     }
@@ -109,7 +109,7 @@ impl MutationRoot {
 
         conn.update_schema(update.into_rpc(id))
             .await
-            .map_err(|source| rpc::error::ClientError::QueryError {source})?;
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
         get_schema(&mut conn, id).await
     }
 

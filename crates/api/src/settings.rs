@@ -1,11 +1,12 @@
-use utils::settings::*;
 use serde::Deserialize;
 use utils::communication::publisher::CommonPublisher;
+use utils::settings::*;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
     pub communication_method: CommunicationMethod,
     pub input_port: u16,
+    pub insert_destination: String,
 
     pub kafka: Option<KafkaSettings>,
     pub amqp: Option<AmqpSettings>,
@@ -13,7 +14,6 @@ pub struct Settings {
     pub services: ServicesSettings,
 
     pub notification_consumer: Option<NotificationConsumerSettings>,
-    pub insert_destination: String,
 
     pub log: LogSettings,
 }
@@ -31,6 +31,12 @@ pub struct NotificationConsumerSettings {
     pub source: String,
 }
 
+#[derive(Deserialize, Debug)]
+pub struct AmqpSettings {
+    pub exchange_url: String,
+    pub tag: String,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct KafkaSettings {
     pub brokers: String,
@@ -42,13 +48,11 @@ impl Settings {
         match (&self.kafka, &self.amqp, &self.communication_method) {
             (Some(kafka), _, CommunicationMethod::Kafka) => {
                 Ok(CommonPublisher::new_kafka(&kafka.brokers).await?)
-            },
+            }
             (_, Some(amqp), CommunicationMethod::Amqp) => {
                 Ok(CommonPublisher::new_amqp(&amqp.exchange_url).await?)
-            },
-            (_, _, CommunicationMethod::GRpc) => {
-                Ok(CommonPublisher::new_grpc().await?)
-            },
+            }
+            (_, _, CommunicationMethod::GRpc) => Ok(CommonPublisher::new_grpc().await?),
             _ => anyhow::bail!("Unsupported consumer specification"),
         }
     }

@@ -33,8 +33,13 @@ async fn main() -> anyhow::Result<()> {
         )
         .await;
 
-    match (settings.postgres, settings.victoria_metrics, settings.druid) {
-        (Some(postgres), _, _) if settings.repository_kind == RepositoryKind::Postgres => {
+    match (
+        settings.postgres,
+        settings.victoria_metrics,
+        settings.druid,
+        settings.repository_kind,
+    ) {
+        (Some(postgres), _, _, RepositoryKind::Postgres) => {
             start_services(
                 consumers,
                 notification_publisher,
@@ -42,9 +47,7 @@ async fn main() -> anyhow::Result<()> {
             )
             .await
         }
-        (_, Some(victoria_metrics), _)
-            if settings.repository_kind == RepositoryKind::VictoriaMetrics =>
-        {
+        (_, Some(victoria_metrics), _, RepositoryKind::VictoriaMetrics) => {
             start_services(
                 consumers,
                 notification_publisher,
@@ -52,7 +55,7 @@ async fn main() -> anyhow::Result<()> {
             )
             .await
         }
-        (_, _, Some(druid)) if settings.repository_kind == RepositoryKind::Druid => {
+        (_, _, Some(druid), RepositoryKind::Druid) => {
             if let Some(kafka) = settings.kafka {
                 start_services(
                     consumers,
@@ -64,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
                 bail!("Druid setup requires [kafka] section")
             }
         }
-        _ => anyhow::bail!("Unsupported consumer specification"),
+        _ => bail!("Unsupported consumer specification"),
     }?;
 
     Ok(())

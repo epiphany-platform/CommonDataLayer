@@ -6,11 +6,14 @@ use utils::communication::parallel_consumer::{
 use utils::communication::publisher::CommonPublisher;
 use utils::settings::*;
 use utils::task_limiter::TaskLimiter;
+use utils::communication::consumer::BasicConsumeOptions;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
     pub communication_method: CommunicationMethod,
     pub repository_kind: RepositoryKind,
+
+    pub async_task_limit: usize,
 
     // Repository settings - based on repository_kind
     pub postgres: Option<PostgresSettings>,
@@ -29,8 +32,6 @@ pub struct Settings {
     pub monitoring: MonitoringSettings,
 
     pub log: LogSettings,
-
-    pub async_task_limit: usize,
 }
 
 #[derive(Debug, Deserialize)]
@@ -56,6 +57,13 @@ pub struct DruidSettings {
 pub struct KafkaSettings {
     pub brokers: String,
     pub group_id: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct AmqpSettings {
+    pub exchange_url: String,
+    pub tag: String,
+    pub consume_options: Option<BasicConsumeOptions>,
 }
 
 impl ListenerSettings {

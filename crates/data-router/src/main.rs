@@ -7,7 +7,10 @@ use std::sync::{Arc, Mutex};
 use tracing::{error, trace};
 
 use rpc::schema_registry::Id;
-use utils::settings::{load_settings, AmqpSettings, ConsumerKafkaSettings, GRpcSettings, MonitoringSettings, LogSettings};
+use utils::settings::{
+    load_settings, AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings,
+    MonitoringSettings,
+};
 use utils::{
     abort_on_poison,
     communication::{

@@ -34,9 +34,7 @@ impl Settings {
             (_, Some(amqp), CommunicationMethod::Amqp) => {
                 MetadataFetcher::new_amqp(amqp.exchange_url.as_str()).await?
             }
-            (_, _, CommunicationMethod::GRpc) => {
-                MetadataFetcher::new_grpc()?
-            }
+            (_, _, CommunicationMethod::GRpc) => MetadataFetcher::new_grpc()?,
             _ => anyhow::bail!("Unsupported consumer specification"),
         })
     }

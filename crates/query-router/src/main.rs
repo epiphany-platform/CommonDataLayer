@@ -6,7 +6,7 @@ use warp::Filter;
 use cache::SchemaRegistryCache;
 use serde::Deserialize;
 use utils::metrics;
-use utils::settings::{load_settings, MonitoringSettings, LogSettings};
+use utils::settings::{load_settings, LogSettings, MonitoringSettings};
 
 pub mod cache;
 pub mod error;

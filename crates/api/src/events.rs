@@ -11,11 +11,11 @@ use futures::task::{Context as FutCtx, Poll};
 use futures::{Future, Stream};
 use tokio::sync::broadcast::{self, Sender};
 
+use crate::settings::Settings;
 use utils::communication::{
     consumer::{CommonConsumer, CommonConsumerConfig, ConsumerHandler},
     message::CommunicationMessage,
 };
-use crate::settings::Settings;
 use utils::settings::CommunicationMethod;
 
 /// Owned generic message received from message queue.
@@ -66,7 +66,11 @@ impl EventSubscriber {
 
         tracing::debug!("Create new consumer for: {}", source);
 
-        let config = match (&settings.kafka, &settings.amqp, &settings.communication_method) {
+        let config = match (
+            &settings.kafka,
+            &settings.amqp,
+            &settings.communication_method,
+        ) {
             (Some(kafka), _, CommunicationMethod::Kafka) => CommonConsumerConfig::Kafka {
                 group_id: &kafka.group_id,
                 brokers: &kafka.brokers,
@@ -80,7 +84,7 @@ impl EventSubscriber {
             },
             (_, _, CommunicationMethod::GRpc) => {
                 anyhow::bail!("GRPC communication method does not support event subscription")
-            },
+            }
             _ => anyhow::bail!("Unsupported consumer specification"),
         };
 

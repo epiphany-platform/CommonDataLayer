@@ -37,10 +37,7 @@ impl VictoriaMetricsOutputPlugin {
 
         Ok(VictoriaMetricsOutputPlugin {
             client,
-            url: Url::parse(&config.url)
-                .unwrap()
-                .join("write")
-                .map_err(Error::InvalidUrl)?, // TODO: Change config.url to Url
+            url: config.url.join("write").map_err(Error::InvalidUrl)?,
         })
     }
 }

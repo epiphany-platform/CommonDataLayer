@@ -21,6 +21,7 @@ use tokio::runtime::Handle;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::EnvFilter;
+use url::Url;
 
 #[derive(Clone, Copy, Debug, Deserialize, Display, PartialEq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -43,7 +44,7 @@ pub struct PostgresSettings {
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct VictoriaMetricsSettings {
-    pub url: String,
+    pub url: Url,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -141,6 +142,7 @@ pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> anyhow::Result<T> {
 
     Ok(settings)
 }
+
 pub async fn publisher<'a>(
     kafka: Option<&'a str>,
     amqp: Option<&'a str>,

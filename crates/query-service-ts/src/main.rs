@@ -43,7 +43,7 @@ async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Resul
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
-    let settings: Settings = load_settings()?;
+    let settings: Settings = load_settings_for_executable("query-service")?;
     settings.log.init()?;
 
     tracing::debug!(?settings, "command-line arguments");

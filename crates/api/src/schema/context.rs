@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use bb8::{Pool, PooledConnection};
 
-use crate::{settings::Settings, events::EventStream, events::EventSubscriber};
+use crate::{events::EventStream, events::EventSubscriber, settings::Settings};
 use rpc::edge_registry::edge_registry_client::EdgeRegistryClient;
 use rpc::materializer_ondemand::on_demand_materializer_client::OnDemandMaterializerClient;
 use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
@@ -51,17 +51,14 @@ impl MQEvents {
             }
             None => {
                 let kafka_events = self.events.clone();
-                let (subscriber, stream) = EventSubscriber::new(
-                    &settings,
-                    topic,
-                    move |topic| async move {
+                let (subscriber, stream) =
+                    EventSubscriber::new(&settings, topic, move |topic| async move {
                         tracing::warn!("Message queue stream has closed");
                         // Remove topic from hashmap so next time someone ask about this stream,
                         // it will be recreated
                         kafka_events.lock().await.remove(&topic);
-                    },
-                )
-                .await?;
+                    })
+                    .await?;
                 event_map.insert(topic.into(), subscriber);
                 Ok(stream)
             }
@@ -83,7 +80,7 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
         conn.ping(rpc::schema_registry::Empty {})
             .await
-            .map_err(|source| rpc::error::ClientError::QueryError {source})?;
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
 
         Ok(())
     }
@@ -107,7 +104,7 @@ impl bb8::ManageConnection for EdgeRegistryConnectionManager {
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
         conn.heartbeat(rpc::edge_registry::Empty {})
             .await
-            .map_err(|source| rpc::error::ClientError::QueryError {source})?;
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
 
         Ok(())
     }
@@ -131,7 +128,7 @@ impl bb8::ManageConnection for OnDemandMaterializerConnectionManager {
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
         conn.heartbeat(rpc::materializer_ondemand::Empty {})
             .await
-            .map_err(|source | rpc::error::ClientError::QueryError {source})?;
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
 
         Ok(())
     }

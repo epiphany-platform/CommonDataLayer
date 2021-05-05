@@ -4,8 +4,8 @@ use async_graphql::{Context, FieldError, FieldResult, Subscription};
 use futures::{Stream, TryStreamExt};
 use tracing::Instrument;
 
-use crate::settings::Settings;
 use crate::schema::context::MQEvents;
+use crate::settings::Settings;
 use crate::types::report::Report;
 
 type ReportStream = Pin<Box<dyn Stream<Item = FieldResult<Report>> + Send>>;
