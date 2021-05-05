@@ -13,6 +13,7 @@
     - [TODO]()
 - [Features](features/index.md)
     - [Message ordering](features/ordering.md)
+    - [Materialization](features/materialization.md)
 - [Versioning](versioning.md)
 - [Protocol schema](protocol.md)
 - [Benchmarks](benchmarks.md)
