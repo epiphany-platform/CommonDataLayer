@@ -45,7 +45,7 @@ jobs:
 
     - name: Build and push crates
       run: |
-        crates=(command-service data-router leader-elector query-service query-service-ts schema-registry query-router api)
+        crates=(data-router command-service query-router query-service query-service-ts schema-registry api edge-registry partial-update-engine object-builder materializer-general materializer-ondemand)
         version="dev-$(date -u +'%Y-%m-%d')"
         for crate in "${crates[@]}"
         do

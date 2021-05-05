@@ -60,26 +60,28 @@ impl PsqlQuery {
         &self,
         query: &str,
         args: &[&(dyn ToSql + Sync)],
-    ) -> Result<Vec<Row>, Status> {
+    ) -> Result<RowStream, Status> {
         let connection = self.connect().await?;
         let statement = connection.prepare(query).await.map_err(|err| {
             Status::internal(format!("Unable to prepare query statement: {}", err))
         })?;
 
         connection
-            .query(&statement, args)
+            .query_raw(&statement, slice_iter(args))
             .await
             .map_err(|err| Status::internal(format!("Unable to query data: {}", err)))
     }
 
-    fn collect_id_payload_rows(rows: Vec<Row>) -> HashMap<String, Vec<u8>> {
-        rows.into_iter()
-            .map(|row| {
-                let object_id = row.get::<usize, Uuid>(0).to_string();
-                let value = row.get::<usize, Value>(1).to_string().into_bytes();
-                (object_id, value)
-            })
-            .collect()
+    fn map_id_payload_rows(stream: RowStream) -> ObjectStream<Status> {
+        Box::pin(
+            stream
+                .map_ok(|row| {
+                    let object_id = row.get::<usize, Uuid>(0).to_string();
+                    let payload = row.get::<usize, Value>(1).to_string().into_bytes();
+                    Object { object_id, payload }
+                })
+                .map_err(|err| Status::internal(format!("Unable to query data: {}", err))),
+        )
     }
 
     fn collect_simple_query_messages(messages: Vec<SimpleQueryMessage>) -> Result<Vec<u8>, String> {
@@ -111,11 +113,13 @@ impl PsqlQuery {
 
 #[tonic::async_trait]
 impl QueryService for PsqlQuery {
+    type QueryMultipleStream = ObjectStream<tonic::Status>;
+
     #[tracing::instrument(skip(self))]
     async fn query_multiple(
         &self,
         request: Request<ObjectIds>,
-    ) -> Result<Response<ValueMap>, Status> {
+    ) -> Result<Response<Self::QueryMultipleStream>, Status> {
         let request = request.into_inner();
 
         counter!("cdl.query-service.query-multiple.psql", 1);
@@ -140,20 +144,21 @@ impl QueryService for PsqlQuery {
             self.schema, self.schema
         );
 
-        let rows = self
+        let row_stream = self
             .make_query(query_str.as_str(), &[&object_ids.as_slice()])
             .await?;
 
-        Ok(tonic::Response::new(ValueMap {
-            values: Self::collect_id_payload_rows(rows),
-        }))
+        let stream = Self::map_id_payload_rows(row_stream);
+        Ok(tonic::Response::new(stream))
     }
+
+    type QueryBySchemaStream = ObjectStream<tonic::Status>;
 
     #[tracing::instrument(skip(self))]
     async fn query_by_schema(
         &self,
         request: Request<SchemaId>,
-    ) -> Result<Response<ValueMap>, Status> {
+    ) -> Result<Response<Self::QueryBySchemaStream>, Status> {
         let request = request.into_inner();
 
         counter!("cdl.query-service.query-by-schema.psql", 1);
@@ -174,11 +179,10 @@ impl QueryService for PsqlQuery {
             self.schema, self.schema
         );
 
-        let rows = self.make_query(query_str.as_str(), &[&schema_id]).await?;
+        let row_stream = self.make_query(query_str.as_str(), &[&schema_id]).await?;
 
-        Ok(tonic::Response::new(ValueMap {
-            values: Self::collect_id_payload_rows(rows),
-        }))
+        let stream = Self::map_id_payload_rows(row_stream);
+        Ok(tonic::Response::new(stream))
     }
 
     #[tracing::instrument(skip(self))]
@@ -202,4 +206,10 @@ impl QueryService for PsqlQuery {
             })?,
         }))
     }
+}
+
+fn slice_iter<'a>(
+    s: &'a [&'a (dyn ToSql + Sync)],
+) -> impl ExactSizeIterator<Item = &'a dyn ToSql> + 'a {
+    s.iter().map(|s| *s as _)
 }

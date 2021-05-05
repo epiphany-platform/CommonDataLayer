@@ -9,10 +9,11 @@ pub struct SchemaId {
     pub schema_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValueMap {
-    #[prost(map = "string, bytes", tag = "1")]
-    pub values:
-        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::vec::Vec<u8>>,
+pub struct Object {
+    #[prost(string, tag = "1")]
+    pub object_id: ::prost::alloc::string::String,
+    #[prost(bytes = "vec", tag = "2")]
+    pub payload: ::prost::alloc::vec::Vec<u8>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RawStatement {
@@ -60,7 +61,8 @@ pub mod query_service_client {
         pub async fn query_multiple(
             &mut self,
             request: impl tonic::IntoRequest<super::ObjectIds>,
-        ) -> Result<tonic::Response<super::ValueMap>, tonic::Status> {
+        ) -> Result<tonic::Response<tonic::codec::Streaming<super::Object>>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -70,12 +72,15 @@ pub mod query_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/query_service.QueryService/QueryMultiple");
-            self.inner.unary(request.into_request(), path, codec).await
+            self.inner
+                .server_streaming(request.into_request(), path, codec)
+                .await
         }
         pub async fn query_by_schema(
             &mut self,
             request: impl tonic::IntoRequest<super::SchemaId>,
-        ) -> Result<tonic::Response<super::ValueMap>, tonic::Status> {
+        ) -> Result<tonic::Response<tonic::codec::Streaming<super::Object>>, tonic::Status>
+        {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -85,7 +90,9 @@ pub mod query_service_client {
             let codec = tonic::codec::ProstCodec::default();
             let path =
                 http::uri::PathAndQuery::from_static("/query_service.QueryService/QueryBySchema");
-            self.inner.unary(request.into_request(), path, codec).await
+            self.inner
+                .server_streaming(request.into_request(), path, codec)
+                .await
         }
         pub async fn query_raw(
             &mut self,
@@ -122,14 +129,24 @@ pub mod query_service_server {
     #[doc = "Generated trait containing gRPC methods that should be implemented for use with QueryServiceServer."]
     #[async_trait]
     pub trait QueryService: Send + Sync + 'static {
+        #[doc = "Server streaming response type for the QueryMultiple method."]
+        type QueryMultipleStream: futures_core::Stream<Item = Result<super::Object, tonic::Status>>
+            + Send
+            + Sync
+            + 'static;
         async fn query_multiple(
             &self,
             request: tonic::Request<super::ObjectIds>,
-        ) -> Result<tonic::Response<super::ValueMap>, tonic::Status>;
+        ) -> Result<tonic::Response<Self::QueryMultipleStream>, tonic::Status>;
+        #[doc = "Server streaming response type for the QueryBySchema method."]
+        type QueryBySchemaStream: futures_core::Stream<Item = Result<super::Object, tonic::Status>>
+            + Send
+            + Sync
+            + 'static;
         async fn query_by_schema(
             &self,
             request: tonic::Request<super::SchemaId>,
-        ) -> Result<tonic::Response<super::ValueMap>, tonic::Status>;
+        ) -> Result<tonic::Response<Self::QueryBySchemaStream>, tonic::Status>;
         async fn query_raw(
             &self,
             request: tonic::Request<super::RawStatement>,
@@ -170,9 +187,13 @@ pub mod query_service_server {
                 "/query_service.QueryService/QueryMultiple" => {
                     #[allow(non_camel_case_types)]
                     struct QueryMultipleSvc<T: QueryService>(pub Arc<T>);
-                    impl<T: QueryService> tonic::server::UnaryService<super::ObjectIds> for QueryMultipleSvc<T> {
-                        type Response = super::ValueMap;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                    impl<T: QueryService> tonic::server::ServerStreamingService<super::ObjectIds>
+                        for QueryMultipleSvc<T>
+                    {
+                        type Response = super::Object;
+                        type ResponseStream = T::QueryMultipleStream;
+                        type Future =
+                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::ObjectIds>,
@@ -184,7 +205,7 @@ pub mod query_service_server {
                     }
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let interceptor = inner.1.clone();
+                        let interceptor = inner.1;
                         let inner = inner.0;
                         let method = QueryMultipleSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
@@ -193,7 +214,7 @@ pub mod query_service_server {
                         } else {
                             tonic::server::Grpc::new(codec)
                         };
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
@@ -201,9 +222,13 @@ pub mod query_service_server {
                 "/query_service.QueryService/QueryBySchema" => {
                     #[allow(non_camel_case_types)]
                     struct QueryBySchemaSvc<T: QueryService>(pub Arc<T>);
-                    impl<T: QueryService> tonic::server::UnaryService<super::SchemaId> for QueryBySchemaSvc<T> {
-                        type Response = super::ValueMap;
-                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                    impl<T: QueryService> tonic::server::ServerStreamingService<super::SchemaId>
+                        for QueryBySchemaSvc<T>
+                    {
+                        type Response = super::Object;
+                        type ResponseStream = T::QueryBySchemaStream;
+                        type Future =
+                            BoxFuture<tonic::Response<Self::ResponseStream>, tonic::Status>;
                         fn call(
                             &mut self,
                             request: tonic::Request<super::SchemaId>,
@@ -215,7 +240,7 @@ pub mod query_service_server {
                     }
                     let inner = self.inner.clone();
                     let fut = async move {
-                        let interceptor = inner.1.clone();
+                        let interceptor = inner.1;
                         let inner = inner.0;
                         let method = QueryBySchemaSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
@@ -224,7 +249,7 @@ pub mod query_service_server {
                         } else {
                             tonic::server::Grpc::new(codec)
                         };
-                        let res = grpc.unary(method, req).await;
+                        let res = grpc.server_streaming(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)
