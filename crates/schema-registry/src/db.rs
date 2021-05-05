@@ -312,17 +312,19 @@ impl SchemaRegistryDb {
         Ok(new_id)
     }
 
+    #[tracing::instrument(skip(self))]
     pub async fn add_view_to_schema(&self, new_view: NewView) -> RegistryResult<Uuid> {
         let mut conn = self.connect().await?;
         let new_id = Uuid::new_v4();
 
         sqlx::query!(
-            "INSERT INTO views(id, schema, name, materializer_address, fields)
-             VALUES ($1, $2, $3, $4, $5)",
+            "INSERT INTO views(id, schema, name, materializer_address, materializer_options, fields)
+             VALUES ($1, $2, $3, $4, $5, $6)",
             new_id,
             new_view.schema_id,
             new_view.name,
             new_view.materializer_address,
+            new_view.materializer_options,
             serde_json::to_value(&new_view.fields).map_err(RegistryError::MalformedViewFields)?,
         )
         .execute(&mut conn)
