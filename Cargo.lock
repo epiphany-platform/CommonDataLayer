@@ -3762,7 +3762,6 @@ dependencies = [
  "tracing_tools",
  "url",
  "uuid",
- "vec_map",
 ]
 
 [[package]]

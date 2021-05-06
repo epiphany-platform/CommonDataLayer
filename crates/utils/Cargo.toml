@@ -32,7 +32,6 @@ tokio-amqp  = "1.0"
 tracing     = "0.1"
 url         = "2.2"
 uuid        = { version = "0.8", features = ["v4", "serde"] }
-vec_map     = "0.8"
 async-stream            = "0.3"
 futures-util            = "0.3"
 tonic                   = "0.4"
