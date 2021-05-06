@@ -316,26 +316,23 @@ impl ObjectBuilderImpl {
     async fn get_objects(
         &self,
         view_id: Uuid,
-        schemas: HashMap<Uuid, materialization::Schema>,
+        mut schemas: HashMap<Uuid, materialization::Schema>,
     ) -> anyhow::Result<ObjectStream> {
-        let mut schemas: Vec<_> = schemas.into_iter().collect();
-
         if schemas.is_empty() {
             let base_schema = self.get_base_schema_for_view(view_id).await?;
             let base_schema_id: Uuid = base_schema.id.parse()?;
-            schemas.push((base_schema_id, Default::default()));
+            schemas.insert(base_schema_id, Default::default());
         }
 
-        match schemas.as_slice() {
-            [(schema_id, schema)] => {
-                self.get_objects_for_ids(*schema_id, &schema.object_ids)
-                    .await
-            }
-            _ => {
-                // TODO: Merging more than one schema. Phase II
-                // It cannot be empty, because at least one schema has to be assigned to view.
-                todo!();
-            }
+        if schemas.len() == 1 {
+            let (schema_id, schema) = schemas.into_iter().next().unwrap();
+
+            self.get_objects_for_ids(schema_id, &schema.object_ids)
+                .await
+        } else {
+            // TODO: Merging more than one schema. Phase II
+            // It cannot be empty, because at least one schema has to be assigned to view.
+            todo!();
         }
     }
 
