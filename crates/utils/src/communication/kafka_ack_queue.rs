@@ -1,4 +1,8 @@
-use std::{cmp::max, collections::{HashMap, LinkedList}, sync::Mutex};
+use std::{
+    cmp::max,
+    collections::{HashMap, LinkedList},
+    sync::Mutex,
+};
 
 use rdkafka::{
     consumer::{DefaultConsumerContext, StreamConsumer},
@@ -11,7 +15,7 @@ use crate::abort_on_poison;
 
 #[derive(Default)]
 pub struct KafkaAckQueue {
-    queue: Mutex<HashMap<i32,KafkaPartitionAckQueue>>,
+    queue: Mutex<HashMap<i32, KafkaPartitionAckQueue>>,
 }
 impl KafkaAckQueue {
     pub fn add(&self, message: &BorrowedMessage) {
