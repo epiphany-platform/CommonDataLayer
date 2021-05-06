@@ -3,8 +3,8 @@ skinparam linetype polyline
 skinparam backgroundColor #FEFEFE
 skinparam transparent false
 
-interface "Configuration Layer" as ConfIn
 interface "Configuration Layer" as ConfOut
+interface "Data Router" as DROut
 
 cloud {
   [External System]
@@ -15,11 +15,11 @@ frame "Management Layer" {
     [Admin Web Panel]
 }
 
-[API] <-up-> [Configuration Layer]
+[API] <-up-> ConfOut
 
 frame "Ingestion Layer" {
-  API -left--> [Data Router]
-  [Data Router] -left--. ConfIn
+  API -left--> DROut
+  [Data Router] -left--. [Configuration Layer]
 }
 
 frame "Configuration Layer" {
@@ -56,7 +56,12 @@ frame "Storage Layer" {
 }
 
 frame "Materialization Layer" {
-    [Object Builder] -down--. SRTS
+    [Partial Update Engine] -down-> [Object Builder]: MQ
+    [Object Builder] -down--. ConfOut
+    node "Postgres Repository" {
+        [Materializer Postgres]
+    }
+    [On Demand Materializer] -up--. [Object Builder]
 }
 
 frame "Retrieval Layer" {
@@ -74,6 +79,9 @@ cloud {
 [Data Router] -down-> ANY : MQ
 [Command Service Doc] -down-> [Document Data] : SQL
 [Command Service TS] -down-> [Timeseries Data] : REST
+[Command Service Doc] -down-> [Partial Update Engine]: MQ
+[Command Service TS] -down-> [Partial Update Engine]: MQ
+ANY -down-> [Partial Update Engine]: MQ
 [DB Shrinker Storage] -down-> [Document Data] : SQL
 [Query Service Doc] -up-> [Document Data] : SQL
 [Query Service TS] -up-> [Timeseries Data] : REST
@@ -82,8 +90,11 @@ cloud {
 [Query Router] -up-> ANY : gRPC
 [Object Builder] -up-> [Query Service Doc]: gRPC
 [Object Builder] -up-> [Query Service TS]: gRPC
-[Object Builder] -up-> [Query Service Blob]: gRPC
 [Object Builder] -up-> ANY : gRPC
+[Object Builder] -up-> [Materializer Postgres]: gRPC
 User -up-> [Query Router] : REST
-User -up-> [Object Builder]: gRPC
+User -up-> [On Demand Materializer]: gRPC
+User -up-> [Admin Web Panel]: HTTP
+User -up-> [API]: GraphQL
+User -up-> [CLI]
 @enduml

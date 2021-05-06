@@ -45,7 +45,7 @@ All proto files are stored in `crates/rpc/proto` directory.
 In proto file we can see that message `NewSchema` uses `bytes` as a definition.
 In bloomRPC it means we need to encode our json definition in base 64:
 
-Schema definition
+Schema definition:
 ```json
 {
     "name": "string"
@@ -56,6 +56,8 @@ Encoded:
 ```base64
 ewogICAgIm5hbWUiOiAic3RyaW5nIgp9
 ```
+
+Usually schema registry API is available at [http://localhost:50101](http://localhost:50101).
 
 RPC request (`schema_registry.SchemaRegistry.AddSchema`):
 ```json
@@ -107,7 +109,7 @@ Next we need to add new view definition.
 
 ###### A) gRPC API
 
-gRPC request:
+gRPC request (`schema_registry.SchemaRegistry.AddViewToSchema`):
 ```json
 {
   "schema_id": "22c8ac58-155e-4643-ab44-42e96dbb88c7",
@@ -160,7 +162,7 @@ mutation addView{
 While manual setup is fine for one-time test, it quickly becomes mundane work.
 To mitigate this problem, we created a solution to pre-populate schema registry.
 
-In fact, [Common Data Layer deployment repository](https://github.com/epiphany-platform/CommonDataLayer-deployment) repository already contains [`bare/setup/schema-registry/initial-schema.kafka.json`]() which describes what views and schemas should be inserted on startup.
+In fact, [Common Data Layer deployment repository](https://github.com/epiphany-platform/CommonDataLayer-deployment) already contains [`bare/setup/schema-registry/initial-schema.kafka.json`](https://github.com/epiphany-platform/CommonDataLayer-deployment/blob/develop/bare/setup/schema-registry/initial-schema.kafka.json) which describes what views and schemas should be inserted on startup.
 
 ### Inserting data
 

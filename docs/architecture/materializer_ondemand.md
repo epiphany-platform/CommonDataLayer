@@ -2,7 +2,6 @@
 
 ## Configuration (Environment variables)
 
-### General:
 | Name                 | Short Description                                 | Example                      | Mandatory  | Default |
 |----------------------|---------------------------------------------------|------------------------------|------------|---------|
 | INPUT_PORT           | gRPC server port                                  | 50110                        | yes        | no      |
