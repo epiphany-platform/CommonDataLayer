@@ -473,8 +473,8 @@
       ]
     }
   },
-  "ce74cd8d60e789ad10306ec1693fa72ef12b82c04512d57240da8b1e73861d89": {
-    "query": "INSERT INTO views(id, schema, name, materializer_address, fields)\n             VALUES ($1, $2, $3, $4, $5)",
+  "2701f40af4090b373d45d7dac10a0fb89b5bfd302938e6254574675034f71a4a": {
+    "query": "INSERT INTO views(id, schema, name, materializer_address, materializer_options, fields)\n             VALUES ($1, $2, $3, $4, $5, $6)",
     "describe": {
       "columns": [],
       "parameters": {
@@ -483,6 +483,7 @@
           "Uuid",
           "Varchar",
           "Varchar",
+          "Json",
           "Json"
         ]
       },
