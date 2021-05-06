@@ -4,7 +4,9 @@ skinparam backgroundColor #FEFEFE
 skinparam transparent false
 
 interface "Configuration Layer" as ConfOut
-interface "Data Router" as DROut
+interface "Configuration Layer" as ConfAPI
+interface "Ingestion Layer" as DRAPI
+interface "Materialization Layer" as MatAPI
 
 cloud {
   [External System]
@@ -15,10 +17,8 @@ frame "Management Layer" {
     [Admin Web Panel]
 }
 
-[API] <-up-> ConfOut
 
 frame "Ingestion Layer" {
-  API -left--> DROut
   [Data Router] -left--. [Configuration Layer]
 }
 
@@ -60,6 +60,10 @@ frame "Materialization Layer" {
     [Object Builder] -down--. ConfOut
     node "Postgres Repository" {
         [Materializer Postgres]
+
+        database "Postgres" as Postgres2 {
+            [Materialized Views]
+        }
     }
     [On Demand Materializer] -up--. [Object Builder]
 }
@@ -81,6 +85,7 @@ cloud {
 [Command Service TS] -down-> [Timeseries Data] : REST
 [Command Service Doc] -down-> [Partial Update Engine]: MQ
 [Command Service TS] -down-> [Partial Update Engine]: MQ
+[Materializer Postgres] -down-> [Materialized Views] : SQL
 ANY -down-> [Partial Update Engine]: MQ
 [DB Shrinker Storage] -down-> [Document Data] : SQL
 [Query Service Doc] -up-> [Document Data] : SQL
@@ -92,9 +97,11 @@ ANY -down-> [Partial Update Engine]: MQ
 [Object Builder] -up-> [Query Service TS]: gRPC
 [Object Builder] -up-> ANY : gRPC
 [Object Builder] -up-> [Materializer Postgres]: gRPC
+[API] -up--. MatAPI
+[API] --up--. ConfAPI
+[API] -up--. DRAPI
 User -up-> [Query Router] : REST
 User -up-> [On Demand Materializer]: gRPC
 User -up-> [Admin Web Panel]: HTTP
-User -up-> [API]: GraphQL
-User -up-> [CLI]
+User -up-> [Materialized Views] : SQL
 @enduml
