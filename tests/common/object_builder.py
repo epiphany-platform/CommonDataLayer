@@ -20,18 +20,17 @@ class ObjectBuilder:
 
     def start(self):
         env = {
-            "RUST_LOG": "object_builder=trace,info",
-            "INPUT_PORT": self.input_port,
-            "METRICS_PORT": '50106',
-            "STATUS_PORT": "0",
-            "SCHEMA_REGISTRY_ADDR": self.schema_registry_addr
+            "OBJECT_BUILDER_INPUT_PORT": self.input_port,
+            "OBJECT_BUILDER_SERVICES__SCHEMA_REGISTRY_URL": self.schema_registry_addr,
+            "OBJECT_BUILDER_MONITORING__OTEL_SERVICE_NAME": 'object-builder',
+            "OBJECT_BUILDER_CHUNK_CAPACITY": '100'
         }
 
         if type(self.consumer_config) is KafkaInputConfig:
-            env.update(MQ_METHOD='kafka',
-                       KAFKA_BROKERS=self.consumer_config.brokers,
-                       KAFKA_GROUP_ID=self.consumer_config.group_id,
-                       MQ_SOURCE=self.consumer_config.topic)
+            env.update(OBJECT_BUILDER_COMMUNICATION_METHOD='kafka',
+                       OBJECT_BUILDER_KAFKA__BROKERS=self.consumer_config.brokers,
+                       OBJECT_BUILDER_KAFKA__GROUP_ID=self.consumer_config.group_id,
+                       OBJECT_BUILDER_KAFKA__INGEST_TOPIC=self.consumer_config.topic)
         else:
             raise Exception("Unsupported kind of consumer_config")
 

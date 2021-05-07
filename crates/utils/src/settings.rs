@@ -66,16 +66,20 @@ pub struct GRpcSettings {
     pub address: SocketAddrV4,
 }
 
-#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
 pub struct NotificationSettings {
     /// Kafka topic, AMQP queue or GRPC url
+    #[serde(default)]
     pub destination: String,
+    #[serde(default)]
     pub enabled: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct MonitoringSettings {
+    #[serde(default)]
     pub metrics_port: u16,
+    #[serde(default)]
     pub stats_port: u16,
     pub otel_service_name: String,
 }
@@ -83,6 +87,14 @@ pub struct MonitoringSettings {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct LogSettings {
     pub rust_log: String,
+}
+
+impl Default for LogSettings {
+    fn default() -> Self {
+        Self {
+            rust_log: "info".to_string(),
+        }
+    }
 }
 
 pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> anyhow::Result<T> {

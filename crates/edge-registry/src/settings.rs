@@ -12,10 +12,12 @@ pub struct Settings {
     pub kafka: Option<ConsumerKafkaSettings>,
     pub amqp: Option<AmqpSettings>,
 
+    #[serde(default)]
     pub notifications: NotificationSettings,
 
     pub monitoring: MonitoringSettings,
 
+    #[serde(default)]
     pub log: LogSettings,
 }
 

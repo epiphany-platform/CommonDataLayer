@@ -1,5 +1,6 @@
 input_port = 50107
 schema_registry_url = "https://localhost:50101"
+chunk_capacity = 100
 
 [kafka]
 group_id = "object_builder"

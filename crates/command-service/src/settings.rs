@@ -13,6 +13,7 @@ pub struct Settings {
     pub communication_method: CommunicationMethod,
     pub repository_kind: RepositoryKind,
 
+    #[serde(default = "default_async_task_limit")]
     pub async_task_limit: usize,
 
     // Repository settings - based on repository_kind
@@ -25,19 +26,27 @@ pub struct Settings {
     pub amqp: Option<AmqpSettings>,
     pub grpc: Option<GRpcSettings>,
 
+    #[serde(default)]
     pub notifications: NotificationSettings,
 
     pub listener: ListenerSettings,
 
     pub monitoring: MonitoringSettings,
 
+    #[serde(default)]
     pub log: LogSettings,
+}
+
+const fn default_async_task_limit() -> usize {
+    32
 }
 
 #[derive(Debug, Deserialize)]
 pub struct ListenerSettings {
-    pub ordered_sources: Vec<String>,
-    pub unordered_sources: Vec<String>,
+    #[serde(default)]
+    pub ordered_sources: String,
+    #[serde(default)]
+    pub unordered_sources: String,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -89,12 +98,12 @@ impl Settings {
                     .parallel_consumers(
                         self.listener
                             .ordered_sources
-                            .iter()
-                            .map(|item| item.as_str()),
+                            .split(',')
+                            .filter(|s| !s.is_empty()),
                         self.listener
                             .unordered_sources
-                            .iter()
-                            .map(|item| item.as_str()),
+                            .split(',')
+                            .filter(|s| !s.is_empty()),
                         task_limiter,
                     )
                     .await
@@ -107,12 +116,12 @@ impl Settings {
                 amqp.parallel_consumers(
                     self.listener
                         .ordered_sources
-                        .iter()
-                        .map(|item| item.as_str()),
+                        .split(',')
+                        .filter(|s| !s.is_empty()),
                     self.listener
                         .unordered_sources
-                        .iter()
-                        .map(|item| item.as_str()),
+                        .split(',')
+                        .filter(|s| !s.is_empty()),
                     task_limiter,
                 )
                 .await

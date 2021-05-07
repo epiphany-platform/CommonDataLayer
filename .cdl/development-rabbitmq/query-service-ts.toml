@@ -1,5 +1,8 @@
 input_port = 50102
 
+[victoria_metrics]
+url = "http://localhost:8428/api/v1"
+
 [monitoring]
 otel_service_name = "query-service"
 

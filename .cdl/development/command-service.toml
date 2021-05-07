@@ -7,8 +7,8 @@ enabled = true
 group_id = "postgres_command"
 
 [listener]
-ordered_sources = ["cdl.document.1.data"]
-unordered_sources = ["cdl.document.2.data"]
+ordered_sources = "cdl.document.1.data"
+unordered_sources = "cdl.document.2.data"
 
 [monitoring]
 otel_service_name = "postgres-command"

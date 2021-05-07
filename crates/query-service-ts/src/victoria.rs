@@ -49,7 +49,7 @@ impl VictoriaQuery {
 
         Ok(Self {
             pool,
-            addr: config.url,
+            addr: config.url.join("api/v1")?,
         })
     }
 

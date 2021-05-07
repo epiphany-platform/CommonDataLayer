@@ -15,6 +15,7 @@ pub struct Settings {
 
     pub monitoring: MonitoringSettings,
 
+    #[serde(default)]
     pub log: LogSettings,
 }
 

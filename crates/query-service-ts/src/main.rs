@@ -18,6 +18,7 @@ pub struct Settings {
 
     monitoring: MonitoringSettings,
 
+    #[serde(default)]
     log: LogSettings,
 }
 
