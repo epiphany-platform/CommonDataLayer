@@ -1,0 +1,18 @@
+input_port = 50101
+
+[amqp]
+tag = "schema_registry"
+
+[postgres]
+username = "postgres"
+password = "1234"
+host = "localhost"
+port = "5432"
+dbname = "postgres"
+schema = "cdl"
+
+[monitoring]
+otel_service_name = "schema-registry"
+
+[log]
+rust_log = "info,schema_registry=debug"
