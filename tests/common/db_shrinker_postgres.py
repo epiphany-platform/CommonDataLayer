@@ -11,7 +11,7 @@ class DbShrinkerPostgres:
         self.postgres_config = postgres_config
 
     def run(self):
-        env = self.postgres_config.to_dict()
+        env = self.postgres_config.to_dict(None)
         env.update(
             RUST_LOG = "db_shrinker_postgres=trace,info",
         )

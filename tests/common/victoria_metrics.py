@@ -8,10 +8,10 @@ class VictoriaMetricsConfig:
     def __init__(self, database_url="http://localhost:8428"):
         self.database_url = database_url
 
-    def to_dict(self):
+    def to_dict(self, app):
         return {
-            "VICTORIA_METRICS_OUTPUT_URL": self.database_url,
-            "VICTORIA_QUERY_URL": urljoin(self.database_url, '/api/v1'),
+            f"{app}_REPOSITORY_KIND": 'victoria_metrics',
+            f"{app}_VICTORIA_METRICS__URL": self.database_url,
         }
 
 
