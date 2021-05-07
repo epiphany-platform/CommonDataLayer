@@ -429,12 +429,16 @@ impl SchemaRegistry for SchemaRegistryImpl {
     ) -> Result<Response<Id>, Status> {
         //TODO: Request materializer validation for the options
         let request = request.into_inner();
+        let materializer_options = serde_json::from_str(&request.materializer_options)
+            .map_err(RegistryError::MalformedViewFields)?;
+
+        tracing::debug!(options = ?materializer_options, "Materializer options");
+
         let new_view = NewView {
             schema_id: parse_uuid(&request.schema_id)?,
             name: request.name,
             materializer_address: request.materializer_address,
-            materializer_options: serde_json::from_str(&request.materializer_options)
-                .map_err(RegistryError::MalformedViewFields)?,
+            materializer_options,
             fields: Json(
                 request
                     .fields

@@ -48,7 +48,14 @@ struct ServicesSettings {
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
-struct PartialNotification {
+#[serde(untagged)]
+enum PartialNotification {
+    CommandServiceNotification(CommandServiceNotification),
+}
+
+#[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+struct CommandServiceNotification {
     pub object_id: Uuid,
     pub schema_id: Uuid,
 }
@@ -139,11 +146,11 @@ fn new_notification(
     message: BorrowedMessage,
 ) -> Result<(i32, i64)> {
     utils::tracing::kafka::set_parent_span(&message);
-    let notification: PartialNotification = serde_json::from_str(
-        message
-            .payload_view::<str>()
-            .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??,
-    )?;
+    let payload = message
+        .payload_view::<str>()
+        .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??;
+
+    let notification: PartialNotification = serde_json::from_str(payload)?;
     trace!("new notification {:#?}", notification);
     changes.insert(notification);
     let partition = message.partition();
@@ -165,10 +172,10 @@ async fn process_changes(
 
     let mut requests: HashMap<Uuid, materialization::Request> = Default::default();
 
-    for PartialNotification {
+    for PartialNotification::CommandServiceNotification(CommandServiceNotification {
         object_id,
         schema_id,
-    } in std::mem::take(changes).into_iter()
+    }) in std::mem::take(changes).into_iter()
     {
         let entry = schema_cache.entry(schema_id);
         let view_ids = match entry {

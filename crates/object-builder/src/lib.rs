@@ -8,8 +8,8 @@ use rpc::object_builder::{object_builder_server::ObjectBuilder, Empty, View};
 use rpc::schema_registry::{schema_registry_client::SchemaRegistryClient, types::SchemaType};
 use serde::Serialize;
 use serde_json::Value;
-use std::sync::Arc;
 use std::{collections::HashMap, convert::TryInto, pin::Pin};
+use std::{collections::HashSet, sync::Arc};
 use tonic::transport::Channel;
 use utils::communication::{consumer::ConsumerHandler, message::CommunicationMessage};
 use utils::{
@@ -144,7 +144,7 @@ impl ConsumerHandler for ObjectBuilderImpl {
         let request: materialization::Request = serde_json::from_str(&payload)?;
         let view_id = request.view_id;
 
-        let view = self.get_view(&view_id);
+        let view = self.get_view(view_id);
         let chunks = self.build_materialized_chunks(request);
 
         let (view, mut chunks) = futures::try_join!(view, chunks)?;
@@ -221,7 +221,7 @@ impl ObjectBuilderImpl {
         // TODO: We download view twice.
         // First time here, second time in `build_rows()`
         // Either use some kind of cache or extract `self.get_view() higher`
-        let view = self.get_view(&view_id).await?;
+        let view = self.get_view(view_id).await?;
         tracing::debug!(?view, "View");
 
         let rows = self.build_rows(request).await?;
@@ -250,13 +250,12 @@ impl ObjectBuilderImpl {
     async fn build_rows(&self, request: materialization::Request) -> anyhow::Result<RowStream> {
         let materialization::Request { view_id, schemas } = request;
 
-        let view = self.get_view(&view_id).await?;
+        let view = self.get_view(view_id).await?;
         tracing::debug!(?view, "View");
 
         // TODO: Handle more than one schema
-        // TODO: Handle empty filter for seeding view (maybe in another method)
-        let (schema_id, schema) = schemas.into_iter().next().unwrap();
-        let objects = self.get_objects(schema_id, schema).await?;
+
+        let objects = self.get_objects(view_id, schemas).await?;
 
         let fields_defs: HashMap<String, materialization::FieldDefinition> = view
             .fields
@@ -313,8 +312,48 @@ impl ObjectBuilderImpl {
     #[tracing::instrument(skip(self))]
     async fn get_objects(
         &self,
+        view_id: Uuid,
+        mut schemas: HashMap<Uuid, materialization::Schema>,
+    ) -> anyhow::Result<ObjectStream> {
+        if schemas.is_empty() {
+            let base_schema = self.get_base_schema_for_view(view_id).await?;
+            let base_schema_id: Uuid = base_schema.id.parse()?;
+            schemas.insert(base_schema_id, Default::default());
+        }
+
+        if schemas.len() == 1 {
+            let (schema_id, schema) = schemas.into_iter().next().unwrap();
+
+            self.get_objects_for_ids(schema_id, &schema.object_ids)
+                .await
+        } else {
+            // TODO: Merging more than one schema. Phase II
+            // It cannot be empty, because at least one schema has to be assigned to view.
+            todo!();
+        }
+    }
+
+    async fn get_base_schema_for_view(
+        &self,
+        view_id: Uuid,
+    ) -> anyhow::Result<rpc::schema_registry::Schema> {
+        let schema = self
+            .pool
+            .get()
+            .await?
+            .get_base_schema_of_view(rpc::schema_registry::Id {
+                id: view_id.to_string(),
+            })
+            .await?
+            .into_inner();
+        Ok(schema)
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn get_objects_for_ids(
+        &self,
         schema_id: Uuid,
-        schema: materialization::Schema,
+        object_ids: &HashSet<Uuid>,
     ) -> anyhow::Result<ObjectStream> {
         let schema_meta = self.get_schema_metadata(schema_id).await?;
 
@@ -323,15 +362,15 @@ impl ObjectBuilderImpl {
 
         match schema_type {
             SchemaType::DocumentStorage => {
-                let values = rpc::query_service::query_multiple(
-                    schema
-                        .object_ids
-                        .into_iter()
-                        .map(|id| id.to_string())
-                        .collect(),
-                    query_address,
-                )
-                .await?;
+                let values = if object_ids.is_empty() {
+                    rpc::query_service::query_by_schema(schema_id.to_string(), query_address).await
+                } else {
+                    rpc::query_service::query_multiple(
+                        object_ids.iter().map(|id| id.to_string()).collect(),
+                        query_address,
+                    )
+                    .await
+                }?;
 
                 let stream = Box::pin(values.map_err(anyhow::Error::from).and_then(
                     |object| async move {
@@ -352,7 +391,7 @@ impl ObjectBuilderImpl {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn get_view(&self, view_id: &Uuid) -> anyhow::Result<rpc::schema_registry::View> {
+    async fn get_view(&self, view_id: Uuid) -> anyhow::Result<rpc::schema_registry::View> {
         let view = self
             .pool
             .get()
