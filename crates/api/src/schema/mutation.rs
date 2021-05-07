@@ -1,9 +1,13 @@
-use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
 use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
 use crate::types::data::{InputMessage, ObjectRelations};
 use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
 use crate::types::view::{NewView, View, ViewUpdate};
 use crate::{config::Config, error::Error};
+use crate::{
+    schema::context::{EdgeRegistryPool, SchemaRegistryPool},
+    types::view::FullView,
+    types::IntoQueried,
+};
 use async_graphql::{Context, FieldResult, Object};
 use serde_json::value::to_raw_value;
 use utils::current_timestamp;
@@ -62,7 +66,7 @@ impl MutationRoot {
 
         let id = conn
             .add_view_to_schema(rpc::schema_registry::NewView {
-                schema_id: schema_id.to_string(),
+                base_schema_id: schema_id.to_string(),
                 name: new_view.name.clone(),
                 materializer_address: new_view.materializer_address.clone(),
                 materializer_options: serde_json::to_string(&new_view.materializer_options)?,
@@ -71,6 +75,17 @@ impl MutationRoot {
                     .0
                     .iter()
                     .map(|(k, v)| (k.clone(), v.to_string()))
+                    .collect(),
+                filters: new_view
+                    .filters
+                    .clone()
+                    .map(|f| f.0.into_rpc())
+                    .transpose()?,
+                relations: new_view
+                    .relations
+                    .iter()
+                    .cloned()
+                    .map(|r| r.into_rpc())
                     .collect(),
             })
             .await
@@ -84,6 +99,8 @@ impl MutationRoot {
             materializer_address: new_view.materializer_address,
             materializer_options: new_view.materializer_options,
             fields: new_view.fields,
+            filters: new_view.filters.map(|f| f.0),
+            relations: new_view.relations.into_queried(),
         })
     }
 
@@ -93,7 +110,7 @@ impl MutationRoot {
         context: &Context<'_>,
         id: Uuid,
         update: ViewUpdate,
-    ) -> FieldResult<View> {
+    ) -> FieldResult<FullView> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
         conn.update_view(update.into_rpc(id)?)

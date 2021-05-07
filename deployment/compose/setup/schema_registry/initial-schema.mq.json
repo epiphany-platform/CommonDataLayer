@@ -16,7 +16,10 @@
           },
           "fields": {
             "foo": {
-              "field_name": "a"
+              "simple": {
+                "field_name": "a",
+                "field_type": "string"
+              }
             }
           }
         }

@@ -14,12 +14,19 @@
                     "materializer_options": {},
                     "fields": {
                         "foo": {
-                            "field_name": "name"
+                          "simple": {
+                            "field_name": "name",
+                            "field_type": "string"
+                          }
                         },
                         "department": {
-                            "field_name": "department"
+                          "simple": {
+                            "field_name": "department",
+                            "field_type": "string"
+                          }
                         }
-                    }
+                    },
+                    "relations": []
                 }
             ],
             "definitions": [

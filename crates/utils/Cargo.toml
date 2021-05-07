@@ -32,6 +32,7 @@ tokio-amqp  = "1.0"
 tracing     = "0.1"
 url         = "2.2"
 uuid        = { version = "0.8", features = ["v4", "serde"] }
+async-graphql           = { version = "2.6", features = ["uuid", "opentelemetry", "tracing-futures", "tracinglib"] }
 async-stream            = "0.3"
 futures-util            = "0.3"
 tonic                   = "0.4"

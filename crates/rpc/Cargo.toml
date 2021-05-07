@@ -14,11 +14,12 @@ path = "src/lib.rs"
 tracing_tools           = { path    = "../tracing_tools", features = ["grpc"] }
 
 # Crates.io
-tonic       = "0.4"
-prost       = "0.7"
 anyhow      = "1.0"
-thiserror   = "1.0"
-sqlx        = { version = "0.5", features = ['runtime-tokio-rustls'] }
+derive_more = "0.99"
+prost       = "0.7"
 serde       = { version = "1.0", features = ["derive"] }
+sqlx        = { version = "0.5", features = ['runtime-tokio-rustls'] }
+thiserror   = "1.0"
+tonic       = "0.4"
 async-graphql           = { version = "2.6", features = ["uuid"] }
 futures-util            = "0.3"

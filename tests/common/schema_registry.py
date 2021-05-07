@@ -62,6 +62,6 @@ class SchemaRegistry:
                     metadata=pb2.SchemaMetadata(name=name,
                                                 insert_destination=destination,
                                                 query_address=query,
-                                                schema_type=schema_type),
+                                                schema_type=pb2.SchemaType(schema_type=schema_type)),
                 ))
             return resp.id

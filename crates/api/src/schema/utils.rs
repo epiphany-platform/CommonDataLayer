@@ -5,10 +5,10 @@ use uuid::Uuid;
 use crate::config::{CommunicationMethodConfig, Config};
 use crate::schema::context::SchemaRegistryConn;
 use crate::types::schema::FullSchema;
-use crate::types::view::View;
+use crate::types::view::FullView;
 use utils::communication::publisher::CommonPublisher;
 
-pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<View> {
+pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<FullView> {
     tracing::debug!("get view: {:?}", id);
     let view = conn
         .get_view(rpc::schema_registry::Id { id: id.to_string() })
@@ -16,7 +16,7 @@ pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Vi
         .map_err(rpc::error::schema_registry_error)?
         .into_inner();
 
-    View::from_rpc(view)
+    FullView::from_rpc(view)
 }
 
 pub async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<FullSchema> {

@@ -2804,6 +2804,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-graphql",
+ "derive_more",
  "futures-util",
  "prost",
  "serde",
@@ -3881,6 +3882,7 @@ name = "utils"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-graphql",
  "async-stream",
  "async-trait",
  "clap",
