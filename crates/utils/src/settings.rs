@@ -81,6 +81,7 @@ pub struct MonitoringSettings {
     pub metrics_port: u16,
     #[serde(default)]
     pub stats_port: u16,
+    #[serde(default = "default_otel_service_name")]
     pub otel_service_name: String,
 }
 
@@ -95,6 +96,10 @@ impl Default for LogSettings {
             rust_log: "info".to_string(),
         }
     }
+}
+
+fn default_otel_service_name() -> String {
+    env::current_exe().unwrap().to_string_lossy().to_string()
 }
 
 pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> anyhow::Result<T> {
