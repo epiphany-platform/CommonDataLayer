@@ -1,25 +1,20 @@
 use anyhow::Context;
-use clap::Clap;
 use rpc::query_service::query_service_server::{QueryService, QueryServiceServer};
+use serde::Deserialize;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tonic::transport::Server;
 use utils::metrics;
+use utils::settings::*;
 
-#[derive(Clap, Debug)]
-pub struct Config {
-    #[clap(subcommand)]
-    pub inner: ConfigType,
-    /// Port to listen on
-    #[clap(long, env)]
-    pub input_port: u16,
-    /// Port to listen on for Prometheus requests
-    #[clap(default_value = metrics::DEFAULT_PORT, env)]
-    pub metrics_port: u16,
-}
+#[derive(Debug, Deserialize)]
+pub struct Settings {
+    postgres: PostgresSettings,
+    input_port: u16,
 
-#[derive(Clap, Debug)]
-pub enum ConfigType {
-    Postgres(query_service::psql::PsqlConfig),
+    monitoring: MonitoringSettings,
+
+    #[serde(default)]
+    log: LogSettings,
 }
 
 async fn spawn_server<Q: QueryService>(service: Q, port: u16) -> anyhow::Result<()> {
@@ -36,21 +31,17 @@ async fn spawn_server<Q: QueryService>(service: Q, port: u16) -> anyhow::Result<
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
-    let config: Config = Config::parse();
+    let settings: Settings = load_settings()?;
+    ::utils::tracing::init(settings.log.rust_log.as_str())?;
 
-    tracing::debug!(?config, "Config");
+    tracing::debug!(?settings, "command-line arguments");
 
-    metrics::serve(config.metrics_port);
+    metrics::serve(&settings.monitoring);
 
-    match config.inner {
-        ConfigType::Postgres(psql_config) => {
-            spawn_server(
-                query_service::psql::PsqlQuery::load(psql_config).await?,
-                config.input_port,
-            )
-            .await
-        }
-    }
+    spawn_server(
+        query_service::psql::PsqlQuery::load(settings.postgres).await?,
+        settings.input_port,
+    )
+    .await
 }

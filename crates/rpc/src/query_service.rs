@@ -12,10 +12,7 @@ pub type ObjectStream<Error = ClientError> =
 pub async fn connect(addr: String) -> Result<QueryServiceClient<Channel>, ClientError> {
     connect_inner(addr)
         .await
-        .map_err(|err| ClientError::ConnectionError {
-            service: "query service",
-            source: err,
-        })
+        .map_err(|err| ClientError::ConnectionError { source: err })
 }
 
 async fn connect_inner(
@@ -37,15 +34,13 @@ pub async fn query_multiple(
     let stream = conn
         .query_multiple(ObjectIds { object_ids })
         .await
-        .map_err(|err| ClientError::QueryError {
-            service: "query service",
-            source: err,
-        })?;
+        .map_err(|err| ClientError::QueryError { source: err })?;
 
-    let stream = Box::pin(stream.into_inner().map_err(|err| ClientError::QueryError {
-        service: "query service",
-        source: err,
-    }));
+    let stream = Box::pin(
+        stream
+            .into_inner()
+            .map_err(|err| ClientError::QueryError { source: err }),
+    );
 
     Ok(stream)
 }
@@ -55,15 +50,13 @@ pub async fn query_by_schema(schema_id: String, addr: String) -> Result<ObjectSt
     let stream = conn
         .query_by_schema(SchemaId { schema_id })
         .await
-        .map_err(|err| ClientError::QueryError {
-            service: "query service",
-            source: err,
-        })?;
+        .map_err(|err| ClientError::QueryError { source: err })?;
 
-    let stream = Box::pin(stream.into_inner().map_err(|err| ClientError::QueryError {
-        service: "query service",
-        source: err,
-    }));
+    let stream = Box::pin(
+        stream
+            .into_inner()
+            .map_err(|err| ClientError::QueryError { source: err }),
+    );
 
     Ok(stream)
 }
@@ -73,10 +66,7 @@ pub async fn query_raw(raw_statement: String, addr: String) -> Result<Vec<u8>, C
     let response = conn
         .query_raw(RawStatement { raw_statement })
         .await
-        .map_err(|err| ClientError::QueryError {
-            service: "query service",
-            source: err,
-        })?;
+        .map_err(|err| ClientError::QueryError { source: err })?;
 
     Ok(response.into_inner().value_bytes)
 }

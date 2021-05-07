@@ -1,23 +1,22 @@
-use std::net::{Ipv4Addr, SocketAddrV4};
-use std::sync::{Arc, Mutex};
-
 use anyhow::Context;
 use async_trait::async_trait;
-use clap::Clap;
 use lru_cache::LruCache;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, error, trace};
+use std::sync::{Arc, Mutex};
+use tracing::{error, trace};
 
 use rpc::schema_registry::Id;
+use utils::settings::{
+    load_settings, AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings,
+    MonitoringSettings,
+};
 use utils::{
     abort_on_poison,
     communication::{
         get_order_group_id,
         message::CommunicationMessage,
-        parallel_consumer::{
-            ParallelCommonConsumer, ParallelCommonConsumerConfig, ParallelConsumerHandler,
-        },
+        parallel_consumer::{ParallelCommonConsumer, ParallelConsumerHandler},
         publisher::CommonPublisher,
     },
     current_timestamp,
@@ -29,67 +28,96 @@ use utils::{
 };
 use uuid::Uuid;
 
-#[derive(Clap, Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
 enum CommunicationMethod {
     Kafka,
     Amqp,
-    #[clap(alias = "grpc")]
+    #[serde(rename = "grpc")]
     GRpc,
 }
 
-#[derive(Clap, Deserialize, Debug, Serialize)]
-struct Config {
-    /// The method of communication with external services
-    #[clap(long, env, arg_enum, case_insensitive = true)]
-    pub communication_method: CommunicationMethod,
-    /// Address of Kafka brokers
-    #[clap(long, env)]
-    pub kafka_brokers: Option<String>,
-    /// Group ID of the consumer
-    #[clap(long, env)]
-    pub kafka_group_id: Option<String>,
-    /// Connection URL to AMQP Server
-    #[clap(long, env)]
-    pub amqp_connection_string: Option<String>,
-    /// Consumer tag
-    #[clap(long, env)]
-    pub amqp_consumer_tag: Option<String>,
-    /// Kafka topic or AMQP queue
-    #[clap(long, env)]
-    pub input_source: Option<String>,
-    /// Address of schema registry gRPC API
-    #[clap(long, env)]
-    pub schema_registry_addr: String,
-    /// How many entries the cache can hold
-    #[clap(long, env)]
-    pub cache_capacity: usize,
-    /// Max requests handled in parallel
-    #[clap(long, env, default_value = "128")]
-    pub task_limit: usize,
-    /// Port to listen on for Prometheus requests
-    #[clap(default_value = metrics::DEFAULT_PORT, env)]
-    pub metrics_port: u16,
-    /// Port to listen on when communication method is `grpc`
-    #[clap(long, env)]
-    pub grpc_port: Option<u16>,
+#[derive(Deserialize, Debug, Serialize)]
+struct Settings {
+    communication_method: CommunicationMethod,
+    cache_capacity: usize,
+    async_task_limit: usize,
+
+    kafka: Option<ConsumerKafkaSettings>,
+    amqp: Option<AmqpSettings>,
+    grpc: Option<GRpcSettings>,
+
+    monitoring: MonitoringSettings,
+
+    services: ServicesSettings,
+
+    log: LogSettings,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+struct ServicesSettings {
+    schema_registry_url: String,
+}
+
+impl Settings {
+    pub async fn consumer(&self) -> anyhow::Result<ParallelCommonConsumer> {
+        match (
+            &self.kafka,
+            &self.amqp,
+            &self.grpc,
+            &self.communication_method,
+        ) {
+            (Some(kafka), _, _, CommunicationMethod::Kafka) => {
+                kafka
+                    .parallel_consumer(TaskLimiter::new(self.async_task_limit))
+                    .await
+            }
+            (_, Some(amqp), _, CommunicationMethod::Amqp) => {
+                amqp.parallel_consumer(TaskLimiter::new(self.async_task_limit))
+                    .await
+            }
+            (_, _, Some(grpc), CommunicationMethod::GRpc) => grpc.parallel_consumer().await,
+            _ => anyhow::bail!("Unsupported consumer specification"),
+        }
+    }
+
+    pub async fn producer(&self) -> anyhow::Result<CommonPublisher> {
+        Ok(
+            match (
+                &self.kafka,
+                &self.amqp,
+                &self.grpc,
+                &self.communication_method,
+            ) {
+                (Some(kafka), _, _, CommunicationMethod::Kafka) => {
+                    CommonPublisher::new_kafka(&kafka.brokers).await?
+                }
+                (_, Some(amqp), _, CommunicationMethod::Amqp) => {
+                    CommonPublisher::new_amqp(&amqp.exchange_url).await?
+                }
+                (_, _, Some(_), CommunicationMethod::GRpc) => CommonPublisher::new_grpc().await?,
+                _ => anyhow::bail!("Unsupported consumer specification"),
+            },
+        )
+    }
 }
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
-    let config: Config = Config::parse();
+    let settings: Settings = load_settings()?;
+    ::utils::tracing::init(settings.log.rust_log.as_str())?;
 
-    debug!("Environment {:?}", config);
+    tracing::debug!(?settings, "command-line arguments");
 
-    metrics::serve(config.metrics_port);
+    metrics::serve(&settings.monitoring);
 
-    let consumer = new_consumer(&config).await?;
-    let producer = Arc::new(new_producer(&config).await?);
+    let consumer = settings.consumer().await?;
+    let producer = Arc::new(settings.producer().await?);
 
-    let cache = Arc::new(Mutex::new(LruCache::new(config.cache_capacity)));
-    let schema_registry_addr = Arc::new(config.schema_registry_addr);
+    let cache = Arc::new(Mutex::new(LruCache::new(settings.cache_capacity)));
+    let schema_registry_addr = Arc::new(settings.services.schema_registry_url);
 
     let task_queue = Arc::new(ParallelTaskQueue::default());
 
@@ -199,88 +227,6 @@ impl ParallelConsumerHandler for Handler {
 
         Ok(())
     }
-}
-
-async fn new_producer(config: &Config) -> anyhow::Result<CommonPublisher> {
-    Ok(match config.communication_method {
-        CommunicationMethod::Kafka => {
-            let brokers = config
-                .kafka_brokers
-                .as_ref()
-                .context("kafka brokers were not specified")?;
-            CommonPublisher::new_kafka(brokers).await?
-        }
-        CommunicationMethod::Amqp => {
-            let connection_string = config
-                .amqp_connection_string
-                .as_ref()
-                .context("amqp connection string was not specified")?;
-            CommonPublisher::new_amqp(connection_string).await?
-        }
-        CommunicationMethod::GRpc => CommonPublisher::new_grpc("command_service").await?,
-    })
-}
-
-async fn new_consumer(config: &Config) -> anyhow::Result<ParallelCommonConsumer> {
-    let config = match config.communication_method {
-        CommunicationMethod::Kafka => {
-            let topic = config
-                .input_source
-                .as_ref()
-                .context("kafka topic was not specified")?;
-            let brokers = config
-                .kafka_brokers
-                .as_ref()
-                .context("kafka brokers were not specified")?;
-            let group_id = config
-                .kafka_group_id
-                .as_ref()
-                .context("kafka group was not specified")?;
-
-            debug!("Initializing Kafka consumer");
-
-            ParallelCommonConsumerConfig::Kafka {
-                brokers: &brokers,
-                group_id: &group_id,
-                task_limiter: TaskLimiter::new(config.task_limit),
-                topic,
-            }
-        }
-        CommunicationMethod::Amqp => {
-            let queue_name = config
-                .input_source
-                .as_ref()
-                .context("amqp queue name was not specified")?;
-            let connection_string = config
-                .amqp_connection_string
-                .as_ref()
-                .context("amqp connection string was not specified")?;
-            let consumer_tag = config
-                .amqp_consumer_tag
-                .as_ref()
-                .context("amqp consumer tag was not specified")?;
-
-            debug!("Initializing Amqp consumer");
-
-            ParallelCommonConsumerConfig::Amqp {
-                connection_string: &connection_string,
-                task_limiter: TaskLimiter::new(config.task_limit),
-                consumer_tag: &consumer_tag,
-                queue_name,
-                options: None,
-            }
-        }
-        CommunicationMethod::GRpc => {
-            let port = config
-                .grpc_port
-                .clone()
-                .context("grpc port was not specified")?;
-
-            let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
-            ParallelCommonConsumerConfig::Grpc { addr }
-        }
-    };
-    Ok(ParallelCommonConsumer::new(config).await?)
 }
 
 #[tracing::instrument(skip(producer))]

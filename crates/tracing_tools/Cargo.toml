@@ -16,6 +16,7 @@ kafka = ["rdkafka"]
 http = ["warp", "reqwest", "hyper", "tower-service", "opentelemetry-http"]
 
 [dependencies]
+anyhow      = "1.0"
 hyper       = { version = "0.14", optional = true }
 rdkafka     = { version = "0.26", features = ["cmake-build"], optional = true }
 reqwest     = { version = "0.11", features = ["json"], optional = true }

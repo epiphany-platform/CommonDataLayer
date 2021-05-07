@@ -9,10 +9,7 @@ use tonic::transport::Channel;
 pub async fn connect(addr: String) -> Result<SchemaRegistryClient<Channel>, ClientError> {
     connect_inner(addr)
         .await
-        .map_err(|err| ClientError::ConnectionError {
-            service: "schema registry",
-            source: err,
-        })
+        .map_err(|err| ClientError::ConnectionError { source: err })
 }
 
 async fn connect_inner(

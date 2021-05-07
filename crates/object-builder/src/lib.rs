@@ -1,4 +1,3 @@
-use crate::args::Args;
 use anyhow::Context;
 use async_trait::async_trait;
 use bb8::{Pool, PooledConnection};
@@ -19,7 +18,7 @@ use utils::{
 };
 use uuid::Uuid;
 
-pub mod args;
+pub mod settings;
 
 #[derive(Clone)]
 pub struct ObjectBuilderImpl {
@@ -58,7 +57,7 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
         conn.ping(rpc::schema_registry::Empty {})
             .await
-            .map_err(rpc::error::schema_registry_error)?;
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
 
         Ok(())
     }
@@ -84,15 +83,13 @@ struct RowDefinition {
 }
 
 impl ObjectBuilderImpl {
-    pub async fn new(args: &Args) -> anyhow::Result<Self> {
+    pub async fn new(schema_registry_addr: &str, chunk_capacity: usize) -> anyhow::Result<Self> {
         let pool = Pool::builder()
             .build(SchemaRegistryConnectionManager {
-                address: args.schema_registry_addr.clone(),
+                address: schema_registry_addr.to_string(),
             })
             .await
             .unwrap();
-
-        let chunk_capacity = args.chunk_capacity;
 
         Ok(Self {
             pool,

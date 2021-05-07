@@ -1,20 +1,18 @@
-use std::time;
-
 use crate::communication::resolution::Resolution;
 use crate::output::OutputPlugin;
 use bb8::Pool;
 use bb8_postgres::tokio_postgres::types::Json;
 use bb8_postgres::tokio_postgres::{Config, NoTls};
 use bb8_postgres::PostgresConnectionManager;
-pub use config::PostgresOutputConfig;
 pub use error::Error;
 use serde_json::Value;
+use std::time;
 use tracing::{error, trace};
 use utils::message_types::BorrowedInsertMessage;
 use utils::metrics::{self, counter};
 use utils::psql::validate_schema;
+use utils::settings::PostgresSettings;
 
-pub mod config;
 pub mod error;
 
 pub struct PostgresOutputPlugin {
@@ -23,7 +21,7 @@ pub struct PostgresOutputPlugin {
 }
 
 impl PostgresOutputPlugin {
-    pub async fn new(config: PostgresOutputConfig) -> Result<Self, Error> {
+    pub async fn new(config: PostgresSettings) -> Result<Self, Error> {
         let mut pg_config = Config::new();
         pg_config
             .user(&config.username)

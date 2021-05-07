@@ -1,9 +1,9 @@
 use crate::schema::context::{EdgeRegistryPool, SchemaRegistryPool};
-use crate::schema::utils::{connect_to_cdl_input, get_schema, get_view};
+use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{InputMessage, ObjectRelations};
 use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
 use crate::types::view::{NewView, View, ViewUpdate};
-use crate::{config::Config, error::Error};
+use crate::{error::Error, settings::Settings};
 use async_graphql::{Context, FieldResult, Object};
 use serde_json::value::to_raw_value;
 use utils::current_timestamp;
@@ -74,7 +74,7 @@ impl MutationRoot {
                     .collect(),
             })
             .await
-            .map_err(rpc::error::schema_registry_error)?
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?
             .into_inner()
             .id;
 
@@ -98,7 +98,7 @@ impl MutationRoot {
 
         conn.update_view(update.into_rpc(id)?)
             .await
-            .map_err(rpc::error::schema_registry_error)?;
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
 
         get_view(&mut conn, id).await
     }
@@ -114,7 +114,7 @@ impl MutationRoot {
 
         conn.update_schema(update.into_rpc(id))
             .await
-            .map_err(rpc::error::schema_registry_error)?;
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
         get_schema(&mut conn, id).await
     }
 
@@ -124,7 +124,7 @@ impl MutationRoot {
         context: &Context<'_>,
         message: InputMessage,
     ) -> FieldResult<bool> {
-        let publisher = connect_to_cdl_input(context.data_unchecked::<Config>()).await?;
+        let publisher = context.data_unchecked::<Settings>().publisher().await?;
         let payload = serde_json::to_vec(&OwnedInsertMessage {
             object_id: message.object_id,
             schema_id: message.schema_id,
@@ -134,7 +134,7 @@ impl MutationRoot {
 
         publisher
             .publish_message(
-                &context.data_unchecked::<Config>().insert_destination,
+                &context.data_unchecked::<Settings>().insert_destination,
                 "",
                 payload,
             )
@@ -149,7 +149,7 @@ impl MutationRoot {
         context: &Context<'_>,
         messages: Vec<InputMessage>,
     ) -> FieldResult<bool> {
-        let publisher = connect_to_cdl_input(context.data_unchecked::<Config>()).await?;
+        let publisher = context.data_unchecked::<Settings>().publisher().await?;
         let order_group_id = Uuid::new_v4().to_string();
 
         for message in messages {
@@ -162,7 +162,7 @@ impl MutationRoot {
 
             publisher
                 .publish_message(
-                    &context.data_unchecked::<Config>().insert_destination,
+                    &context.data_unchecked::<Settings>().insert_destination,
                     &order_group_id,
                     payload,
                 )

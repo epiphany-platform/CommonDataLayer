@@ -1,5 +1,4 @@
 use crate::communication::resolution::Resolution;
-use crate::output::victoria_metrics::config::VictoriaMetricsConfig;
 use crate::output::OutputPlugin;
 use fnv::FnvHashMap;
 use reqwest::Url;
@@ -12,9 +11,8 @@ use tracing::error;
 use url::ParseError;
 use utils::message_types::BorrowedInsertMessage;
 use utils::metrics::{self, counter};
+use utils::settings::VictoriaMetricsSettings;
 use uuid::Uuid;
-
-pub mod config;
 
 pub struct VictoriaMetricsOutputPlugin {
     client: Client,
@@ -34,7 +32,7 @@ pub enum Error {
 }
 
 impl VictoriaMetricsOutputPlugin {
-    pub fn new(config: VictoriaMetricsConfig) -> Result<VictoriaMetricsOutputPlugin, Error> {
+    pub fn new(config: VictoriaMetricsSettings) -> Result<VictoriaMetricsOutputPlugin, Error> {
         let client = Client::new();
 
         Ok(VictoriaMetricsOutputPlugin {

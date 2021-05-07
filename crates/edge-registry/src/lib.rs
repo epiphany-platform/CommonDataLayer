@@ -1,5 +1,4 @@
 use anyhow::{Context, Error};
-use args::RegistryConfig;
 use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::{Config, NoTls};
 use bb8_postgres::{bb8, PostgresConnectionManager};
@@ -24,10 +23,11 @@ use tracing::{debug, error, trace};
 use utils::communication::consumer::ConsumerHandler;
 use utils::communication::message::CommunicationMessage;
 use utils::metrics::{self, counter};
-use utils::notification::NotificationSender;
+use utils::notification::NotificationPublisher;
+use utils::settings::PostgresSettings;
 use uuid::Uuid;
 
-pub mod args;
+pub mod settings;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AddEdgesMessage {
@@ -40,21 +40,21 @@ pub struct AddEdgesMessage {
 pub struct EdgeRegistryImpl {
     pool: Pool<PostgresConnectionManager<NoTls>>,
     schema: String,
-    notification_sender: Arc<Mutex<NotificationSender<AddEdgesMessage>>>,
+    notification_sender: Arc<Mutex<NotificationPublisher<AddEdgesMessage>>>,
 }
 
 impl EdgeRegistryImpl {
     pub async fn new(
-        config: &RegistryConfig,
-        notification_sender: Arc<Mutex<NotificationSender<AddEdgesMessage>>>,
+        settings: &PostgresSettings,
+        notification_sender: Arc<Mutex<NotificationPublisher<AddEdgesMessage>>>,
     ) -> anyhow::Result<Self> {
         let mut pg_config = Config::new();
         pg_config
-            .user(&config.postgres_username)
-            .password(&config.postgres_password)
-            .host(&config.postgres_host)
-            .port(config.postgres_port)
-            .dbname(&config.postgres_dbname);
+            .user(&settings.username)
+            .password(&settings.password)
+            .host(&settings.host)
+            .port(settings.port)
+            .dbname(&settings.dbname);
         let manager = PostgresConnectionManager::new(pg_config, NoTls);
         let pool = bb8::Pool::builder()
             .max_size(20)
@@ -64,7 +64,7 @@ impl EdgeRegistryImpl {
 
         Ok(Self {
             pool,
-            schema: config.postgres_schema.clone(),
+            schema: settings.schema.clone(),
             notification_sender,
         })
     }

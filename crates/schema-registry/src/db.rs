@@ -10,8 +10,8 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 use tracing::{trace, warn};
 use uuid::Uuid;
 
-use crate::config::Config;
 use crate::error::{RegistryError, RegistryResult};
+use crate::settings::Settings;
 use crate::types::schema::{FullSchema, NewSchema, Schema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{NewView, View, ViewUpdate};
 use crate::types::DbExport;
@@ -28,20 +28,20 @@ pub struct SchemaRegistryDb {
 }
 
 impl SchemaRegistryDb {
-    pub async fn new(config: &Config) -> RegistryResult<Self> {
+    pub async fn new(config: &Settings) -> RegistryResult<Self> {
         let options = PgConnectOptions::new()
-            .host(&config.db_host)
-            .port(config.db_port)
-            .username(&config.db_username)
-            .password(&config.db_password)
-            .database(&config.db_name);
+            .host(&config.postgres.host)
+            .port(config.postgres.port)
+            .username(&config.postgres.username)
+            .password(&config.postgres.password)
+            .database(&config.postgres.dbname);
 
         Ok(Self {
             pool: PgPoolOptions::new()
                 .connect_with(options)
                 .await
                 .map_err(RegistryError::ConnectionError)?,
-            db_schema: config.db_schema.clone(),
+            db_schema: config.postgres.schema.clone(),
         })
     }
 

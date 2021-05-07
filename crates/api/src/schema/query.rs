@@ -12,7 +12,7 @@ use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
 use crate::types::schema::{Definition, FullSchema};
 use crate::types::view::View;
 use crate::types::view::{MaterializedView, RowDefinition};
-use crate::{config::Config, types::view::OnDemandViewRequest};
+use crate::{settings::Settings, types::view::OnDemandViewRequest};
 use rpc::materializer_ondemand::OnDemandRequest;
 use rpc::schema_registry::types::SchemaType;
 use utils::tracing::http::RequestBuilderTracingExt;
@@ -117,7 +117,10 @@ impl QueryRoot {
         let bytes = client
             .post(&format!(
                 "{}/single/{}",
-                &context.data_unchecked::<Config>().query_router_addr,
+                &context
+                    .data_unchecked::<Settings>()
+                    .services
+                    .query_router_url,
                 object_id
             ))
             .header("SCHEMA_ID", schema_id.to_string())
@@ -149,7 +152,10 @@ impl QueryRoot {
         let values: HashMap<Uuid, serde_json::Value> = client
             .get(&format!(
                 "{}/multiple/{}",
-                &context.data_unchecked::<Config>().query_router_addr,
+                &context
+                    .data_unchecked::<Settings>()
+                    .services
+                    .query_router_url,
                 id_list
             ))
             .header("SCHEMA_ID", schema_id.to_string())
@@ -180,7 +186,10 @@ impl QueryRoot {
         let values: HashMap<Uuid, serde_json::Value> = client
             .get(&format!(
                 "{}/schema",
-                &context.data_unchecked::<Config>().query_router_addr,
+                &context
+                    .data_unchecked::<Settings>()
+                    .services
+                    .query_router_url,
             ))
             .header("SCHEMA_ID", schema_id.to_string())
             .inject_span()

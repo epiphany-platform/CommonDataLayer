@@ -2,6 +2,7 @@ use opentelemetry::global;
 use opentelemetry::sdk::propagation::TraceContextPropagator;
 use tokio::runtime::Handle;
 use tracing_subscriber::prelude::*;
+use tracing_subscriber::EnvFilter;
 
 #[cfg(feature = "grpc")]
 pub mod grpc;
@@ -10,7 +11,7 @@ pub mod http;
 #[cfg(feature = "kafka")]
 pub mod kafka;
 
-pub fn init() {
+pub fn init<'a>(rust_log: impl Into<Option<&'a str>>) -> anyhow::Result<()> {
     global::set_text_map_propagator(TraceContextPropagator::new());
 
     let opentelemetry = Handle::try_current()
@@ -24,10 +25,16 @@ pub fn init() {
 
     let fmt = tracing_subscriber::fmt::layer();
 
+    let filter = rust_log
+        .into()
+        .map(EnvFilter::new)
+        .unwrap_or_else(EnvFilter::from_default_env);
+
     tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::from_default_env())
+        .with(filter)
         .with(fmt)
         .with(opentelemetry)
-        .try_init()
-        .unwrap();
+        .try_init()?;
+
+    Ok(())
 }
