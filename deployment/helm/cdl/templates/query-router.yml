@@ -24,13 +24,13 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/query-router"]
         env:
-        - name: SCHEMA_REGISTRY_ADDR
+        - name: QUERY_ROUTER_SERVICES__SCHEMA_REGISTRY_URL
           value: "http://{{ .Release.Name }}-schema-registry:6400"
-        - name: CACHE_CAPACITY
+        - name: QUERY_ROUTER_CACHE_CAPACITY
           value: "500"
-        - name: INPUT_PORT
+        - name: QUERY_ROUTER_INPUT_PORT
           value: "6401"
-        - name: RUST_LOG
+        - name: QUERY_ROUTER_LOG__RUST_LOG
           value: "info,query_router=debug"
         ports:
         - containerPort: 51805

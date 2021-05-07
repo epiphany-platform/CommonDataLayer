@@ -27,35 +27,39 @@ spec:
       - name: {{ .Release.Name }}-victoria-metrics-command-service
         image: "{{ .Values.global.imageRepositoryPath }}cdl-command-service:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/command-service","victoria-metrics"]
+        command: ["/bin/command-service"]
         env:
+        - name: COMMAND_SERVICE_REPOSITORY_KIND
+          value: 'victoria-metrics'
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: COMMUNICATION_METHOD
+        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
           value: "kafka"
-        - name: KAFKA_BROKERS
+        - name: COMMAND_SERVICE_KAFKA__BROKERS
           value: {{ .Values.global.kafkaBrokers }}
-        - name: KAFKA_GROUP_ID
+        - name: COMMAND_SERVICE_KAFKA__GROUP_ID
           value: "cdl-victoria-command-service"
         {{- else if eq .Values.global.communicationMethod "amqp" }}
-        - name: COMMUNICATION_METHOD
+        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
           value: "amqp"
-        - name: AMQP_CONNECTION_STRING
+        - name: COMMAND_SERVICE_AMQP__EXCHANGE_URL
           value: {{ .Values.global.amqpConnectionString }}
-        - name: AMQP_CONSUMER_TAG
+        - name: COMMAND_SERVICE_AMQP__TAG
           value: "cdl-victoria-command-service"
         {{- else }}
-        - name: COMMUNICATION_METHOD
+        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
           value: "grpc"
-        - name: GRPC_PORT
-          value: "6400"
+        - name: COMMAND_SERVICE_GRPC__ADDRESS
+          value: "0.0.0.0:6400"
         {{- end }}
-        - name: ORDERED_SOURCES
+        - name: COMMAND_SERVICE_LISTENER__ORDERED_SOURCES
           value: {{ .Values.inputSource }}
-        - name: VICTORIA_METRICS_OUTPUT_URL
+        - name: COMMAND_SERVICE_VICTORIA_METRICS__URL
           value: {{ .Values.outputURL }}
-        - name: REPORT_DESTINATION
+        - name: COMMAND_SERIVCE_NOTIFICATIONS__DESTINATION
           value: {{ .Values.global.reportDestination }}
-        - name: RUST_LOG
+        - name: COMMAND_SERIVCE_NOTIFICATIONS__ENABLED
+          value: 'true'
+        - name: COMMAND_SERVICE_LOG__RUST_LOG
           value: "info,command_service=debug"
         ports:
         - containerPort: 51805

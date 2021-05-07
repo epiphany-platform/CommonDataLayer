@@ -24,24 +24,30 @@ spec:
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           command: ["/bin/object-builder"]
           env:
-            - name: INPUT_PORT
+            - name: OBJECT_BUILDER__INPUT_PORT
               value: "{{ .Values.objectBuilder.inputPort }}"
             {{- if eq .Values.global.communicationMethod "kafka" }}
-            - name: KAFKA_BROKERS
+            - name: OBJECT_BUILDER_COMMUNICATION_METHOD
+              value: 'kafka'
+            - name: OBJECT_BUILDER_KAFKA__BROKERS
               value: {{ .Values.global.kafkaBrokers }}
-            - name: KAFKA_GROUP_ID
+            - name: OBJECT_BUILDER_KAFKA__GROUP_ID
               value: "object-builder"
-            {{- else if eq .Values.global.communicationMethod "amqp" }}
-            - name: AMQP_CONNECTION_STRING
-              value: {{ .Values.global.amqpConnectionString }}
-            - name: AMQP_CONSUMER_TAG
-              value: "object-builder"
-            {{- end }}
-            - name: MQ_SOURCE
+            - name: OBJECT_BUILDER_KAFKA_INGEST_TOPIC
               value: {{ .Values.global.objectBuilderInput }}
-            - name: SCHEMA_REGISTRY_ADDR
+            {{- else if eq .Values.global.communicationMethod "amqp" }}
+            - name: OBJECT_BUILDER_COMMUNICATION_METHOD
+              value: 'amqp'
+            - name: OBJECT_BUILDER_AMQP__EXCHANGE_URL
+              value: {{ .Values.global.amqpConnectionString }}
+            - name: OBJECT_BUILDER_AMQP__TAG
+              value: "object-builder"
+            - name: OBJECT_BUILDER_AMQP__INGEST_QUEUE
+              value: {{ .Values.global.objectBuilderInput }}
+            {{- end }}
+            - name: OBJECT_BUILDER_SERVICES_SCHEMA_REGISTRY_URL
               value: "http://{{ .Release.Name }}-schema-registry:6400"
-            - name: RUST_LOG
+            - name: OBJECT_BUILDER_LOG__RUST_LOG
               value: "info,object_builder=debug"
           ports:
             - containerPort: 51805

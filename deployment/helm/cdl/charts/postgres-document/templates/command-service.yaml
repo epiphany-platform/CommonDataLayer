@@ -26,45 +26,49 @@ spec:
       - name: cdl-postgres-command-service
         image: "{{ .Values.global.imageRepositoryPath }}cdl-command-service:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/command-service","postgres"]
+        command: ["/bin/command-service"]
         env:
+        - name: COMMAND_SERVICE_REPOSITORY_KIND
+          value: 'postgres'
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: COMMUNICATION_METHOD
+        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
           value: "kafka"
-        - name: KAFKA_BROKERS
+        - name: COMMAND_SERVICE_KAFKA__BROKERS
           value: {{ .Values.global.kafkaBrokers }}
-        - name: KAFKA_GROUP_ID
+        - name: COMMAND_SERVICE_KAFKA__GROUP_ID
           value: "cdl-postgres-command-service"
         {{- else if eq .Values.global.communicationMethod "amqp" }}
-        - name: COMMUNICATION_METHOD
+        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
           value: "amqp"
-        - name: AMQP_CONNECTION_STRING
+        - name: COMMAND_SERVICE_AMQP__EXCHANGE_URL
           value: {{ .Values.global.amqpConnectionString }}
-        - name: AMQP_CONSUMER_TAG
+        - name: COMMAND_SERVICE_AMQP__TAG
           value: "cdl-postgres-command-service"
         {{- else }}
-        - name: COMMUNICATION_METHOD
+        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
           value: "grpc"
-        - name: GRPC_PORT
-          value: "6400"
+        - name: COMMAND_SERVICE_GRPC__ADDRESS
+          value: "0.0.0.0:6400"
         {{- end }}
-        - name: ORDERED_SOURCES
+        - name: COMMAND_SERVICE_LISTENER__ORDERED_SOURCES
           value: {{ .Values.inputSource }}
-        - name: POSTGRES_USERNAME
+        - name: COMMAND_SERVICE_POSTGRES__USERNAME
           value: {{ .Values.postgresUsername }}
-        - name: POSTGRES_PASSWORD
+        - name: COMMAND_SERVICE_POSTGRES__PASSWORD
           value: {{ .Values.postgresPassword }}
-        - name: POSTGRES_HOST
+        - name: COMMAND_SERVICE_POSTGRES__HOST
           value: {{ .Values.postgresHost }}
-        - name: POSTGRES_PORT
+        - name: COMMAND_SERVICE_POSTGRES__PORT
           value: "{{ .Values.postgresPort }}"
-        - name: POSTGRES_DBNAME
+        - name: COMMAND_SERVICE_POSTGRES__DBNAME
           value: {{ .Values.postgresDbname }}
-        - name: POSTGRES_SCHEMA
+        - name: COMMAND_SERVICE_POSTGRES__SCHEMA
           value: {{ .Values.postgresSchema }}
-        - name: REPORT_DESTINATION
+        - name: COMMAND_SERIVCE_NOTIFICATIONS__DESTINATION
           value: {{ .Values.global.reportDestination }}
-        - name: RUST_LOG
+        - name: COMMAND_SERIVCE_NOTIFICATIONS__ENABLED
+          value: 'true'
+        - name: COMMAND_SERVICE_LOG__RUST_LOG
           value: "info,command_service=debug"
         ports:
         - containerPort: 51805

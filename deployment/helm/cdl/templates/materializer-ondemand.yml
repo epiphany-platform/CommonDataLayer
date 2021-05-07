@@ -24,11 +24,11 @@ spec:
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           command: ["/bin/materializer-ondemand"]
           env:
-            - name: INPUT_PORT
+            - name: MATERIALIZER_ONDEMAND_INPUT_PORT
               value: "{{ .Values.materializerOnDemand.inputPort }}"
-            - name: OBJECT_BUILDER_ADDR
+            - name: MATERIALIZER_ONDEMAND_SERVICES__OBJECT_BUILDER_URL
               value: "http://{{ .Release.Name }}-object-builder:{{ .Values.objectBuilder.inputPort }}"
-            - name: RUST_LOG
+            - name: MATERIALIZ_ONDEMAND_LOG__RUST_LOG
               value: "info,materializer_ondemand=debug"
           ports:
             - containerPort: 51805
