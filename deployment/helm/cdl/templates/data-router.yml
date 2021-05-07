@@ -24,33 +24,35 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/data-router"]
         env:
-        - name: INPUT_SOURCE
-          value: "{{ .Values.dataRouter.inputSource }}"
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: COMMUNICATION_METHOD
+        - name: DATA_ROUTER_COMMUNICATION_METHOD
           value: "kafka"
-        - name: KAFKA_BROKERS
+        - name: DATA_ROUTER_KAFKA__BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
-        - name: KAFKA_GROUP_ID
+        - name: DATA_ROUTER_KAFKA__GROUP_ID
           value: "data-router"
-        {{- else if eq .Values.global.communicationMethod "amqp" }}
-        - name: COMMUNICATION_METHOD
+        - name: DATA_ROUTER_KAFKA__INGEST_TOPIC
+          value: "{{ .Values.dataRouter.inputSource }}"
+          {{- else if eq .Values.global.communicationMethod "amqp" }}
+        - name: DATA_ROUTER_COMMUNICATION_METHOD
           value: "amqp"
-        - name: AMQP_CONNECTION_STRING
+        - name: DATA_ROUTER_AMQP__EXCHANGE_URL
           value: "{{ .Values.global.amqpConnectionString }}"
-        - name: AMQP_CONSUMER_TAG
+        - name: DATA_ROUTER_AMQP__TAG
           value: "data-router"
+        - name: DATA_ROUTER_DATA_ROUTER_AMQP__INGEST_QUEUE
+          value: "{{ .Values.dataRouter.inputSource }}"
         {{- else }}
-        - name: COMMUNICATION_METHOD
+        - name: DATA_ROUTER_COMMUNICATION_METHOD
           value: "grpc"
-        - name: GRPC_PORT
-          value: "6402"
+        - name: DATA_ROUTER_GRPC__ADDRESS
+          value: "0.0.0.0:6402"
         {{- end }}
-        - name: SCHEMA_REGISTRY_ADDR
+        - name: DATA_ROUTER_SERVICES__SCHEMA_REGISTRY_URL
           value: "http://{{ .Release.Name }}-schema-registry:6400"
-        - name: CACHE_CAPACITY
+        - name: DATA_ROUTER_CACHE_CAPACITY
           value: "500"
-        - name: RUST_LOG
+        - name: DATA_ROUTER_LOG__RUST_LOG
           value: "info,data_router=debug"
         ports:
         - containerPort: 51805

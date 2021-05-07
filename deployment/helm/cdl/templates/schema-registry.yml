@@ -25,45 +25,35 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/schema-registry"]
         env:
-        - name: INPUT_PORT
+        - name: SCHEMA_REGISTRY_INPUT_PORT
           value: "6400"
-        - name: POSTGRES_USERNAME
+        - name: SCHEMA_REGISTRY_POSTGRES__USERNAME
           value: {{ .Values.schemaRegistry.postgresUsername }}
-        - name: POSTGRES_PASSWORD
+        - name: SCHEMA_REGISTRY_POSTGRES__PASSWORD
           value: {{ .Values.schemaRegistry.postgresPassword }}
-        - name: POSTGRES_HOST
+        - name: SCHEMA_REGISTRY_POSTGRES__HOST
           value: {{ .Values.schemaRegistry.postgresHost }}
-        - name: POSTGRES_PORT
+        - name: SCHEMA_REGISTRY_POSTGRES__PORT
           value: "{{ .Values.schemaRegistry.postgresPort }}"
-        - name: POSTGRES_DBNAME
+        - name: SCHEMA_REGISTRY_POSTGRES__DBNAME
           value: {{ .Values.schemaRegistry.postgresDbname }}
-        - name: POSTGRES_SCHEMA
+        - name: SCHEMA_REGISTRY_POSTGRES__SCHEMA
           value: {{ .Values.schemaRegistry.postgresSchema }}
-        - name: REPLICATION_ROLE
-          value: "slave"
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: COMMUNICATION_METHOD
+        - name: SCHEMA_REGISTRY_COMMUNICATION_METHOD
           value: "kafka"
-        - name: KAFKA_BROKERS
+        - name: SCHEMA_REGISTRY_KAFKA__BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
-        - name: KAFKA_GROUP_ID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
         {{- else if eq .Values.global.communicationMethod "amqp" }}
-        - name: COMMUNICATION_METHOD
+        - name: SCHEMA_REGISTRY_COMMUNICATION_METHOD
           value: "amqp"
-        - name: AMQP_CONNECTION_STRING
+        - name: SCHEMA_REGISTRY_AMQP__EXCHANGE_URL
           value: "{{ .Values.global.amqpConnectionString }}"
-        - name: AMQP_CONSUMER_TAG
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
         {{- else }}
-        - name: COMMUNICATION_METHOD
+        - name: SCHEMA_REGISTRY_COMMUNICATION_METHOD
           value: "grpc"
         {{- end }}
-        - name: RUST_LOG
+        - name: SCHEMA_REGISTRY_LOG__RUST_LOG
           value: "info,schema_registry=debug"
         ports:
         - containerPort: 51805

@@ -24,19 +24,23 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/partial-update-engine"]
         env:
-        - name: SCHEMA_REGISTRY_ADDR
+        - name: PARTIAL_UPDATE_ENGINE_COMMUNICATION_METHOD
+          value: 'kafka'
+        - name: PARTIAL_UPDATE_ENGINE_SERVICES__SCHEMA_REGISTRY_URL
           value: "http://{{ .Release.Name }}-schema-registry:6400"
-        - name: KAFKA_BROKERS
+        - name: PARTIAL_UPDATE_ENGINE_KAFKA__BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
-        - name: KAFKA_GROUP_ID
-          value: "partial-update-engine"
-        - name: NOTIFICATION_TOPIC
-          value: "{{ .Values.global.reportDestination }}"
-        - name: OBJECT_BUILDER_TOPIC
+        - name: PARTIAL_UPDATE_ENGINE_KAFKA__EGEST_TOPIC
           value: "{{ .Values.global.objectBuilderInput }}"
-        - name: SLEEP_PHASE_LENGTH
+        - name: PARTIAL_UPDATE_ENGINE_NOTIFICATION_CONSUMER__BROKERS
+          value: "{{ .Values.global.kafkaBrokers }}"
+        - name: PARTIAL_UPDATE_ENGINE_NOTIFICATION_CONSUMER__SOURCE
+          value: "{{ .Values.global.reportDestination }}"
+        - name: PARTIAL_UPDATE_ENGINE_NOTIFICATION_CONSUMER__GROUP_ID
+          value: "partial-update-engine"
+        - name: PARTIAL_UPDATE_ENGINE_SLEEP_PHASE_LENGTH
           value: "{{ .Values.partialUpdateEngine.sleepPhaseLength }}"
-        - name: RUST_LOG
+        - name: PARTIAL_UPDATE_ENGINE_LOG__RUST_LOG
           value: "info,partial_update_engine=debug"
         ports:
         - containerPort: 51805
