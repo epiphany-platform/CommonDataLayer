@@ -21,7 +21,7 @@ clap        = "3.0.0-beta.2"
 hyper       = "0.14"
 lapin       = "1.7"
 lazy_static = "1.4"
-metrics     = { version = "0.14", features = ["std"] }
+metrics     = { version = "0.15", features = ["std"] }
 rdkafka     = { version = "0.26", features = ["cmake-build"] }
 reqwest     = { version = "0.11", features = ["json"] }
 serde       = { version = "1.0", features = ["derive"] }
@@ -32,7 +32,6 @@ tokio-amqp  = "1.0"
 tracing     = "0.1"
 url         = "2.2"
 uuid        = { version = "0.8", features = ["v4", "serde"] }
-vec_map     = "0.8"
 async-stream            = "0.3"
 futures-util            = "0.3"
 tonic                   = "0.4"
