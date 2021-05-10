@@ -20,7 +20,6 @@ utils       = { path = "../utils" }
 
 # Crates.io
 anyhow      = "1.0"
-clap        = "3.0.0-beta.2"
 bb8         = "0.7"
 reqwest     = { version = "0.11", features = ["json"] }
 serde       = { version = "1.0", features = ["derive"] }

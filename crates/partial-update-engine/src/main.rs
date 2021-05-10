@@ -4,7 +4,6 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use clap::Clap;
 use rdkafka::{
     consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
     message::{BorrowedMessage, OwnedHeaders},
@@ -14,36 +13,38 @@ use rdkafka::{
 use serde::{Deserialize, Serialize};
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
-use tracing::{debug, trace, Instrument};
+use tracing::{trace, Instrument};
+use utils::settings::*;
 use utils::{
     metrics::{self},
     types::materialization,
 };
 use uuid::Uuid;
 
-#[derive(Clap, Deserialize, Debug, Serialize)]
-struct Config {
-    /// Address of Kafka brokers
-    #[clap(long, env)]
-    pub kafka_brokers: String,
-    /// Group ID of the consumer
-    #[clap(long, env)]
-    pub kafka_group_id: String,
-    /// Kafka topic for notifications
-    #[clap(long, env)]
-    pub notification_topic: String,
-    /// Kafka topic for object builder input
-    #[clap(long, env)]
-    pub object_builder_topic: String,
-    /// Address of schema registry gRPC API
-    #[clap(long, env)]
-    pub schema_registry_addr: String,
-    /// Port to listen on for Prometheus requests
-    #[clap(default_value = metrics::DEFAULT_PORT, env)]
-    pub metrics_port: u16,
-    /// Duration of sleep phase in seconds
-    #[clap(long, env)]
-    pub sleep_phase_length: u64,
+#[derive(Deserialize, Debug, Serialize)]
+struct Settings {
+    communication_method: CommunicationMethod,
+    sleep_phase_length: u64,
+
+    kafka: PublisherKafkaSettings,
+    notification_consumer: NotificationConsumerSettings,
+    services: ServicesSettings,
+
+    monitoring: MonitoringSettings,
+
+    log: LogSettings,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+struct NotificationConsumerSettings {
+    #[serde(flatten)]
+    pub kafka: ConsumerKafkaSettings,
+    pub source: String,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+struct ServicesSettings {
+    pub schema_registry_url: String,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
@@ -62,28 +63,34 @@ struct CommandServiceNotification {
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
-    let config: Config = Config::parse();
+    let settings: Settings = load_settings()?;
+    ::utils::tracing::init(
+        settings.log.rust_log.as_str(),
+        settings.monitoring.otel_service_name.as_str(),
+    )?;
 
-    debug!("Environment {:?}", config);
+    tracing::debug!(?settings, "command-line arguments");
 
-    metrics::serve(config.metrics_port);
+    metrics::serve(&settings.monitoring);
 
     let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
-        .set("group.id", &config.kafka_group_id)
-        .set("bootstrap.servers", &config.kafka_brokers)
+        .set("group.id", &settings.notification_consumer.kafka.group_id)
+        .set(
+            "bootstrap.servers",
+            &settings.notification_consumer.kafka.brokers,
+        )
         .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
         .create()
         .context("Consumer creation failed")?;
-    let topics = [config.notification_topic.as_str()];
+    let topics = [settings.notification_consumer.source.as_str()];
 
     rdkafka::consumer::Consumer::subscribe(&consumer, &topics)
         .context("Can't subscribe to specified topics")?;
 
     let producer = ClientConfig::new()
-        .set("bootstrap.servers", &config.kafka_brokers)
+        .set("bootstrap.servers", &settings.kafka.brokers)
         .set("message.timeout.ms", "5000")
         .set("acks", "all")
         .set("compression.type", "none")
@@ -102,21 +109,29 @@ async fn main() -> anyhow::Result<()> {
                     offsets.insert(partition, offset);
                 }
                 None => {
-                    process_changes(&producer, &config, &mut changes).await?;
-                    acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
-                        .await?;
+                    process_changes(&producer, &settings, &mut changes).await?;
+                    acknowledge_messages(
+                        &mut offsets,
+                        &consumer,
+                        &settings.notification_consumer.source,
+                    )
+                    .await?;
                     break;
                 }
             },
             Err(_) => {
                 trace!("Timeout");
                 if !changes.is_empty() {
-                    process_changes(&producer, &config, &mut changes).await?;
-                    acknowledge_messages(&mut offsets, &consumer, &config.notification_topic)
-                        .await?;
+                    process_changes(&producer, &settings, &mut changes).await?;
+                    acknowledge_messages(
+                        &mut offsets,
+                        &consumer,
+                        &settings.notification_consumer.source,
+                    )
+                    .await?;
                 }
                 let sleep_phase = tracing::info_span!("Sleep phase");
-                sleep(Duration::from_secs(config.sleep_phase_length))
+                sleep(Duration::from_secs(settings.sleep_phase_length))
                     .instrument(sleep_phase)
                     .await;
             }
@@ -146,14 +161,15 @@ fn new_notification(
     Ok((partition, offset))
 }
 
-#[tracing::instrument(skip(producer, config))]
+#[tracing::instrument(skip(producer, settings))]
 async fn process_changes(
     producer: &FutureProducer,
-    config: &Config,
+    settings: &Settings,
     changes: &mut HashSet<PartialNotification>,
 ) -> Result<()> {
     trace!("processing changes {:#?}", changes);
-    let mut client = rpc::schema_registry::connect(config.schema_registry_addr.to_owned()).await?;
+    let mut client =
+        rpc::schema_registry::connect(settings.services.schema_registry_url.to_owned()).await?;
     let mut schema_cache: HashMap<Uuid, Vec<Uuid>> // (Schema_ID, Vec<View_ID>)
         = Default::default();
 
@@ -205,7 +221,7 @@ async fn process_changes(
         let payload = serde_json::to_string(&request)?;
         producer
             .send(
-                FutureRecord::to(config.object_builder_topic.as_str())
+                FutureRecord::to(settings.kafka.egest_topic.as_str())
                     .payload(payload.as_str())
                     .key(&request.view_id.to_string())
                     .headers(utils::tracing::kafka::inject_span(OwnedHeaders::new())),

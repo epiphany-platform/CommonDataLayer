@@ -1,39 +1,42 @@
+use anyhow::Context;
+use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
+use schema_registry::rpc::SchemaRegistryImpl;
+use schema_registry::settings::Settings;
 use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
-
-use anyhow::Context;
-use clap::Clap;
 use tokio::time::sleep;
 use tokio::time::Duration;
 use tonic::transport::Server;
-
-use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
-use schema_registry::config::{communication_config, Config};
-use schema_registry::rpc::SchemaRegistryImpl;
+use utils::settings::load_settings;
 use utils::{metrics, status_endpoints};
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
-    let config = Config::parse();
+
+    let settings: Settings = load_settings()?;
+    ::utils::tracing::init(
+        settings.log.rust_log.as_str(),
+        settings.monitoring.otel_service_name.as_str(),
+    )?;
+
+    tracing::debug!(?settings, "command-line arguments");
 
     sleep(Duration::from_millis(500)).await;
 
-    status_endpoints::serve(config.status_port);
-    metrics::serve(config.metrics_port);
+    status_endpoints::serve(&settings.monitoring);
+    metrics::serve(&settings.monitoring);
 
-    let comms_config = communication_config(&config)?;
-    let registry = SchemaRegistryImpl::new(&config, comms_config).await?;
+    let registry = SchemaRegistryImpl::new(&settings).await?;
 
-    if let Some(export_filename) = config.export_dir.map(export_path) {
+    if let Some(export_filename) = settings.export_dir.map(export_path) {
         let exported = registry.export_all().await?;
         let file = File::create(export_filename)?;
         serde_json::to_writer_pretty(&file, &exported)?;
     }
 
-    if let Some(import_path) = config.import_file {
+    if let Some(import_path) = settings.import_file {
         let imported = File::open(import_path).map_err(|err| anyhow::anyhow!("{}", err))?;
         let imported = serde_json::from_reader(imported)?;
         registry
@@ -42,7 +45,7 @@ pub async fn main() -> anyhow::Result<()> {
             .map_err(|err| anyhow::anyhow!("Failed to import database: {}", err))?;
     }
 
-    let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), config.input_port);
+    let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), settings.input_port);
     status_endpoints::mark_as_started();
     Server::builder()
         .trace_fn(utils::tracing::grpc::trace_fn)

@@ -7,10 +7,7 @@ pub use crate::codegen::materializer_ondemand::*;
 pub async fn connect(addr: String) -> Result<OnDemandMaterializerClient<Channel>, ClientError> {
     connect_inner(addr)
         .await
-        .map_err(|err| ClientError::ConnectionError {
-            service: "materializer_ondemand",
-            source: err,
-        })
+        .map_err(|err| ClientError::ConnectionError { source: err })
 }
 
 async fn connect_inner(

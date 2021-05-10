@@ -1,20 +1,18 @@
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
-use clap::Clap;
 use reqwest::Client;
 use rpc::query_service_ts::{
     query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
 };
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tonic::{Request, Response, Status};
 use utils::metrics::{self, counter};
 
-#[derive(Debug, Clap)]
-pub struct DruidConfig {
-    #[clap(long = "druid-query-url", env = "DRUID_QUERY_URL")]
-    druid_url: String,
-    #[clap(long = "druid-table-name", env = "DRUID_TABLE_NAME")]
-    druid_table_name: String,
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct DruidSettings {
+    pub url: String,
+    pub table_name: String,
 }
 
 pub struct DruidConnectionManager;
@@ -44,7 +42,7 @@ pub struct DruidQuery {
 }
 
 impl DruidQuery {
-    pub async fn load(config: DruidConfig) -> anyhow::Result<Self> {
+    pub async fn load(settings: DruidSettings) -> anyhow::Result<Self> {
         let pool = Pool::builder()
             .build(DruidConnectionManager)
             .await
@@ -52,8 +50,8 @@ impl DruidQuery {
 
         Ok(Self {
             pool,
-            addr: config.druid_url,
-            table_name: config.druid_table_name,
+            addr: settings.url,
+            table_name: settings.table_name,
         })
     }
 

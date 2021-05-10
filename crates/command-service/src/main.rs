@@ -1,97 +1,87 @@
-use clap::Clap;
+use anyhow::bail;
 use command_service::communication::MessageRouter;
 use command_service::input::{Error, Service};
 use command_service::output::{
-    DruidOutputPlugin, OutputArgs, OutputPlugin, PostgresOutputPlugin, VictoriaMetricsOutputPlugin,
+    DruidOutputPlugin, OutputPlugin, PostgresOutputPlugin, VictoriaMetricsOutputPlugin,
 };
-use command_service::{args::Args, communication::config::CommunicationConfig};
+use command_service::settings::{RepositoryKind, Settings};
 use tracing::debug;
-use utils::communication::publisher::CommonPublisher;
+use utils::communication::parallel_consumer::ParallelCommonConsumer;
+use utils::message_types::OwnedInsertMessage;
 use utils::metrics;
-use utils::notification::full_notification_sender::FullNotificationSenderBase;
-use utils::notification::{NotificationSender, NotificationServiceConfig};
+use utils::notification::NotificationPublisher;
+use utils::settings::load_settings;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
-    let args: Args = Args::parse();
+    let settings: Settings = load_settings()?;
+    ::utils::tracing::init(
+        settings.log.rust_log.as_str(),
+        settings.monitoring.otel_service_name.as_str(),
+    )?;
 
-    debug!("Environment: {:?}", args);
+    tracing::debug!(?settings, "command-line arguments");
 
-    metrics::serve(args.metrics_port);
+    metrics::serve(&settings.monitoring);
 
-    let communication_config = args.communication_config()?;
+    let consumers = settings.consumers(settings.async_task_limit).await?;
+    let notification_publisher = settings
+        .notifications
+        .publisher(
+            settings.publisher().await?,
+            settings.communication_method.to_string(),
+            "CommandService",
+        )
+        .await;
 
-    match args.output_config {
-        OutputArgs::Postgres(postgres_config) => {
+    match (
+        settings.postgres,
+        settings.victoria_metrics,
+        settings.druid,
+        settings.repository_kind,
+    ) {
+        (Some(postgres), _, _, RepositoryKind::Postgres) => {
             start_services(
-                communication_config,
-                args.notification_config,
-                PostgresOutputPlugin::new(postgres_config).await?,
+                consumers,
+                notification_publisher,
+                PostgresOutputPlugin::new(postgres).await?,
             )
             .await
         }
-        OutputArgs::Druid(druid_config) => {
+        (_, Some(victoria_metrics), _, RepositoryKind::VictoriaMetrics) => {
             start_services(
-                communication_config,
-                args.notification_config,
-                DruidOutputPlugin::new(druid_config).await?,
+                consumers,
+                notification_publisher,
+                VictoriaMetricsOutputPlugin::new(victoria_metrics)?,
             )
             .await
         }
-        OutputArgs::VictoriaMetrics(victoria_metrics_config) => {
-            start_services(
-                communication_config,
-                args.notification_config,
-                VictoriaMetricsOutputPlugin::new(victoria_metrics_config)?,
-            )
-            .await
+        (_, _, Some(druid), RepositoryKind::Druid) => {
+            if let Some(kafka) = settings.kafka {
+                start_services(
+                    consumers,
+                    notification_publisher,
+                    DruidOutputPlugin::new(druid, &kafka.brokers).await?,
+                )
+                .await
+            } else {
+                bail!("Druid setup requires [kafka] section")
+            }
         }
+        _ => bail!("Unsupported consumer specification"),
     }?;
 
     Ok(())
 }
 
 async fn start_services(
-    communication_config: CommunicationConfig,
-    notification_config: NotificationServiceConfig,
+    communication_config: Vec<ParallelCommonConsumer>,
+    notification_publisher: NotificationPublisher<OwnedInsertMessage>,
     output: impl OutputPlugin,
 ) -> Result<(), Error> {
-    let report_service = match notification_config.destination {
-        Some(destination) => {
-            let publisher = match &communication_config {
-                CommunicationConfig::Kafka { brokers, .. } => CommonPublisher::new_kafka(&brokers)
-                    .await
-                    .map_err(Error::ConsumerCreationFailed)?,
-                CommunicationConfig::Amqp {
-                    connection_string, ..
-                } => CommonPublisher::new_amqp(&connection_string)
-                    .await
-                    .map_err(Error::ConsumerCreationFailed)?,
-                CommunicationConfig::Grpc {
-                    report_endpoint_url,
-                    ..
-                } => CommonPublisher::new_rest(report_endpoint_url.clone())
-                    .await
-                    .map_err(Error::ConsumerCreationFailed)?,
-            };
-
-            NotificationSender::Full(
-                FullNotificationSenderBase::new(
-                    publisher,
-                    destination,
-                    output.name().to_string(),
-                    "CommandService",
-                )
-                .await,
-            )
-        }
-        None => NotificationSender::Disabled,
-    };
-
-    let message_router = MessageRouter::new(report_service, output);
+    let message_router = MessageRouter::new(notification_publisher, output);
 
     debug!("Starting command service on a message-queue");
     Service::new(communication_config, message_router)
