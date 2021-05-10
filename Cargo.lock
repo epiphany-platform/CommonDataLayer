@@ -114,7 +114,7 @@ dependencies = [
  "itertools 0.10.0",
  "reqwest",
  "rpc",
- "semver",
+ "semver 0.11.0",
  "serde",
  "serde_json",
  "thiserror",
@@ -456,7 +456,7 @@ dependencies = [
  "anyhow",
  "clap",
  "rpc",
- "semver",
+ "semver 0.11.0",
  "serde",
  "serde_json",
  "tokio",
@@ -1416,9 +1416,9 @@ dependencies = [
 
 [[package]]
 name = "lapin"
-version = "1.7.0"
+version = "1.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f6633c37ab4f89b855f255d4b8a29a95f92d0ab7724d0b5576d3b6363dea60f7"
+checksum = "5b9d21a790e85496a97d9b82821aa39c59579433e9ad29d7c1ab54d9807ebfcc"
 dependencies = [
  "amq-protocol",
  "async-task",
@@ -1629,8 +1629,19 @@ version = "0.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "58e285601dcfb9f3a8f37a7093b9956a0df730b50848c8ac0117406aff06c851"
 dependencies = [
- "metrics-macros",
+ "metrics-macros 0.2.0",
  "proc-macro-hack",
+]
+
+[[package]]
+name = "metrics"
+version = "0.15.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c53c23fff9a59f261498953cf41dc9ffc2522fd79723bdf283c1e88dc1633624"
+dependencies = [
+ "metrics-macros 0.3.0",
+ "proc-macro-hack",
+ "t1ha",
 ]
 
 [[package]]
@@ -1640,7 +1651,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d23bb354bd7dd5d244f2e9a389a0c3249bb6b994aca71bd6c2f7cd6fa2657fc"
 dependencies = [
  "hyper",
- "metrics",
+ "metrics 0.14.2",
  "metrics-util",
  "parking_lot",
  "quanta",
@@ -1663,6 +1674,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "metrics-macros"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b22572ba9964744e261d34553568683b76db277bcd309ebf7215e28e0982505d"
+dependencies = [
+ "lazy_static",
+ "proc-macro-hack",
+ "proc-macro2",
+ "quote",
+ "regex",
+ "syn",
+]
+
+[[package]]
 name = "metrics-util"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1674,7 +1699,7 @@ dependencies = [
  "crossbeam-utils 0.8.3",
  "dashmap",
  "indexmap",
- "metrics",
+ "metrics 0.14.2",
  "ordered-float 2.1.1",
  "parking_lot",
  "quanta",
@@ -2144,9 +2169,9 @@ dependencies = [
 
 [[package]]
 name = "pico-args"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d70072c20945e1ab871c472a285fc772aefd4f5407723c206242f2c6f94595d6"
+checksum = "7d7afeb98c5a10e0bffcc7fc16e105b04d06729fac5fd6384aebf7ff5cb5a67d"
 
 [[package]]
 name = "pin-project"
@@ -2719,6 +2744,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustc_version"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "138e3e0acb6c9fb258b19b67cb8abd63c00679d2851805ea151465464fe9030a"
+dependencies = [
+ "semver 0.9.0",
+]
+
+[[package]]
 name = "rustls"
 version = "0.19.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2764,7 +2798,7 @@ dependencies = [
  "jsonschema",
  "maplit",
  "rpc",
- "semver",
+ "semver 0.11.0",
  "serde",
  "serde_json",
  "sqlx",
@@ -2826,13 +2860,28 @@ dependencies = [
 
 [[package]]
 name = "semver"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
+dependencies = [
+ "semver-parser 0.7.0",
+]
+
+[[package]]
+name = "semver"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f301af10236f6df4160f7c3f04eec6dbc70ace82d23326abad5edee88801c6b6"
 dependencies = [
- "semver-parser",
+ "semver-parser 0.10.2",
  "serde",
 ]
+
+[[package]]
+name = "semver-parser"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 
 [[package]]
 name = "semver-parser"
@@ -3129,6 +3178,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
+]
+
+[[package]]
+name = "t1ha"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa44aa51ae1a544e2c35a38831ba54ae40591f21384816f531b84f3e984b9ccc"
+dependencies = [
+ "cfg-if 0.1.10",
+ "lazy_static",
+ "num-traits",
+ "rustc_version",
 ]
 
 [[package]]
@@ -3716,9 +3777,9 @@ checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
 
 [[package]]
 name = "url"
-version = "2.2.1"
+version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ccd964113622c8e9322cfac19eb1004a07e636c545f325da085d5cdde6f1f8b"
+checksum = "a507c383b2d33b5fc35d1861e77e6b383d158b2da5e14fe51b83dfedf6fd578c"
 dependencies = [
  "form_urlencoded",
  "idna",
@@ -3745,7 +3806,7 @@ dependencies = [
  "hyper",
  "lapin",
  "lazy_static",
- "metrics",
+ "metrics 0.15.1",
  "metrics-exporter-prometheus",
  "rdkafka",
  "reqwest",
@@ -3762,7 +3823,6 @@ dependencies = [
  "tracing_tools",
  "url",
  "uuid",
- "vec_map",
 ]
 
 [[package]]
