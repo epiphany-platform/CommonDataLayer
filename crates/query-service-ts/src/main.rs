@@ -46,7 +46,10 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(settings.log.rust_log.as_str())?;
+    ::utils::tracing::init(
+        settings.log.rust_log.as_str(),
+        settings.monitoring.otel_service_name.as_str(),
+    )?;
 
     tracing::debug!(?settings, "command-line arguments");
     metrics::serve(&settings.monitoring);
