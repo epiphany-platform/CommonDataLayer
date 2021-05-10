@@ -11,13 +11,17 @@ pub mod http;
 #[cfg(feature = "kafka")]
 pub mod kafka;
 
-pub fn init<'a>(rust_log: impl Into<Option<&'a str>>) -> anyhow::Result<()> {
+pub fn init<'a>(
+    rust_log: impl Into<Option<&'a str>>,
+    otel_service_name: &str,
+) -> anyhow::Result<()> {
     global::set_text_map_propagator(TraceContextPropagator::new());
 
     let opentelemetry = Handle::try_current()
         .ok() // Check if Tokio runtime exists
         .and_then(|_| {
             opentelemetry_jaeger::new_pipeline()
+                .with_service_name(otel_service_name)
                 .install_batch(opentelemetry::runtime::Tokio)
                 .ok()
         })

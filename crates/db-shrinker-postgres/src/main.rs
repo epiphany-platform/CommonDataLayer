@@ -27,7 +27,7 @@ struct Opts {
 fn main() -> anyhow::Result<()> {
     let opts = Opts::parse();
 
-    utils::tracing::init(None)?;
+    utils::tracing::init(None, "db-shrinker-postgres")?;
 
     info!("Running shrinker on PSQL with {:?}", opts);
 
