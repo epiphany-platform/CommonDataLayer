@@ -76,10 +76,7 @@ async fn main() -> anyhow::Result<()> {
 
     let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
         .set("group.id", &settings.notification_consumer.group_id)
-        .set(
-            "bootstrap.servers",
-            &settings.notification_consumer.brokers,
-        )
+        .set("bootstrap.servers", &settings.notification_consumer.brokers)
         .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
         .create()
