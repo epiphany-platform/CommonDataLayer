@@ -36,7 +36,7 @@ async-stream            = "0.3"
 futures-util            = "0.3"
 tonic                   = "0.4"
 tracing-futures         = "0.2"
-metrics-exporter-prometheus         = "0.3"
+metrics-exporter-prometheus         = "0.4"
 
 [dev-dependencies]
 test-case = "1.1"
