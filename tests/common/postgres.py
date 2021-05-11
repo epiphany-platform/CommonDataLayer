@@ -18,15 +18,25 @@ class PostgresConfig:
         self.dbname = dbname
         self.schema = schema
 
-    def to_dict(self):
-        return {
-            "POSTGRES_USERNAME": self.user,
-            "POSTGRES_PASSWORD": self.password,
-            "POSTGRES_HOST": self.host,
-            "POSTGRES_PORT": self.port,
-            "POSTGRES_DBNAME": self.dbname,
-            "POSTGRES_SCHEMA": self.schema,
-        }
+    def to_dict(self, app):
+        if app is None:
+            return {
+                "POSTGRES_USERNAME": self.user,
+                "POSTGRES_PASSWORD": self.password,
+                "POSTGRES_HOST": self.host,
+                "POSTGRES_PORT": self.port,
+                "POSTGRES_DBNAME": self.dbname,
+                "POSTGRES_SCHEMA": self.schema,
+            }
+        else:
+            return {
+                f"{app}_POSTGRES__USERNAME": self.user,
+                f"{app}_POSTGRES__PASSWORD": self.password,
+                f"{app}_POSTGRES__HOST": self.host,
+                f"{app}_POSTGRES__PORT": self.port,
+                f"{app}_POSTGRES__DBNAME": self.dbname,
+                f"{app}_POSTGRES__SCHEMA": self.schema,
+            }
 
 
 def connect_to_postgres(config: PostgresConfig):

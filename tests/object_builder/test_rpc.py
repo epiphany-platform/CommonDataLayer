@@ -9,7 +9,6 @@ from tests.common.query_service import QueryService
 from tests.common.kafka import KafkaInputConfig, create_kafka_topic, delete_kafka_topic
 from tests.rpc.proto import object_builder_pb2_grpc
 from tests.rpc.proto.object_builder_pb2 import View
-from tests.rpc.proto.common_pb2 import RowDefinition
 from tests.common.postgres import clear_data, insert_data, PostgresConfig
 
 TOPIC = "cdl.object_builder.tests_data"

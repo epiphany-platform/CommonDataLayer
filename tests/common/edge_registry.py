@@ -19,17 +19,17 @@ class EdgeRegistry:
         self.svc = None
 
     def start(self):
-        env = self.postgres_config.to_dict()
+        env = self.postgres_config.to_dict("EDGE_REGISTRY")
+        env.update(EDGE_REGISTRY_monitoring__otel_service_name='edge-registry')
+
         if type(self.consumer_config) is KafkaInputConfig:
-            env.update(CONSUMER_METHOD='kafka',
-                       CONSUMER_HOST=self.consumer_config.brokers,
-                       CONSUMER_TAG=self.consumer_config.group_id,
-                       CONSUMER_SOURCE=self.consumer_config.topic)
+            env.update(EDGE_REGISTRY_COMMUNICATION_METHOD='kafka',
+                       EDGE_REGISTRY_KAFKA__BROKERS=self.consumer_config.brokers,
+                       EDGE_REGISTRY_KAFKA__GROUP_ID=self.consumer_config.group_id,
+                       EDGE_REGISTRY_KAFKA__INGEST_TOPIC=self.consumer_config.topic)
         else:
             raise Exception("Unsupported kind of consumer_config")
-        env.update(RPC_PORT=self.rpc_port,
-                   METRICS_PORT='50105',
-                   STATUS_PORT="0")
+        env.update(EDGE_REGISTRY_INPUT_PORT=self.rpc_port)
 
         self.svc = subprocess.Popen([EXE], env=env)
 

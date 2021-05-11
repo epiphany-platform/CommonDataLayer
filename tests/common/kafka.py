@@ -11,11 +11,11 @@ class KafkaInputConfig:
         self.brokers = brokers
         self.group_id = group_id or str(uuid.uuid1())
 
-    def to_dict(self):
+    def to_dict(self, app):
         return {
-            "KAFKA_BROKERS": self.brokers,
-            "KAFKA_GROUP_ID": self.group_id,
-            "UNORDERED_SOURCES": self.topic,
+            f"{app}_KAFKA__BROKERS": self.brokers,
+            f"{app}_KAFKA__GROUP_ID": self.group_id,
+            f"{app}_LISTENER__UNORDERED_SOURCES": self.topic,
         }
 
 
@@ -51,7 +51,8 @@ class KafkaReportConfig:
         self.topic = topic
         self.brokers = brokers
 
-    def to_dict(self):
+    def to_dict(self, app):
         return {
-            "REPORT_DESTINATION": self.topic,
+            f"{app}_NOTIFICATIONS__ENABLED": True,
+            f"{app}_NOTIFICATIONS__DESTINATION": self.topic,
         }
