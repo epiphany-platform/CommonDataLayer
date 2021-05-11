@@ -64,12 +64,14 @@ spec:
           value: {{ .Values.postgresDbname }}
         - name: COMMAND_SERVICE_POSTGRES__SCHEMA
           value: {{ .Values.postgresSchema }}
-        - name: COMMAND_SERIVCE_NOTIFICATIONS__DESTINATION
+        - name: COMMAND_SERVICE_NOTIFICATIONS__DESTINATION
           value: {{ .Values.global.reportDestination }}
-        - name: COMMAND_SERIVCE_NOTIFICATIONS__ENABLED
+        - name: COMMAND_SERVICE_NOTIFICATIONS__ENABLED
           value: 'true'
         - name: COMMAND_SERVICE_LOG__RUST_LOG
           value: "info,command_service=debug"
+        - name: COMMAND_SERVICE_MONITORING__OTEL_SERVICE_NAME
+          value: "postgres-command"
         ports:
         - containerPort: 51805
       imagePullSecrets:

@@ -51,16 +51,18 @@ spec:
         - name: COMMAND_SERVICE_GRPC__ADDRESS
           value: "0.0.0.0:6400"
         {{- end }}
-        - name: COMMAND_SERIVCE_LISTENER__ORDERED_SOURCES
+        - name: COMMAND_SERVICE_LISTENER__ORDERED_SOURCES
           value: {{ .Values.inputSource }}
-        - name: COMMAND_SERIVCE_DRUID__TOPIC
+        - name: COMMAND_SERVICE_DRUID__TOPIC
           value: {{ .Values.outputTopic }}
-        - name: COMMAND_SERIVCE_NOTIFICATIONS__DESTINATION
+        - name: COMMAND_SERVICE_NOTIFICATIONS__DESTINATION
           value: {{ .Values.global.reportDestination }}
         - name: COMMAND_SERVICE_NOTIFICATIONS__ENABLED
           value: 'true'
-        - name: COMMAND_SERIVCE_LOG__RUST_LOG
+        - name: COMMAND_SERVICE_LOG__RUST_LOG
           value: "info,command_service=debug"
+        - name: COMMAND_SERVICE_MONITORING__OTEL_SERVICE_NAME
+          value: "druid-command"
         ports:
         - containerPort: 51805
   # TODO: Probes

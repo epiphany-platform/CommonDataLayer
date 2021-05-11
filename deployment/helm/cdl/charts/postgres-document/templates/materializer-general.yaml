@@ -40,6 +40,8 @@ spec:
           value: "6400"
         - name: MATERIALIZER_GENERAL_LOG__RUST_LOG
           value: "info,materializer-general=debug"
+        - name: MATERIALIZER_GENERAL_MONITORING__OTEL_SERVICE_NAME
+          value: "postgres-materializer"
         ports:
         - containerPort: 51805
       imagePullSecrets:

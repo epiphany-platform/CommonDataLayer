@@ -30,7 +30,7 @@ spec:
         command: ["/bin/command-service"]
         env:
         - name: COMMAND_SERVICE_REPOSITORY_KIND
-          value: 'victoria-metrics'
+          value: 'victoria_metrics'
         {{- if eq .Values.global.communicationMethod "kafka" }}
         - name: COMMAND_SERVICE_COMMUNICATION_METHOD
           value: "kafka"
@@ -55,12 +55,14 @@ spec:
           value: {{ .Values.inputSource }}
         - name: COMMAND_SERVICE_VICTORIA_METRICS__URL
           value: {{ .Values.outputURL }}
-        - name: COMMAND_SERIVCE_NOTIFICATIONS__DESTINATION
+        - name: COMMAND_SERVICE_NOTIFICATIONS__DESTINATION
           value: {{ .Values.global.reportDestination }}
-        - name: COMMAND_SERIVCE_NOTIFICATIONS__ENABLED
+        - name: COMMAND_SERVICE_NOTIFICATIONS__ENABLED
           value: 'true'
         - name: COMMAND_SERVICE_LOG__RUST_LOG
           value: "info,command_service=debug"
+        - name: COMMAND_SERVICE_MONITORING__OTEL_SERVICE_NAME
+          value: "vm-command"
         ports:
         - containerPort: 51805
   # TODO: Probes

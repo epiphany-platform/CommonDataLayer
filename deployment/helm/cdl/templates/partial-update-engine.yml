@@ -42,6 +42,8 @@ spec:
           value: "{{ .Values.partialUpdateEngine.sleepPhaseLength }}"
         - name: PARTIAL_UPDATE_ENGINE_LOG__RUST_LOG
           value: "info,partial_update_engine=debug"
+        - name: PARTIAL_UPDATE_ENGINE_MONITORING__OTEL_SERVICE_NAME
+          value: "partial-update-engine"
         ports:
         - containerPort: 51805
       imagePullSecrets:
