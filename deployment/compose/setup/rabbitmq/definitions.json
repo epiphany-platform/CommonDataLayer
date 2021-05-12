@@ -84,6 +84,15 @@
       "arguments": {
         "x-queue-type": "classic"
       }
+    },
+    {
+      "name": "cdl.materialize",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "classic"
+      }
     }
   ],
   "exchanges": [
@@ -134,6 +143,15 @@
     },
     {
       "name": "cdl.edge.input",
+      "vhost": "/",
+      "type": "topic",
+      "durable": true,
+      "auto_delete": false,
+      "internal": false,
+      "arguments": {}
+    },
+    {
+      "name": "cdl.materialize",
       "vhost": "/",
       "type": "topic",
       "durable": true,
@@ -203,6 +221,14 @@
       "source": "cdl.edge.input",
       "vhost": "/",
       "destination": "cdl.edge.input",
+      "destination_type": "queue",
+      "routing_key": "unordered",
+      "arguments": {}
+    },
+    {
+      "source": "cdl.materialize",
+      "vhost": "/",
+      "destination": "cdl.materialize",
       "destination_type": "queue",
       "routing_key": "unordered",
       "arguments": {}
