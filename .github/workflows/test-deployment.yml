@@ -87,7 +87,7 @@ jobs:
       - name: deploy cdl kafka
         run: helm install --values ./deployment/helm/cdl/values-local.yaml cdl ./deployment/helm/cdl
       - name: wait
-        run: sleep 30
+        run: sleep 60
       - name: check if pods are running
         run: |
           kubectl get pods
