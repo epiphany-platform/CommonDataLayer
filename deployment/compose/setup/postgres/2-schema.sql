@@ -25,12 +25,10 @@ CREATE TABLE views (
     materializer_address varchar not null,
     materializer_options json not null,
     fields               json not null,
-    base_schema          uuid not null,
-    relations            json not null,
-    filters              json not null,
+    schema               uuid not null,
 
-    CONSTRAINT fk_base_schema_1
-        FOREIGN KEY(base_schema)
+    CONSTRAINT fk_schema_1
+        FOREIGN KEY(schema)
         REFERENCES schemas(id)
         ON UPDATE CASCADE
         ON DELETE CASCADE
