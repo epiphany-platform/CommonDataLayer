@@ -18,10 +18,10 @@ jobs:
         username: ${{ secrets.DOCKERHUB_LOGIN }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-    - name: Build and push crates
+    - name: Build and push one crate
       run: |
         # crates=(data-router command-service query-router query-service query-service-ts schema-registry api edge-registry partial-update-engine object-builder materializer-general materializer-ondemand)
-        crates=(materializer-ondemand)
+        crates=( materializer-ondemand )
         version="dev-$(date -u +'%Y-%m-%d')-senko"
         for crate in "${crates[@]}"
         do
