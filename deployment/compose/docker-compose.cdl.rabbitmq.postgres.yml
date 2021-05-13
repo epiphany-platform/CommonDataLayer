@@ -52,13 +52,13 @@ services:
       RUST_LOG: info,query_service=trace
 
   postgres_materializer:
-    image: cdl-materializer:latest
-    command: "/bin/materializer postgres"
+    image: cdl-materializer-general:latest
+    command: "/bin/materializer-general postgres"
     build:
       context: ../..
       dockerfile: Dockerfile
       args:
-        - BIN=materializer
+        - BIN=materializer-general
         - ENV=DEV
     ports:
       - "50203:50203"
