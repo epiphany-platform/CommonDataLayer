@@ -4,7 +4,7 @@ on: [ push ]
 
 jobs:
   build-and-deploy:
-    name: nightly docker.io
+    name: test if docker workflow is working
     runs-on: ubuntu-latest
     steps:
     - name: Checkout the repo
@@ -20,15 +20,12 @@ jobs:
 
     - name: Build and push one crate
       run: |
-        # crates=(data-router command-service query-router query-service query-service-ts schema-registry api edge-registry partial-update-engine object-builder materializer-general materializer-ondemand)
-        crates=( materializer-ondemand )
+        crate="materializer-ondemand"
         version="dev-$(date -u +'%Y-%m-%d')-senko"
-        for crate in "${crates[@]}"
-        do
+
         docker build . --build-arg BIN=$crate -t epiphanyplatform/cdl-$crate:${version}
         docker tag epiphanyplatform/cdl-$crate:${version} epiphanyplatform/cdl-$crate:esavier-senko-latest
         docker push epiphanyplatform/cdl-$crate:$version
         docker push epiphanyplatform/cdl-$crate:esavier-senko-latest
-        done
       env:
         DOCKER_BUILDKIT: 1
