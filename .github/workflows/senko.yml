@@ -1,11 +1,6 @@
 name: dockerhub test workflow
 
-on:
-  schedule:
-    - cron: "0 2 * * *"
-  push:
-    branches:
-      - "develop"
+on: [ push ]
 
 jobs:
   build-and-deploy:
