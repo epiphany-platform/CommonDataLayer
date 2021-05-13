@@ -18,15 +18,17 @@ services:
     ports:
       - "50101:50101"
     environment:
-      DB_NAME: "/var/data/schema"
-      REPLICATION_ROLE: "master"
       COMMUNICATION_METHOD: "kafka"
       KAFKA_BROKERS: "kafka:9093"
       KAFKA_GROUP_ID: "schema_registry"
-      REPLICATION_SOURCE: "cdl.schema_registry.internal"
-      REPLICATION_DESTINATION: "cdl.schema_registry.internal"
       INPUT_PORT: "50101"
       IMPORT_FILE: "/var/data/schema.json"
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DBNAME: postgres
+      POSTGRES_SCHEMA: cdl
       RUST_LOG: info,schema_registry=trace
       OTEL_SERVICE_NAME: "schema-registry"
       OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
