@@ -1,0 +1,22 @@
+input_port = 50110
+
+[notifications]
+enabled = true
+
+[amqp]
+ingest_queue = "cdl.edge.input"
+tag = "edge_registry"
+
+[postgres]
+username = "postgres"
+password = "1234"
+host = "localhost"
+port = "5432"
+dbname = "postgres"
+schema = "cdl"
+
+[monitoring]
+otel_service_name = "edge-registry"
+
+[log]
+rust_log = "info,edge_registry=debug"

@@ -1,0 +1,17 @@
+async_task_limit = 32
+
+[notifications]
+enabled = true
+
+[amqp]
+tag = "vm_command"
+
+[listener]
+ordered_sources = ["cdl.timeseries.1.data"]
+unordered_sources = ["cdl.timeseries.2.data"]
+
+[monitoring]
+otel_service_name = "vm-command"
+
+[log]
+rust_log = "info,command_service=debug"
