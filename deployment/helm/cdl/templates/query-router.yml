@@ -32,6 +32,8 @@ spec:
           value: "6401"
         - name: QUERY_ROUTER_LOG__RUST_LOG
           value: "info,query_router=debug"
+        - name: QUERY_ROUTER_MONITORING__OTEL_SERVICE_NAME
+          value: "query-router"
         ports:
         - containerPort: 51805
       imagePullSecrets:

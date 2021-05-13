@@ -61,6 +61,8 @@ spec:
               value: "true"
             - name: EDGE_REGISTRY_LOG__RUST_LOG
               value: "info,edge_registry=debug"
+            - name: EDGE_REGISTRY_MONITORING__OTEL_SERVICE_NAME
+              value: "edge-registry"
           ports:
             - containerPort: 51805
       imagePullSecrets:

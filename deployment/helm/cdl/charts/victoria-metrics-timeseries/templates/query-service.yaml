@@ -29,13 +29,15 @@ spec:
         command: ["/bin/query-service-ts"]
         env:
         - name: QUERY_SERVICE_TS_REPOSITORY_KIND
-          value: 'victoria-metrics'
+          value: 'victoria_metrics'
         - name: QUERY_SERVICE_TS_VICTORIA_METRICS__URL
           value: {{ .Values.outputURL }}
         - name: QUERY_SERVICE_TS_INPUT_PORT
           value: "6400"
         - name: QUERY_SERVICE_TS_RUST_LOG
           value: "info,query_service_ts=debug"
+        - name: QUERY_SERVICE_TS_MONITORING__OTEL_SERVICE_NAME
+          value: "vm-query"
         ports:
         - containerPort: 51805
       imagePullSecrets:

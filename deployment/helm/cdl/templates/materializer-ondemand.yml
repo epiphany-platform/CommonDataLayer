@@ -28,8 +28,10 @@ spec:
               value: "{{ .Values.materializerOnDemand.inputPort }}"
             - name: MATERIALIZER_ONDEMAND_SERVICES__OBJECT_BUILDER_URL
               value: "http://{{ .Release.Name }}-object-builder:{{ .Values.objectBuilder.inputPort }}"
-            - name: MATERIALIZ_ONDEMAND_LOG__RUST_LOG
+            - name: MATERIALIZER_ONDEMAND_LOG__RUST_LOG
               value: "info,materializer_ondemand=debug"
+            - name: MATERIALIZER_ONDEMAND_MONITORING__OTEL_SERVICE_NAME
+              value: "materializer-ondemand"
           ports:
             - containerPort: 51805
       imagePullSecrets:
