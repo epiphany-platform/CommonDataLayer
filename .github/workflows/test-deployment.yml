@@ -79,7 +79,7 @@ jobs:
           docker save local/cache:latest > cache_img
       - name: add kafka topics
         run: |
-          topics=(cdl.data.input CDL_SCHEMA_SYNCHRO cdl.document.data cdl.timeseries.data cdl.timeseries.generic-druid cdl.timeseries2.data cdl.edge.input cdl.errors)
+          topics=(cdl.data.input CDL_SCHEMA_SYNCHRO cdl.document.data cdl.timeseries.data cdl.timeseries.generic-druid cdl.timeseries2.data cdl.edge.input cdl.errors cdl.materialize)
           for topic in "${topics[@]}"
           do
           kubectl exec infrastructure-kafka-0 /bin/bash -- /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic $topic --bootstrap-server localhost:9092
@@ -87,7 +87,7 @@ jobs:
       - name: deploy cdl kafka
         run: helm install --values ./deployment/helm/cdl/values-local.yaml cdl ./deployment/helm/cdl
       - name: wait
-        run: sleep 30
+        run: sleep 60
       - name: check if pods are running
         run: |
           kubectl get pods
@@ -100,7 +100,7 @@ jobs:
       - name: uninstall cdl kafka
         run: helm uninstall cdl
       - name: wait
-        run: sleep 30
+        run: sleep 60
 
       - name: depoly cdl rabbitmq
         run: helm install --values ./deployment/helm/cdl/values-local.yaml --set global.communicationMethod=amqp cdl ./deployment/helm/cdl

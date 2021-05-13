@@ -37,8 +37,8 @@ struct Settings {
 
 #[derive(Deserialize, Debug, Serialize)]
 struct NotificationConsumerSettings {
-    #[serde(flatten)]
-    pub kafka: ConsumerKafkaSettings,
+    pub brokers: String,
+    pub group_id: String,
     pub source: String,
 }
 
@@ -75,11 +75,8 @@ async fn main() -> anyhow::Result<()> {
     metrics::serve(&settings.monitoring);
 
     let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
-        .set("group.id", &settings.notification_consumer.kafka.group_id)
-        .set(
-            "bootstrap.servers",
-            &settings.notification_consumer.kafka.brokers,
-        )
+        .set("group.id", &settings.notification_consumer.group_id)
+        .set("bootstrap.servers", &settings.notification_consumer.brokers)
         .set("enable.partition.eof", "false")
         .set("session.timeout.ms", "6000")
         .create()

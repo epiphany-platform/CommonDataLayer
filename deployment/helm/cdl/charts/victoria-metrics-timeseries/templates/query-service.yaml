@@ -26,14 +26,18 @@ spec:
       - name: cdl-victoria-metrics-query-service
         image: "{{ .Values.global.imageRepositoryPath }}cdl-query-service-ts:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/query-service-ts","victoria"]
+        command: ["/bin/query-service-ts"]
         env:
-        - name: VICTORIA_QUERY_URL
+        - name: QUERY_SERVICE_TS_REPOSITORY_KIND
+          value: 'victoria_metrics'
+        - name: QUERY_SERVICE_TS_VICTORIA_METRICS__URL
           value: {{ .Values.outputURL }}
-        - name: INPUT_PORT
+        - name: QUERY_SERVICE_TS_INPUT_PORT
           value: "6400"
-        - name: RUST_LOG
+        - name: QUERY_SERVICE_TS_RUST_LOG
           value: "info,query_service_ts=debug"
+        - name: QUERY_SERVICE_TS_MONITORING__OTEL_SERVICE_NAME
+          value: "vm-query"
         ports:
         - containerPort: 51805
       imagePullSecrets:

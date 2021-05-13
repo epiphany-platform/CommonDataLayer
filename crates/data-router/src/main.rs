@@ -41,6 +41,7 @@ enum CommunicationMethod {
 struct Settings {
     communication_method: CommunicationMethod,
     cache_capacity: usize,
+    #[serde(default = "default_async_task_limit")]
     async_task_limit: usize,
 
     kafka: Option<ConsumerKafkaSettings>,
@@ -57,6 +58,10 @@ struct Settings {
 #[derive(Deserialize, Debug, Serialize)]
 struct ServicesSettings {
     schema_registry_url: String,
+}
+
+const fn default_async_task_limit() -> usize {
+    32
 }
 
 impl Settings {

@@ -24,22 +24,24 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/materializer-general","postgres"]
         env:
-        - name: POSTGRES_USERNAME
+        - name: MATERIALIZER_GENERAL_POSTGRES__USERNAME
           value: {{ .Values.postgresUsername }}
-        - name: POSTGRES_PASSWORD
+        - name: MATERIALIZER_GENERAL_POSTGRES__PASSWORD
           value: {{ .Values.postgresPassword }}
-        - name: POSTGRES_HOST
+        - name: MATERIALIZER_GENERAL_POSTGRES__HOST
           value: {{ .Values.postgresHost }}
-        - name: POSTGRES_PORT
+        - name: MATERIALIZER_GENERAL_POSTGRES__PORT
           value: "{{ .Values.postgresPort }}"
-        - name: POSTGRES_DBNAME
+        - name: MATERIALIZER_GENERAL_POSTGRES__DBNAME
           value: {{ .Values.postgresDbname }}
-        - name: POSTGRES_SCHEMA
+        - name: MATERIALIZER_GENERAL_POSTGRES__SCHEMA
           value: {{ .Values.postgresSchema }}
-        - name: INPUT_PORT
+        - name: MATERIALIZER_GENERAL_INPUT_PORT
           value: "6400"
-        - name: RUST_LOG
+        - name: MATERIALIZER_GENERAL_LOG__RUST_LOG
           value: "info,materializer-general=debug"
+        - name: MATERIALIZER_GENERAL_MONITORING__OTEL_SERVICE_NAME
+          value: "postgres-materializer"
         ports:
         - containerPort: 51805
       imagePullSecrets:
