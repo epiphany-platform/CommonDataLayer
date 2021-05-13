@@ -1,0 +1,36 @@
+name: dockerhub test workflow
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+
+jobs:
+  build-and-deploy:
+    name: nightly docker.io
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout the repo
+      uses: actions/checkout@v2
+      with:
+        ref: develop
+
+    - name: Login to registry
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_LOGIN }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+    - name: Build and push crates
+      run: |
+        # crates=(data-router command-service query-router query-service query-service-ts schema-registry api edge-registry partial-update-engine object-builder materializer-general materializer-ondemand)
+        crates=(materializer-ondemand)
+        version="dev-$(date -u +'%Y-%m-%d')-senko"
+        for crate in "${crates[@]}"
+        do
+        docker build . --build-arg BIN=$crate -t epiphanyplatform/cdl-$crate:${version}
+        docker tag epiphanyplatform/cdl-$crate:${version} epiphanyplatform/cdl-$crate:esavier-senko-latest
+        docker push epiphanyplatform/cdl-$crate:$version
+        docker push epiphanyplatform/cdl-$crate:esavier-senko-latest
+        done
+      env:
+        DOCKER_BUILDKIT: 1
