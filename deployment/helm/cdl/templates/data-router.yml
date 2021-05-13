@@ -54,6 +54,8 @@ spec:
           value: "500"
         - name: DATA_ROUTER_LOG__RUST_LOG
           value: "info,data_router=debug"
+        - name: DATA_ROUTER_MONITORING__OTEL_SERVICE_NAME
+          value: "data-router"
         ports:
         - containerPort: 51805
       imagePullSecrets:

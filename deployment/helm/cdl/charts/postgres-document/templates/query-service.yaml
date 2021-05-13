@@ -46,6 +46,8 @@ spec:
           value: "6400"
         - name: QUERY_SERVICE_LOG__RUST_LOG
           value: "info,query_service=debug"
+        - name: QUERY_SERVICE_MONITORING__OTEL_SERVICE_NAME
+          value: "postgres-query"
         ports:
         - containerPort: 51805
       imagePullSecrets:

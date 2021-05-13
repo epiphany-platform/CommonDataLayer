@@ -18,14 +18,20 @@ services:
     ports:
       - "50101:50101"
     environment:
-      DB_NAME: "/var/data/schema"
       REPLICATION_ROLE: "master"
       COMMUNICATION_METHOD: "grpc"
-      REPLICATION_SOURCE: "none"
-      REPLICATION_DESTINATION: "none"
       INPUT_PORT: "50101"
       IMPORT_FILE: "/var/data/schema.json"
+      POSTGRES_USERNAME: postgres
+      POSTGRES_PASSWORD: 1234
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DBNAME: postgres
+      POSTGRES_SCHEMA: cdl
       RUST_LOG: info,schema_registry=trace
+      OTEL_SERVICE_NAME: "schema-registry"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
     volumes:
       - ./setup/schema_registry/initial-schema.grpc.json:/var/data/schema.json
 
@@ -46,6 +52,9 @@ services:
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       CACHE_CAPACITY: "1000"
       RUST_LOG: info,data_router=trace
+      OTEL_SERVICE_NAME: "data-router"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
   query_router:
     image: cdl-query-router:latest
@@ -63,6 +72,9 @@ services:
       INPUT_PORT: 50103
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       RUST_LOG: info,query_router=trace
+      OTEL_SERVICE_NAME: "query-router"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
   object_builder:
     image: cdl-object-builder:latest
@@ -80,6 +92,25 @@ services:
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
       RUST_LOG: info,object_builder=trace
 
+  materializer_ondemand:
+    image: cdl-materializer-ondemand:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=materializer-ondemand
+        - ENV=DEV
+    command: "/bin/materializer-ondemand"
+    ports:
+      - "50108:50108"
+    environment:
+      INPUT_PORT: "50108"
+      OBJECT_BUILDER_ADDR: "http://object_builder:50107"
+      RUST_LOG: info,materializer_ondemand=trace
+      OTEL_SERVICE_NAME: "materializer-ondemand"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+
   web_api:
     image: cdl-api:latest
     command: "/bin/api"
@@ -94,10 +125,14 @@ services:
       INPUT_PORT: 50106
       RUST_LOG: info,api=trace
       SCHEMA_REGISTRY_ADDR: "http://schema_registry:50101"
+      EDGE_REGISTRY_ADDR: "http://edge_registry:50110"
+      ON_DEMAND_MATERIALIZER_ADDR: "http://materializer_ondemand:50108"
       QUERY_ROUTER_ADDR: "http://query_router:50103"
-      OBJECT_BUILDER_ADDR: "http://object_builder:50107"
       COMMUNICATION_METHOD: "grpc"
       INSERT_DESTINATION: "http://data_router:50102"
+      OTEL_SERVICE_NAME: "api"
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
 
 networks:
   compose_default:

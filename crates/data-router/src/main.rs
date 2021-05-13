@@ -41,6 +41,7 @@ enum CommunicationMethod {
 struct Settings {
     communication_method: CommunicationMethod,
     cache_capacity: usize,
+    #[serde(default = "default_async_task_limit")]
     async_task_limit: usize,
 
     kafka: Option<ConsumerKafkaSettings>,
@@ -57,6 +58,10 @@ struct Settings {
 #[derive(Deserialize, Debug, Serialize)]
 struct ServicesSettings {
     schema_registry_url: String,
+}
+
+const fn default_async_task_limit() -> usize {
+    32
 }
 
 impl Settings {
@@ -107,7 +112,10 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(settings.log.rust_log.as_str())?;
+    ::utils::tracing::init(
+        settings.log.rust_log.as_str(),
+        settings.monitoring.otel_service_name.as_str(),
+    )?;
 
     tracing::debug!(?settings, "command-line arguments");
 

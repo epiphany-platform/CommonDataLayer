@@ -1,4 +1,8 @@
-use std::{cmp::max, collections::LinkedList, sync::Mutex};
+use std::{
+    cmp::max,
+    collections::{HashMap, LinkedList},
+    sync::Mutex,
+};
 
 use rdkafka::{
     consumer::{DefaultConsumerContext, StreamConsumer},
@@ -6,17 +10,16 @@ use rdkafka::{
     Message, Offset, TopicPartitionList,
 };
 use tracing::trace;
-use vec_map::VecMap;
 
 use crate::abort_on_poison;
 
 #[derive(Default)]
 pub struct KafkaAckQueue {
-    queue: Mutex<VecMap<KafkaPartitionAckQueue>>,
+    queue: Mutex<HashMap<i32, KafkaPartitionAckQueue>>,
 }
 impl KafkaAckQueue {
     pub fn add(&self, message: &BorrowedMessage) {
-        let partition = message.partition() as usize;
+        let partition = message.partition();
         let mut queue = self.queue.lock().unwrap_or_else(abort_on_poison);
         let partition_queue = (*queue).entry(partition).or_insert_with(|| {
             KafkaPartitionAckQueue::new(message.topic().to_owned(), message.partition().to_owned())
@@ -29,9 +32,9 @@ impl KafkaAckQueue {
         message: &BorrowedMessage<'_>,
         consumer: &StreamConsumer<DefaultConsumerContext>,
     ) {
-        let partition = message.partition() as usize;
+        let partition = message.partition();
         let mut queue = self.queue.lock().unwrap_or_else(abort_on_poison);
-        let partition_queue = (*queue).get_mut(partition).unwrap();
+        let partition_queue = (*queue).get_mut(&partition).unwrap();
         partition_queue.ack(message, consumer);
     }
 }

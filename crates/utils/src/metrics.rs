@@ -4,7 +4,7 @@ use metrics_exporter_prometheus::PrometheusBuilder;
 use tracing::debug;
 
 use crate::settings::MonitoringSettings;
-pub use metrics::{self, counter, gauge, try_recorder, Key, KeyData, SharedString};
+pub use metrics::{self, counter, gauge, try_recorder, Key, SharedString};
 
 pub const DEFAULT_PORT: &str = "51805";
 

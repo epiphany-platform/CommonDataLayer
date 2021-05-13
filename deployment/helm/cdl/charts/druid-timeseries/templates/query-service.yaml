@@ -38,6 +38,8 @@ spec:
           value: "6400"
         - name: QUERY_SERVICE_TS_LOG__RUST_LOG
           value: "info,query_service_ts=debug"
+        - name: QUERY_SERVICE_TS_MONITORING__OTEL_SERVICE_NAME
+          value: "druid-query"
         ports:
         - containerPort: 51805
       imagePullSecrets:
