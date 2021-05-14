@@ -26,7 +26,7 @@ async fn main() -> anyhow::Result<()> {
     let settings: Settings = load_settings()?;
     ::utils::tracing::init(settings.log.rust_log.as_str(), "web-api")?;
 
-    tracing::debug!(?settings, "command-line arguments");
+    tracing::debug!(?settings, "application environment");
 
     let input_port = settings.input_port;
 

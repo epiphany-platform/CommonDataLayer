@@ -123,7 +123,18 @@ pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> anyhow::Result<T> {
     s.merge(File::with_name("/etc/cdl/default.toml").required(false))?;
     s.merge(File::with_name(&format!("/etc/cdl/{}.toml", exe)).required(false))?;
 
+    s.merge(File::with_name(&format!("/etc/cdl/{}/default.toml", env)).required(false))?;
+    s.merge(File::with_name(&format!("/etc/cdl/{}/{}.toml", env, exe)).required(false))?;
+
     if let Some(home) = dirs::home_dir() {
+        s.merge(
+            File::with_name(&format!("{}/.cdl/default.toml", home.to_string_lossy(),))
+                .required(false),
+        )?;
+        s.merge(
+            File::with_name(&format!("{}/.cdl/{}.toml", home.to_string_lossy(), env,))
+                .required(false),
+        )?;
         s.merge(
             File::with_name(&format!(
                 "{}/.cdl/{}/default.toml",
@@ -143,10 +154,14 @@ pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> anyhow::Result<T> {
         )?;
     }
 
+    s.merge(File::with_name(".cdl/default.toml").required(false))?;
+    s.merge(File::with_name(&format!(".cdl/{}.toml", exe)).required(false))?;
     s.merge(File::with_name(&format!(".cdl/{}/default.toml", env)).required(false))?;
     s.merge(File::with_name(&format!(".cdl/{}/{}.toml", env, exe)).required(false))?;
 
     if let Ok(custom_dir) = env::var("CDL_CONFIG") {
+        s.merge(File::with_name(&format!("{}/default.toml", custom_dir)).required(false))?;
+        s.merge(File::with_name(&format!("{}/{}.toml", custom_dir, exe)).required(false))?;
         s.merge(File::with_name(&format!("{}/{}/default.toml", custom_dir, env)).required(false))?;
         s.merge(File::with_name(&format!("{}/{}/{}.toml", custom_dir, env, exe)).required(false))?;
     }

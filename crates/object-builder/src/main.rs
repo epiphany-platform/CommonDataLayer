@@ -13,7 +13,7 @@ async fn main() -> anyhow::Result<()> {
         settings.monitoring.otel_service_name.as_str(),
     )?;
 
-    tracing::debug!(?settings, "command-line arguments");
+    tracing::debug!(?settings, "application environment");
 
     utils::status_endpoints::serve(&settings.monitoring);
     utils::metrics::serve(&settings.monitoring);
