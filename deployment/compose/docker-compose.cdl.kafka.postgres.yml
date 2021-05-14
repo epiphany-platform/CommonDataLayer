@@ -64,7 +64,7 @@ services:
       context: ../..
       dockerfile: Dockerfile
       args:
-        - BIN=materializer_general
+        - BIN=materializer-general
         - ENV=DEV
     ports:
       - "50203:50203"
