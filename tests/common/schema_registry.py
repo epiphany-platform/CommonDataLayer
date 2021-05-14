@@ -36,7 +36,8 @@ class SchemaRegistry:
             "SCHEMA_REGISTRY_KAFKA__BROKERS": self.kafka_brokers,
             "SCHEMA_REGISTRY_KAFKA__GROUP_ID": self.kafka_group_id,
             "SCHEMA_REGISTRY_INPUT_PORT": self.input_port,
-            "SCHEMA_REGISTRY_monitoring__otel_service_name": 'schema-registry',
+            "SCHEMA_REGISTRY_MONITORING__OTEL_SERVICE_NAME": 'schema-registry',
+            "SCHEMA_REGISTRY_MONITORING__STATUS_PORT": '0',
             **self.postgres_config.to_dict("SCHEMA_REGISTRY")
         }
 

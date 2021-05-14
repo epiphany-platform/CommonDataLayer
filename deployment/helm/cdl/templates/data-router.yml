@@ -33,14 +33,14 @@ spec:
           value: "data-router"
         - name: DATA_ROUTER_KAFKA__INGEST_TOPIC
           value: "{{ .Values.dataRouter.inputSource }}"
-          {{- else if eq .Values.global.communicationMethod "amqp" }}
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
         - name: DATA_ROUTER_COMMUNICATION_METHOD
           value: "amqp"
         - name: DATA_ROUTER_AMQP__EXCHANGE_URL
           value: "{{ .Values.global.amqpConnectionString }}"
         - name: DATA_ROUTER_AMQP__TAG
           value: "data-router"
-        - name: DATA_ROUTER_DATA_ROUTER_AMQP__INGEST_QUEUE
+        - name: DATA_ROUTER_AMQP__INGEST_QUEUE
           value: "{{ .Values.dataRouter.inputSource }}"
         {{- else }}
         - name: DATA_ROUTER_COMMUNICATION_METHOD

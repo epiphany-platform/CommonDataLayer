@@ -31,13 +31,13 @@ spec:
         env:
         - name: COMMAND_SERVICE_REPOSITORY_KIND
           value: 'druid'
-        {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
-          value: "kafka"
         - name: COMMAND_SERVICE_KAFKA__BROKERS
           value: {{ .Values.global.kafkaBrokers }}
         - name: COMMAND_SERVICE_KAFKA__GROUP_ID
           value: "cdl-druid-command-service"
+        {{- if eq .Values.global.communicationMethod "kafka" }}
+        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
+          value: "kafka"
         {{- else if eq .Values.global.communicationMethod "amqp" }}
         - name: COMMAND_SERVICE_COMMUNICATION_METHOD
           value: "amqp"

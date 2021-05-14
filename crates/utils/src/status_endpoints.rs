@@ -4,8 +4,7 @@ use hyper::{Body, Method, Request, Response, Server, StatusCode};
 use lazy_static::lazy_static;
 use std::convert::Infallible;
 use std::sync::RwLock;
-
-pub const DEFAULT_PORT: &str = "3000";
+use tracing::trace;
 
 lazy_static! {
     static ref HEALTH_STATUS: RwLock<bool> = RwLock::new(true);
@@ -14,12 +13,14 @@ lazy_static! {
 }
 
 pub fn serve(settings: &MonitoringSettings) {
-    tokio::spawn(serve_status(settings.stats_port));
+    trace!(?settings, "Starting status endpoints");
+    tokio::spawn(serve_status(settings.status_port));
 }
 pub fn get_health_status() -> bool {
     *HEALTH_STATUS.read().unwrap()
 }
 pub fn mark_as_unhealthy() {
+    trace!("Marking service as unhealthy");
     let mut status = HEALTH_STATUS.write().unwrap();
     *status = false;
 }
@@ -27,6 +28,7 @@ pub fn get_startup_status() -> bool {
     *STARTUP_STATUS.read().unwrap()
 }
 pub fn mark_as_started() {
+    trace!("Marking service as started");
     let mut status = STARTUP_STATUS.write().unwrap();
     *status = true;
 }
@@ -34,10 +36,12 @@ pub fn get_readiness_status() -> bool {
     *READY_STATUS.read().unwrap()
 }
 pub fn mark_as_ready() {
+    trace!("Marking service as ready");
     let mut status = READY_STATUS.write().unwrap();
     *status = true;
 }
 pub fn mark_as_not_ready() {
+    trace!("Marking service as not ready");
     let mut status = READY_STATUS.write().unwrap();
     *status = false;
 }

@@ -1,4 +1,4 @@
-name: Audit
+name: Audit Check
 on:
   push:
     branches:

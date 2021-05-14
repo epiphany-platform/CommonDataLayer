@@ -79,8 +79,8 @@ pub struct NotificationSettings {
 pub struct MonitoringSettings {
     #[serde(default)]
     pub metrics_port: u16,
-    #[serde(default)]
-    pub stats_port: u16,
+    #[serde(default = "default_status_port")]
+    pub status_port: u16,
     #[serde(default = "default_otel_service_name")]
     pub otel_service_name: String,
 }
@@ -99,7 +99,14 @@ impl Default for LogSettings {
 }
 
 fn default_otel_service_name() -> String {
-    env::current_exe().unwrap().to_string_lossy().to_string()
+    env::current_exe()
+        .expect("Current executable name")
+        .to_string_lossy()
+        .to_string()
+}
+
+fn default_status_port() -> u16 {
+    3000
 }
 
 pub fn load_settings<'de, T: Deserialize<'de> + Debug>() -> anyhow::Result<T> {

@@ -22,7 +22,7 @@ source = ""
 
 [monitoring]
 metrics_port = 0
-stats_port = 0
+status_port = 0
 otel_service_name = "api"
 
 [log]

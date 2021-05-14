@@ -24,4 +24,4 @@ destination = "cdl.reports"
 
 [monitoring]
 metrics_port = "0" # Random
-stats_port = "0" # Random
+status_port = "0" # Random

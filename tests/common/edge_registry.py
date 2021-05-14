@@ -20,7 +20,8 @@ class EdgeRegistry:
 
     def start(self):
         env = self.postgres_config.to_dict("EDGE_REGISTRY")
-        env.update(EDGE_REGISTRY_monitoring__otel_service_name='edge-registry')
+        env.update(EDGE_REGISTRY_MONITORING__OTEL_SERVICE_NAME='edge-registry',
+                   EDGE_REGISTRY_MONITORING_STATUS_PORT='0')
 
         if type(self.consumer_config) is KafkaInputConfig:
             env.update(EDGE_REGISTRY_COMMUNICATION_METHOD='kafka',

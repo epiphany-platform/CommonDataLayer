@@ -23,7 +23,8 @@ class ObjectBuilder:
             "OBJECT_BUILDER_INPUT_PORT": self.input_port,
             "OBJECT_BUILDER_SERVICES__SCHEMA_REGISTRY_URL": self.schema_registry_addr,
             "OBJECT_BUILDER_MONITORING__OTEL_SERVICE_NAME": 'object-builder',
-            "OBJECT_BUILDER_CHUNK_CAPACITY": '100'
+            "OBJECT_BUILDER_CHUNK_CAPACITY": '100',
+            "OBJECT_BUILDER_MONITORING__STATUS_PORT": '0'
         }
 
         if type(self.consumer_config) is KafkaInputConfig:

@@ -24,7 +24,8 @@ class QueryService:
         env = self.db_config.to_dict("QUERY_SERVICE")
 
         env.update(QUERY_SERVICE_INPUT_PORT=self.input_port,
-                   QUERY_SERVICE_MONITORING__OTEL_SERVICE_NAME='query-service')
+                   QUERY_SERVICE_MONITORING__OTEL_SERVICE_NAME='query-service',
+                   QUERY_SERVICE_MONITORING__STATUS_PORT='0')
 
         self.svc = subprocess.Popen([EXE, plugin], env=env)
 

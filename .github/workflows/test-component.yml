@@ -1,4 +1,4 @@
-name: Test
+name: Component Test
 
 on:
   push:

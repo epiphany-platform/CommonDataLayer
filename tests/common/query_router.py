@@ -21,7 +21,8 @@ class QueryRouter:
             "QUERY_ROUTER_CACHE_CAPACITY": self.cache_capacity,
             "QUERY_ROUTER_INPUT_PORT": self.input_port,
             "QUERY_ROUTER_SERVICES__SCHEMA_REGISTRY_URL": self.schema_registry_addr,
-            "QUERY_ROUTER_MONITORING__OTEL_SERVICE_NAME": 'query-router'
+            "QUERY_ROUTER_MONITORING__OTEL_SERVICE_NAME": 'query-router',
+            "QUERY_ROUTER_MONITORING__STATUS_PORT": '0'
         }
 
         self.svc = subprocess.Popen([EXE], env=env)

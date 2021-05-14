@@ -1,8 +1,0 @@
-cache_capacity = 1000
-input_port = 50103
-
-[monitoring]
-otel_service_name = "query-router"
-
-[log]
-rust_log = "info,query_router=debug"
