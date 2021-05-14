@@ -170,6 +170,14 @@ pub enum ViewAction {
         /// If not provided, the value will be read from STDIN.
         #[clap(short, long, parse(from_os_str))]
         fields: Option<PathBuf>,
+        /// The file containing the filters encoded in JSON.
+        /// If not provided, the value will be read from STDIN.
+        #[clap(short, long, parse(from_os_str))]
+        filters: Option<PathBuf>,
+        /// The file containing the relations encoded in JSON.
+        /// If not provided, the value will be read from STDIN.
+        #[clap(short, long, parse(from_os_str))]
+        relations: Option<PathBuf>,
     },
 
     /// Update an existing view in the registry,
@@ -194,5 +202,19 @@ pub enum ViewAction {
         /// Materializer's options encoded in JSON
         #[clap(short, long)]
         materializer_options: Option<String>,
+        /// The file containing the filters encoded in JSON.
+        /// If not provided, the value will be read from STDIN.
+        #[clap(short, long, parse(from_os_str))]
+        filters: Option<PathBuf>,
+        /// Whether to update the filters property.
+        #[clap(short, long)]
+        update_filters: bool,
+        /// The file containing the relations encoded in JSON.
+        /// If not provided, the value will be read from STDIN.
+        #[clap(short, long, parse(from_os_str))]
+        relations: Option<PathBuf>,
+        /// Whether to update the relations property.
+        #[clap(short, long)]
+        update_relations: bool,
     },
 }

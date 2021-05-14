@@ -1,10 +1,10 @@
 use crate::schema::context::SchemaRegistryConn;
 use crate::types::schema::FullSchema;
-use crate::types::view::View;
+use crate::types::view::FullView;
 use async_graphql::FieldResult;
 use uuid::Uuid;
 
-pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<View> {
+pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<FullView> {
     tracing::debug!("get view: {:?}", id);
     let view = conn
         .get_view(rpc::schema_registry::Id { id: id.to_string() })
@@ -12,7 +12,7 @@ pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<Vi
         .map_err(|source| rpc::error::ClientError::QueryError { source })?
         .into_inner();
 
-    View::from_rpc(view)
+    FullView::from_rpc(view)
 }
 
 pub async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<FullSchema> {

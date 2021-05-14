@@ -72,6 +72,8 @@ pub async fn main() -> anyhow::Result<()> {
                 materializer_address,
                 materializer_options,
                 fields,
+                filters,
+                relations,
             } => {
                 add_view_to_schema(
                     schema_id,
@@ -79,6 +81,8 @@ pub async fn main() -> anyhow::Result<()> {
                     materializer_address,
                     materializer_options,
                     fields,
+                    filters,
+                    relations,
                     args.registry_addr,
                 )
                 .await
@@ -90,6 +94,10 @@ pub async fn main() -> anyhow::Result<()> {
                 update_fields,
                 materializer_address,
                 materializer_options,
+                filters,
+                update_filters,
+                relations,
+                update_relations,
             } => {
                 update_view(
                     id,
@@ -98,6 +106,10 @@ pub async fn main() -> anyhow::Result<()> {
                     materializer_options,
                     fields,
                     update_fields,
+                    filters,
+                    update_filters,
+                    relations,
+                    update_relations,
                     args.registry_addr,
                 )
                 .await

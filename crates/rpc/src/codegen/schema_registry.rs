@@ -13,8 +13,8 @@ pub struct SchemaMetadata {
     pub insert_destination: ::prost::alloc::string::String,
     #[prost(string, required, tag = "3")]
     pub query_address: ::prost::alloc::string::String,
-    #[prost(enumeration = "schema_type::Type", required, tag = "4")]
-    pub schema_type: i32,
+    #[prost(message, required, tag = "4")]
+    pub schema_type: SchemaType,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SchemaMetadataPatch {
@@ -24,8 +24,8 @@ pub struct SchemaMetadataPatch {
     pub query_address: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, optional, tag = "3")]
     pub insert_destination: ::core::option::Option<::prost::alloc::string::String>,
-    #[prost(enumeration = "schema_type::Type", optional, tag = "4")]
-    pub schema_type: ::core::option::Option<i32>,
+    #[prost(message, optional, tag = "4")]
+    pub schema_type: ::core::option::Option<SchemaType>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Schema {
@@ -47,11 +47,174 @@ pub struct View {
     #[prost(map = "string, string", tag = "5")]
     pub fields:
         ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
+    #[prost(message, optional, tag = "6")]
+    pub filters: ::core::option::Option<Filter>,
+    #[prost(message, repeated, tag = "7")]
+    pub relations: ::prost::alloc::vec::Vec<Relation>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Filter {
+    #[prost(oneof = "filter::FilterKind", tags = "1, 2")]
+    pub filter_kind: ::core::option::Option<filter::FilterKind>,
+}
+/// Nested message and enum types in `Filter`.
+pub mod filter {
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum FilterKind {
+        #[prost(message, tag = "1")]
+        Simple(super::SimpleFilter),
+        #[prost(message, tag = "2")]
+        Complex(super::ComplexFilter),
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SimpleFilter {
+    #[prost(message, required, tag = "1")]
+    pub operator: FilterOperator,
+    #[prost(message, required, tag = "2")]
+    pub lhs: FilterValue,
+    #[prost(message, optional, tag = "3")]
+    pub rhs: ::core::option::Option<FilterValue>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComplexFilter {
+    #[prost(message, required, tag = "1")]
+    pub operator: LogicOperator,
+    #[prost(message, repeated, tag = "2")]
+    pub operands: ::prost::alloc::vec::Vec<Filter>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct LogicOperator {
+    #[prost(enumeration = "logic_operator::Operator", required, tag = "1")]
+    pub operator: i32,
+}
+/// Nested message and enum types in `LogicOperator`.
+pub mod logic_operator {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[repr(i32)]
+    pub enum Operator {
+        And = 0,
+        Or = 1,
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FilterOperator {
+    #[prost(enumeration = "filter_operator::Operator", required, tag = "1")]
+    pub operator: i32,
+}
+/// Nested message and enum types in `FilterOperator`.
+pub mod filter_operator {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[repr(i32)]
+    pub enum Operator {
+        Equals = 0,
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FilterValue {
+    #[prost(oneof = "filter_value::FilterValue", tags = "1, 2, 3, 4")]
+    pub filter_value: ::core::option::Option<filter_value::FilterValue>,
+}
+/// Nested message and enum types in `FilterValue`.
+pub mod filter_value {
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum FilterValue {
+        #[prost(message, tag = "1")]
+        SchemaField(super::SchemaFieldFilter),
+        #[prost(message, tag = "2")]
+        ViewPath(super::ViewPathFilter),
+        #[prost(message, tag = "3")]
+        RawValue(super::RawValueFilter),
+        #[prost(message, tag = "4")]
+        Computed(super::ComputedFilter),
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SchemaFieldFilter {
+    #[prost(uint32, required, tag = "1")]
+    pub schema_id: u32,
+    #[prost(string, required, tag = "2")]
+    pub field_path: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ViewPathFilter {
+    #[prost(string, required, tag = "1")]
+    pub field_path: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RawValueFilter {
+    #[prost(string, required, tag = "1")]
+    pub value: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComputedFilter {
+    #[prost(message, required, tag = "1")]
+    pub computation: Computation,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Computation {
+    #[prost(message, required, tag = "1")]
+    pub operator: ComputationOperator,
+    #[prost(message, required, boxed, tag = "2")]
+    pub lhs: ::prost::alloc::boxed::Box<Computation>,
+    #[prost(message, optional, boxed, tag = "3")]
+    pub rhs: ::core::option::Option<::prost::alloc::boxed::Box<Computation>>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ComputationOperator {
+    #[prost(oneof = "computation_operator::ComputationOperator", tags = "1, 2, 3")]
+    pub computation_operator: ::core::option::Option<computation_operator::ComputationOperator>,
+}
+/// Nested message and enum types in `ComputationOperator`.
+pub mod computation_operator {
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum ComputationOperator {
+        #[prost(message, tag = "1")]
+        RawValue(super::RawValueComputation),
+        #[prost(message, tag = "2")]
+        FieldValue(super::FieldValueComputation),
+        #[prost(message, tag = "3")]
+        Equals(super::EqualsComputation),
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct RawValueComputation {
+    #[prost(string, required, tag = "1")]
+    pub value: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FieldValueComputation {
+    #[prost(string, optional, tag = "1")]
+    pub base_schema: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, required, tag = "2")]
+    pub field_path: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EqualsComputation {}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FullView {
+    #[prost(string, required, tag = "1")]
+    pub id: ::prost::alloc::string::String,
+    #[prost(string, required, tag = "2")]
+    pub base_schema_id: ::prost::alloc::string::String,
+    #[prost(string, required, tag = "3")]
+    pub name: ::prost::alloc::string::String,
+    #[prost(string, required, tag = "4")]
+    pub materializer_address: ::prost::alloc::string::String,
+    #[prost(string, required, tag = "5")]
+    pub materializer_options: ::prost::alloc::string::String,
+    #[prost(map = "string, string", tag = "6")]
+    pub fields:
+        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
+    #[prost(message, optional, tag = "7")]
+    pub filters: ::core::option::Option<Filter>,
+    #[prost(message, repeated, tag = "8")]
+    pub relations: ::prost::alloc::vec::Vec<Relation>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NewView {
     #[prost(string, required, tag = "1")]
-    pub schema_id: ::prost::alloc::string::String,
+    pub base_schema_id: ::prost::alloc::string::String,
     #[prost(string, required, tag = "2")]
     pub name: ::prost::alloc::string::String,
     #[prost(string, required, tag = "3")]
@@ -61,6 +224,35 @@ pub struct NewView {
     #[prost(map = "string, string", tag = "5")]
     pub fields:
         ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
+    #[prost(message, optional, tag = "6")]
+    pub filters: ::core::option::Option<Filter>,
+    #[prost(message, repeated, tag = "7")]
+    pub relations: ::prost::alloc::vec::Vec<Relation>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct Relation {
+    #[prost(string, required, tag = "1")]
+    pub global_id: ::prost::alloc::string::String,
+    #[prost(uint32, required, tag = "2")]
+    pub local_id: u32,
+    #[prost(message, required, tag = "3")]
+    pub search_for: SearchFor,
+    #[prost(message, repeated, tag = "4")]
+    pub relations: ::prost::alloc::vec::Vec<Relation>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SearchFor {
+    #[prost(enumeration = "search_for::Direction", required, tag = "1")]
+    pub search_for: i32,
+}
+/// Nested message and enum types in `SearchFor`.
+pub mod search_for {
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+    #[repr(i32)]
+    pub enum Direction {
+        Parents = 0,
+        Children = 1,
+    }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ViewUpdate {
@@ -77,6 +269,14 @@ pub struct ViewUpdate {
         ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
     #[prost(bool, required, tag = "6")]
     pub update_fields: bool,
+    #[prost(message, optional, tag = "7")]
+    pub filters: ::core::option::Option<Filter>,
+    #[prost(message, repeated, tag = "8")]
+    pub relations: ::prost::alloc::vec::Vec<Relation>,
+    #[prost(bool, required, tag = "9")]
+    pub update_filters: bool,
+    #[prost(bool, required, tag = "10")]
+    pub update_relations: bool,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FullSchema {
@@ -140,7 +340,7 @@ pub struct FullSchemas {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SchemaViews {
     #[prost(message, repeated, tag = "1")]
-    pub views: ::prost::alloc::vec::Vec<View>,
+    pub views: ::prost::alloc::vec::Vec<FullView>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValueToValidate {
@@ -348,7 +548,7 @@ pub mod schema_registry_client {
         pub async fn get_view(
             &mut self,
             request: impl tonic::IntoRequest<super::Id>,
-        ) -> Result<tonic::Response<super::View>, tonic::Status> {
+        ) -> Result<tonic::Response<super::FullView>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -533,7 +733,7 @@ pub mod schema_registry_server {
         async fn get_view(
             &self,
             request: tonic::Request<super::Id>,
-        ) -> Result<tonic::Response<super::View>, tonic::Status>;
+        ) -> Result<tonic::Response<super::FullView>, tonic::Status>;
         async fn get_all_schemas(
             &self,
             request: tonic::Request<super::Empty>,
@@ -880,7 +1080,7 @@ pub mod schema_registry_server {
                     #[allow(non_camel_case_types)]
                     struct GetViewSvc<T: SchemaRegistry>(pub Arc<T>);
                     impl<T: SchemaRegistry> tonic::server::UnaryService<super::Id> for GetViewSvc<T> {
-                        type Response = super::View;
+                        type Response = super::FullView;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(&mut self, request: tonic::Request<super::Id>) -> Self::Future {
                             let inner = self.0.clone();

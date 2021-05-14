@@ -1,72 +1,122 @@
 use std::convert::TryFrom;
 
 use async_graphql::Enum;
+use derive_more::Display;
 use serde::{Deserialize, Serialize};
-use tonic::Status;
 
+use super::filter_operator;
+use super::logic_operator;
 use super::schema_type;
+use super::search_for;
 
-#[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, sqlx::Type, Enum)]
-#[sqlx(type_name = "schema_type_enum", rename_all = "lowercase")]
-pub enum SchemaType {
-    DocumentStorage,
-    Timeseries,
-}
-
-impl From<schema_type::Type> for SchemaType {
-    fn from(st: schema_type::Type) -> Self {
-        match st {
-            schema_type::Type::DocumentStorage => SchemaType::DocumentStorage,
-            schema_type::Type::Timeseries => SchemaType::Timeseries,
+macro_rules! rpc_enum {
+	(
+        $name: ident,
+        $inner: path,
+        $inner_field: ident,
+        $display: literal,
+        $sql: literal,
+        [ $($variant: ident),* ]
+    ) => {
+        #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, sqlx::Type, Enum, Display)]
+        #[sqlx(type_name = $sql, rename_all = "lowercase")]
+        pub enum $name {
+            $($variant),*
         }
-    }
-}
 
-impl From<SchemaType> for schema_type::Type {
-    fn from(st: SchemaType) -> Self {
-        match st {
-            SchemaType::DocumentStorage => schema_type::Type::DocumentStorage,
-            SchemaType::Timeseries => schema_type::Type::Timeseries,
+        impl From<$inner> for $name {
+            fn from(op: $inner) -> Self {
+                match op {
+                    $(<$inner>::$variant => Self::$variant),*
+                }
+            }
         }
-    }
-}
 
-impl std::fmt::Display for SchemaType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(match self {
-            SchemaType::DocumentStorage => "DocumentStorage",
-            SchemaType::Timeseries => "Timeseries",
-        })
-    }
-}
-
-impl std::str::FromStr for SchemaType {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "DocumentStorage" => Ok(SchemaType::DocumentStorage),
-            "Timeseries" => Ok(SchemaType::Timeseries),
-            invalid => Err(anyhow::anyhow!("Invalid schema type: {}", invalid)),
+        impl From<$name> for super::$name {
+            fn from(op: $name) -> Self {
+                Self {
+                    $inner_field: match op {
+                        $(<$name>::$variant => <$inner>::$variant.into()),*
+                    },
+                }
+            }
         }
-    }
-}
 
-impl TryFrom<i32> for SchemaType {
-    type Error = Status;
+        impl std::str::FromStr for $name {
+            type Err = anyhow::Error;
 
-    fn try_from(variant: i32) -> Result<Self, Self::Error> {
-        match variant {
-            0 => Ok(SchemaType::DocumentStorage),
-            1 => Ok(SchemaType::Timeseries),
-            _ => Err(Status::invalid_argument("Invalid Schema Type")),
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                match s {
+                    $(
+                        stringify!($variant) => Ok(Self::$variant),
+                    )*
+                    invalid => Err(anyhow::anyhow!("Invalid {}: {}", $display, invalid)),
+                }
+            }
         }
-    }
+
+        impl From<$name> for i32 {
+            fn from(o: $name) -> i32 {
+                let o: super::$name = o.into();
+                o.$inner_field
+            }
+        }
+
+        impl TryFrom<super::$name> for $name {
+            type Error = anyhow::Error;
+
+            fn try_from(variant: super::$name) -> Result<Self, Self::Error> {
+                if false { unreachable!() } //In case there are no variants
+                $( if variant.$inner_field == { let v: i32 = <$inner>::$variant.into(); v } { return Ok(Self::$variant) })*
+                else {  Err(anyhow::anyhow!(concat!("Invalid ", $display))) }
+            }
+        }
+	};
 }
 
-impl From<SchemaType> for i32 {
-    fn from(r#type: SchemaType) -> i32 {
-        let r#type: schema_type::Type = r#type.into();
-        r#type as i32
-    }
+rpc_enum! {
+    SchemaType,
+    schema_type::Type,
+    schema_type,
+    "schema type",
+    "schema_type_enum",
+    [
+        DocumentStorage,
+        Timeseries
+    ]
+}
+
+rpc_enum! {
+    SearchFor,
+    search_for::Direction,
+    search_for,
+    "relation direction",
+    "search_for_enum",
+    [
+        Parents,
+        Children
+    ]
+}
+
+rpc_enum! {
+    FilterOperator,
+    filter_operator::Operator,
+    operator,
+    "filter operator",
+    "filter_operator_enum",
+    [
+        Equals
+    ]
+}
+
+rpc_enum! {
+    LogicOperator,
+    logic_operator::Operator,
+    operator,
+    "logic operator",
+    "logic_operator_enum",
+    [
+        And,
+        Or
+    ]
 }

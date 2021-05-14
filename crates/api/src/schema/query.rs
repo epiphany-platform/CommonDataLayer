@@ -5,13 +5,13 @@ use itertools::Itertools;
 use semver::VersionReq;
 use uuid::Uuid;
 
-use crate::error::Result;
 use crate::schema::context::{EdgeRegistryPool, OnDemandMaterializerPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
 use crate::types::schema::{Definition, FullSchema};
 use crate::types::view::View;
 use crate::types::view::{MaterializedView, RowDefinition};
+use crate::{error::Result, types::view::FullView};
 use crate::{settings::Settings, types::view::OnDemandViewRequest};
 use rpc::materializer_ondemand::OnDemandRequest;
 use rpc::schema_registry::types::SchemaType;
@@ -99,7 +99,7 @@ impl QueryRoot {
 
     /// Return single view for given id
     #[tracing::instrument(skip(self, context))]
-    async fn view(&self, context: &Context<'_>, id: Uuid) -> FieldResult<View> {
+    async fn view(&self, context: &Context<'_>, id: Uuid) -> FieldResult<FullView> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
         get_view(&mut conn, id).await
     }

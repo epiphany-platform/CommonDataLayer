@@ -293,7 +293,8 @@ impl ObjectBuilderImpl {
                 Ok((
                     field_def_key.into(),
                     match field_def {
-                        FieldName(field_name) => {
+                        Simple { field_name, .. } => {
+                            //TODO: Use field_type
                             let value = object.get(field_name).with_context(|| {
                                 format!(
                                     "Object ({}) does not have a field named `{}`",
@@ -301,6 +302,12 @@ impl ObjectBuilderImpl {
                                 )
                             })?;
                             value.clone()
+                        }
+                        Computed { .. } => {
+                            todo!()
+                        }
+                        Array { .. } => {
+                            todo!()
                         }
                     },
                 ))
@@ -358,7 +365,7 @@ impl ObjectBuilderImpl {
         let schema_meta = self.get_schema_metadata(schema_id).await?;
 
         let query_address = schema_meta.query_address.clone();
-        let schema_type = schema_meta.schema_type().into();
+        let schema_type = schema_meta.schema_type.try_into()?;
 
         match schema_type {
             SchemaType::DocumentStorage => {
@@ -391,7 +398,7 @@ impl ObjectBuilderImpl {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn get_view(&self, view_id: Uuid) -> anyhow::Result<rpc::schema_registry::View> {
+    async fn get_view(&self, view_id: Uuid) -> anyhow::Result<rpc::schema_registry::FullView> {
         let view = self
             .pool
             .get()

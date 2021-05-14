@@ -19,8 +19,9 @@ use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate,
     ValueToValidate, VersionedId,
 };
-use utils::communication::metadata_fetcher::MetadataFetcher;
 use utils::communication::Result;
+use utils::types::materialization::Relation;
+use utils::{communication::metadata_fetcher::MetadataFetcher, types::materialization::Filter};
 
 pub struct SchemaRegistryImpl {
     pub db: SchemaRegistryDb,
@@ -57,7 +58,11 @@ impl SchemaRegistry for SchemaRegistryImpl {
             definition: parse_json_and_deserialize(&request.definition)?,
             query_address: request.metadata.query_address,
             insert_destination: request.metadata.insert_destination,
-            schema_type: request.metadata.schema_type.try_into()?,
+            schema_type: request
+                .metadata
+                .schema_type
+                .try_into()
+                .map_err(|e| tonic::Status::invalid_argument(format!("{:?}", e)))?,
         };
 
         if !new_schema.insert_destination.is_empty()
@@ -107,7 +112,10 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let schema_id = parse_uuid(&request.id)?;
 
         let schema_type = if let Some(st) = request.patch.schema_type {
-            Some(st.try_into()?)
+            Some(
+                st.try_into()
+                    .map_err(|e| tonic::Status::invalid_argument(format!("{:?}", e)))?,
+            )
         } else {
             None
         };
@@ -139,6 +147,119 @@ impl SchemaRegistry for SchemaRegistryImpl {
     }
 
     #[tracing::instrument(skip(self))]
+    async fn add_view_to_schema(
+        &self,
+        request: Request<rpc::schema_registry::NewView>,
+    ) -> Result<Response<Id>, Status> {
+        //TODO: Request materializer validation for the options
+        let request = request.into_inner();
+        let materializer_options = serde_json::from_str(&request.materializer_options)
+            .map_err(RegistryError::MalformedViewFields)?;
+
+        tracing::debug!(options = ?materializer_options, "Materializer options");
+
+        let new_view = NewView {
+            base_schema_id: parse_uuid(&request.base_schema_id)?,
+            name: request.name,
+            materializer_address: request.materializer_address,
+            materializer_options,
+            fields: Json(
+                request
+                    .fields
+                    .into_iter()
+                    .map(|(key, value)| {
+                        Ok((
+                            key,
+                            serde_json::from_str(&value)
+                                .map_err(RegistryError::MalformedViewFields)?,
+                        ))
+                    })
+                    .collect::<RegistryResult<HashMap<_, _>>>()?,
+            ),
+            filters: Json(None), //TODO
+            relations: Json(
+                request
+                    .relations
+                    .into_iter()
+                    .map(Relation::from_rpc)
+                    .collect::<Result<Vec<_>, _>>()?,
+            ),
+        };
+
+        let new_id = self.db.add_view_to_schema(new_view).await?;
+
+        Ok(Response::new(Id {
+            id: new_id.to_string(),
+        }))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn update_view(
+        &self,
+        request: Request<rpc::schema_registry::ViewUpdate>,
+    ) -> Result<Response<Empty>, Status> {
+        let request = request.into_inner();
+        let id = parse_uuid(&request.id)?;
+
+        //TODO: Request materializer validation for the options
+        let fields = if request.update_fields {
+            Some(Json(
+                request
+                    .fields
+                    .into_iter()
+                    .map(|(key, value)| {
+                        Ok((
+                            key,
+                            serde_json::from_str(&value)
+                                .map_err(RegistryError::MalformedViewFields)?,
+                        ))
+                    })
+                    .collect::<RegistryResult<HashMap<_, _>>>()?,
+            ))
+        } else {
+            None
+        };
+
+        let relations = if request.update_relations {
+            Some(Json(
+                request
+                    .relations
+                    .into_iter()
+                    .map(Relation::from_rpc)
+                    .collect::<Result<Vec<_>, _>>()?,
+            ))
+        } else {
+            None
+        };
+
+        let filters = if request.update_filters {
+            Some(Json(request.filters.map(Filter::from_rpc).transpose()?))
+        } else {
+            None
+        };
+
+        let update = ViewUpdate {
+            name: request.name,
+            materializer_address: request.materializer_address,
+            materializer_options: if !request.materializer_options.is_empty() {
+                Some(
+                    serde_json::from_str(&request.materializer_options)
+                        .map_err(RegistryError::MalformedViewFields)?,
+                )
+            } else {
+                None
+            },
+            fields,
+            relations,
+            filters,
+        };
+
+        self.db.update_view(id, update).await?;
+
+        Ok(Response::new(Empty {}))
+    }
+
+    #[tracing::instrument(skip(self))]
     async fn get_schema_metadata(
         &self,
         request: Request<Id>,
@@ -157,23 +278,17 @@ impl SchemaRegistry for SchemaRegistryImpl {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn get_base_schema_of_view(
+    async fn get_schema_versions(
         &self,
         request: Request<Id>,
-    ) -> Result<Response<rpc::schema_registry::Schema>, Status> {
+    ) -> Result<Response<rpc::schema_registry::SchemaVersions>, Status> {
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
-        let schema = self.db.get_base_schema_of_view(id).await?;
+        let versions = self.db.get_schema_versions(id).await?;
 
-        Ok(Response::new(rpc::schema_registry::Schema {
-            id: schema.id.to_string(),
-            metadata: rpc::schema_registry::SchemaMetadata {
-                name: schema.name,
-                insert_destination: schema.insert_destination,
-                query_address: schema.query_address,
-                schema_type: schema.schema_type.into(),
-            },
+        Ok(Response::new(rpc::schema_registry::SchemaVersions {
+            versions: versions.into_iter().map(|v| v.to_string()).collect(),
         }))
     }
 
@@ -194,21 +309,6 @@ impl SchemaRegistry for SchemaRegistryImpl {
         Ok(Response::new(rpc::schema_registry::SchemaDefinition {
             version: version.to_string(),
             definition: serialize_json(&definition)?,
-        }))
-    }
-
-    #[tracing::instrument(skip(self))]
-    async fn get_schema_versions(
-        &self,
-        request: Request<Id>,
-    ) -> Result<Response<rpc::schema_registry::SchemaVersions>, Status> {
-        let request = request.into_inner();
-        let id = parse_uuid(&request.id)?;
-
-        let versions = self.db.get_schema_versions(id).await?;
-
-        Ok(Response::new(rpc::schema_registry::SchemaVersions {
-            versions: versions.into_iter().map(|v| v.to_string()).collect(),
         }))
     }
 
@@ -262,9 +362,50 @@ impl SchemaRegistry for SchemaRegistryImpl {
                                 ))
                             })
                             .collect::<RegistryResult<HashMap<_, _>>>()?,
+                        relations: view
+                            .relations
+                            .0
+                            .into_iter()
+                            .map(|relation| relation.into_rpc())
+                            .collect::<Vec<_>>(),
+                        filters: None, // TODO:
                     })
                 })
-                .collect::<RegistryResult<Vec<_>>>()?,
+                .collect::<Result<Vec<_>, Status>>()?,
+        }))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn get_view(
+        &self,
+        request: Request<Id>,
+    ) -> Result<Response<rpc::schema_registry::FullView>, Status> {
+        let request = request.into_inner();
+        let id = parse_uuid(&request.id)?;
+
+        let view = self.db.get_view(id).await?;
+
+        Ok(Response::new(rpc::schema_registry::FullView {
+            id: request.id,
+            base_schema_id: view.base_schema.to_string(),
+            name: view.name,
+            materializer_address: view.materializer_address,
+            materializer_options: serde_json::to_string(&view.materializer_options)
+                .map_err(RegistryError::MalformedViewFields)?,
+            fields: view
+                .fields
+                .0
+                .into_iter()
+                .map(|(key, value)| {
+                    Ok((
+                        key,
+                        serde_json::to_string(&value)
+                            .map_err(RegistryError::MalformedViewFields)?,
+                    ))
+                })
+                .collect::<RegistryResult<_>>()?,
+            relations: view.relations.0.into_iter().map(|r| r.into_rpc()).collect(),
+            filters: None, //TODO:
         }))
     }
 
@@ -344,43 +485,19 @@ impl SchemaRegistry for SchemaRegistryImpl {
                                             ))
                                         })
                                         .collect::<RegistryResult<HashMap<_, _>>>()?,
+                                    relations: view
+                                        .relations
+                                        .0
+                                        .into_iter()
+                                        .map(|r| r.into_rpc())
+                                        .collect(),
+                                    filters: view.filters.0.map(|f| f.into_rpc()).transpose()?,
                                 })
                             })
-                            .collect::<RegistryResult<Vec<_>>>()?,
+                            .collect::<Result<Vec<_>, Status>>()?,
                     })
                 })
                 .collect::<Result<Vec<_>, Status>>()?,
-        }))
-    }
-
-    #[tracing::instrument(skip(self))]
-    async fn get_view(
-        &self,
-        request: Request<Id>,
-    ) -> Result<Response<rpc::schema_registry::View>, Status> {
-        let request = request.into_inner();
-        let id = parse_uuid(&request.id)?;
-
-        let view = self.db.get_view(id).await?;
-
-        Ok(Response::new(rpc::schema_registry::View {
-            id: request.id,
-            name: view.name,
-            materializer_address: view.materializer_address,
-            materializer_options: serde_json::to_string(&view.materializer_options)
-                .map_err(RegistryError::MalformedViewFields)?,
-            fields: view
-                .fields
-                .0
-                .into_iter()
-                .map(|(key, value)| {
-                    Ok((
-                        key,
-                        serde_json::to_string(&value)
-                            .map_err(RegistryError::MalformedViewFields)?,
-                    ))
-                })
-                .collect::<RegistryResult<_>>()?,
         }))
     }
 
@@ -398,8 +515,9 @@ impl SchemaRegistry for SchemaRegistryImpl {
             views: views
                 .into_iter()
                 .map(|view| {
-                    Ok(rpc::schema_registry::View {
+                    Ok(rpc::schema_registry::FullView {
                         id: view.id.to_string(),
+                        base_schema_id: view.base_schema.to_string(),
                         name: view.name,
                         materializer_address: view.materializer_address,
                         materializer_options: serde_json::to_string(&view.materializer_options)
@@ -416,94 +534,33 @@ impl SchemaRegistry for SchemaRegistryImpl {
                                 ))
                             })
                             .collect::<RegistryResult<_>>()?,
+                        relations: view.relations.0.into_iter().map(|r| r.into_rpc()).collect(),
+                        filters: view.filters.0.map(|f| f.into_rpc()).transpose()?,
                     })
                 })
-                .collect::<RegistryResult<Vec<_>>>()?,
+                .collect::<Result<Vec<_>, tonic::Status>>()?,
         }))
     }
 
     #[tracing::instrument(skip(self))]
-    async fn add_view_to_schema(
+    async fn get_base_schema_of_view(
         &self,
-        request: Request<rpc::schema_registry::NewView>,
-    ) -> Result<Response<Id>, Status> {
-        //TODO: Request materializer validation for the options
-        let request = request.into_inner();
-        let materializer_options = serde_json::from_str(&request.materializer_options)
-            .map_err(RegistryError::MalformedViewFields)?;
-
-        tracing::debug!(options = ?materializer_options, "Materializer options");
-
-        let new_view = NewView {
-            schema_id: parse_uuid(&request.schema_id)?,
-            name: request.name,
-            materializer_address: request.materializer_address,
-            materializer_options,
-            fields: Json(
-                request
-                    .fields
-                    .into_iter()
-                    .map(|(key, value)| {
-                        Ok((
-                            key,
-                            serde_json::from_str(&value)
-                                .map_err(RegistryError::MalformedViewFields)?,
-                        ))
-                    })
-                    .collect::<RegistryResult<HashMap<_, _>>>()?,
-            ),
-        };
-
-        let new_id = self.db.add_view_to_schema(new_view).await?;
-
-        Ok(Response::new(Id {
-            id: new_id.to_string(),
-        }))
-    }
-
-    #[tracing::instrument(skip(self))]
-    async fn update_view(
-        &self,
-        request: Request<rpc::schema_registry::ViewUpdate>,
-    ) -> Result<Response<Empty>, Status> {
+        request: Request<Id>,
+    ) -> Result<Response<rpc::schema_registry::Schema>, Status> {
         let request = request.into_inner();
         let id = parse_uuid(&request.id)?;
 
-        //TODO: Request materializer validation for the options
-        let fields = if request.update_fields {
-            Some(Json(
-                request
-                    .fields
-                    .into_iter()
-                    .map(|(key, value)| {
-                        Ok((
-                            key,
-                            serde_json::from_str(&value)
-                                .map_err(RegistryError::MalformedViewFields)?,
-                        ))
-                    })
-                    .collect::<RegistryResult<HashMap<_, _>>>()?,
-            ))
-        } else {
-            None
-        };
-        let update = ViewUpdate {
-            name: request.name,
-            materializer_address: request.materializer_address,
-            materializer_options: if !request.materializer_options.is_empty() {
-                Some(
-                    serde_json::from_str(&request.materializer_options)
-                        .map_err(RegistryError::MalformedViewFields)?,
-                )
-            } else {
-                None
+        let schema = self.db.get_base_schema_of_view(id).await?;
+
+        Ok(Response::new(rpc::schema_registry::Schema {
+            id: schema.id.to_string(),
+            metadata: rpc::schema_registry::SchemaMetadata {
+                name: schema.name,
+                insert_destination: schema.insert_destination,
+                query_address: schema.query_address,
+                schema_type: schema.schema_type.into(),
             },
-            fields,
-        };
-
-        self.db.update_view(id, update).await?;
-
-        Ok(Response::new(Empty {}))
+        }))
     }
 
     async fn validate_value(
