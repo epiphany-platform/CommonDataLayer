@@ -18,7 +18,7 @@ tracing_tools           = { path    = "../tracing_tools", features = ["kafka", "
 anyhow      = "1.0"
 async-trait = "0.1"
 config      = "0.11"
-derive_more = { version = "0.99.13", features = ["display"] }
+derive_more = { version = "0.99.14", features = ["display"] }
 dirs        = "3.0.2"
 hyper       = "0.14"
 lapin       = "1.7"
