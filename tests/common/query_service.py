@@ -21,10 +21,11 @@ class QueryService:
         if not plugin:
             raise Exception('Unsupported database or no database at all')
 
-        env = self.db_config.to_dict()
+        env = self.db_config.to_dict("QUERY_SERVICE")
 
-        env.update(INPUT_PORT=self.input_port)
-        env.update(METRICS_PORT="59102")
+        env.update(QUERY_SERVICE_INPUT_PORT=self.input_port,
+                   QUERY_SERVICE_MONITORING__OTEL_SERVICE_NAME='query-service',
+                   QUERY_SERVICE_MONITORING__STATUS_PORT='0')
 
         self.svc = subprocess.Popen([EXE, plugin], env=env)
 

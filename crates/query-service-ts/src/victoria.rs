@@ -1,18 +1,12 @@
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
-use clap::Clap;
-use reqwest::Client;
+use reqwest::{Client, Url};
 use rpc::query_service_ts::{
     query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
 };
 use serde::Deserialize;
 use tonic::{Request, Response, Status};
-
-#[derive(Debug, Clap)]
-pub struct VictoriaConfig {
-    #[clap(long = "victoria-query-url", env = "VICTORIA_QUERY_URL")]
-    victoria_url: String,
-}
+use utils::settings::VictoriaMetricsSettings;
 
 pub struct VictoriaConnectionManager;
 
@@ -36,7 +30,7 @@ impl bb8::ManageConnection for VictoriaConnectionManager {
 
 pub struct VictoriaQuery {
     pool: Pool<VictoriaConnectionManager>,
-    addr: String,
+    addr: Url,
 }
 
 #[derive(Deserialize)]
@@ -47,7 +41,7 @@ struct RawStatementParameters {
 }
 
 impl VictoriaQuery {
-    pub async fn load(config: VictoriaConfig) -> anyhow::Result<Self> {
+    pub async fn load(config: VictoriaMetricsSettings) -> anyhow::Result<Self> {
         let pool = Pool::builder()
             .build(VictoriaConnectionManager)
             .await
@@ -55,7 +49,7 @@ impl VictoriaQuery {
 
         Ok(Self {
             pool,
-            addr: config.victoria_url,
+            addr: config.url.join("api/v1")?,
         })
     }
 

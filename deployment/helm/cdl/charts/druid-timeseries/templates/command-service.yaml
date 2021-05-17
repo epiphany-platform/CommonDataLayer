@@ -27,38 +27,42 @@ spec:
       - name: {{ .Release.Name }}-druid-command-service
         image: "{{ .Values.global.imageRepositoryPath }}cdl-command-service:{{ .Values.global.imageVersion }}"
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-        command: ["/bin/command-service","druid"]
+        command: ["/bin/command-service"]
         env:
-        {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: COMMUNICATION_METHOD
-          value: "kafka"
-        - name: KAFKA_BROKERS
+        - name: COMMAND_SERVICE_REPOSITORY_KIND
+          value: 'druid'
+        - name: COMMAND_SERVICE_KAFKA__BROKERS
           value: {{ .Values.global.kafkaBrokers }}
-        - name: KAFKA_GROUP_ID
+        - name: COMMAND_SERVICE_KAFKA__GROUP_ID
           value: "cdl-druid-command-service"
+        {{- if eq .Values.global.communicationMethod "kafka" }}
+        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
+          value: "kafka"
         {{- else if eq .Values.global.communicationMethod "amqp" }}
-        - name: COMMUNICATION_METHOD
+        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
           value: "amqp"
-        - name: AMQP_CONNECTION_STRING
+        - name: COMMAND_SERVICE_AMQP__EXCHANGE_URL
           value: {{ .Values.global.amqpConnectionString }}
-        - name: AMQP_CONSUMER_TAG
+        - name: COMMAND_SERVICE_AMQP__TAG
           value: "cdl-druid-command-service"
         {{- else }}
-        - name: COMMUNICATION_METHOD
+        - name: COMMAND_SERVICE_COMMUNICATION_METHOD
           value: "grpc"
-        - name: GRPC_PORT
-          value: "6400"
+        - name: COMMAND_SERVICE_GRPC__ADDRESS
+          value: "0.0.0.0:6400"
         {{- end }}
-        - name: ORDERED_SOURCES
+        - name: COMMAND_SERVICE_LISTENER__ORDERED_SOURCES
           value: {{ .Values.inputSource }}
-        - name: DRUID_OUTPUT_BROKERS
-          value: {{ .Values.global.kafkaBrokers }}
-        - name: DRUID_OUTPUT_TOPIC
+        - name: COMMAND_SERVICE_DRUID__TOPIC
           value: {{ .Values.outputTopic }}
-        - name: REPORT_DESTINATION
+        - name: COMMAND_SERVICE_NOTIFICATIONS__DESTINATION
           value: {{ .Values.global.reportDestination }}
-        - name: RUST_LOG
+        - name: COMMAND_SERVICE_NOTIFICATIONS__ENABLED
+          value: 'true'
+        - name: COMMAND_SERVICE_LOG__RUST_LOG
           value: "info,command_service=debug"
+        - name: COMMAND_SERVICE_MONITORING__OTEL_SERVICE_NAME
+          value: "druid-command"
         ports:
         - containerPort: 51805
   # TODO: Probes

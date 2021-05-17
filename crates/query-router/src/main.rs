@@ -1,44 +1,52 @@
 use std::sync::Arc;
 
-use clap::Clap;
 use uuid::Uuid;
 use warp::Filter;
 
 use cache::SchemaRegistryCache;
+use serde::Deserialize;
 use utils::metrics;
+use utils::settings::{load_settings, LogSettings, MonitoringSettings};
 
 pub mod cache;
 pub mod error;
 pub mod handler;
 
-#[derive(Clap)]
-struct Config {
-    /// Address of schema registry gRPC API
-    #[clap(long, env = "SCHEMA_REGISTRY_ADDR")]
-    schema_registry_addr: String,
-    /// How many entries the cache can hold
-    #[clap(long, env = "CACHE_CAPACITY")]
+#[derive(Debug, Deserialize)]
+struct Settings {
     cache_capacity: usize,
-    /// Port to listen on
-    #[clap(long, env = "INPUT_PORT")]
     input_port: u16,
-    /// Port to listen on for Prometheus requests
-    #[clap(default_value = metrics::DEFAULT_PORT, env)]
-    pub metrics_port: u16,
+
+    services: ServicesSettings,
+
+    monitoring: MonitoringSettings,
+
+    #[serde(default)]
+    log: LogSettings,
+}
+
+#[derive(Debug, Deserialize)]
+struct ServicesSettings {
+    schema_registry_url: String,
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
-    let config = Config::parse();
+    let settings: Settings = load_settings()?;
+    ::utils::tracing::init(
+        settings.log.rust_log.as_str(),
+        settings.monitoring.otel_service_name.as_str(),
+    )?;
 
-    metrics::serve(config.metrics_port);
+    tracing::debug!(?settings, "application environment");
+
+    metrics::serve(&settings.monitoring);
 
     let schema_registry_cache = Arc::new(SchemaRegistryCache::new(
-        config.schema_registry_addr,
-        config.cache_capacity,
+        settings.services.schema_registry_url,
+        settings.cache_capacity,
     ));
 
     let cache_filter = warp::any().map(move || schema_registry_cache.clone());
@@ -71,5 +79,7 @@ async fn main() {
         .and(single_route.or(raw_route))
         .or(warp::get().and(multiple_route.or(schema_route)));
 
-    utils::tracing::http::serve(routes, ([0, 0, 0, 0], config.input_port)).await;
+    utils::tracing::http::serve(routes, ([0, 0, 0, 0], settings.input_port)).await;
+
+    Ok(())
 }

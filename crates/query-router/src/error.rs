@@ -9,7 +9,7 @@ pub enum Error {
     SingleQueryMissingValue,
     RawQueryMissingValue,
     WrongValueFormat,
-    InvalidSchemaType(rpc::tonic::Status),
+    InvalidSchemaType(anyhow::Error),
     ExpectedSchemaType(SchemaType),
 }
 

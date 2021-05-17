@@ -1,7 +1,6 @@
 use std::{collections::HashMap, convert::TryFrom, convert::TryInto};
 
 use super::MaterializerPlugin;
-use crate::args::PostgresMaterializerArgs;
 use bb8_postgres::tokio_postgres::{types::Type, Config, NoTls};
 use bb8_postgres::{bb8, PostgresConnectionManager};
 use bb8_postgres::{
@@ -14,6 +13,7 @@ use rpc::materializer_general::MaterializedView;
 use serde::Deserialize;
 use serde_json::Value;
 use utils::metrics::{self, counter};
+use utils::settings::PostgresSettings;
 use uuid::Uuid;
 
 pub struct PostgresMaterializer {
@@ -183,14 +183,14 @@ impl PostgresMaterializer {
         }
     }
 
-    pub async fn new(args: &PostgresMaterializerArgs) -> anyhow::Result<Self> {
+    pub async fn new(args: &PostgresSettings) -> anyhow::Result<Self> {
         let mut pg_config = Config::new();
         pg_config
-            .user(&args.postgres_username)
-            .password(&args.postgres_password)
-            .host(&args.postgres_host)
-            .port(args.postgres_port)
-            .dbname(&args.postgres_dbname);
+            .user(&args.username)
+            .password(&args.password)
+            .host(&args.host)
+            .port(args.port)
+            .dbname(&args.dbname);
 
         let manager = PostgresConnectionManager::new(pg_config, NoTls);
         let pool = bb8::Pool::builder()
@@ -201,7 +201,7 @@ impl PostgresMaterializer {
 
         Ok(Self {
             pool,
-            schema: args.postgres_schema.clone(),
+            schema: args.schema.clone(),
         })
     }
 }

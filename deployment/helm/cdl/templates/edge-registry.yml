@@ -24,37 +24,45 @@ spec:
           imagePullPolicy: {{ .Values.global.imagePullPolicy }}
           command: ["/bin/edge-registry"]
           env:
-            - name: POSTGRES_USERNAME
+            - name: EDGE_REGISTRY_POSTGRES__USERNAME
               value: {{ .Values.edgeRegistry.postgresUsername }}
-            - name: POSTGRES_PASSWORD
+            - name: EDGE_REGISTRY_POSTGRES__PASSWORD
               value: {{ .Values.edgeRegistry.postgresPassword }}
-            - name: POSTGRES_HOST
+            - name: EDGE_REGISTRY_POSTGRES__HOST
               value: {{ .Values.edgeRegistry.postgresHost }}
-            - name: POSTGRES_PORT
+            - name: EDGE_REGISTRY_POSTGRES__PORT
               value: "{{ .Values.edgeRegistry.postgresPort }}"
-            - name: POSTGRES_DBNAME
+            - name: EDGE_REGISTRY_POSTGRES__DBNAME
               value: {{ .Values.edgeRegistry.postgresDbname }}
-            - name: POSTGRES_SCHEMA
+            - name: EDGE_REGISTRY_POSTGRES__SCHEMA
               value: {{ .Values.edgeRegistry.postgresSchema }}
-            - name: RPC_PORT
+            - name: EDGE_REGISTRY_INPUT_PORT
               value: "{{ .Values.edgeRegistry.rpcPort }}"
-            - name: CONSUMER_METHOD
+            - name: EDGE_REGISTRY_COMMUNICATION_METHOD
               value: {{ .Values.global.communicationMethod }}
             {{- if eq .Values.global.communicationMethod "kafka" }}
-            - name: CONSUMER_HOST
+            - name: EDGE_REGISTRY_KAFKA__BROKERS
               value: {{ .Values.global.kafkaBrokers }}
-            {{- else if eq .Values.global.communicationMethod "amqp" }}
-            - name: CONSUMER_HOST
-              value: {{ .Values.global.amqpConnectionString }}
-            {{- end }}
-            - name: REPORT_DESTINATION
-              value: {{ .Values.global.reportDestination }}
-            - name: CONSUMER_TAG
-              value: {{ .Values.edgeRegistry.consumerTag }}
-            - name: CONSUMER_SOURCE
+            - name: EDGE_REGISTRY_KAFKA__INGEST_TOPIC
               value: {{ .Values.edgeRegistry.consumerSource }}
-            - name: RUST_LOG
+            - name: EDGE_REGISTRY_KAFKA__GROUP_ID
+              value: {{ .Values.edgeRegistry.consumerTag }}
+            {{- else if eq .Values.global.communicationMethod "amqp" }}
+            - name: EDGE_REGISTRY_AMQP__EXCHANGE_URL
+              value: {{ .Values.global.amqpConnectionString }}
+            - name: EDGE_REGISTRY_AMQP__INGEST_QUEUE
+              value: {{ .Values.edgeRegistry.consumerSource }}
+            - name: EDGE_REGISTRY_AMQP__TAG
+              value: {{ .Values.edgeRegistry.consumerTag }}
+            {{- end }}
+            - name: EDGE_REGISTRY_NOTIFICATION__DESTINATION
+              value: {{ .Values.global.reportDestination }}
+            - name: EDGE_REGISTRY_NOTIFICATION__ENABLED
+              value: "true"
+            - name: EDGE_REGISTRY_LOG__RUST_LOG
               value: "info,edge_registry=debug"
+            - name: EDGE_REGISTRY_MONITORING__OTEL_SERVICE_NAME
+              value: "edge-registry"
           ports:
             - containerPort: 51805
       imagePullSecrets:

@@ -1,22 +1,18 @@
-use anyhow::Context;
+use crate::schema::context::SchemaRegistryConn;
+use crate::types::schema::FullSchema;
+use crate::types::view::FullView;
 use async_graphql::FieldResult;
 use uuid::Uuid;
 
-use crate::config::{CommunicationMethodConfig, Config};
-use crate::schema::context::SchemaRegistryConn;
-use crate::types::schema::FullSchema;
-use crate::types::view::View;
-use utils::communication::publisher::CommonPublisher;
-
-pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<View> {
+pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<FullView> {
     tracing::debug!("get view: {:?}", id);
     let view = conn
         .get_view(rpc::schema_registry::Id { id: id.to_string() })
         .await
-        .map_err(rpc::error::schema_registry_error)?
+        .map_err(|source| rpc::error::ClientError::QueryError { source })?
         .into_inner();
 
-    View::from_rpc(view)
+    FullView::from_rpc(view)
 }
 
 pub async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<FullSchema> {
@@ -24,24 +20,8 @@ pub async fn get_schema(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<
     let schema = conn
         .get_full_schema(rpc::schema_registry::Id { id: id.to_string() })
         .await
-        .map_err(rpc::error::schema_registry_error)?
+        .map_err(|source| rpc::error::ClientError::QueryError { source })?
         .into_inner();
 
     FullSchema::from_rpc(schema)
-}
-
-pub async fn connect_to_cdl_input(config: &Config) -> anyhow::Result<CommonPublisher> {
-    match config.communication_method.config()? {
-        CommunicationMethodConfig::Amqp {
-            connection_string, ..
-        } => CommonPublisher::new_amqp(&connection_string)
-            .await
-            .context("Unable to open RabbitMQ publisher for Ingestion Sink"),
-        CommunicationMethodConfig::Kafka { brokers, .. } => CommonPublisher::new_kafka(&brokers)
-            .await
-            .context("Unable to open Kafka publisher for Ingestion Sink"),
-        CommunicationMethodConfig::Grpc => CommonPublisher::new_grpc("ingestion-sink")
-            .await
-            .context("Unable to create GRPC publisher for Ingestion Sink"),
-    }
 }

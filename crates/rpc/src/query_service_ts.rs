@@ -7,10 +7,7 @@ pub use crate::codegen::query_service_ts::*;
 pub async fn connect(addr: String) -> Result<QueryServiceTsClient<Channel>, ClientError> {
     connect_inner(addr)
         .await
-        .map_err(|err| ClientError::ConnectionError {
-            service: "timeseries query service",
-            source: err,
-        })
+        .map_err(|err| ClientError::ConnectionError { source: err })
 }
 
 async fn connect_inner(
@@ -42,10 +39,7 @@ pub async fn query_by_range(
             step,
         })
         .await
-        .map_err(|err| ClientError::QueryError {
-            service: "timeseries query service",
-            source: err,
-        })?;
+        .map_err(|err| ClientError::QueryError { source: err })?;
 
     Ok(response.into_inner().timeseries)
 }
@@ -55,10 +49,7 @@ pub async fn query_by_schema(schema_id: String, addr: String) -> Result<String, 
     let response = conn
         .query_by_schema(SchemaId { schema_id })
         .await
-        .map_err(|err| ClientError::QueryError {
-            service: "timeseries query service",
-            source: err,
-        })?;
+        .map_err(|err| ClientError::QueryError { source: err })?;
 
     Ok(response.into_inner().timeseries)
 }
@@ -68,10 +59,7 @@ pub async fn query_raw(raw_statement: String, addr: String) -> Result<Vec<u8>, C
     let response = conn
         .query_raw(RawStatement { raw_statement })
         .await
-        .map_err(|err| ClientError::QueryError {
-            service: "timeseries query service",
-            source: err,
-        })?;
+        .map_err(|err| ClientError::QueryError { source: err })?;
 
     Ok(response.into_inner().value_bytes)
 }

@@ -134,6 +134,8 @@ impl ParallelCommonConsumer {
             .create()
             .context("Consumer creation failed")?;
 
+        eprintln!("{:?}", topics);
+
         rdkafka::consumer::Consumer::subscribe(&consumer, topics)
             .context("Can't subscribe to specified topics")?;
 

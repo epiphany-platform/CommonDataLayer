@@ -1,4 +1,4 @@
-name: MDBook
+name: MDBook Check
 
 on:
   pull_request:

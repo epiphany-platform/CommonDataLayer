@@ -7,10 +7,7 @@ pub use crate::codegen::object_builder::*;
 pub async fn connect(addr: impl Into<String>) -> Result<ObjectBuilderClient<Channel>, ClientError> {
     connect_inner(addr.into())
         .await
-        .map_err(|err| ClientError::ConnectionError {
-            service: "object builder",
-            source: err,
-        })
+        .map_err(|err| ClientError::ConnectionError { source: err })
 }
 
 async fn connect_inner(

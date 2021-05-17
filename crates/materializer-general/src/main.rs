@@ -1,28 +1,31 @@
-use clap::Clap;
-use materializer_general::{args::Args, MaterializerImpl};
+use materializer_general::{settings::Settings, MaterializerImpl};
 use rpc::materializer_general::general_materializer_server::GeneralMaterializerServer;
 use tonic::transport::Server;
+use utils::settings::load_settings;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
-    utils::tracing::init();
 
-    let args: Args = Args::parse();
+    let settings: Settings = load_settings()?;
+    ::utils::tracing::init(
+        settings.log.rust_log.as_str(),
+        settings.monitoring.otel_service_name.as_str(),
+    )?;
 
-    tracing::debug!(?args, "command-line arguments");
+    tracing::debug!(?settings, "application environment");
 
-    utils::status_endpoints::serve(args.status_port);
-    utils::metrics::serve(args.metrics_port);
+    utils::status_endpoints::serve(&settings.monitoring);
+    utils::metrics::serve(&settings.monitoring);
 
-    let materializer = MaterializerImpl::new(&args.materializer).await?;
+    let materializer = MaterializerImpl::new(settings.postgres).await?;
 
     utils::status_endpoints::mark_as_started();
 
     Server::builder()
         .trace_fn(utils::tracing::grpc::trace_fn)
         .add_service(GeneralMaterializerServer::new(materializer))
-        .serve(([0, 0, 0, 0], args.input_port).into())
+        .serve(([0, 0, 0, 0], settings.input_port).into())
         .await?;
 
     Ok(())

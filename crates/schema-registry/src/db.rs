@@ -10,14 +10,14 @@ use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
 use tracing::{trace, warn};
 use uuid::Uuid;
 
-use crate::config::Config;
 use crate::error::{RegistryError, RegistryResult};
 use crate::types::schema::{FullSchema, NewSchema, Schema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{NewView, View, ViewUpdate};
 use crate::types::DbExport;
 use crate::types::VersionedUuid;
 use crate::utils::build_full_schema;
-use utils::types::materialization::FieldDefinition;
+use crate::{settings::Settings, types::view::FullView};
+use utils::types::materialization::{FieldDefinition, Filter, Relation};
 
 const SCHEMAS_LISTEN_CHANNEL: &str = "schemas";
 const VIEWS_LISTEN_CHANNEL: &str = "views";
@@ -28,20 +28,20 @@ pub struct SchemaRegistryDb {
 }
 
 impl SchemaRegistryDb {
-    pub async fn new(config: &Config) -> RegistryResult<Self> {
+    pub async fn new(config: &Settings) -> RegistryResult<Self> {
         let options = PgConnectOptions::new()
-            .host(&config.db_host)
-            .port(config.db_port)
-            .username(&config.db_username)
-            .password(&config.db_password)
-            .database(&config.db_name);
+            .host(&config.postgres.host)
+            .port(config.postgres.port)
+            .username(&config.postgres.username)
+            .password(&config.postgres.password)
+            .database(&config.postgres.dbname);
 
         Ok(Self {
             pool: PgPoolOptions::new()
                 .connect_with(options)
                 .await
                 .map_err(RegistryError::ConnectionError)?,
-            db_schema: config.db_schema.clone(),
+            db_schema: config.postgres.schema.clone(),
         })
     }
 
@@ -84,7 +84,7 @@ impl SchemaRegistryDb {
         sqlx::query_as!(
             Schema,
             "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\"
-             FROM schemas WHERE id = (SELECT schema FROM views WHERE id = $1)",
+             FROM schemas WHERE id = (SELECT base_schema FROM views WHERE id = $1)",
             id
         )
         .fetch_one(&mut conn)
@@ -113,8 +113,10 @@ impl SchemaRegistryDb {
 
         let views = sqlx::query_as!(
             View,
-            "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
-             FROM views WHERE schema = $1",
+            "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\",
+            filters as \"filters: _\",
+            relations as \"relations: _\"
+            FROM views WHERE base_schema = $1",
             id
         )
         .fetch_all(&mut conn)
@@ -149,12 +151,15 @@ impl SchemaRegistryDb {
         Ok((version, row.definition))
     }
 
-    pub async fn get_view(&self, id: Uuid) -> RegistryResult<View> {
+    pub async fn get_view(&self, id: Uuid) -> RegistryResult<FullView> {
         let mut conn = self.connect().await?;
 
         sqlx::query_as!(
-            View,
-            "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
+            FullView,
+            "SELECT id, base_schema, name, materializer_address, materializer_options,
+            fields as \"fields: _\",
+            filters as \"filters: _\",
+            relations as \"relations: _\"
              FROM views WHERE id = $1",
             id
         )
@@ -163,13 +168,16 @@ impl SchemaRegistryDb {
         .ok_or(RegistryError::NoViewWithId(id))
     }
 
-    pub async fn get_all_views_of_schema(&self, schema_id: Uuid) -> RegistryResult<Vec<View>> {
+    pub async fn get_all_views_of_schema(&self, schema_id: Uuid) -> RegistryResult<Vec<FullView>> {
         let mut conn = self.connect().await?;
 
         sqlx::query_as!(
-            View,
-            "SELECT id, name, materializer_address, materializer_options, fields as \"fields: _\"
-             FROM views WHERE schema = $1",
+            FullView,
+            "SELECT id, base_schema, name, materializer_address, materializer_options,
+            fields as \"fields: _\",
+            filters as \"filters: _\",
+            relations as \"relations: _\"
+             FROM views WHERE base_schema = $1",
             schema_id
         )
         .fetch_all(&mut conn)
@@ -225,7 +233,7 @@ impl SchemaRegistryDb {
                 .fetch_all(&mut conn)
                 .await?;
         let mut all_views =
-            sqlx::query!("SELECT id, name, materializer_address, materializer_options, fields, schema FROM views",)
+            sqlx::query!("SELECT id, name, materializer_address, materializer_options, fields, base_schema, filters, relations FROM views",)
                 .fetch_all(&mut conn)
                 .await?;
 
@@ -243,7 +251,7 @@ impl SchemaRegistryDb {
                     })
                     .collect::<RegistryResult<Vec<SchemaDefinition>>>()?;
                 let views = all_views
-                    .drain_filter(|v| v.schema == schema.id)
+                    .drain_filter(|v| v.base_schema == schema.id)
                     .map(|row| {
                         Ok(View {
                             id: row.id,
@@ -255,6 +263,10 @@ impl SchemaRegistryDb {
                                     row.fields,
                                 )
                                 .map_err(RegistryError::MalformedViewFields)?,
+                            filters: serde_json::from_value::<Json<Option<Filter>>>(row.filters)
+                                .map_err(RegistryError::MalformedViewFilters)?,
+                            relations: serde_json::from_value::<Json<Vec<Relation>>>(row.relations)
+                                .map_err(RegistryError::MalformedViewRelations)?,
                         })
                     })
                     .collect::<RegistryResult<Vec<View>>>()?;
@@ -318,10 +330,10 @@ impl SchemaRegistryDb {
         let new_id = Uuid::new_v4();
 
         sqlx::query!(
-            "INSERT INTO views(id, schema, name, materializer_address, materializer_options, fields)
+            "INSERT INTO views(id, base_schema, name, materializer_address, materializer_options, fields)
              VALUES ($1, $2, $3, $4, $5, $6)",
             new_id,
-            new_view.schema_id,
+            new_view.base_schema_id,
             new_view.name,
             new_view.materializer_address,
             new_view.materializer_options,
@@ -356,14 +368,18 @@ impl SchemaRegistryDb {
         let old = self.get_view(id).await?;
 
         sqlx::query!(
-            "UPDATE views SET name = $1, materializer_address = $2, fields = $3
-             WHERE id = $4",
+            "UPDATE views SET name = $1, materializer_address = $2, fields = $3, filters = $4, relations = $5
+             WHERE id = $6",
             update.name.unwrap_or(old.name),
             update
                 .materializer_address
                 .unwrap_or(old.materializer_address),
             serde_json::to_value(&update.fields.unwrap_or(old.fields))
                 .map_err(RegistryError::MalformedViewFields)?,
+            serde_json::to_value(&update.filters.unwrap_or(old.filters))
+                .map_err(RegistryError::MalformedViewFilters)?,
+            serde_json::to_value(&update.relations.unwrap_or(old.relations))
+                .map_err(RegistryError::MalformedViewRelations)?,
             id,
         )
         .execute(&mut conn)
@@ -515,8 +531,8 @@ impl SchemaRegistryDb {
 
                         for view in schema.views {
                             sqlx::query!(
-                                "INSERT INTO views(id, schema, name, materializer_address, materializer_options, fields) \
-                                 VALUES($1, $2, $3, $4, $5, $6)",
+                                "INSERT INTO views(id, base_schema, name, materializer_address, materializer_options, fields, relations, filters) \
+                                 VALUES($1, $2, $3, $4, $5, $6, $7, $8)",
                                  view.id,
                                  schema.id,
                                  view.name,
@@ -524,6 +540,10 @@ impl SchemaRegistryDb {
                                  view.materializer_options,
                                  serde_json::to_value(&view.fields)
                                     .map_err(RegistryError::MalformedViewFields)?,
+                                 serde_json::to_value(&view.relations)
+                                    .map_err(RegistryError::MalformedViewRelations)?,
+                                 serde_json::to_value(&view.filters)
+                                    .map_err(RegistryError::MalformedViewFilters)?,
                             )
                             .execute(c.acquire().await?)
                             .await?;

@@ -11,11 +11,12 @@ use futures::task::{Context as FutCtx, Poll};
 use futures::{Future, Stream};
 use tokio::sync::broadcast::{self, Sender};
 
-use crate::config::CommunicationMethodConfig;
+use crate::settings::Settings;
 use utils::communication::{
     consumer::{CommonConsumer, CommonConsumerConfig, ConsumerHandler},
     message::CommunicationMessage,
 };
+use utils::settings::CommunicationMethod;
 
 /// Owned generic message received from message queue.
 #[derive(Clone, Debug)]
@@ -53,7 +54,7 @@ impl ConsumerHandler for Handler {
 impl EventSubscriber {
     /// Connects to kafka and sends all messages to broadcast channel.
     pub async fn new<F, Fut>(
-        config: CommunicationMethodConfig,
+        settings: &Settings,
         source: &str,
         on_close: F,
     ) -> Result<(Self, EventStream), anyhow::Error>
@@ -65,24 +66,26 @@ impl EventSubscriber {
 
         tracing::debug!("Create new consumer for: {}", source);
 
-        let config = match &config {
-            CommunicationMethodConfig::Kafka { group_id, brokers } => CommonConsumerConfig::Kafka {
-                group_id: &group_id,
-                brokers: &brokers,
+        let config = match (
+            &settings.kafka,
+            &settings.amqp,
+            &settings.communication_method,
+        ) {
+            (Some(kafka), _, CommunicationMethod::Kafka) => CommonConsumerConfig::Kafka {
+                group_id: &kafka.group_id,
+                brokers: &kafka.brokers,
                 topic: source,
             },
-            CommunicationMethodConfig::Amqp {
-                connection_string,
-                consumer_tag,
-            } => CommonConsumerConfig::Amqp {
-                connection_string: &connection_string,
-                consumer_tag: &consumer_tag,
+            (_, Some(amqp), CommunicationMethod::Amqp) => CommonConsumerConfig::Amqp {
+                connection_string: &amqp.exchange_url,
+                consumer_tag: &amqp.tag,
                 queue_name: source,
                 options: None,
             },
-            CommunicationMethodConfig::Grpc => {
+            (_, _, CommunicationMethod::GRpc) => {
                 anyhow::bail!("GRPC communication method does not support event subscription")
             }
+            _ => anyhow::bail!("Unsupported consumer specification"),
         };
 
         let consumer = CommonConsumer::new(config).await?;

@@ -1,7 +1,7 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 
 use rpc::schema_registry::{Id, NewView, ViewUpdate};
+use utils::types::materialization::{Filter, Relation};
 use uuid::Uuid;
 
 use crate::utils::read_json;
@@ -23,30 +23,38 @@ pub async fn get_view(view_id: Uuid, registry_addr: String) -> anyhow::Result<()
     Ok(())
 }
 
+#[allow(clippy::clippy::too_many_arguments)]
 pub async fn add_view_to_schema(
-    schema_id: Uuid,
+    base_schema_id: Uuid,
     name: String,
     materializer_address: String,
     materializer_options: String,
     fields: Option<PathBuf>,
+    filters: Option<PathBuf>,
+    relations: Option<PathBuf>,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
 
     let fields = read_json(fields)?;
+    let filters: Option<Filter> = serde_json::from_value(read_json(filters)?)?;
+    let relations: Vec<Relation> = serde_json::from_value(read_json(relations)?)?;
+
     let view = NewView {
-        schema_id: schema_id.to_string(),
+        base_schema_id: base_schema_id.to_string(),
         name: name.clone(),
         materializer_address,
         materializer_options,
         fields: serde_json::from_value(fields)?,
+        filters: filters.map(|f| f.into_rpc()).transpose()?,
+        relations: relations.into_iter().map(|r| r.into_rpc()).collect(),
     };
 
     let response = client.add_view_to_schema(view).await?;
 
     eprintln!(
         "Successfully added view \"{}\" to schema \"{}\" in the schema registry.",
-        name, schema_id
+        name, base_schema_id
     );
     eprintln!("The following UUID was assigned:");
     println!("{}", response.into_inner().id);
@@ -54,6 +62,7 @@ pub async fn add_view_to_schema(
     Ok(())
 }
 
+#[allow(clippy::clippy::too_many_arguments)]
 pub async fn update_view(
     view_id: Uuid,
     name: Option<String>,
@@ -61,15 +70,34 @@ pub async fn update_view(
     materializer_options: Option<String>,
     fields: Option<PathBuf>,
     update_fields: bool,
+    filters: Option<PathBuf>,
+    update_filters: bool,
+    relations: Option<PathBuf>,
+    update_relations: bool,
     registry_addr: String,
 ) -> anyhow::Result<()> {
     let mut client = rpc::schema_registry::connect(registry_addr).await?;
 
+    let filters = if update_filters {
+        let filter: Option<Filter> = serde_json::from_value(read_json(filters)?)?;
+        filter.map(|f| f.into_rpc()).transpose()?
+    } else {
+        Default::default()
+    };
+
+    let relations = if update_relations {
+        let relation: Vec<Relation> = serde_json::from_value(read_json(relations)?)?;
+        relation.into_iter().map(|r| r.into_rpc()).collect()
+    } else {
+        Default::default()
+    };
+
     let fields = if update_fields {
         serde_json::from_value(read_json(fields)?)?
     } else {
-        HashMap::default()
+        Default::default()
     };
+
     let view = ViewUpdate {
         id: view_id.to_string(),
         name,
@@ -77,6 +105,10 @@ pub async fn update_view(
         materializer_options: materializer_options.unwrap_or_default(),
         update_fields,
         fields,
+        filters,
+        update_filters,
+        relations,
+        update_relations,
     };
 
     client.update_view(view).await?.into_inner();

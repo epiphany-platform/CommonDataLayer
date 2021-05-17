@@ -32,18 +32,17 @@ class SchemaRegistry:
 
     def start(self):
         env = {
-            "COMMUNICATION_METHOD": 'kafka',
-            "KAFKA_BROKERS": self.kafka_brokers,
-            "KAFKA_GROUP_ID": self.kafka_group_id,
-            "INPUT_PORT": self.input_port,
-            "METRICS_PORT": "59101",
-            "STATUS_PORT": "0",
-            "RUST_LOG": "schema_registry=trace,info",
-            **self.postgres_config.to_dict()
+            "SCHEMA_REGISTRY_COMMUNICATION_METHOD": 'kafka',
+            "SCHEMA_REGISTRY_KAFKA__BROKERS": self.kafka_brokers,
+            "SCHEMA_REGISTRY_KAFKA__GROUP_ID": self.kafka_group_id,
+            "SCHEMA_REGISTRY_INPUT_PORT": self.input_port,
+            "SCHEMA_REGISTRY_MONITORING__OTEL_SERVICE_NAME": 'schema-registry',
+            "SCHEMA_REGISTRY_MONITORING__STATUS_PORT": '0',
+            **self.postgres_config.to_dict("SCHEMA_REGISTRY")
         }
 
         if self.initial_schema is not None:
-            env.update(IMPORT_FILE=self.initial_schema)
+            env.update(SCHEMA_REGISTRY_IMPORT_FILE=self.initial_schema)
 
         self.svc = subprocess.Popen([EXE], env=env)
         time.sleep(3)
@@ -62,6 +61,6 @@ class SchemaRegistry:
                     metadata=pb2.SchemaMetadata(name=name,
                                                 insert_destination=destination,
                                                 query_address=query,
-                                                schema_type=schema_type),
+                                                schema_type=pb2.SchemaType(schema_type=schema_type)),
                 ))
             return resp.id

@@ -24,39 +24,39 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/api"]
         env:
-        - name: SCHEMA_REGISTRY_ADDR
+        - name: API_SERVICES__SCHEMA_REGISTRY_URL
           value: "http://{{ .Release.Name }}-schema-registry:6400"
-        - name: QUERY_ROUTER_ADDR
+        - name: API_SERVICES__QUERY_ROUTER_URL
           value: "http://{{ .Release.Name }}-query-router:6401"
-        - name: EDGE_REGISTRY_ADDR
+        - name: API_SERVICES__EDGE_REGISTRY_URL
           value: "http://{{ .Release.Name }}-edge-registry:{{ .Values.edgeRegistry.rpcPort }}"
-        - name: ON_DEMAND_MATERIALIZER_ADDR
+        - name: API_SERVICES__ON_DEMAND_MATERIALIZER_URL
           value: "http://{{ .Release.Name }}-materializer-ondemand:{{ .Values.materializerOnDemand.inputPort }}"
-        - name: INPUT_PORT
+        - name: API_INPUT_PORT
           value: "6402"
-        - name: REPORT_SOURCE
+        - name: API_NOTIFICATION_CONSUMER__SOURCE
           value: "{{ .Values.global.reportDestination }}"
-        - name: INSERT_DESTINATION
+        - name: API_INSERT_DESTINATION
           value: "{{ .Values.dataRouter.inputSource }}"
         {{- if eq .Values.global.communicationMethod "kafka" }}
-        - name: COMMUNICATION_METHOD
+        - name: API_COMMUNICATION_METHOD
           value: "kafka"
-        - name: KAFKA_BROKERS
+        - name: API_KAFKA__BROKERS
           value: "{{ .Values.global.kafkaBrokers }}"
-        - name: KAFKA_GROUP_ID
+        - name: API_KAFKA__GROUP_ID
           value: "api"
         {{- else if eq .Values.global.communicationMethod "amqp" }}
-        - name: COMMUNICATION_METHOD
+        - name: API_COMMUNICATION_METHOD
           value: "amqp"
-        - name: AMQP_CONNECTION_STRING
+        - name: API_AMQP__EXCHANGE_URL
           value: "{{ .Values.global.amqpConnectionString }}"
-        - name: AMQP_CONSUMER_TAG
+        - name: API_AMQP__TAG
           value: "api"
         {{- else }}
-        - name: COMMUNICATION_METHOD
+        - name: API_COMMUNICATION_METHOD
           value: "grpc"
         {{- end }}
-        - name: RUST_LOG
+        - name: API_LOG__RUST_LOG
           value: "info,api=debug"
         ports:
         - containerPort: 51805

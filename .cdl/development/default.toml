@@ -1,0 +1,27 @@
+communication_method = "kafka"
+repository_kind = "postgres"
+
+[services]
+schema_registry_url = "http://localhost:50101"
+object_builder_url = "http://localhost:50107"
+edge_registry_url = "http://localhost:50110"
+query_router_url = "http://localhost:50103"
+on_demand_materializer_url = "http://localhost:50108"
+
+[kafka]
+brokers = "localhost:9092"
+
+[postgres]
+username = "postgres"
+password = "1234"
+host = "localhost"
+port = "5432"
+dbname = "postgres"
+schema = "cdl"
+
+[notifications]
+destination = "cdl.reports"
+
+[monitoring]
+metrics_port = "0" # Random
+status_port = "0" # Random
