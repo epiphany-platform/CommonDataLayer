@@ -43,6 +43,11 @@ pub struct RelationQuery {
     pub parent_schema_id: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidateRelationQuery {
+    #[prost(string, required, tag = "1")]
+    pub relation_id: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct RelationResponse {
     #[prost(string, optional, tag = "1")]
     pub child_schema_id: ::core::option::Option<::prost::alloc::string::String>,
@@ -188,6 +193,22 @@ pub mod edge_registry_client {
                 http::uri::PathAndQuery::from_static("/edge_registry.EdgeRegistry/ListRelations");
             self.inner.unary(request.into_request(), path, codec).await
         }
+        pub async fn validate_relation(
+            &mut self,
+            request: impl tonic::IntoRequest<super::ValidateRelationQuery>,
+        ) -> Result<tonic::Response<super::Empty>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/edge_registry.EdgeRegistry/ValidateRelation",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         pub async fn add_edges(
             &mut self,
             request: impl tonic::IntoRequest<super::ObjectRelations>,
@@ -297,6 +318,10 @@ pub mod edge_registry_server {
             &self,
             request: tonic::Request<super::Empty>,
         ) -> Result<tonic::Response<super::RelationList>, tonic::Status>;
+        async fn validate_relation(
+            &self,
+            request: tonic::Request<super::ValidateRelationQuery>,
+        ) -> Result<tonic::Response<super::Empty>, tonic::Status>;
         async fn add_edges(
             &self,
             request: tonic::Request<super::ObjectRelations>,
@@ -460,6 +485,39 @@ pub mod edge_registry_server {
                         let interceptor = inner.1.clone();
                         let inner = inner.0;
                         let method = ListRelationsSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = if let Some(interceptor) = interceptor {
+                            tonic::server::Grpc::with_interceptor(codec, interceptor)
+                        } else {
+                            tonic::server::Grpc::new(codec)
+                        };
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/edge_registry.EdgeRegistry/ValidateRelation" => {
+                    #[allow(non_camel_case_types)]
+                    struct ValidateRelationSvc<T: EdgeRegistry>(pub Arc<T>);
+                    impl<T: EdgeRegistry> tonic::server::UnaryService<super::ValidateRelationQuery>
+                        for ValidateRelationSvc<T>
+                    {
+                        type Response = super::Empty;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::ValidateRelationQuery>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).validate_relation(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let interceptor = inner.1.clone();
+                        let inner = inner.0;
+                        let method = ValidateRelationSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = if let Some(interceptor) = interceptor {
                             tonic::server::Grpc::with_interceptor(codec, interceptor)

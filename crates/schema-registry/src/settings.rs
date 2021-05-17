@@ -10,6 +10,8 @@ pub struct Settings {
     pub import_file: Option<PathBuf>,
     pub export_dir: Option<PathBuf>,
 
+    pub services: ServicesSettings,
+
     pub postgres: PostgresSettings,
 
     pub kafka: Option<KafkaSettings>,
@@ -19,6 +21,11 @@ pub struct Settings {
 
     #[serde(default)]
     pub log: LogSettings,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ServicesSettings {
+    pub edge_registry_url: String,
 }
 
 #[derive(Debug, Deserialize)]

@@ -9,7 +9,7 @@ use rpc::edge_registry::edge_registry_server::EdgeRegistry;
 use rpc::edge_registry::{
     Edge, Empty, ObjectIdQuery, ObjectRelations, RelationDetails, RelationId, RelationIdQuery,
     RelationList, RelationQuery, RelationResponse, SchemaId, SchemaRelation, TreeObject, TreeQuery,
-    TreeResponse,
+    TreeResponse, ValidateRelationQuery,
 };
 use serde::{Deserialize, Serialize};
 use std::cmp::min;
@@ -129,6 +129,21 @@ impl EdgeRegistryImpl {
             .await?
             .first()
             .map(|row| row.get::<_, Uuid>(0)))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn validate_relation_impl(&self, relation_id: &Uuid) -> anyhow::Result<bool> {
+        counter!("cdl.edge-registry.validate-relation", 1);
+
+        let conn = self.connect().await?;
+        Ok(conn
+            .query(
+                "SELECT child_schema_id FROM relations WHERE id = $1",
+                &[&relation_id],
+            )
+            .await?
+            .first()
+            .is_some())
     }
 
     #[tracing::instrument(skip(self))]
@@ -422,6 +437,29 @@ impl EdgeRegistry for EdgeRegistryImpl {
         Ok(Response::new(RelationResponse {
             child_schema_id: child_schema_id.map(|id| id.to_string()),
         }))
+    }
+
+    async fn validate_relation(
+        &self,
+        request: Request<ValidateRelationQuery>,
+    ) -> Result<Response<Empty>, Status> {
+        let request = request.into_inner();
+
+        let relation_id = Uuid::from_str(&request.relation_id)
+            .map_err(|_| Status::invalid_argument("relation_id"))?;
+
+        if !self
+            .validate_relation_impl(&relation_id)
+            .await
+            .map_err(|err| db_communication_error("get_relation", err))?
+        {
+            return Err(Status::not_found(format!(
+                "Relation {} not found",
+                relation_id
+            )));
+        }
+
+        Ok(Response::new(Empty {}))
     }
 
     async fn get_schema_relations(

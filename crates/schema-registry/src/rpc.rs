@@ -2,10 +2,13 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::pin::Pin;
 
+use bb8::{Pool, PooledConnection};
+use futures_util::future::{BoxFuture, FutureExt};
 use semver::Version;
 use semver::VersionReq;
 use sqlx::types::Json;
 use tokio_stream::{Stream, StreamExt};
+use tonic::transport::Channel;
 use tonic::{Request, Response, Status};
 use uuid::Uuid;
 
@@ -15,6 +18,7 @@ use crate::settings::Settings;
 use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{NewView, ViewUpdate};
 use crate::types::{DbExport, VersionedUuid};
+use rpc::edge_registry::{edge_registry_client::EdgeRegistryClient, ValidateRelationQuery};
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate,
     ValueToValidate, VersionedId,
@@ -24,8 +28,41 @@ use utils::types::materialization::Relation;
 use utils::{communication::metadata_fetcher::MetadataFetcher, types::materialization::Filter};
 
 pub struct SchemaRegistryImpl {
+    pub edge_registry: EdgeRegistryPool,
     pub db: SchemaRegistryDb,
     pub mq_metadata: MetadataFetcher,
+}
+
+#[derive(Clone)]
+pub struct EdgeRegistryConnectionManager {
+    pub address: String,
+}
+
+pub type EdgeRegistryPool = Pool<EdgeRegistryConnectionManager>;
+pub type EdgeRegistryConn = EdgeRegistryClient<Channel>;
+
+#[async_trait::async_trait]
+impl bb8::ManageConnection for EdgeRegistryConnectionManager {
+    type Connection = EdgeRegistryConn;
+    type Error = rpc::error::ClientError;
+
+    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
+        tracing::debug!("Connecting to registry");
+
+        rpc::edge_registry::connect(self.address.clone()).await
+    }
+
+    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
+        conn.heartbeat(rpc::edge_registry::Empty {})
+            .await
+            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
+
+        Ok(())
+    }
+
+    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
+        false
+    }
 }
 
 impl SchemaRegistryImpl {
@@ -33,7 +70,18 @@ impl SchemaRegistryImpl {
         let mq_metadata = settings.metadata_fetcher().await?;
         let db = SchemaRegistryDb::new(settings).await?;
 
-        Ok(Self { db, mq_metadata })
+        let edge_registry = Pool::builder()
+            .build(EdgeRegistryConnectionManager {
+                address: settings.services.edge_registry_url.clone(),
+            })
+            .await
+            .unwrap();
+
+        Ok(Self {
+            edge_registry,
+            db,
+            mq_metadata,
+        })
     }
 
     pub async fn export_all(&self) -> RegistryResult<DbExport> {
@@ -156,6 +204,14 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let materializer_options = serde_json::from_str(&request.materializer_options)
             .map_err(RegistryError::MalformedViewFields)?;
 
+        let relations = request
+            .relations
+            .into_iter()
+            .map(Relation::from_rpc)
+            .collect::<Result<Vec<_>, _>>()?;
+
+        self.validate_relations(&relations).await?;
+
         tracing::debug!(options = ?materializer_options, "Materializer options");
 
         let new_view = NewView {
@@ -176,14 +232,8 @@ impl SchemaRegistry for SchemaRegistryImpl {
                     })
                     .collect::<RegistryResult<HashMap<_, _>>>()?,
             ),
-            filters: Json(None), //TODO
-            relations: Json(
-                request
-                    .relations
-                    .into_iter()
-                    .map(Relation::from_rpc)
-                    .collect::<Result<Vec<_>, _>>()?,
-            ),
+            filters: Json(request.filters.map(Filter::from_rpc).transpose()?),
+            relations: Json(relations),
         };
 
         let new_id = self.db.add_view_to_schema(new_view).await?;
@@ -221,13 +271,15 @@ impl SchemaRegistry for SchemaRegistryImpl {
         };
 
         let relations = if request.update_relations {
-            Some(Json(
-                request
-                    .relations
-                    .into_iter()
-                    .map(Relation::from_rpc)
-                    .collect::<Result<Vec<_>, _>>()?,
-            ))
+            let relations = request
+                .relations
+                .into_iter()
+                .map(Relation::from_rpc)
+                .collect::<Result<Vec<_>, _>>()?;
+
+            self.validate_relations(&relations).await?;
+
+            Some(Json(relations))
         } else {
             None
         };
@@ -617,6 +669,31 @@ impl SchemaRegistry for SchemaRegistryImpl {
 
     async fn ping(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
         Ok(Response::new(Empty {}))
+    }
+}
+
+impl SchemaRegistryImpl {
+    fn validate_relations<'a>(
+        &'a self,
+        relations: &'a [Relation],
+    ) -> BoxFuture<'a, Result<(), Status>> {
+        async move {
+            for relation in relations {
+                let relation_id = relation.global_id;
+                self.edge_registry
+                    .get()
+                    .await
+                    .map_err(|err| tonic::Status::internal(format!("{}", err)))?
+                    .validate_relation(ValidateRelationQuery {
+                        relation_id: relation_id.to_string(),
+                    })
+                    .await
+                    .map_err(|err| tonic::Status::invalid_argument(err.message()))?;
+                self.validate_relations(&relation.relations).await?;
+            }
+            Ok(())
+        }
+        .boxed()
     }
 }
 

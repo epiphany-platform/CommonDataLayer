@@ -2865,6 +2865,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bb8",
+ "futures-util",
  "jmespatch",
  "jsonschema",
  "maplit",
