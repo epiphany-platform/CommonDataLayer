@@ -9,7 +9,7 @@
 - Materializer - general (M-G)
 - CDL Web Admin (GUI)
 - Edge Registry - (ER)
-- Partial Update Engine - (PUA)
+- Partial Update Engine - (PUE)
 
 ### Changes to existing components:
 - Schema Registry now uses Postgres Backend
