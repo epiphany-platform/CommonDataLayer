@@ -1,0 +1,37 @@
+communication_method = "kafka"
+repository_kind = "postgres"
+
+[services]
+schema_registry_url = "http://schema_registry:50101"
+object_builder_url = "http://object_builder:50107"
+edge_registry_url = "http://edge_registry:50110"
+query_router_url = "http://query_router:50103"
+on_demand_materializer_url = "http://materializer_ondemand:50108"
+
+[kafka]
+brokers = "kafka:9093"
+
+[amqp]
+exchange_url = "amqp://user:CHANGEME@rabbitmq:5672/%2f"
+
+[postgres]
+username = "postgres"
+password = "1234"
+host = "postgres"
+port = "5432"
+dbname = "postgres"
+schema = "cdl"
+
+[victoria_metrics]
+url = "http://victoria_metrics:8428"
+
+[druid]
+url = "http://router:8888/druid/v2"
+topic = "cdl.timeseries.internal.druid"
+
+[notifications]
+destination = "cdl.reports"
+
+[monitoring]
+metrics_port = "0" # Random
+status_port = "0" # Random
