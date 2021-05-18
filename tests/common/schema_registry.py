@@ -12,19 +12,15 @@ EXE = os.getenv('SCHEMA_REGISTRY_EXE') or 'schema-registry'
 
 class SchemaRegistry:
     def __init__(self,
-                 db_name,
+                 edge_registry_addr,
                  kafka_brokers,
                  postgres_config: PostgresConfig,
                  kafka_group_id='schema_registry',
-                 kafka_topics='cdl.schema_registry.internal',
-                 replication_role='master',
                  input_port='50101',
                  initial_schema=None):
-        self.db_name = db_name
-        self.replication_role = replication_role
+        self.edge_registry_addr = edge_registry_addr
         self.kafka_brokers = kafka_brokers
         self.kafka_group_id = kafka_group_id
-        self.kafka_topics = kafka_topics
         self.input_port = input_port
         self.postgres_config = postgres_config
         self.initial_schema = initial_schema
@@ -38,6 +34,7 @@ class SchemaRegistry:
             "SCHEMA_REGISTRY_INPUT_PORT": self.input_port,
             "SCHEMA_REGISTRY_MONITORING__OTEL_SERVICE_NAME": 'schema-registry',
             "SCHEMA_REGISTRY_MONITORING__STATUS_PORT": '0',
+            "SCHEMA_REGISTRY_SERVICES__EDGE_REGISTRY_URL": self.edge_registry_addr,
             **self.postgres_config.to_dict("SCHEMA_REGISTRY")
         }
 
