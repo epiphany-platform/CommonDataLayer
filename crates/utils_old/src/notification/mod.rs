@@ -1,7 +1,7 @@
-use crate::message_types::OwnMessage;
 use crate::notification::full_notification_sender::{
     FullNotificationSender, FullNotificationSenderBase,
 };
+use cdl_dto::ingestion::OwnMessage;
 use serde::Serialize;
 
 pub mod full_notification_sender;

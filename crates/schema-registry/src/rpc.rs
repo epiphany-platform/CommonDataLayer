@@ -15,13 +15,13 @@ use crate::settings::Settings;
 use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{NewView, ViewUpdate};
 use crate::types::{DbExport, VersionedUuid};
+use cdl_dto::materialization::{Filter, Relation};
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate,
     ValueToValidate, VersionedId,
 };
+use utils::communication::metadata_fetcher::MetadataFetcher;
 use utils::communication::Result;
-use utils::types::materialization::Relation;
-use utils::{communication::metadata_fetcher::MetadataFetcher, types::materialization::Filter};
 
 pub struct SchemaRegistryImpl {
     pub db: SchemaRegistryDb,

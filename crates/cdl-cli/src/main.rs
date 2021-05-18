@@ -10,7 +10,7 @@ use clap::Clap;
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    ::utils::tracing::init(None, "cdl-cli")?;
+    tracing_tools::init(None, "cdl-cli")?;
 
     match args.action {
         Action::Schema { action } => match action {

@@ -35,7 +35,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(
+    tracing_tools::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;
@@ -79,7 +79,7 @@ async fn main() -> anyhow::Result<()> {
         .and(single_route.or(raw_route))
         .or(warp::get().and(multiple_route.or(schema_route)));
 
-    utils::tracing::http::serve(routes, ([0, 0, 0, 0], settings.input_port)).await;
+    tracing_tools::http::serve(routes, ([0, 0, 0, 0], settings.input_port)).await;
 
     Ok(())
 }

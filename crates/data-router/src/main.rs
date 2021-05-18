@@ -6,6 +6,7 @@ use serde_json::Value;
 use std::sync::{Arc, Mutex};
 use tracing::{error, trace};
 
+use cdl_dto::ingestion::{BorrowedInsertMessage, DataRouterInsertMessage};
 use rpc::schema_registry::Id;
 use utils::settings::{
     load_settings, AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings,
@@ -20,8 +21,6 @@ use utils::{
         publisher::CommonPublisher,
     },
     current_timestamp,
-    message_types::BorrowedInsertMessage,
-    message_types::DataRouterInsertMessage,
     metrics::{self, counter},
     parallel_task_queue::ParallelTaskQueue,
     task_limiter::TaskLimiter,
@@ -112,7 +111,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(
+    tracing_tools::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;
