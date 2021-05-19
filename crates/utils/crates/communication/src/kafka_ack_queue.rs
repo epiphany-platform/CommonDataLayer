@@ -11,7 +11,7 @@ use rdkafka::{
 };
 use tracing::trace;
 
-use crate::abort_on_poison;
+use misc_utils::abort_on_poison;
 
 #[derive(Default)]
 pub struct KafkaAckQueue {

@@ -11,7 +11,7 @@ use tracing_opentelemetry::OpenTelemetrySpanExt;
 /// pub async fn connect(addr: String) -> Result<MyServiceClient<tonic::transport::Channel>, tonic::transport::Error> {
 ///     let conn = tonic::transport::Endpoint::new(addr)?.connect().await?;
 ///
-///     Ok(MyServiceClient::with_interceptor(conn, tracing_tools::grpc::interceptor()))
+///     Ok(MyServiceClient::with_interceptor(conn, tracing_utils::grpc::interceptor()))
 /// }
 /// ```
 pub fn interceptor() -> tonic::Interceptor {
@@ -30,7 +30,7 @@ pub fn interceptor() -> tonic::Interceptor {
 /// # Example:
 /// ```ignore
 /// Server::builder()
-///     .trace_fn(tracing_tools::grpc::trace_fn)
+///     .trace_fn(tracing_utils::grpc::trace_fn)
 ///     .add_service(MyServiceServer::new())
 ///     .serve(addr.into())
 ///     .await

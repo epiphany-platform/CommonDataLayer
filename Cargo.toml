@@ -4,9 +4,9 @@ cargo-features = ["named-profiles"]
 members = [
   "benchmarking",
   "xtask",
-  "crates/*"
+  "crates/*",
+  "crates/utils/crates/*"
 ]
-
 
 [profile.ci]
 inherits = "dev"

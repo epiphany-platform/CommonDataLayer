@@ -1,14 +1,14 @@
-use thiserror::Error as DeriveError;
-
-use self::message::CommunicationMessage;
+#![feature(linked_list_cursors)]
 
 pub mod consumer;
 mod kafka_ack_queue;
 pub mod message;
+pub mod metadata_fetcher;
 pub mod parallel_consumer;
 pub mod publisher;
 
-pub mod metadata_fetcher;
+use message::CommunicationMessage;
+use thiserror::Error as DeriveError;
 
 #[derive(Clone, Debug, DeriveError)]
 pub enum Error {

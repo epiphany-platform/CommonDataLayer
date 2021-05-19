@@ -1,11 +1,9 @@
 use std::net::{Ipv4Addr, SocketAddrV4};
 
-use utils::{
-    communication::{
-        consumer::BasicConsumeOptions, parallel_consumer::ParallelCommonConsumerConfig,
-    },
-    task_limiter::TaskLimiter,
+use communication_utils::{
+    consumer::BasicConsumeOptions, parallel_consumer::ParallelCommonConsumerConfig,
 };
+use task_utils::task_limiter::TaskLimiter;
 
 pub enum CommunicationConfig {
     Kafka {
