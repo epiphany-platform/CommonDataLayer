@@ -9,6 +9,9 @@ group_id = "data_router"
 tag = "data_router"
 ingest_queue = "cdl.data.input"
 
+[grpc]
+address = "0.0.0.0:50301"
+
 [monitoring]
 otel_service_name = "data-router"
 

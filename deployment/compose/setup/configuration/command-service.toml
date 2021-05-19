@@ -9,6 +9,9 @@ group_id = "postgres_command"
 [amqp]
 tag = "postgres_command"
 
+[grpc]
+address = "0.0.0.0:50302"
+
 [listener]
 ordered_sources = "cdl.document.1.data"
 unordered_sources = "cdl.document.2.data"
