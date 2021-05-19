@@ -8,7 +8,6 @@ members = [
   "crates/utils/crates/*"
 ]
 
-
 [profile.ci]
 inherits = "dev"
 debug = false
