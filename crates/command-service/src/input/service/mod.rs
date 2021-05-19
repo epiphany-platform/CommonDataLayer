@@ -2,14 +2,14 @@ use crate::output::OutputPlugin;
 use crate::{communication::MessageRouter, input::Error};
 use async_trait::async_trait;
 use cdl_dto::ingestion::BorrowedInsertMessage;
+use communication_utils::get_order_group_id;
+use communication_utils::{
+    message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,
+};
+use communication_utils::{parallel_consumer::ParallelCommonConsumer, Result};
 use futures::future::try_join_all;
 use std::sync::Arc;
 use tracing::{error, trace};
-use utils::communication::get_order_group_id;
-use utils::communication::{
-    message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,
-};
-use utils::communication::{parallel_consumer::ParallelCommonConsumer, Result};
 use utils::metrics::{self, counter};
 use utils::parallel_task_queue::ParallelTaskQueue;
 

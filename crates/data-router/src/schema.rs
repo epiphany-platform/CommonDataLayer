@@ -4,7 +4,7 @@ use lru_cache::LruCache;
 use tracing::trace;
 
 use rpc::schema_registry::Id;
-use utils::abort_on_poison;
+use misc_utils::abort_on_poison;
 use uuid::Uuid;
 
 #[tracing::instrument(skip(cache))]

@@ -17,7 +17,7 @@ async fn connect_inner(
 
     Ok(QueryServiceTsClient::with_interceptor(
         conn,
-        tracing_tools::grpc::interceptor(),
+        tracing_utils::grpc::interceptor(),
     ))
 }
 

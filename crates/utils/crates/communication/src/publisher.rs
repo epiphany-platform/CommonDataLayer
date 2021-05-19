@@ -7,7 +7,7 @@ use rdkafka::{
 use reqwest::Client;
 use std::time::Duration;
 use tokio_amqp::LapinTokioExt;
-use tracing_tools::http::RequestBuilderTracingExt;
+use tracing_utils::http::RequestBuilderTracingExt;
 use url::Url;
 
 use super::{Error, Result};
@@ -67,7 +67,7 @@ impl CommonPublisher {
                     FutureRecord::to(destination)
                         .payload(&payload)
                         .key(key)
-                        .headers(tracing_tools::kafka::inject_span(OwnedHeaders::new())),
+                        .headers(tracing_utils::kafka::inject_span(OwnedHeaders::new())),
                     Duration::from_secs(5),
                 );
                 delivery_status.await.map_err(|x| x.0)?;

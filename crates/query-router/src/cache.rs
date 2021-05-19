@@ -5,9 +5,9 @@ use lru_cache::LruCache;
 use uuid::Uuid;
 
 use crate::error::Error;
+use misc_utils::abort_on_poison;
 use rpc::error::ClientError;
 use rpc::schema_registry::types::SchemaType;
-use utils::abort_on_poison;
 
 pub struct SchemaRegistryCache {
     schema_registry_addr: String,

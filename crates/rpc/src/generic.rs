@@ -15,6 +15,6 @@ async fn connect_inner(addr: String) -> Result<GenericRpcClient<Channel>, tonic:
 
     Ok(GenericRpcClient::with_interceptor(
         conn,
-        tracing_tools::grpc::interceptor(),
+        tracing_utils::grpc::interceptor(),
     ))
 }

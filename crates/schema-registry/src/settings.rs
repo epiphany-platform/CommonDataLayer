@@ -1,6 +1,6 @@
+use communication_utils::metadata_fetcher::MetadataFetcher;
 use serde::Deserialize;
 use std::path::PathBuf;
-use utils::communication::metadata_fetcher::MetadataFetcher;
 use utils::settings::*;
 
 #[derive(Debug, Deserialize)]

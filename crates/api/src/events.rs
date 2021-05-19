@@ -12,7 +12,7 @@ use futures::{Future, Stream};
 use tokio::sync::broadcast::{self, Sender};
 
 use crate::settings::Settings;
-use utils::communication::{
+use communication_utils::{
     consumer::{CommonConsumer, CommonConsumerConfig, ConsumerHandler},
     message::CommunicationMessage,
 };

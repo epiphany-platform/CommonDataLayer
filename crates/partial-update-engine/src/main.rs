@@ -60,10 +60,10 @@ struct CommandServiceNotification {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    utils::set_aborting_panic_hook();
+    misc_utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    tracing_tools::init(
+    tracing_utils::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;
@@ -143,7 +143,7 @@ fn new_notification(
     changes: &mut HashSet<PartialNotification>,
     message: BorrowedMessage,
 ) -> Result<(i32, i64)> {
-    tracing_tools::kafka::set_parent_span(&message);
+    tracing_utils::kafka::set_parent_span(&message);
     let payload = message
         .payload_view::<str>()
         .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??;
@@ -219,7 +219,7 @@ async fn process_changes(
                 FutureRecord::to(settings.kafka.egest_topic.as_str())
                     .payload(payload.as_str())
                     .key(&request.view_id.to_string())
-                    .headers(tracing_tools::kafka::inject_span(OwnedHeaders::new())),
+                    .headers(tracing_utils::kafka::inject_span(OwnedHeaders::new())),
                 Duration::from_secs(5),
             )
             .await

@@ -3,10 +3,8 @@ use serde::{Deserialize, Serialize};
 use utils::settings::{
     AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings, MonitoringSettings,
 };
-use utils::{
-    communication::{parallel_consumer::ParallelCommonConsumer, publisher::CommonPublisher},
-    task_limiter::TaskLimiter,
-};
+use communication_utils::{parallel_consumer::ParallelCommonConsumer, publisher::CommonPublisher};
+use task_utils::task_limiter::TaskLimiter;
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct Settings {
