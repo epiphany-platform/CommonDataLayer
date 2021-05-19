@@ -22,20 +22,16 @@ You must first add environment variables:
 `DOCKER_BUILDKIT=1`  
 `COMPOSE_DOCKER_CLI_BUILD=1`
 
-Environment with infrastructure alone is started via:
+`./setup.sh` is responsible for modifying/selecting deployments for you.
+It accepts command line args:
+`./setup.sh COMMUNICATION_METHOD REPOSITORY_KIND`
 
-`docker-compose up -d`
+**COMMUNICATION_METHOD**
+* kafka (materialization is only included via kafka atm)
+* amqp
+* grpc
 
-Adding new components happens through invoking `docker-compose` files containing parts of `CDL`.
-First, you must spin up `base` services, eg. for Kafka use:
-
-`docker-compose -f docker-compose.cdl.kafka.base.yml up -d`
-
-Then you can add repositories:
-
-`docker-compose -f docker-compose.cdl.kafka.postgres.yml up -d`
-
-Make sure that repository you've chosen matches `base`'s communication protocol.
-
-### ./setup
-Directory contains setup scripts for `postgres`, `schema_registry`, etc..
+**REPOSITORY_KIND**
+* postgres
+* victoria_metrics
+* druid (supports only kafka)
