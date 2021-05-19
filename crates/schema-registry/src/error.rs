@@ -42,7 +42,7 @@ pub enum RegistryError {
     #[error("{0}")]
     CacheError(String),
     #[error("{0}")]
-    MQError(#[from] communication_tools::Error),
+    MQError(#[from] communication_utils::Error),
     #[error("JSON error processing view fields: {0}")]
     MalformedViewFields(serde_json::Error),
     #[error("JSON error processing view filters: {0}")]

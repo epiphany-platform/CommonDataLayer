@@ -2,7 +2,7 @@ use anyhow::Context;
 use async_trait::async_trait;
 use bb8::{Pool, PooledConnection};
 use cdl_dto::materialization;
-use communication_tools::{consumer::ConsumerHandler, message::CommunicationMessage};
+use communication_utils::{consumer::ConsumerHandler, message::CommunicationMessage};
 use futures::{Stream, StreamExt, TryStreamExt};
 use rpc::common::RowDefinition as RpcRowDefinition;
 use rpc::materializer_general::{MaterializedView as RpcMaterializedView, Options};

@@ -1,11 +1,11 @@
 use anyhow::bail;
-use communication_tools::consumer::BasicConsumeOptions;
-use communication_tools::parallel_consumer::{
+use communication_utils::consumer::BasicConsumeOptions;
+use communication_utils::parallel_consumer::{
     ParallelCommonConsumer, ParallelCommonConsumerConfig,
 };
-use communication_tools::publisher::CommonPublisher;
+use communication_utils::publisher::CommonPublisher;
 use serde::{Deserialize, Serialize};
-use task_tools::task_limiter::TaskLimiter;
+use task_utils::task_limiter::TaskLimiter;
 use utils::settings::*;
 
 #[derive(Debug, Deserialize)]

@@ -1,5 +1,5 @@
 [package]
-name = "communication_tools"
+name = "communication_utils"
 authors = ["CDL Team"]
 version = "0.1.0"
 edition = "2018"
@@ -10,9 +10,9 @@ license = "Apache-2.0"
 [dependencies]
 # Workspace
 rpc         = { path    = "../../../rpc" }
-misc_tools  = { path = "../misc" } # TODO: Replace it with `utils`
-task_tools  = { path    = "../task" }
-tracing_tools           = { path           = "../tracing", features = ["http", "grpc", "kafka"] }
+misc_utils  = { path    = "../misc" }
+task_utils  = { path    = "../task" }
+tracing_utils           = { path           = "../tracing", features = ["http", "grpc", "kafka"] }
 
 # Crates.io
 anyhow      = "1.0"

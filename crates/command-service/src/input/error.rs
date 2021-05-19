@@ -1,4 +1,4 @@
-use communication_tools::Error as MSError;
+use communication_utils::Error as MSError;
 use thiserror::Error as DeriveError;
 
 #[derive(Debug, DeriveError)]

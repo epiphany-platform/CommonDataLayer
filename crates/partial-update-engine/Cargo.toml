@@ -11,10 +11,11 @@ path = "src/main.rs"
 
 [dependencies]
 # Workspace
+cdl_dto     = { path = "../dto" }
+misc_utils  = { path = "../utils/crates/misc" }
 rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }
-cdl_dto     = { path = "../dto" }
-tracing_tools           = { path = "../utils/crates/tracing" }
+tracing_utils           = { path = "../utils/crates/tracing" }
 
 # Crates.io
 anyhow      = "1.0"

@@ -1,4 +1,4 @@
-use communication_tools::Error as MessagingError;
+use communication_utils::Error as MessagingError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

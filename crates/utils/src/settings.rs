@@ -1,11 +1,11 @@
 use crate::notification::full_notification_sender::FullNotificationSenderBase;
 use crate::notification::NotificationPublisher;
 use anyhow::bail;
-use communication_tools::consumer::{CommonConsumer, CommonConsumerConfig};
-use communication_tools::parallel_consumer::{
+use communication_utils::consumer::{CommonConsumer, CommonConsumerConfig};
+use communication_utils::parallel_consumer::{
     ParallelCommonConsumer, ParallelCommonConsumerConfig,
 };
-use communication_tools::publisher::CommonPublisher;
+use communication_utils::publisher::CommonPublisher;
 use config::{Config, Environment, File};
 use derive_more::Display;
 use lapin::options::BasicConsumeOptions;
@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fmt::Debug;
 use std::net::SocketAddrV4;
-use task_tools::task_limiter::TaskLimiter;
+use task_utils::task_limiter::TaskLimiter;
 use url::Url;
 
 #[derive(Clone, Copy, Debug, Deserialize, Display, PartialEq, Serialize)]

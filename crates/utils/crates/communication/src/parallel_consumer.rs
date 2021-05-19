@@ -11,7 +11,7 @@ use rpc::generic as proto;
 use rpc::generic::generic_rpc_server::GenericRpc;
 use rpc::generic::generic_rpc_server::GenericRpcServer;
 use std::{net::SocketAddrV4, sync::Arc};
-use task_tools::task_limiter::TaskLimiter;
+use task_utils::task_limiter::TaskLimiter;
 use tokio_amqp::LapinTokioExt;
 use tracing_futures::Instrument;
 
@@ -204,7 +204,7 @@ impl ParallelCommonConsumer {
                     task_limiter
                         .run(move || {
                             async move {
-                                tracing_tools::kafka::set_parent_span(&message);
+                                tracing_utils::kafka::set_parent_span(&message);
                                 let message = KafkaCommunicationMessage { message };
 
                                 match handler.handle(&message).await {

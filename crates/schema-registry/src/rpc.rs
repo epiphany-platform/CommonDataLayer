@@ -16,8 +16,8 @@ use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{NewView, ViewUpdate};
 use crate::types::{DbExport, VersionedUuid};
 use cdl_dto::materialization::{Filter, Relation};
-use communication_tools::metadata_fetcher::MetadataFetcher;
-use communication_tools::Result;
+use communication_utils::metadata_fetcher::MetadataFetcher;
+use communication_utils::Result;
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate,
     ValueToValidate, VersionedId,

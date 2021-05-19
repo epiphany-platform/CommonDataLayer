@@ -1,4 +1,4 @@
-use communication_tools::metadata_fetcher::MetadataFetcher;
+use communication_utils::metadata_fetcher::MetadataFetcher;
 use serde::Deserialize;
 use std::path::PathBuf;
 use utils::settings::*;

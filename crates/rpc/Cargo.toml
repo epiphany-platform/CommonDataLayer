@@ -11,7 +11,7 @@ path = "src/lib.rs"
 
 [dependencies]
 # Workspace
-tracing_tools           = { path    = "../utils/crates/tracing", features = ["grpc"] }
+tracing_utils           = { path    = "../utils/crates/tracing", features = ["grpc"] }
 
 # Crates.io
 anyhow      = "1.0"

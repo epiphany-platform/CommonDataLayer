@@ -1,4 +1,4 @@
-use communication_tools::consumer::{CommonConsumer, CommonConsumerConfig};
+use communication_utils::consumer::{CommonConsumer, CommonConsumerConfig};
 use serde::Deserialize;
 use utils::settings::*;
 

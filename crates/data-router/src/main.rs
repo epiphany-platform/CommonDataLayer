@@ -7,20 +7,20 @@ use std::sync::{Arc, Mutex};
 use tracing::{error, trace};
 
 use cdl_dto::ingestion::{BorrowedInsertMessage, DataRouterInsertMessage};
-use communication_tools::{
+use communication_utils::{
     get_order_group_id,
     message::CommunicationMessage,
     parallel_consumer::{ParallelCommonConsumer, ParallelConsumerHandler},
     publisher::CommonPublisher,
 };
+use misc_utils::{abort_on_poison, current_timestamp};
 use rpc::schema_registry::Id;
-use task_tools::task_limiter::TaskLimiter;
+use task_utils::task_limiter::TaskLimiter;
 use utils::settings::{
     load_settings, AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings,
     MonitoringSettings,
 };
 use utils::{
-    abort_on_poison, current_timestamp,
     metrics::{self, counter},
     parallel_task_queue::ParallelTaskQueue,
 };
@@ -107,10 +107,10 @@ impl Settings {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    utils::set_aborting_panic_hook();
+    misc_utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    tracing_tools::init(
+    tracing_utils::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;

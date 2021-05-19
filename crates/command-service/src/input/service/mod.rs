@@ -2,11 +2,11 @@ use crate::output::OutputPlugin;
 use crate::{communication::MessageRouter, input::Error};
 use async_trait::async_trait;
 use cdl_dto::ingestion::BorrowedInsertMessage;
-use communication_tools::get_order_group_id;
-use communication_tools::{
+use communication_utils::get_order_group_id;
+use communication_utils::{
     message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,
 };
-use communication_tools::{parallel_consumer::ParallelCommonConsumer, Result};
+use communication_utils::{parallel_consumer::ParallelCommonConsumer, Result};
 use futures::future::try_join_all;
 use std::sync::Arc;
 use tracing::{error, trace};

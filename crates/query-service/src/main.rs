@@ -21,7 +21,7 @@ async fn spawn_server<Q: QueryService>(service: Q, port: u16) -> anyhow::Result<
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
 
     Server::builder()
-        .trace_fn(tracing_tools::grpc::trace_fn)
+        .trace_fn(tracing_utils::grpc::trace_fn)
         .add_service(QueryServiceServer::new(service))
         .serve(addr.into())
         .await
@@ -30,10 +30,10 @@ async fn spawn_server<Q: QueryService>(service: Q, port: u16) -> anyhow::Result<
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    utils::set_aborting_panic_hook();
+    misc_utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    tracing_tools::init(
+    tracing_utils::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;

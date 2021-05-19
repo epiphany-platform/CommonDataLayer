@@ -1,4 +1,4 @@
-use communication_tools::publisher::CommonPublisher;
+use communication_utils::publisher::CommonPublisher;
 use serde::Deserialize;
 use utils::settings::*;
 
