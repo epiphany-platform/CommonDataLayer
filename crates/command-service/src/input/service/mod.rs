@@ -1,6 +1,7 @@
 use crate::output::OutputPlugin;
 use crate::{communication::MessageRouter, input::Error};
 use async_trait::async_trait;
+use cdl_dto::ingestion::BorrowedInsertMessage;
 use futures::future::try_join_all;
 use std::sync::Arc;
 use tracing::{error, trace};
@@ -10,7 +11,7 @@ use utils::communication::{
 };
 use utils::communication::{parallel_consumer::ParallelCommonConsumer, Result};
 use utils::metrics::{self, counter};
-use utils::{message_types::BorrowedInsertMessage, parallel_task_queue::ParallelTaskQueue};
+use utils::parallel_task_queue::ParallelTaskQueue;
 
 pub struct Service<P: OutputPlugin> {
     consumers: Vec<ParallelCommonConsumer>,

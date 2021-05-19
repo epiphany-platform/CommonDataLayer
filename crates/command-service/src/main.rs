@@ -1,4 +1,5 @@
 use anyhow::bail;
+use cdl_dto::ingestion::OwnedInsertMessage;
 use command_service::communication::MessageRouter;
 use command_service::input::{Error, Service};
 use command_service::output::{
@@ -7,7 +8,6 @@ use command_service::output::{
 use command_service::settings::{RepositoryKind, Settings};
 use tracing::debug;
 use utils::communication::parallel_consumer::ParallelCommonConsumer;
-use utils::message_types::OwnedInsertMessage;
 use utils::metrics;
 use utils::notification::NotificationPublisher;
 use utils::settings::load_settings;
@@ -17,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(
+    tracing_tools::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;

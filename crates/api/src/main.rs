@@ -24,7 +24,7 @@ async fn main() -> anyhow::Result<()> {
     utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(settings.log.rust_log.as_str(), "web-api")?;
+    tracing_tools::init(settings.log.rust_log.as_str(), "web-api")?;
 
     tracing::debug!(?settings, "application environment");
 
@@ -86,7 +86,7 @@ async fn main() -> anyhow::Result<()> {
         .or(graphql_playground)
         .or(warp::path!("graphql").and(graphql_post).with(cors));
 
-    utils::tracing::http::serve(routes, ([0, 0, 0, 0], input_port)).await;
+    tracing_tools::http::serve(routes, ([0, 0, 0, 0], input_port)).await;
 
     Ok(())
 }

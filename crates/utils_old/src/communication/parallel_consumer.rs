@@ -204,7 +204,7 @@ impl ParallelCommonConsumer {
                     task_limiter
                         .run(move || {
                             async move {
-                                crate::tracing::kafka::set_parent_span(&message);
+                                tracing_tools::kafka::set_parent_span(&message);
                                 let message = KafkaCommunicationMessage { message };
 
                                 match handler.handle(&message).await {

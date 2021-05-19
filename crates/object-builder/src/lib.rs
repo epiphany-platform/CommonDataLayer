@@ -1,6 +1,7 @@
 use anyhow::Context;
 use async_trait::async_trait;
 use bb8::{Pool, PooledConnection};
+use cdl_dto::materialization;
 use futures::{Stream, StreamExt, TryStreamExt};
 use rpc::common::RowDefinition as RpcRowDefinition;
 use rpc::materializer_general::{MaterializedView as RpcMaterializedView, Options};
@@ -12,10 +13,7 @@ use std::{collections::HashMap, convert::TryInto, pin::Pin};
 use std::{collections::HashSet, sync::Arc};
 use tonic::transport::Channel;
 use utils::communication::{consumer::ConsumerHandler, message::CommunicationMessage};
-use utils::{
-    metrics::{self, counter},
-    types::materialization,
-};
+use utils::metrics::{self, counter};
 use uuid::Uuid;
 
 pub mod settings;

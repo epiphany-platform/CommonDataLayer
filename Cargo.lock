@@ -109,6 +109,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "bb8",
+ "cdl_dto",
  "futures",
  "itertools 0.10.0",
  "reqwest",
@@ -120,6 +121,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-futures",
+ "tracing_tools",
  "utils",
  "uuid",
  "warp",
@@ -451,6 +453,7 @@ name = "cdl-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "cdl_dto",
  "clap",
  "rpc",
  "semver 0.11.0",
@@ -458,7 +461,22 @@ dependencies = [
  "serde_json",
  "tokio",
  "tonic",
+ "tracing_tools",
  "utils",
+ "uuid",
+]
+
+[[package]]
+name = "cdl_dto"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-graphql",
+ "rpc",
+ "serde 1.0.126",
+ "serde_json",
+ "thiserror",
+ "tonic",
  "uuid",
 ]
 
@@ -536,6 +554,7 @@ dependencies = [
  "async-trait",
  "bb8",
  "bb8-postgres",
+ "cdl_dto",
  "fnv",
  "futures",
  "rdkafka",
@@ -548,6 +567,7 @@ dependencies = [
  "tokio",
  "tonic",
  "tracing",
+ "tracing_tools",
  "url",
  "utils",
  "uuid",
@@ -799,12 +819,14 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "cdl_dto",
  "lru-cache",
  "rpc",
  "serde 1.0.126",
  "serde_json",
  "tokio",
  "tracing",
+ "tracing_tools",
  "url",
  "utils",
  "uuid",
@@ -820,6 +842,7 @@ dependencies = [
  "serde_json",
  "test-case",
  "tracing",
+ "tracing_tools",
  "utils",
  "uuid",
 ]
@@ -920,6 +943,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_tools",
  "utils",
  "uuid",
 ]
@@ -1601,6 +1625,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_tools",
  "utils",
  "uuid",
 ]
@@ -1619,6 +1644,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_tools",
  "utils",
  "uuid",
 ]
@@ -2000,6 +2026,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bb8",
+ "cdl_dto",
  "futures",
  "rpc",
  "serde 1.0.126",
@@ -2009,6 +2036,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_tools",
  "utils",
  "uuid",
 ]
@@ -2163,6 +2191,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "cdl_dto",
  "rdkafka",
  "rpc",
  "serde 1.0.126",
@@ -2170,6 +2199,7 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
+ "tracing_tools",
  "utils",
  "uuid",
 ]
@@ -2524,6 +2554,7 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-futures",
+ "tracing_tools",
  "utils",
  "uuid",
  "warp",
@@ -2546,6 +2577,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_tools",
  "utils",
  "uuid",
 ]
@@ -2564,6 +2596,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_tools",
  "utils",
 ]
 
@@ -2896,6 +2929,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bb8",
+ "cdl_dto",
  "futures-util",
  "jmespatch",
  "jsonschema",
@@ -2911,6 +2945,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_tools",
  "url",
  "utils",
  "uuid",
@@ -3924,6 +3959,7 @@ dependencies = [
  "async-graphql",
  "async-stream",
  "async-trait",
+ "cdl_dto",
  "config",
  "derive_more",
  "dirs",

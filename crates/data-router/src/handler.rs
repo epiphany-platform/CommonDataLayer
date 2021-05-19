@@ -7,14 +7,13 @@ use serde_json::Value;
 use tracing::{error, trace};
 use uuid::Uuid;
 
+use cdl_dto::ingestion::{BorrowedInsertMessage, DataRouterInsertMessage};
 use utils::{
     communication::{
         get_order_group_id, message::CommunicationMessage,
         parallel_consumer::ParallelConsumerHandler, publisher::CommonPublisher,
     },
     current_timestamp,
-    message_types::BorrowedInsertMessage,
-    message_types::DataRouterInsertMessage,
     metrics::{self, counter},
     parallel_task_queue::ParallelTaskQueue,
 };

@@ -17,7 +17,7 @@ use crate::types::DbExport;
 use crate::types::VersionedUuid;
 use crate::utils::build_full_schema;
 use crate::{settings::Settings, types::view::FullView};
-use utils::types::materialization::{FieldDefinition, Filter, Relation};
+use cdl_dto::materialization::{FieldDefinition, Filter, Relation};
 
 const SCHEMAS_LISTEN_CHANNEL: &str = "schemas";
 const VIEWS_LISTEN_CHANNEL: &str = "views";
