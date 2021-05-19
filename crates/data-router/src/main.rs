@@ -7,23 +7,22 @@ use std::sync::{Arc, Mutex};
 use tracing::{error, trace};
 
 use cdl_dto::ingestion::{BorrowedInsertMessage, DataRouterInsertMessage};
+use communication_tools::{
+    get_order_group_id,
+    message::CommunicationMessage,
+    parallel_consumer::{ParallelCommonConsumer, ParallelConsumerHandler},
+    publisher::CommonPublisher,
+};
 use rpc::schema_registry::Id;
+use task_tools::task_limiter::TaskLimiter;
 use utils::settings::{
     load_settings, AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings,
     MonitoringSettings,
 };
 use utils::{
-    abort_on_poison,
-    communication::{
-        get_order_group_id,
-        message::CommunicationMessage,
-        parallel_consumer::{ParallelCommonConsumer, ParallelConsumerHandler},
-        publisher::CommonPublisher,
-    },
-    current_timestamp,
+    abort_on_poison, current_timestamp,
     metrics::{self, counter},
     parallel_task_queue::ParallelTaskQueue,
-    task_limiter::TaskLimiter,
 };
 use uuid::Uuid;
 

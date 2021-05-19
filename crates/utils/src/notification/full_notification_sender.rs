@@ -1,6 +1,6 @@
-use crate::communication::publisher::CommonPublisher;
 use crate::notification::NotificationService;
 use anyhow::Context;
+use communication_tools::publisher::CommonPublisher;
 use serde::Serialize;
 use std::marker::PhantomData;
 use std::sync::Arc;

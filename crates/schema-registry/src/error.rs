@@ -10,7 +10,7 @@ pub enum RegistryError {
     #[error("Unable to connect to database: {0}")]
     ConnectionError(sqlx::Error),
     #[error("Error occurred while accessing database: {0}")]
-    DbError(sqlx::Error),
+    DbError(#[from] sqlx::Error),
     #[error("No schema found with id \"{0}\"")]
     NoSchemaWithId(Uuid),
     #[error("No view found with id \"{0}\"")]
@@ -42,7 +42,7 @@ pub enum RegistryError {
     #[error("{0}")]
     CacheError(String),
     #[error("{0}")]
-    MQError(utils::communication::Error),
+    MQError(#[from] communication_tools::Error),
     #[error("JSON error processing view fields: {0}")]
     MalformedViewFields(serde_json::Error),
     #[error("JSON error processing view filters: {0}")]
@@ -59,18 +59,6 @@ fn join_with_commas<'a>(errors: impl IntoIterator<Item = &'a String>) -> String 
         .map(|e| e.to_string())
         .collect::<Vec<_>>()
         .join(", ")
-}
-
-impl From<sqlx::Error> for RegistryError {
-    fn from(error: sqlx::Error) -> Self {
-        RegistryError::DbError(error)
-    }
-}
-
-impl From<utils::communication::Error> for RegistryError {
-    fn from(error: utils::communication::Error) -> Self {
-        Self::MQError(error)
-    }
 }
 
 impl From<RegistryError> for Status {

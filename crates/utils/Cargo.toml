@@ -11,9 +11,12 @@ path = "src/lib.rs"
 
 [dependencies]
 # Workspace
-rpc         = { path    = "../rpc" }
-tracing_tools           = { path    = "../tracing_tools", features = ["kafka", "grpc", "http"] } # TODO: Use these feature flags
 cdl_dto     = { path    = "../dto" }
+rpc         = { path    = "../rpc" }
+misc_tools  = { path    = "crates/misc" }
+task_tools  = { path    = "crates/task" }
+communication_tools     = { path    = "crates/communication" }
+tracing_tools           = { path    = "crates/tracing", features = ["kafka", "grpc", "http"] } # TODO: Use these feature flags
 
 # Crates.io
 anyhow      = "1.0"

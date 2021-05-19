@@ -1,5 +1,5 @@
+use communication_tools::consumer::{CommonConsumer, CommonConsumerConfig};
 use serde::Deserialize;
-use utils::communication::consumer::{CommonConsumer, CommonConsumerConfig};
 use utils::settings::*;
 
 #[derive(Debug, Deserialize)]

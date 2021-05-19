@@ -1,4 +1,3 @@
-use crate::task_limiter::TaskLimiter;
 use anyhow::Context;
 use async_trait::async_trait;
 use futures_util::TryStreamExt;
@@ -12,6 +11,7 @@ use rpc::generic as proto;
 use rpc::generic::generic_rpc_server::GenericRpc;
 use rpc::generic::generic_rpc_server::GenericRpcServer;
 use std::{net::SocketAddrV4, sync::Arc};
+use task_tools::task_limiter::TaskLimiter;
 use tokio_amqp::LapinTokioExt;
 use tracing_futures::Instrument;
 

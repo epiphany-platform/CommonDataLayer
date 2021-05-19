@@ -10,8 +10,8 @@ license = "Apache-2.0"
 [dependencies]
 # Workspace
 rpc         = { path = "../rpc" }
-utils       = { path = "../utils_old" }
-tracing_tools           = { path = "../tracing_tools" }
+utils       = { path = "../utils" }
+tracing_tools           = { path = "../utils/crates/tracing" }
 
 # Crates.io
 anyhow      = "1.0"

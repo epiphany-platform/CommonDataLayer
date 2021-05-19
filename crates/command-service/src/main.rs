@@ -6,8 +6,8 @@ use command_service::output::{
     DruidOutputPlugin, OutputPlugin, PostgresOutputPlugin, VictoriaMetricsOutputPlugin,
 };
 use command_service::settings::{RepositoryKind, Settings};
+use communication_tools::parallel_consumer::ParallelCommonConsumer;
 use tracing::debug;
-use utils::communication::parallel_consumer::ParallelCommonConsumer;
 use utils::metrics;
 use utils::notification::NotificationPublisher;
 use utils::settings::load_settings;

@@ -1,0 +1,30 @@
+[package]
+name = "communication_tools"
+authors = ["CDL Team"]
+version = "0.1.0"
+edition = "2018"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Workspace
+rpc         = { path    = "../../../rpc" }
+misc_tools  = { path = "../misc" } # TODO: Replace it with `utils`
+task_tools  = { path    = "../task" }
+tracing_tools           = { path           = "../tracing", features = ["http", "grpc", "kafka"] }
+
+# Crates.io
+anyhow      = "1.0"
+async-trait = "0.1"
+thiserror   = "1.0"
+lapin       = "1.7"
+rdkafka     = { version = "0.26", features = ["cmake-build"] }
+reqwest     = { version = "0.11", features = ["json"] }
+tokio       = { version = "1.5", features = ["rt-multi-thread"] }
+tokio-amqp  = "1.0"
+tracing     = "0.1"
+url         = { version = "2.2", features = ["serde"] }
+futures-util            = "0.3"
+tonic                   = "0.4"
+tracing-futures         = "0.2"

@@ -110,6 +110,7 @@ dependencies = [
  "async-trait",
  "bb8",
  "cdl_dto",
+ "communication_tools",
  "futures",
  "itertools 0.10.0",
  "reqwest",
@@ -555,6 +556,7 @@ dependencies = [
  "bb8",
  "bb8-postgres",
  "cdl_dto",
+ "communication_tools",
  "fnv",
  "futures",
  "rdkafka",
@@ -562,6 +564,7 @@ dependencies = [
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "task_tools",
  "test-case",
  "thiserror",
  "tokio",
@@ -571,6 +574,29 @@ dependencies = [
  "url",
  "utils",
  "uuid",
+]
+
+[[package]]
+name = "communication_tools"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures-util",
+ "lapin",
+ "misc_tools",
+ "rdkafka",
+ "reqwest",
+ "rpc",
+ "task_tools",
+ "thiserror",
+ "tokio",
+ "tokio-amqp",
+ "tonic",
+ "tracing",
+ "tracing-futures",
+ "tracing_tools",
+ "url",
 ]
 
 [[package]]
@@ -820,10 +846,12 @@ dependencies = [
  "anyhow",
  "async-trait",
  "cdl_dto",
+ "communication_tools",
  "lru-cache",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "task_tools",
  "tokio",
  "tracing",
  "tracing_tools",
@@ -933,6 +961,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bb8-postgres",
+ "communication_tools",
  "futures",
  "itertools 0.10.0",
  "rpc",
@@ -1782,6 +1811,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "misc_tools"
+version = "0.1.0"
+dependencies = [
+ "tracing",
+]
+
+[[package]]
 name = "multer"
 version = "1.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2007,6 +2043,7 @@ dependencies = [
  "async-trait",
  "bb8",
  "cdl_dto",
+ "communication_tools",
  "futures",
  "rpc",
  "serde 1.0.126",
@@ -2899,6 +2936,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "cdl_dto",
+ "communication_tools",
  "jmespatch",
  "jsonschema",
  "maplit",
@@ -3321,6 +3359,13 @@ name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
+
+[[package]]
+name = "task_tools"
+version = "0.1.0"
+dependencies = [
+ "tokio",
+]
 
 [[package]]
 name = "tcp-stream"
@@ -3928,6 +3973,7 @@ dependencies = [
  "async-stream",
  "async-trait",
  "cdl_dto",
+ "communication_tools",
  "config",
  "derive_more",
  "dirs",
@@ -3937,11 +3983,13 @@ dependencies = [
  "lazy_static",
  "metrics",
  "metrics-exporter-prometheus",
+ "misc_tools",
  "rdkafka",
  "reqwest",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "task_tools",
  "test-case",
  "thiserror",
  "tokio",

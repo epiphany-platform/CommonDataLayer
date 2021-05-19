@@ -1,5 +1,5 @@
+use communication_tools::publisher::CommonPublisher;
 use serde::Deserialize;
-use utils::communication::publisher::CommonPublisher;
 use utils::settings::*;
 
 #[derive(Debug, Deserialize)]
