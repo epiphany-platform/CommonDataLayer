@@ -1,7 +1,7 @@
 use crate::communication::resolution::Resolution;
+use cdl_dto::ingestion::BorrowedInsertMessage;
 pub use druid::DruidOutputPlugin;
 pub use psql::PostgresOutputPlugin;
-use utils::message_types::BorrowedInsertMessage;
 pub use victoria_metrics::VictoriaMetricsOutputPlugin;
 
 mod druid;

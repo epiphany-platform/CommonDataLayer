@@ -15,7 +15,7 @@ use crate::{error::Result, types::view::FullView};
 use crate::{settings::Settings, types::view::OnDemandViewRequest};
 use rpc::materializer_ondemand::OnDemandRequest;
 use rpc::schema_registry::types::SchemaType;
-use utils::tracing::http::RequestBuilderTracingExt;
+use tracing_tools::http::RequestBuilderTracingExt;
 
 #[Object]
 /// Schema is the format in which data is to be sent to the Common Data Layer.

@@ -119,7 +119,7 @@ impl CommonConsumer {
                     ack_queue.add(&message);
                     let span = tracing::info_span!("consume_message");
                     let result = async {
-                        crate::tracing::kafka::set_parent_span(&message);
+                        tracing_tools::kafka::set_parent_span(&message);
                         let message = KafkaCommunicationMessage { message };
                         handler.handle(&message).await.map(|_| {
                             ack_queue.ack(&message.message, &consumer);

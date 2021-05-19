@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
+use cdl_dto::materialization::{Filter, Relation};
 use rpc::schema_registry::{Id, NewView, ViewUpdate};
-use utils::types::materialization::{Filter, Relation};
 use uuid::Uuid;
 
 use crate::utils::read_json;

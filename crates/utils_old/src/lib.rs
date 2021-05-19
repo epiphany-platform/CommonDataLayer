@@ -10,7 +10,6 @@ use std::{
 use ::tracing::error;
 
 pub mod communication;
-pub mod message_types;
 pub mod metrics;
 pub mod notification;
 pub mod parallel_task_queue;
@@ -19,9 +18,6 @@ pub mod query_utils;
 pub mod settings;
 pub mod status_endpoints;
 pub mod task_limiter;
-pub mod types;
-
-pub use tracing_tools as tracing;
 
 pub fn abort_on_poison<T>(_e: PoisonError<T>) -> T {
     error!("Encountered mutex poisoning. Aborting.");

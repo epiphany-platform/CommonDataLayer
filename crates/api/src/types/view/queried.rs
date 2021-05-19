@@ -4,7 +4,7 @@ use async_graphql::{FieldResult, Json, SimpleObject};
 use serde_json::Value;
 use uuid::Uuid;
 
-use utils::types::materialization::{Filter, Relation};
+use cdl_dto::materialization::{Filter, Relation};
 
 /// A view under a schema.
 #[derive(Debug, SimpleObject)]
