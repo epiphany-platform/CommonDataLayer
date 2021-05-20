@@ -4,6 +4,9 @@ insert_destination = "cdl.data.input"
 [kafka]
 group_id = "api"
 
+[amqp]
+tag = "api"
+
 [notification_consumer]
 source = "cdl.reports"
 
