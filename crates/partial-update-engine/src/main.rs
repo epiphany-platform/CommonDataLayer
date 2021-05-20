@@ -1,20 +1,24 @@
-use std::{
-    collections::{HashMap, HashSet},
-    time::Duration,
-};
-
 use anyhow::{Context, Result};
+use itertools::Itertools;
 use rdkafka::{
     consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
     message::{BorrowedMessage, OwnedHeaders},
     producer::{FutureProducer, FutureRecord},
     ClientConfig, Message, Offset, TopicPartitionList,
 };
+use rpc::edge_registry::{TreeQuery, TreeResponse};
+use rpc::schema_registry::{FullView, Relation};
 use serde::{Deserialize, Serialize};
+use std::collections::hash_map::Entry;
+use std::{
+    collections::{HashMap, HashSet},
+    time::Duration,
+};
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
 use tracing::{trace, Instrument};
 use utils::settings::*;
+use utils::types::materialization::{Request, Schema};
 use utils::{
     metrics::{self},
     types::materialization,
@@ -45,6 +49,7 @@ struct NotificationConsumerSettings {
 #[derive(Deserialize, Debug, Serialize)]
 struct ServicesSettings {
     pub schema_registry_url: String,
+    pub edge_registry_url: String,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
@@ -165,50 +170,80 @@ async fn process_changes(
     changes: &mut HashSet<PartialNotification>,
 ) -> Result<()> {
     trace!("processing changes {:#?}", changes);
-    let mut client =
+    let mut sr_client =
         rpc::schema_registry::connect(settings.services.schema_registry_url.to_owned()).await?;
+    let mut er_client =
+        rpc::edge_registry::connect(settings.services.edge_registry_url.to_owned()).await?;
     let mut schema_cache: HashMap<Uuid, Vec<Uuid>> // (Schema_ID, Vec<View_ID>)
         = Default::default();
-
+    let mut view_cache: HashMap<Uuid, FullView> = Default::default();
+    let mut temp: HashMap<Uuid, HashMap<Uuid, HashSet<Uuid>>> = Default::default(); // (ViewID -> SchemaID -> [ObjectId])
     let mut requests: HashMap<Uuid, materialization::Request> = Default::default();
 
-    for PartialNotification::CommandServiceNotification(CommandServiceNotification {
-        object_id,
-        schema_id,
-    }) in std::mem::take(changes).into_iter()
+    for (key, group) in changes
+        .drain()
+        .map(|item| match item {
+            PartialNotification::CommandServiceNotification(notification) => {
+                (notification.schema_id, notification.object_id)
+            }
+        })
+        .group_by(|(k, _)| *k)
+        .into_iter()
     {
-        let entry = schema_cache.entry(schema_id);
+        let entry = schema_cache.entry(key);
         let view_ids = match entry {
-            std::collections::hash_map::Entry::Occupied(ref entry) => entry.get(),
-            std::collections::hash_map::Entry::Vacant(entry) => {
-                let response = client
+            Entry::Occupied(ref occupied) => occupied.get(),
+            Entry::Vacant(vacant) => {
+                let schema_views = sr_client
                     .get_all_views_of_schema(rpc::schema_registry::Id {
-                        id: schema_id.to_string(),
+                        id: key.to_string(),
                     })
-                    .await?;
+                    .await?
+                    .into_inner();
 
-                trace!(?response, "Response");
-
-                let view_ids = response
-                    .into_inner()
-                    .views
-                    .iter()
-                    .map(|view| Ok(view.id.parse()?))
-                    .collect::<Result<Vec<Uuid>>>()?;
-
-                entry.insert(view_ids)
+                let view_ids = vacant.insert(
+                    schema_views
+                        .views
+                        .iter()
+                        .map(|item| item.id.parse())
+                        .collect::<Result<_, _>>()?,
+                );
+                for view in schema_views.views {
+                    view_cache.entry(view.id.parse()?).or_insert(view);
+                }
+                view_ids
             }
         };
 
+        let group: Vec<Uuid> = group.into_iter().map(|item| item.1).collect();
+
         for view_id in view_ids {
-            requests
-                .entry(*view_id)
-                .or_insert_with(|| materialization::Request::new(*view_id))
-                .schemas
-                .entry(schema_id)
+            temp.entry(*view_id)
                 .or_default()
-                .object_ids
-                .insert(object_id);
+                .entry(key)
+                .or_default()
+                .extend(group.iter())
+        }
+    }
+
+    for (view_id, schemas) in temp {
+        let full_view = view_cache.get(&view_id).unwrap();
+        for (schema_id, object_ids) in schemas {
+            for query in view_to_tree_query(
+                full_view,
+                object_ids.into_iter().map(|i| i.to_string()).collect(),
+            ) {
+                let schema = requests
+                    .entry(view_id)
+                    .or_insert(Request {
+                        view_id,
+                        ..Default::default()
+                    })
+                    .schemas
+                    .entry(schema_id)
+                    .or_default();
+                process_tree_response(er_client.resolve_tree(query).await?.into_inner(), schema)?;
+            }
         }
     }
 
@@ -227,6 +262,47 @@ async fn process_changes(
             .await
             .map_err(|err| anyhow::anyhow!("Error sending message to Kafka {:?}", err))?;
     }
+    Ok(())
+}
+
+fn view_to_tree_query(
+    view: &'_ FullView,
+    object_ids: Vec<String>,
+) -> impl Iterator<Item = TreeQuery> + '_ {
+    view.relations.iter().map(move |relation| TreeQuery {
+        relation_id: relation.global_id.to_string(),
+        relations: relation
+            .relations
+            .iter()
+            .map(relation_to_tree_query)
+            .collect(),
+        filter_ids: object_ids.clone(),
+    })
+}
+
+fn relation_to_tree_query(relation: &Relation) -> TreeQuery {
+    TreeQuery {
+        relation_id: relation.global_id.to_owned(),
+        relations: relation
+            .relations
+            .iter()
+            .map(|relation| relation_to_tree_query(relation))
+            .collect(),
+        filter_ids: vec![],
+    }
+}
+
+fn process_tree_response(tree_response: TreeResponse, schema: &mut Schema) -> Result<()> {
+    for object in tree_response.objects {
+        schema.object_ids.insert(object.object_id.parse().unwrap());
+        for child in object.children {
+            schema.object_ids.insert(child.parse()?);
+        }
+        for subtree in object.subtrees {
+            process_tree_response(subtree, schema)?;
+        }
+    }
+
     Ok(())
 }
 
