@@ -15,25 +15,25 @@
 - Schema Registry now uses Postgres Backend
 - CDL can now work in ordered (messages) mode
 - CDL now uses Open Telemetry
-- DataRouter supports Message Batching
+- Data Router supports Message Batching
 
 ### General Changes:
 - Object Builder is available in Graphql API
-- ObjectBuilder supports empty filters
+- Object Builder supports empty filters
 - Object Builder can use filters in queries
 - Edge Registry is available in Graphql API
 - Edge Registry notifications support added
 - All services can be queried with --help to get full list of options with explanations
 
 ### Major Bugfixes
-- DataRouter - It is now possible to swith to multi/single threaded behaviour
+- Data Router - It is now possible to swith to multi/single threaded behaviour
 
 ### Documentation:
 - General Materialization documentation and how-to
 - CDL versioning
 - Updated ENV variables and their descriptions
 - Add Feature List and descriptions
-- GRPC implementation
+- gRPC implementation
 
 ### General Fixes
 - Consumer-based services will log error and continue on invalid message. no longer resulting in crash loop
@@ -45,7 +45,7 @@
 - Materialization RFC
 - RFC index page
 - partial materialization
-- edge repository
+- Edge Registry
 - Initial draft of the MessagePack
 - Alternative communication method to Kafka and RabbitMQ
 
@@ -56,12 +56,12 @@
 - Archived blob-store crate
 
 ### Features
-- Added store type of schema in schema registry
+- Added store type of schema in Schema Registry
 - Added RAW queries to postgres
-- Added RAW to query-router
+- Added RAW to Query Router
 - Added VictoriaMetrics Support
-- Added check if Kafka/AMQP topic exists before inserting new schema in schema registry
-- Added GRPC alternative ingestion method to command-service
+- Added check if Kafka/AMQP topic exists before inserting new schema in Schema Registry
+- Added gRPC alternative ingestion method to Command Service
 - Added input batching for TimeSeries
 - Added GraphQL server - `api`
 - Added (opt-in) message ordering
