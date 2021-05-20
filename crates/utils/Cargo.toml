@@ -15,7 +15,7 @@ cdl_dto     = { path    = "../dto" }
 rpc         = { path    = "../rpc" }
 misc_utils  = { path    = "crates/misc" }
 task_utils  = { path    = "crates/task" }
-communication_utils     = { path    = "crates/communication" }
+communication_utils     = { path    = "crates/communication", features = ["kafka", "amqp", "grpc"] }
 tracing_utils           = { path    = "crates/tracing", features = ["kafka", "grpc", "http"] } # TODO: Use these feature flags
 
 # Crates.io

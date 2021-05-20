@@ -1,19 +1,27 @@
+#![allow(unused_imports, unused_variables)]
 use std::time::Duration;
 
 use anyhow::Context;
+#[cfg(feature = "kafka")]
 use rdkafka::producer::{BaseProducer, Producer};
+#[cfg(feature = "kafka")]
 use rdkafka::ClientConfig;
+#[cfg(feature = "amqp")]
 use tokio_amqp::LapinTokioExt;
 
 use super::Result;
 
 pub enum MetadataFetcher {
+    #[cfg(feature = "kafka")]
     Kafka { producer: BaseProducer },
+    #[cfg(feature = "amqp")]
     Amqp { connection: lapin::Connection },
+    #[cfg(feature = "grpc")]
     Grpc,
 }
 
 impl MetadataFetcher {
+    #[cfg(feature = "kafka")]
     pub async fn new_kafka(brokers: &str) -> Result<Self> {
         let producer = ClientConfig::new()
             .set("bootstrap.servers", brokers)
@@ -23,6 +31,7 @@ impl MetadataFetcher {
         Ok(Self::Kafka { producer })
     }
 
+    #[cfg(feature = "amqp")]
     pub async fn new_amqp(connection_string: &str) -> Result<Self> {
         let connection = lapin::Connection::connect(
             connection_string,
@@ -34,6 +43,7 @@ impl MetadataFetcher {
         Ok(Self::Amqp { connection })
     }
 
+    #[cfg(feature = "grpc")]
     pub fn new_grpc() -> Result<Self> {
         Ok(Self::Grpc)
     }
@@ -42,6 +52,7 @@ impl MetadataFetcher {
         let owned_destination = String::from(destination);
 
         match self {
+            #[cfg(feature = "amqp")]
             MetadataFetcher::Amqp { connection } => {
                 let channel: lapin::Channel = connection
                     .create_channel()
@@ -74,6 +85,7 @@ impl MetadataFetcher {
                     Ok(()) => Ok(true),
                 }
             }
+            #[cfg(feature = "kafka")]
             MetadataFetcher::Kafka { producer } => {
                 let producer = producer.clone();
                 let metadata = tokio::task::spawn_blocking(move || {
@@ -87,10 +99,13 @@ impl MetadataFetcher {
                     .iter()
                     .any(|topic| topic.name() == destination))
             }
+            #[cfg(feature = "grpc")]
             MetadataFetcher::Grpc => {
                 let client = rpc::generic::connect(owned_destination).await;
                 Ok(client.is_ok())
             }
+            #[allow(unreachable_patterns)]
+            _ => unreachable!(),
         }
     }
 }

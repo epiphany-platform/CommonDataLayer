@@ -7,24 +7,30 @@ license = "Apache-2.0"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[features]
+kafka = ["rdkafka", "tracing_utils/kafka"]
+amqp = ["tokio-amqp", "lapin"]
+grpc = ["tonic", "tracing_utils/grpc"]
+http = ["reqwest", "tracing_utils/http"]
+
 [dependencies]
 # Workspace
 rpc         = { path    = "../../../rpc" }
 misc_utils  = { path    = "../misc" }
 task_utils  = { path    = "../task" }
-tracing_utils           = { path           = "../tracing", features = ["http", "grpc", "kafka"] }
+tracing_utils           = { path           = "../tracing" }
 
 # Crates.io
 anyhow      = "1.0"
 async-trait = "0.1"
 thiserror   = "1.0"
-lapin       = "1.7"
-rdkafka     = { version = "0.26", features = ["cmake-build"] }
-reqwest     = { version = "0.11", features = ["json"] }
+lapin       = { version = "1.7", optional = true }
+rdkafka     = { version = "0.26", features = ["cmake-build"], optional = true }
+reqwest     = { version = "0.11", features = ["json"], optional = true }
 tokio       = { version = "1.5", features = ["rt-multi-thread"] }
-tokio-amqp  = "1.0"
+tokio-amqp  = { version = "1.0", optional = true }
 tracing     = "0.1"
 url         = { version = "2.2", features = ["serde"] }
 futures-util            = "0.3"
-tonic                   = "0.4"
+tonic                   = { version = "0.4", optional = true }
 tracing-futures         = "0.2"
