@@ -1,0 +1,19 @@
+cache_capacity = 1000
+async_task_limit = 32
+
+[kafka]
+ingest_topic = "cdl.data.input"
+group_id = "data_router"
+
+[amqp]
+tag = "data_router"
+ingest_queue = "cdl.data.input"
+
+[grpc]
+address = "0.0.0.0:50301"
+
+[monitoring]
+otel_service_name = "data-router"
+
+[log]
+rust_log = "info,data_router=debug"
