@@ -32,7 +32,7 @@ def prepare(request, tmp_path):
     insert_data(postgres_config, data)
 
     sr = SchemaRegistry(
-        str(tmp_path),
+        'http://edge_registry_not_used',
         kafka_config.brokers,
         postgres_config,
         initial_schema="data/object_builder/initial-schema.kafka.json")

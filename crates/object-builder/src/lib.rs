@@ -22,7 +22,7 @@ pub mod settings;
 
 #[derive(Clone)]
 pub struct ObjectBuilderImpl {
-    pool: Pool<SchemaRegistryConnectionManager>,
+    pool: SchemaRegistryPool,
     chunk_capacity: usize,
 }
 

@@ -9,7 +9,7 @@ use rpc::edge_registry::edge_registry_server::EdgeRegistry;
 use rpc::edge_registry::{
     Edge, Empty, ObjectIdQuery, ObjectRelations, RelationDetails, RelationId, RelationIdQuery,
     RelationList, RelationQuery, RelationResponse, SchemaId, SchemaRelation, TreeObject, TreeQuery,
-    TreeResponse,
+    TreeResponse, ValidateRelationQuery,
 };
 use serde::{Deserialize, Serialize};
 use std::cmp::min;
@@ -17,6 +17,7 @@ use std::convert::TryInto;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::{fmt, time};
+use thiserror::Error;
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 use tracing::{debug, error, trace};
@@ -28,6 +29,14 @@ use utils::settings::PostgresSettings;
 use uuid::Uuid;
 
 pub mod settings;
+
+#[derive(Debug, Error)]
+pub enum ValidationError {
+    #[error("Relation {relation} does not exist")]
+    RelationDoesNotExist { relation: Uuid },
+    #[error(transparent)]
+    Unexpected(#[from] anyhow::Error),
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct AddEdgesMessage {
@@ -129,6 +138,24 @@ impl EdgeRegistryImpl {
             .await?
             .first()
             .map(|row| row.get::<_, Uuid>(0)))
+    }
+
+    #[tracing::instrument(skip(self))]
+    async fn validate_relation_impl(&self, relation_id: &Uuid) -> Result<(), ValidationError> {
+        counter!("cdl.edge-registry.validate-relation", 1);
+
+        let conn = self.connect().await?;
+        conn.query(
+            "SELECT child_schema_id FROM relations WHERE id = $1",
+            &[&relation_id],
+        )
+        .await
+        .map_err(anyhow::Error::from)?
+        .first()
+        .map(|_| ())
+        .ok_or(ValidationError::RelationDoesNotExist {
+            relation: *relation_id,
+        })
     }
 
     #[tracing::instrument(skip(self))]
@@ -422,6 +449,24 @@ impl EdgeRegistry for EdgeRegistryImpl {
         Ok(Response::new(RelationResponse {
             child_schema_id: child_schema_id.map(|id| id.to_string()),
         }))
+    }
+
+    async fn validate_relation(
+        &self,
+        request: Request<ValidateRelationQuery>,
+    ) -> Result<Response<Empty>, Status> {
+        let request = request.into_inner();
+
+        let relation_id = Uuid::from_str(&request.relation_id)
+            .map_err(|_| Status::invalid_argument("relation_id"))?;
+
+        match self.validate_relation_impl(&relation_id).await {
+            Ok(_) => Ok(Response::new(Empty {})),
+            Err(ValidationError::Unexpected(e)) => {
+                Err(db_communication_error("validate_relation", e))
+            }
+            Err(e) => Err(Status::invalid_argument(format!("{}", e))),
+        }
     }
 
     async fn get_schema_relations(
