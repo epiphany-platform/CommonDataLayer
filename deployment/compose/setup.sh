@@ -18,7 +18,7 @@ sed -i '' -E "s|repository_kind = .+|repository_kind = \"$REPOSITORY_KIND\"|g" s
 docker-compose down --remove-orphans
 docker-compose -f docker-compose.yml up -d postgres jaeger
 
-sleep 15s
+sleep 5s
 
 if [ "$COMMUNICATION_METHOD" == "kafka" ]; then
   docker-compose -f docker-compose.yml up -d kafka
@@ -34,13 +34,6 @@ elif [ "$REPOSITORY_KIND" == "druid" ]; then
 fi
 
 sleep 5s
-
-docker-compose \
-  -f docker-compose.yml \
-  up -d \
-  schema_registry # object builder needs it to be running
-
-sleep 1s
 
 docker-compose \
   -f docker-compose.yml \

@@ -33,5 +33,5 @@ topic = "cdl.timeseries.internal.druid"
 destination = "cdl.reports"
 
 [monitoring]
-metrics_port = "0" # Random
-status_port = "0" # Random
+metrics_port = "50001"
+status_port = "3000"
