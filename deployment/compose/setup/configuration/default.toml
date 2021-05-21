@@ -1,4 +1,4 @@
-communication_method = "kafka"
+communication_method = "grpc"
 repository_kind = "postgres"
 
 [services]

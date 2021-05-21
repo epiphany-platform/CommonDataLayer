@@ -148,7 +148,7 @@ services:
       OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
       OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
     volumes:
-      - ./setup/schema_registry/initial-schema.mq.json:/var/data/schema.json
+      - ./setup/schema_registry:/var/data
       - ./setup/configuration:/etc/cdl
 
   data_router:
