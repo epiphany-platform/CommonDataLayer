@@ -8,7 +8,7 @@ EXE = os.getenv('QUERY_SERVICE_EXE') or 'query-service'
 
 
 class QueryService:
-    def __init__(self, input_port='50102', db_config=None):
+    def __init__(self, input_port='50201', db_config=None):
         self.db_config = db_config
         self.input_port = input_port
         self.svc = None

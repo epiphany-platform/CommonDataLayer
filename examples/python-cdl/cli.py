@@ -131,7 +131,7 @@ def create_schema():
         {
             'type': 'input',
             'name': 'schema_query',
-            'default': 'http://postgres_query:50102',
+            'default': 'http://postgres_query:50201',
             'message': 'Query-service address for query-router to submit queries',
         },
         {

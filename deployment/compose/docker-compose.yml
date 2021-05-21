@@ -160,6 +160,8 @@ services:
         - BIN=data-router
         - ENV=DEV
     command: /bin/data-router
+    ports:
+      - "50102:50102"
     environment:
       OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
       OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
@@ -274,6 +276,8 @@ services:
         - BIN=command-service
         - ENV=DEV
     command: "/bin/command-service"
+    ports:
+      - "50202:50202"
     environment:
       OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
       OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
