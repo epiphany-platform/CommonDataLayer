@@ -62,9 +62,12 @@ Services
 | 50101        | schema registry                 |
 | 50102        | data router (gRPC only)         |
 | 50103        | query router                    |
+| 50104        | **FREE**                        |
+| 50105        | **FREE**                        |
 | 50106        | web api                         |
 | 50107        | object builder                  |
 | 50108        | materializer ondemand           |
+| 50109        | **FREE**                        |
 | 50110        | edge registry                   |
 | 50201        | query service, query service ts |
 | 50202        | command service (gRPC only)     |
