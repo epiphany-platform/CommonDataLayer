@@ -29,8 +29,8 @@ rdkafka     = { version = "0.26", features = ["cmake-build"], optional = true }
 reqwest     = { version = "0.11", features = ["json"], optional = true }
 tokio       = { version = "1.5", features = ["rt-multi-thread"] }
 tokio-amqp  = { version = "1.0", optional = true }
+tonic       = { version = "0.4", optional = true }
 tracing     = "0.1"
 url         = { version = "2.2", features = ["serde"] }
 futures-util            = "0.3"
-tonic                   = { version = "0.4", optional = true }
 tracing-futures         = "0.2"

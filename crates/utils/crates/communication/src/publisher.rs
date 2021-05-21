@@ -127,7 +127,7 @@ impl CommonPublisher {
                 }
             }
             #[allow(unreachable_patterns)]
-            _ => unreachable!(),
+            _ => unreachable!("Enable at least one feature"),
         }
     }
 }
