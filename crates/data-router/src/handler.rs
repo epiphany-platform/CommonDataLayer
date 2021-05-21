@@ -1,13 +1,13 @@
+use std::sync::{Arc, Mutex};
+
 use anyhow::Context;
 use async_trait::async_trait;
 use lru_cache::LruCache;
 use serde_json::Value;
-use std::sync::{Arc, Mutex};
 use tracing::{error, trace};
+use uuid::Uuid;
 
-use rpc::schema_registry::Id;
 use utils::{
-    abort_on_poison,
     communication::{
         get_order_group_id, message::CommunicationMessage,
         parallel_consumer::ParallelConsumerHandler, publisher::CommonPublisher,
@@ -18,7 +18,6 @@ use utils::{
     metrics::{self, counter},
     parallel_task_queue::ParallelTaskQueue,
 };
-use uuid::Uuid;
 
 pub struct Handler {
     pub cache: Arc<Mutex<LruCache<Uuid, String>>>,
@@ -146,43 +145,6 @@ async fn route(
     )
     .await;
     Ok(())
-}
-
-#[tracing::instrument(skip(cache))]
-async fn get_schema_insert_destination(
-    cache: &Mutex<LruCache<Uuid, String>>,
-    schema_id: Uuid,
-    schema_addr: &str,
-) -> anyhow::Result<String> {
-    let recv_channel = cache
-        .lock()
-        .unwrap_or_else(abort_on_poison)
-        .get_mut(&schema_id)
-        .cloned();
-    if let Some(val) = recv_channel {
-        trace!("Retrieved insert destination for {} from cache", schema_id);
-        return Ok(val);
-    }
-
-    let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
-    let channel = client
-        .get_schema_metadata(Id {
-            id: schema_id.to_string(),
-        })
-        .await?
-        .into_inner()
-        .insert_destination;
-
-    trace!(
-        "Retrieved insert destination for {} from schema registry",
-        schema_id
-    );
-    cache
-        .lock()
-        .unwrap_or_else(abort_on_poison)
-        .insert(schema_id, channel.clone());
-
-    Ok(channel)
 }
 
 #[tracing::instrument(skip(producer))]

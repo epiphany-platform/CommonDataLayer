@@ -9,15 +9,6 @@ use utils::{
 };
 
 #[derive(Deserialize, Debug, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum CommunicationMethod {
-    Kafka,
-    Amqp,
-    #[serde(rename = "grpc")]
-    GRpc,
-}
-
-#[derive(Deserialize, Debug, Serialize)]
 pub struct Settings {
     pub communication_method: CommunicationMethod,
     pub cache_capacity: usize,
@@ -33,6 +24,15 @@ pub struct Settings {
     pub services: ServicesSettings,
 
     pub log: LogSettings,
+}
+
+#[derive(Deserialize, Debug, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum CommunicationMethod {
+    Kafka,
+    Amqp,
+    #[serde(rename = "grpc")]
+    GRpc,
 }
 
 #[derive(Deserialize, Debug, Serialize)]

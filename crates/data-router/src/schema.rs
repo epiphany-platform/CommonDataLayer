@@ -1,5 +1,6 @@
-use lru_cache::LruCache;
 use std::sync::Mutex;
+
+use lru_cache::LruCache;
 use tracing::trace;
 
 use rpc::schema_registry::Id;

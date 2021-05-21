@@ -1,5 +1,6 @@
-use lru_cache::LruCache;
 use std::sync::{Arc, Mutex};
+
+use lru_cache::LruCache;
 
 use crate::{config::Settings, handler::Handler};
 use utils::settings::load_settings;
