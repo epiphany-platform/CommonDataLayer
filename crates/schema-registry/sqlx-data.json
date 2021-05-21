@@ -1,22 +1,5 @@
 {
   "db": "PostgreSQL",
-  "06a9866c1aa67eb745011c3c846211d763e7222fddf1d8f1132a8326ebd4238c": {
-    "query": "INSERT INTO views(id, base_schema, name, materializer_address, materializer_options, fields)\n             VALUES ($1, $2, $3, $4, $5, $6)",
-    "describe": {
-      "columns": [],
-      "parameters": {
-        "Left": [
-          "Uuid",
-          "Uuid",
-          "Varchar",
-          "Varchar",
-          "Json",
-          "Json"
-        ]
-      },
-      "nullable": []
-    }
-  },
   "09fefe2a26798d394c6c413aed8c8e373be5fa0f4dae17fb02ccc5e8554252b0": {
     "query": "SELECT id, name, insert_destination, query_address, schema_type as \"schema_type: _\"\n             FROM schemas WHERE id = $1",
     "describe": {
@@ -161,6 +144,25 @@
         false,
         false
       ]
+    }
+  },
+  "6ee5a87bfd7530aca74e364af5f0c40b0bff5a5bab77ec352cbaebb8b557a21d": {
+    "query": "INSERT INTO views(id, base_schema, name, materializer_address, materializer_options, fields, filters, relations)\n             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+    "describe": {
+      "columns": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid",
+          "Varchar",
+          "Varchar",
+          "Json",
+          "Json",
+          "Json",
+          "Json"
+        ]
+      },
+      "nullable": []
     }
   },
   "6fbfc980c45dbe488e0e68c8e03445da53c22b4d94f8c0afcf688a48af3aa888": {
