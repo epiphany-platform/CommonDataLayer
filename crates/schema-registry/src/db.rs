@@ -330,14 +330,16 @@ impl SchemaRegistryDb {
         let new_id = Uuid::new_v4();
 
         sqlx::query!(
-            "INSERT INTO views(id, base_schema, name, materializer_address, materializer_options, fields)
-             VALUES ($1, $2, $3, $4, $5, $6)",
+            "INSERT INTO views(id, base_schema, name, materializer_address, materializer_options, fields, filters, relations)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
             new_id,
             new_view.base_schema_id,
             new_view.name,
             new_view.materializer_address,
             new_view.materializer_options,
             serde_json::to_value(&new_view.fields).map_err(RegistryError::MalformedViewFields)?,
+            serde_json::to_value(&new_view.filters).map_err(RegistryError::MalformedViewFilters)?,
+            serde_json::to_value(&new_view.relations).map_err(RegistryError::MalformedViewRelations)?,
         )
         .execute(&mut conn)
         .await?;
