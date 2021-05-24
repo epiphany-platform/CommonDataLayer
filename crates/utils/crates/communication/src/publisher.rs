@@ -1,12 +1,18 @@
+#![allow(unused_imports, unused_variables)]
+#[cfg(feature = "amqp")]
 use lapin::{options::BasicPublishOptions, BasicProperties, Channel};
+#[cfg(feature = "kafka")]
 use rdkafka::{
     message::OwnedHeaders,
     producer::{FutureProducer, FutureRecord},
     ClientConfig,
 };
+#[cfg(feature = "http")]
 use reqwest::Client;
 use std::time::Duration;
+#[cfg(feature = "amqp")]
 use tokio_amqp::LapinTokioExt;
+#[cfg(feature = "http")]
 use tracing_utils::http::RequestBuilderTracingExt;
 use url::Url;
 
@@ -14,12 +20,17 @@ use super::{Error, Result};
 
 #[derive(Clone)]
 pub enum CommonPublisher {
+    #[cfg(feature = "kafka")]
     Kafka { producer: FutureProducer },
+    #[cfg(feature = "amqp")]
     Amqp { channel: Channel },
+    #[cfg(feature = "http")]
     Rest { url: Url, client: Client },
+    #[cfg(feature = "grpc")]
     Grpc,
 }
 impl CommonPublisher {
+    #[cfg(feature = "amqp")]
     pub async fn new_amqp(connection_string: &str) -> Result<Self> {
         let connection = lapin::Connection::connect(
             connection_string,
@@ -31,6 +42,7 @@ impl CommonPublisher {
         Ok(Self::Amqp { channel })
     }
 
+    #[cfg(feature = "kafka")]
     pub async fn new_kafka(brokers: &str) -> Result<Self> {
         let publisher = ClientConfig::new()
             .set("bootstrap.servers", brokers)
@@ -44,6 +56,7 @@ impl CommonPublisher {
         })
     }
 
+    #[cfg(feature = "http")]
     pub async fn new_rest(url: Url) -> Result<Self> {
         Ok(Self::Rest {
             url,
@@ -51,6 +64,7 @@ impl CommonPublisher {
         })
     }
 
+    #[cfg(feature = "grpc")]
     pub async fn new_grpc() -> Result<Self> {
         Ok(Self::Grpc)
     }
@@ -62,6 +76,7 @@ impl CommonPublisher {
         payload: Vec<u8>,
     ) -> Result<()> {
         match self {
+            #[cfg(feature = "kafka")]
             CommonPublisher::Kafka { producer } => {
                 let delivery_status = producer.send(
                     FutureRecord::to(destination)
@@ -73,6 +88,7 @@ impl CommonPublisher {
                 delivery_status.await.map_err(|x| x.0)?;
                 Ok(())
             }
+            #[cfg(feature = "amqp")]
             CommonPublisher::Amqp { channel } => {
                 channel
                     .basic_publish(
@@ -86,6 +102,7 @@ impl CommonPublisher {
                     .await?;
                 Ok(())
             }
+            #[cfg(feature = "http")]
             CommonPublisher::Rest { url, client } => {
                 let url = url.join(&format!("{}/{}", destination, key)).unwrap();
 
@@ -93,6 +110,7 @@ impl CommonPublisher {
 
                 Ok(())
             }
+            #[cfg(feature = "grpc")]
             CommonPublisher::Grpc => {
                 let addr = destination.into();
                 let mut client = rpc::generic::connect(addr).await?;
@@ -108,6 +126,8 @@ impl CommonPublisher {
                     Err(status) => Err(Error::GrpcStatusCode(status.code().description().into())),
                 }
             }
+            #[allow(unreachable_patterns)]
+            _ => unreachable!("Enable at least one feature"),
         }
     }
 }

@@ -1,19 +1,30 @@
+#![allow(unused_imports, unused_variables)]
 use anyhow::Context;
 use async_trait::async_trait;
 use futures_util::TryStreamExt;
+#[cfg(feature = "amqp")]
 pub use lapin::options::BasicConsumeOptions;
+#[cfg(feature = "amqp")]
 use lapin::types::FieldTable;
+#[cfg(feature = "kafka")]
 use rdkafka::{
     consumer::{DefaultConsumerContext, StreamConsumer},
     ClientConfig,
 };
+#[cfg(feature = "amqp")]
 use tokio_amqp::LapinTokioExt;
 use tracing_futures::Instrument;
 
-use super::{
-    kafka_ack_queue::KafkaAckQueue, message::AmqpCommunicationMessage,
-    message::CommunicationMessage, message::KafkaCommunicationMessage, Result,
-};
+#[cfg(feature = "kafka")]
+use super::kafka_ack_queue::KafkaAckQueue;
+
+#[cfg(feature = "kafka")]
+use crate::message::KafkaCommunicationMessage;
+
+#[cfg(feature = "amqp")]
+use crate::message::AmqpCommunicationMessage;
+
+use super::{message::CommunicationMessage, Result};
 
 #[async_trait]
 pub trait ConsumerHandler {
@@ -21,44 +32,54 @@ pub trait ConsumerHandler {
 }
 
 pub enum CommonConsumerConfig<'a> {
+    #[cfg(feature = "kafka")]
     Kafka {
         brokers: &'a str,
         group_id: &'a str,
         topic: &'a str,
     },
+    #[cfg(feature = "amqp")]
     Amqp {
         connection_string: &'a str,
         consumer_tag: &'a str,
         queue_name: &'a str,
         options: Option<BasicConsumeOptions>,
     },
+    #[cfg(not(any(feature = "kafka", feature = "amqp")))]
+    Unimplemented(std::marker::PhantomData<&'a ()>),
 }
+
 pub enum CommonConsumer {
+    #[cfg(feature = "kafka")]
     Kafka {
         consumer: StreamConsumer<DefaultConsumerContext>,
         ack_queue: KafkaAckQueue,
     },
-    Amqp {
-        consumer: lapin::Consumer,
-    },
+    #[cfg(feature = "amqp")]
+    Amqp { consumer: lapin::Consumer },
 }
 impl CommonConsumer {
     pub async fn new(config: CommonConsumerConfig<'_>) -> Result<Self> {
         match config {
+            #[cfg(feature = "kafka")]
             CommonConsumerConfig::Kafka {
                 group_id,
                 brokers,
                 topic,
             } => Self::new_kafka(group_id, brokers, &[topic]).await,
+            #[cfg(feature = "amqp")]
             CommonConsumerConfig::Amqp {
                 connection_string,
                 consumer_tag,
                 queue_name,
                 options,
             } => Self::new_amqp(connection_string, consumer_tag, queue_name, options).await,
+            #[allow(unreachable_patterns)]
+            _ => unreachable!("Enable at least one feature"),
         }
     }
 
+    #[cfg(feature = "kafka")]
     async fn new_kafka(group_id: &str, brokers: &str, topics: &[&str]) -> Result<Self> {
         let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
             .set("group.id", group_id)
@@ -81,6 +102,7 @@ impl CommonConsumer {
         })
     }
 
+    #[cfg(feature = "amqp")]
     async fn new_amqp(
         connection_string: &str,
         consumer_tag: &str,
@@ -108,8 +130,10 @@ impl CommonConsumer {
     /// Process messages in order. Cannot be used with Grpc.
     /// # Error handling
     /// Function returns and error on first unhandled message.
+    #[allow(unused_mut)]
     pub async fn run(self, mut handler: impl ConsumerHandler) -> Result<()> {
         match self {
+            #[cfg(feature = "kafka")]
             CommonConsumer::Kafka {
                 consumer,
                 ack_queue,
@@ -132,6 +156,7 @@ impl CommonConsumer {
                     }
                 }
             }
+            #[cfg(feature = "amqp")]
             CommonConsumer::Amqp { mut consumer } => {
                 while let Some((channel, delivery)) = consumer.try_next().await? {
                     let message = AmqpCommunicationMessage { delivery };
@@ -147,7 +172,10 @@ impl CommonConsumer {
                     }
                 }
             }
+            #[allow(unreachable_patterns)]
+            _ => unreachable!("Enable at least one feature"),
         }
+        #[allow(unreachable_code)]
         Ok(())
     }
 }

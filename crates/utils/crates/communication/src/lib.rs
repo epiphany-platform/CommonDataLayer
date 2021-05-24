@@ -1,6 +1,7 @@
 #![feature(linked_list_cursors)]
 
 pub mod consumer;
+#[cfg(feature = "kafka")]
 mod kafka_ack_queue;
 pub mod message;
 pub mod metadata_fetcher;
@@ -18,17 +19,21 @@ pub enum Error {
     #[error("Error during joining blocking task \"{0}\"")]
     RuntimeError(String),
 
+    #[cfg(feature = "grpc")]
     #[error("GRPC server returned status: {0}")]
     GrpcStatusCode(String),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
+#[cfg(feature = "grpc")]
 impl From<tonic::transport::Error> for Error {
     fn from(error: tonic::transport::Error) -> Self {
         Self::CommunicationError(error.to_string())
     }
 }
+
+#[cfg(feature = "kafka")]
 impl From<rdkafka::error::KafkaError> for Error {
     fn from(error: rdkafka::error::KafkaError) -> Self {
         Self::CommunicationError(error.to_string())
@@ -39,6 +44,7 @@ impl From<anyhow::Error> for Error {
         Self::CommunicationError(error.to_string())
     }
 }
+#[cfg(feature = "amqp")]
 impl From<lapin::Error> for Error {
     fn from(error: lapin::Error) -> Self {
         Self::CommunicationError(error.to_string())
@@ -54,12 +60,14 @@ impl From<tokio::task::JoinError> for Error {
         Self::RuntimeError(error.to_string())
     }
 }
+#[cfg(feature = "http")]
 impl From<reqwest::Error> for Error {
     fn from(error: reqwest::Error) -> Self {
         Self::CommunicationError(error.to_string())
     }
 }
 
+#[cfg(feature = "grpc")]
 impl From<rpc::error::ClientError> for Error {
     fn from(error: rpc::error::ClientError) -> Self {
         Self::CommunicationError(error.to_string())
