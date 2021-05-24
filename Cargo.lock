@@ -915,6 +915,7 @@ dependencies = [
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "thiserror",
  "tokio",
  "tonic",
  "tracing",
@@ -1665,22 +1666,11 @@ dependencies = [
 
 [[package]]
 name = "metrics"
-version = "0.15.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c53c23fff9a59f261498953cf41dc9ffc2522fd79723bdf283c1e88dc1633624"
-dependencies = [
- "metrics-macros 0.3.0",
- "proc-macro-hack",
- "t1ha",
-]
-
-[[package]]
-name = "metrics"
 version = "0.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9c0a7fa53d812d26e59d2baf7a6f77442041454ab32908eb304447f00f0dd4de"
 dependencies = [
- "metrics-macros 0.4.0",
+ "metrics-macros",
  "proc-macro-hack",
  "t1ha",
 ]
@@ -1693,26 +1683,12 @@ checksum = "423ac561fc3300388e62947ce7f944ba6d40468afe9916ce5b7774171d8b38b8"
 dependencies = [
  "hyper",
  "ipnet",
- "metrics 0.16.0",
+ "metrics",
  "metrics-util",
  "parking_lot",
  "quanta",
  "thiserror",
  "tokio",
-]
-
-[[package]]
-name = "metrics-macros"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b22572ba9964744e261d34553568683b76db277bcd309ebf7215e28e0982505d"
-dependencies = [
- "lazy_static",
- "proc-macro-hack",
- "proc-macro2",
- "quote",
- "regex",
- "syn",
 ]
 
 [[package]]
@@ -1742,7 +1718,7 @@ dependencies = [
  "dashmap",
  "hashbrown 0.11.2",
  "indexmap",
- "metrics 0.16.0",
+ "metrics",
  "num_cpus",
  "ordered-float 2.1.1",
  "parking_lot",
@@ -2920,6 +2896,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bb8",
+ "futures-util",
  "jmespatch",
  "jsonschema",
  "maplit",
@@ -3560,9 +3538,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-stream"
-version = "0.1.5"
+version = "0.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e177a5d8c3bf36de9ebe6d58537d8879e964332f93fb3339e43f618c81361af0"
+checksum = "f8864d706fdb3cc0843a49647ac892720dac98a6eeb818b77190592cf4994066"
 dependencies = [
  "futures-core",
  "pin-project-lite",
@@ -3954,7 +3932,7 @@ dependencies = [
  "hyper",
  "lapin",
  "lazy_static",
- "metrics 0.15.1",
+ "metrics",
  "metrics-exporter-prometheus",
  "rdkafka",
  "reqwest",
@@ -4217,18 +4195,18 @@ checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 
 [[package]]
 name = "xshell"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e3f93d5e767c73e5b2604549613ce051d3d2880ec5ae7f346900f6ee4eec6bf"
+checksum = "eb15bb1b41eb14efe628006294c294e10c366e03a0283b9c2063fc27d97934c6"
 dependencies = [
  "xshell-macros",
 ]
 
 [[package]]
 name = "xshell-macros"
-version = "0.1.12"
+version = "0.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "58d215d6837186f9f3d0d2d835545c7bf19142296e9184279ad240f90101af30"
+checksum = "cf7ed94a2c75b9bcc57031229be2b57ee47ba71122f71aabef8610ec66a97e52"
 
 [[package]]
 name = "xtask"

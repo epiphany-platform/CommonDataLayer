@@ -1,4 +1,4 @@
-input_port = 50102
+input_port = 50201
 
 [druid]
 table_name = "cdl.timeseries.internal.druid"

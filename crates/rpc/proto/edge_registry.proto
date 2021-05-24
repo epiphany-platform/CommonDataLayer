@@ -6,6 +6,7 @@ service EdgeRegistry {
   rpc GetRelation(RelationQuery) returns (RelationResponse);
   rpc GetSchemaRelations(SchemaId) returns (RelationList);
   rpc ListRelations(Empty) returns (RelationList);
+  rpc ValidateRelation(ValidateRelationQuery) returns (Empty);
 
   rpc AddEdges(ObjectRelations) returns (Empty);
   rpc GetEdge(RelationIdQuery) returns (Edge);
@@ -45,6 +46,10 @@ message RelationId {
 message RelationQuery {
   required string relation_id = 1;
   required string parent_schema_id = 2;
+}
+
+message ValidateRelationQuery {
+  required string relation_id = 1;
 }
 
 message RelationResponse {
