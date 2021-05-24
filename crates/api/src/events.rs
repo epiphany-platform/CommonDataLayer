@@ -16,7 +16,7 @@ use communication_utils::{
     consumer::{CommonConsumer, CommonConsumerConfig, ConsumerHandler},
     message::CommunicationMessage,
 };
-use utils::settings::CommunicationMethod;
+use settings_utils::CommunicationMethod;
 
 /// Owned generic message received from message queue.
 #[derive(Clone, Debug)]

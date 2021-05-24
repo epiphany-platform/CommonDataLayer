@@ -6,7 +6,7 @@ pub struct Args {
     #[clap(long, env)]
     pub input_port: u16,
     /// Port to listen on for Prometheus requests
-    #[clap(long, default_value = utils::metrics::DEFAULT_PORT, env)]
+    #[clap(long, default_value = metrics_utils::DEFAULT_PORT, env)]
     pub metrics_port: u16,
     /// Port exposing status of the application
     #[clap(long, default_value = utils::status_endpoints::DEFAULT_PORT, env)]

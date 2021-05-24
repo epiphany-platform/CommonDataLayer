@@ -1,5 +1,6 @@
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
+use metrics_utils::{self as metrics, counter};
 use reqwest::Client;
 use rpc::query_service_ts::{
     query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
@@ -7,7 +8,6 @@ use rpc::query_service_ts::{
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tonic::{Request, Response, Status};
-use utils::metrics::{self, counter};
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct DruidSettings {

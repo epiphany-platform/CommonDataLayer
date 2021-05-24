@@ -5,6 +5,7 @@ use std::{
 
 use anyhow::{Context, Result};
 use cdl_dto::materialization;
+use metrics_utils as metrics;
 use rdkafka::{
     consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
     message::{BorrowedMessage, OwnedHeaders},
@@ -12,11 +13,10 @@ use rdkafka::{
     ClientConfig, Message, Offset, TopicPartitionList,
 };
 use serde::{Deserialize, Serialize};
+use settings_utils::*;
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
 use tracing::{trace, Instrument};
-use utils::metrics;
-use utils::settings::*;
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug, Serialize)]

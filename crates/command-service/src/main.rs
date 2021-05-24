@@ -7,10 +7,10 @@ use command_service::output::{
 };
 use command_service::settings::{RepositoryKind, Settings};
 use communication_utils::parallel_consumer::ParallelCommonConsumer;
+use metrics_utils as metrics;
+use settings_utils::load_settings;
 use tracing::debug;
-use utils::metrics;
 use utils::notification::NotificationPublisher;
-use utils::settings::load_settings;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

@@ -1,13 +1,14 @@
 use edge_registry::settings::Settings;
 use edge_registry::EdgeRegistryImpl;
+use metrics_utils as metrics;
 use rpc::edge_registry::edge_registry_server::EdgeRegistryServer;
+use settings_utils::{load_settings, CommunicationMethod};
 use std::process;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::transport::Server;
 use tracing::{error, info};
-use utils::settings::{load_settings, CommunicationMethod};
-use utils::{metrics, status_endpoints};
+use utils::status_endpoints;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

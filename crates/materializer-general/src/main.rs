@@ -1,7 +1,7 @@
 use materializer_general::{settings::Settings, MaterializerImpl};
 use rpc::materializer_general::general_materializer_server::GeneralMaterializerServer;
+use settings_utils::load_settings;
 use tonic::transport::Server;
-use utils::settings::load_settings;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -16,7 +16,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::debug!(?settings, "application environment");
 
     utils::status_endpoints::serve(&settings.monitoring);
-    utils::metrics::serve(&settings.monitoring);
+    metrics_utils::serve(&settings.monitoring);
 
     let materializer = MaterializerImpl::new(settings.postgres).await?;
 

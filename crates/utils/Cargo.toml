@@ -17,6 +17,7 @@ misc_utils  = { path    = "crates/misc" }
 task_utils  = { path    = "crates/task" }
 communication_utils     = { path    = "crates/communication", features = ["kafka", "amqp", "grpc"] }
 tracing_utils           = { path    = "crates/tracing", features = ["kafka", "grpc", "http"] } # TODO: Use these feature flags
+settings_utils          = { path    = "crates/settings" }
 
 # Crates.io
 anyhow      = "1.0"
@@ -27,7 +28,6 @@ dirs        = "3.0.2"
 hyper       = "0.14"
 lapin       = "1.7"
 lazy_static = "1.4"
-metrics     = { version = "0.15", features = ["std"] }
 rdkafka     = { version = "0.26", features = ["cmake-build"] }
 reqwest     = { version = "0.11", features = ["json"] }
 serde       = { version = "1.0", features = ["derive"] }
@@ -43,7 +43,6 @@ async-stream            = "0.3"
 futures-util            = "0.3"
 tonic                   = "0.4"
 tracing-futures         = "0.2"
-metrics-exporter-prometheus         = "0.4"
 
 [dev-dependencies]
 test-case = "1.1"

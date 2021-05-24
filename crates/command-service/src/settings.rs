@@ -5,8 +5,9 @@ use communication_utils::parallel_consumer::{
 };
 use communication_utils::publisher::CommonPublisher;
 use serde::{Deserialize, Serialize};
+use settings_utils::*;
 use task_utils::task_limiter::TaskLimiter;
-use utils::settings::*;
+use utils::notification::NotificationSettings;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {

@@ -17,7 +17,7 @@ use schema::context::{
 };
 use schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
 use settings::Settings;
-use utils::settings::load_settings;
+use settings_utils::load_settings;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

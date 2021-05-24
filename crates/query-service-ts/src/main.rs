@@ -1,12 +1,12 @@
 use anyhow::Context;
+use metrics_utils as metrics;
 use query_service_ts::druid::{DruidQuery, DruidSettings};
 use query_service_ts::victoria::VictoriaQuery;
 use rpc::query_service_ts::query_service_ts_server::{QueryServiceTs, QueryServiceTsServer};
 use serde::Deserialize;
+use settings_utils::*;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tonic::transport::Server;
-use utils::metrics;
-use utils::settings::*;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {

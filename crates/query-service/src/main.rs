@@ -1,10 +1,10 @@
 use anyhow::Context;
+use metrics_utils as metrics;
 use rpc::query_service::query_service_server::{QueryService, QueryServiceServer};
 use serde::Deserialize;
+use settings_utils::*;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tonic::transport::Server;
-use utils::metrics;
-use utils::settings::*;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {

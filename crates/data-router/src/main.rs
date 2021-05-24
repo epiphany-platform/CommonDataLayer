@@ -13,17 +13,15 @@ use communication_utils::{
     parallel_consumer::{ParallelCommonConsumer, ParallelConsumerHandler},
     publisher::CommonPublisher,
 };
+use metrics_utils::{self as metrics, counter};
 use misc_utils::{abort_on_poison, current_timestamp};
 use rpc::schema_registry::Id;
-use task_utils::task_limiter::TaskLimiter;
-use utils::settings::{
+use settings_utils::{
     load_settings, AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings,
     MonitoringSettings,
 };
-use utils::{
-    metrics::{self, counter},
-    parallel_task_queue::ParallelTaskQueue,
-};
+use task_utils::task_limiter::TaskLimiter;
+use utils::parallel_task_queue::ParallelTaskQueue;
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug, Serialize)]

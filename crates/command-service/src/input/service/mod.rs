@@ -8,9 +8,9 @@ use communication_utils::{
 };
 use communication_utils::{parallel_consumer::ParallelCommonConsumer, Result};
 use futures::future::try_join_all;
+use metrics_utils::{self as metrics, counter};
 use std::sync::Arc;
 use tracing::{error, trace};
-use utils::metrics::{self, counter};
 use utils::parallel_task_queue::ParallelTaskQueue;
 
 pub struct Service<P: OutputPlugin> {
