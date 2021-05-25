@@ -9,10 +9,11 @@ use uuid::Uuid;
 
 use cdl_dto::ingestion::{BorrowedInsertMessage, DataRouterInsertMessage};
 use communication_utils::{
-        get_order_group_id, message::CommunicationMessage,
-    parallel_consumer::ParallelConsumerHandler, publisher::CommonPublisher};
-use misc_utils::current_timestamp;
+    get_order_group_id, message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,
+    publisher::CommonPublisher,
+};
 use metrics_utils::{self as metrics, counter};
+use misc_utils::current_timestamp;
 use utils::parallel_task_queue::ParallelTaskQueue;
 
 pub struct Handler {

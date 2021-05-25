@@ -18,10 +18,10 @@ use crate::settings::Settings;
 use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{NewView, ViewUpdate};
 use crate::types::{DbExport, VersionedUuid};
-use rpc::edge_registry::{edge_registry_client::EdgeRegistryClient, ValidateRelationQuery};
 use cdl_dto::materialization::{Filter, Relation};
 use communication_utils::metadata_fetcher::MetadataFetcher;
 use communication_utils::Result;
+use rpc::edge_registry::{edge_registry_client::EdgeRegistryClient, ValidateRelationQuery};
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate,
     ValueToValidate, VersionedId,

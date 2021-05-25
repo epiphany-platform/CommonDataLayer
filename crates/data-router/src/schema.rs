@@ -3,8 +3,8 @@ use std::sync::Mutex;
 use lru_cache::LruCache;
 use tracing::trace;
 
-use rpc::schema_registry::Id;
 use misc_utils::abort_on_poison;
+use rpc::schema_registry::Id;
 use uuid::Uuid;
 
 #[tracing::instrument(skip(cache))]

@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
+use communication_utils::{parallel_consumer::ParallelCommonConsumer, publisher::CommonPublisher};
 use settings_utils::{
     AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings, MonitoringSettings,
 };
-use communication_utils::{parallel_consumer::ParallelCommonConsumer, publisher::CommonPublisher};
 use task_utils::task_limiter::TaskLimiter;
 
 #[derive(Deserialize, Debug, Serialize)]
