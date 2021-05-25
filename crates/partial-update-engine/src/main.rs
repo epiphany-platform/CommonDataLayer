@@ -1,12 +1,13 @@
 use anyhow::{Context, Result};
 use itertools::Itertools;
+use rdkafka::consumer::Consumer;
 use rdkafka::{
     consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
     message::{BorrowedMessage, OwnedHeaders},
     producer::{FutureProducer, FutureRecord},
     ClientConfig, Message, Offset, TopicPartitionList,
 };
-use rpc::edge_registry::{TreeQuery, TreeResponse};
+use rpc::edge_registry::{RelationId, TreeQuery, TreeResponse};
 use rpc::schema_registry::{FullView, Relation};
 use serde::{Deserialize, Serialize};
 use std::collections::hash_map::Entry;
@@ -56,6 +57,7 @@ struct ServicesSettings {
 #[serde(untagged)]
 enum PartialNotification {
     CommandServiceNotification(CommandServiceNotification),
+    EdgeRegistryNotification(EdgeRegistryNotification),
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
@@ -63,6 +65,13 @@ enum PartialNotification {
 struct CommandServiceNotification {
     pub object_id: Uuid,
     pub schema_id: Uuid,
+}
+
+#[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+struct EdgeRegistryNotification {
+    pub relation_id: Uuid,
+    pub parent_object_id: Uuid,
 }
 
 #[tokio::main]
@@ -88,7 +97,8 @@ async fn main() -> anyhow::Result<()> {
         .context("Consumer creation failed")?;
     let topics = [settings.notification_consumer.source.as_str()];
 
-    rdkafka::consumer::Consumer::subscribe(&consumer, &topics)
+    consumer
+        .subscribe(&topics)
         .context("Can't subscribe to specified topics")?;
 
     let producer = ClientConfig::new()
@@ -180,16 +190,31 @@ async fn process_changes(
     let mut temp: HashMap<Uuid, HashMap<Uuid, HashSet<Uuid>>> = Default::default(); // (ViewID -> SchemaID -> [ObjectId])
     let mut requests: HashMap<Uuid, materialization::Request> = Default::default();
 
-    for (key, group) in changes
-        .drain()
-        .map(|item| match item {
+    let mut new_changes = Vec::with_capacity(changes.len());
+
+    // Convert notifications to (schema, object) pairs
+    for change in changes.drain() {
+        match change {
             PartialNotification::CommandServiceNotification(notification) => {
-                (notification.schema_id, notification.object_id)
+                new_changes.push((notification.schema_id, notification.object_id));
             }
-        })
-        .group_by(|(k, _)| *k)
-        .into_iter()
-    {
+            PartialNotification::EdgeRegistryNotification(notification) => {
+                let relation = er_client
+                    .get_schema_by_relation(RelationId {
+                        relation_id: notification.relation_id.to_string(),
+                    })
+                    .await?
+                    .into_inner();
+                new_changes.push((
+                    relation.parent_schema_id.parse()?,
+                    notification.parent_object_id,
+                ));
+            }
+        }
+    }
+
+    // Group objects per view per schema
+    for (key, group) in new_changes.into_iter().group_by(|(k, _)| *k).into_iter() {
         let entry = schema_cache.entry(key);
         let view_ids = match entry {
             Entry::Occupied(ref occupied) => occupied.get(),
@@ -215,17 +240,18 @@ async fn process_changes(
             }
         };
 
-        let group: Vec<Uuid> = group.into_iter().map(|item| item.1).collect();
+        let object_ids: Vec<Uuid> = group.into_iter().map(|item| item.1).collect();
 
         for view_id in view_ids {
             temp.entry(*view_id)
                 .or_default()
                 .entry(key)
                 .or_default()
-                .extend(group.iter())
+                .extend(object_ids.iter())
         }
     }
 
+    // Query ER for relation trees of each view
     for (view_id, schemas) in temp {
         let full_view = view_cache.get(&view_id).unwrap();
         for (schema_id, object_ids) in schemas {

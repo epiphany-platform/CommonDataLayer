@@ -39,6 +39,7 @@ pub enum ValidationError {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct AddEdgesMessage {
     relation_id: Uuid,
     parent_object_id: Uuid,
@@ -138,6 +139,23 @@ impl EdgeRegistryImpl {
             .await?
             .first()
             .map(|row| row.get::<_, Uuid>(0)))
+    }
+
+    async fn get_schema_by_relation_impl(
+        &self,
+        relation_id: Uuid,
+    ) -> anyhow::Result<Option<(Uuid, Uuid)>> {
+        counter!("cdl.edge-registry.get-schema-by-relation", 1);
+
+        let conn = self.connect().await?;
+        Ok(conn
+            .query(
+                "SELECT parent_schema_id, child_schema_id FROM relations WHERE id = $1",
+                &[&relation_id],
+            )
+            .await?
+            .first()
+            .map(|row| (row.get(0), row.get(1))))
     }
 
     #[tracing::instrument(skip(self))]
@@ -449,6 +467,35 @@ impl EdgeRegistry for EdgeRegistryImpl {
         Ok(Response::new(RelationResponse {
             child_schema_id: child_schema_id.map(|id| id.to_string()),
         }))
+    }
+
+    async fn get_schema_by_relation(
+        &self,
+        request: Request<RelationId>,
+    ) -> Result<Response<SchemaRelation>, Status> {
+        let request = request.into_inner();
+
+        trace!(
+            "Received `get_schema_by_relation` message with relation_id `{}`",
+            request.relation_id
+        );
+
+        let relation_id = Uuid::from_str(&request.relation_id)
+            .map_err(|_| Status::invalid_argument("relation_id"))?;
+
+        let relation = self
+            .get_schema_by_relation_impl(relation_id)
+            .await
+            .map_err(|err| db_communication_error("get_schema_by_relation", err))?;
+
+        if let Some((parent, child)) = relation {
+            Ok(Response::new(SchemaRelation {
+                parent_schema_id: parent.to_string(),
+                child_schema_id: child.to_string(),
+            }))
+        } else {
+            Err(Status::not_found("Specified relation doesn't exist"))
+        }
     }
 
     async fn validate_relation(

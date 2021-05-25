@@ -1,4 +1,4 @@
-sleep_phase_length = 1000
+sleep_phase_length = 1
 
 [notification_consumer]
 brokers = "localhost:9092"
@@ -12,4 +12,4 @@ egest_topic = "cdl.materialize"
 otel_service_name = "partial-update-engine"
 
 [log]
-rust_log = "info,partial_update_engine=debug"
+rust_log = "info,partial_update_engine=trace"
