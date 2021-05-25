@@ -1,6 +1,6 @@
 use communication_utils::publisher::CommonPublisher;
 use serde::Deserialize;
-use utils::settings::*;
+use settings_utils::*;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {

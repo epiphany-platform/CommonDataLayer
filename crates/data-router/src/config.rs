@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use utils::settings::{
+use settings_utils::{
     AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings, MonitoringSettings,
 };
 use communication_utils::{parallel_consumer::ParallelCommonConsumer, publisher::CommonPublisher};

@@ -1,7 +1,7 @@
 use object_builder::{settings::Settings, ObjectBuilderImpl};
 use rpc::object_builder::object_builder_server::ObjectBuilderServer;
+use settings_utils::load_settings;
 use tonic::transport::Server;
-use utils::settings::load_settings;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -16,7 +16,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::debug!(?settings, "application environment");
 
     utils::status_endpoints::serve(&settings.monitoring);
-    utils::metrics::serve(&settings.monitoring);
+    metrics_utils::serve(&settings.monitoring);
 
     let object_builder = ObjectBuilderImpl::new(
         &settings.services.schema_registry_url,

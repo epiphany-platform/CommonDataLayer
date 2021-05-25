@@ -4,7 +4,7 @@ pub mod settings;
 use plugins::{MaterializerPlugin, PostgresMaterializer};
 use rpc::materializer_general::MaterializedView;
 use rpc::materializer_general::{general_materializer_server::GeneralMaterializer, Empty, Options};
-use utils::settings::PostgresSettings;
+use settings_utils::PostgresSettings;
 
 pub struct MaterializerImpl {
     materializer: std::sync::Arc<dyn MaterializerPlugin>,

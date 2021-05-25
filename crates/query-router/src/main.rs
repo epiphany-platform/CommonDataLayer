@@ -4,9 +4,9 @@ use uuid::Uuid;
 use warp::Filter;
 
 use cache::SchemaRegistryCache;
+use metrics_utils as metrics;
 use serde::Deserialize;
-use utils::metrics;
-use utils::settings::{load_settings, LogSettings, MonitoringSettings};
+use settings_utils::{load_settings, LogSettings, MonitoringSettings};
 
 pub mod cache;
 pub mod error;

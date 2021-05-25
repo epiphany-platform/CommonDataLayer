@@ -6,12 +6,12 @@ use bb8_postgres::tokio_postgres::{Config, NoTls};
 use bb8_postgres::PostgresConnectionManager;
 use cdl_dto::ingestion::BorrowedInsertMessage;
 pub use error::Error;
+use metrics_utils::{self as metrics, counter};
 use serde_json::Value;
+use settings_utils::PostgresSettings;
 use std::time;
 use tracing::{error, trace};
-use utils::metrics::{self, counter};
 use utils::psql::validate_schema;
-use utils::settings::PostgresSettings;
 
 pub mod error;
 

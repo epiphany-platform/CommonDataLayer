@@ -12,10 +12,8 @@ use communication_utils::{
         get_order_group_id, message::CommunicationMessage,
     parallel_consumer::ParallelConsumerHandler, publisher::CommonPublisher};
 use misc_utils::current_timestamp;
-use utils::{
-    metrics::{self, counter},
-    parallel_task_queue::ParallelTaskQueue,
-};
+use metrics_utils::{self as metrics, counter};
+use utils::parallel_task_queue::ParallelTaskQueue;
 
 pub struct Handler {
     pub cache: Arc<Mutex<LruCache<Uuid, String>>>,

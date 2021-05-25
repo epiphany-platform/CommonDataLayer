@@ -1,0 +1,22 @@
+[package]
+name = "settings_utils"
+authors = ["CDL Team"]
+version = "0.1.0"
+edition = "2018"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Workspace
+communication_utils     = { path    = "../communication", features = ["kafka", "amqp", "grpc"] }
+task_utils  = { path    = "../task" }
+
+# Crates.io
+anyhow      = "1.0"
+config      = "0.11"
+dirs        = "3.0.2"
+url         = { version = "2.2", features = ["serde"] }
+derive_more = { version = "0.99.14", features = ["display"] }
+lapin       = "1.7"
+serde       = { version = "1.0", features = ["derive"] }

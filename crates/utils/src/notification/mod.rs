@@ -2,7 +2,8 @@ use crate::notification::full_notification_sender::{
     FullNotificationSender, FullNotificationSenderBase,
 };
 use cdl_dto::ingestion::OwnMessage;
-use serde::Serialize;
+use communication_utils::publisher::CommonPublisher;
+use serde::{Deserialize, Serialize};
 
 pub mod full_notification_sender;
 
@@ -44,6 +45,38 @@ where
                 msg: msg.to_owned_message(),
             }),
             NotificationPublisher::Disabled => Box::new(()),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
+pub struct NotificationSettings {
+    /// Kafka topic, AMQP queue or GRPC url
+    #[serde(default)]
+    pub destination: String,
+    #[serde(default)]
+    pub enabled: bool,
+}
+
+impl NotificationSettings {
+    pub async fn publisher<T: Serialize + Send + Sync + 'static>(
+        &self,
+        publisher: CommonPublisher, // FIXME
+        context: String,
+        application: &'static str,
+    ) -> NotificationPublisher<T> {
+        if self.enabled {
+            NotificationPublisher::Full(
+                FullNotificationSenderBase::new(
+                    publisher,
+                    self.destination.clone(),
+                    context,
+                    application,
+                )
+                .await,
+            )
+        } else {
+            NotificationPublisher::Disabled
         }
     }
 }

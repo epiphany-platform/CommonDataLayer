@@ -14,6 +14,8 @@ path = "src/main.rs"
 misc_utils  = { path = "../utils/crates/misc" }
 rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }
+settings_utils          = { path = "../utils/crates/settings" }
+metrics_utils           = { path = "../utils/crates/metrics" }
 tracing_utils           = { path = "../utils/crates/tracing", features = ["http"] }
 
 # Crates.io

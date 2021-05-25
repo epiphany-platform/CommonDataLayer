@@ -1,5 +1,3 @@
-use crate::notification::full_notification_sender::FullNotificationSenderBase;
-use crate::notification::NotificationPublisher;
 use anyhow::bail;
 use communication_utils::consumer::{CommonConsumer, CommonConsumerConfig};
 use communication_utils::parallel_consumer::{
@@ -64,15 +62,6 @@ pub struct AmqpSettings {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct GRpcSettings {
     pub address: SocketAddrV4,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
-pub struct NotificationSettings {
-    /// Kafka topic, AMQP queue or GRPC url
-    #[serde(default)]
-    pub destination: String,
-    #[serde(default)]
-    pub enabled: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -246,28 +235,5 @@ impl GRpcSettings {
             ParallelCommonConsumer::new(ParallelCommonConsumerConfig::Grpc { addr: self.address })
                 .await?,
         )
-    }
-}
-
-impl NotificationSettings {
-    pub async fn publisher<T: Serialize + Send + Sync + 'static>(
-        &self,
-        publisher: CommonPublisher, // FIXME
-        context: String,
-        application: &'static str,
-    ) -> NotificationPublisher<T> {
-        if self.enabled {
-            NotificationPublisher::Full(
-                FullNotificationSenderBase::new(
-                    publisher,
-                    self.destination.clone(),
-                    context,
-                    application,
-                )
-                .await,
-            )
-        } else {
-            NotificationPublisher::Disabled
-        }
     }
 }

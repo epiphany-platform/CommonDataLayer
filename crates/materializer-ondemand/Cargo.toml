@@ -10,6 +10,8 @@ license = "Apache-2.0"
 misc_utils  = { path = "../utils/crates/misc" }
 rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }
+settings_utils          = { path = "../utils/crates/settings" }
+metrics_utils           = { path = "../utils/crates/metrics" }
 tracing_utils           = { path = "../utils/crates/tracing" }
 
 # Crates.io

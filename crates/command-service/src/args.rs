@@ -3,7 +3,7 @@ use crate::output::OutputArgs;
 use clap::Clap;
 use thiserror::Error;
 use url::Url;
-use utils::metrics;
+use metrics_utils as metrics;
 use utils::notification::NotificationServiceConfig;
 
 #[derive(Clone, Debug, Clap)]
