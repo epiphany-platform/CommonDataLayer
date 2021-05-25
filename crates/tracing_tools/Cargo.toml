@@ -25,7 +25,7 @@ tracing     = "0.1"
 warp        = { version = "0.3", optional = true }
 futures-util            = "0.3"
 opentelemetry           = {version = "0.13", features = ["rt-tokio"] }
-opentelemetry-http      = { version = "0.2", optional = true }
+opentelemetry-http      = { version = "0.3", optional = true }
 opentelemetry-jaeger    = {version = "0.12", features = ["tokio"] }
 tonic                   = { version = "0.4", optional = true }
 tower-service           = { version = "0.3", optional = true }
