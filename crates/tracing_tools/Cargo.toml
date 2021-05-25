@@ -30,5 +30,5 @@ opentelemetry-jaeger    = {version = "0.12", features = ["tokio"] }
 tonic                   = { version = "0.4", optional = true }
 tower-service           = { version = "0.3", optional = true }
 tracing-futures         = "0.2"
-tracing-opentelemetry   = "0.12"
+tracing-opentelemetry   = "0.13"
 tracing-subscriber      = "0.2"
