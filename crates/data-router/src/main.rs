@@ -1,10 +1,10 @@
+use lru_cache::LruCache;
 use std::sync::{Arc, Mutex};
 
-use lru_cache::LruCache;
-
 use crate::{config::Settings, handler::Handler};
-use utils::settings::load_settings;
-use utils::{metrics, parallel_task_queue::ParallelTaskQueue};
+use metrics_utils as metrics;
+use settings_utils::load_settings;
+use utils::parallel_task_queue::ParallelTaskQueue;
 
 mod config;
 mod handler;
@@ -12,10 +12,10 @@ mod schema;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    utils::set_aborting_panic_hook();
+    misc_utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(
+    tracing_utils::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;

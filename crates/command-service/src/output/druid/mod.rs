@@ -2,15 +2,15 @@ use crate::communication::resolution::Resolution;
 use crate::output::OutputPlugin;
 use crate::settings::DruidSettings;
 use anyhow::Context;
+use cdl_dto::ingestion::BorrowedInsertMessage;
 use futures::stream::{self, StreamExt};
+use metrics_utils::{self as metrics, counter};
 use rdkafka::producer::{FutureProducer, FutureRecord};
 use rdkafka::ClientConfig;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
 use tracing::error;
-use utils::message_types::BorrowedInsertMessage;
-use utils::metrics::{self, counter};
 use uuid::Uuid;
 
 #[derive(Deserialize)]

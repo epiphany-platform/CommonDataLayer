@@ -5,7 +5,7 @@ use std::{
 
 use tokio::sync::oneshot::{channel, Receiver, Sender};
 
-use crate::abort_on_poison;
+use misc_utils::abort_on_poison;
 
 type LocksDB = Arc<Mutex<HashMap<String, LockQueue>>>;
 

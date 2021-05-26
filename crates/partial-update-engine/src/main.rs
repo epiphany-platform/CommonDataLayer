@@ -1,4 +1,6 @@
 use anyhow::{Context, Result};
+use cdl_dto::materialization::Request;
+use misc_utils::set_aborting_panic_hook;
 use rdkafka::consumer::Consumer;
 use rdkafka::{
     consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
@@ -8,6 +10,7 @@ use rdkafka::{
 };
 use rpc::schema_registry::{FullView, Id};
 use serde::{Deserialize, Serialize};
+use settings_utils::*;
 use std::collections::hash_map::Entry;
 use std::{
     collections::{HashMap, HashSet},
@@ -16,9 +19,6 @@ use std::{
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
 use tracing::{trace, Instrument};
-use utils::metrics::{self};
-use utils::settings::*;
-use utils::types::materialization::Request;
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -71,17 +71,17 @@ struct EdgeRegistryNotification {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    utils::set_aborting_panic_hook();
+    set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(
+    tracing_utils::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;
 
     tracing::debug!(?settings, "application environment");
 
-    metrics::serve(&settings.monitoring);
+    metrics_utils::serve(&settings.monitoring);
 
     let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
         .set("group.id", &settings.notification_consumer.group_id)
@@ -155,7 +155,7 @@ fn new_notification(
     changes: &mut HashSet<PartialNotification>,
     message: BorrowedMessage,
 ) -> Result<(i32, i64)> {
-    utils::tracing::kafka::set_parent_span(&message);
+    tracing_utils::kafka::set_parent_span(&message);
     let payload = message
         .payload_view::<str>()
         .ok_or_else(|| anyhow::anyhow!("Message has no payload"))??;
@@ -253,7 +253,7 @@ async fn process_changes(
                 FutureRecord::to(settings.kafka.egest_topic.as_str())
                     .payload(payload.as_str())
                     .key(&request.view_id.to_string())
-                    .headers(utils::tracing::kafka::inject_span(OwnedHeaders::new())),
+                    .headers(tracing_utils::kafka::inject_span(OwnedHeaders::new())),
                 Duration::from_secs(5),
             )
             .await

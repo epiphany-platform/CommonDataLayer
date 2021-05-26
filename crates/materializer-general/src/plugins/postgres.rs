@@ -9,11 +9,11 @@ use bb8_postgres::{
 };
 use futures::pin_mut;
 use itertools::Itertools;
+use metrics_utils::{self as metrics, counter};
 use rpc::materializer_general::MaterializedView;
 use serde::Deserialize;
 use serde_json::Value;
-use utils::metrics::{self, counter};
-use utils::settings::PostgresSettings;
+use settings_utils::PostgresSettings;
 use uuid::Uuid;
 
 pub struct PostgresMaterializer {

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+use cdl_dto::materialization::{FieldDefinition, Filter, Relation};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::types::Json;
-use utils::types::materialization::{FieldDefinition, Filter, Relation};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]

@@ -1,12 +1,12 @@
 use anyhow::Context;
+use metrics_utils as metrics;
 use query_service_ts::druid::{DruidQuery, DruidSettings};
 use query_service_ts::victoria::VictoriaQuery;
 use rpc::query_service_ts::query_service_ts_server::{QueryServiceTs, QueryServiceTsServer};
 use serde::Deserialize;
+use settings_utils::*;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use tonic::transport::Server;
-use utils::metrics;
-use utils::settings::*;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {
@@ -34,7 +34,7 @@ async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Resul
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
 
     Server::builder()
-        .trace_fn(utils::tracing::grpc::trace_fn)
+        .trace_fn(tracing_utils::grpc::trace_fn)
         .add_service(QueryServiceTsServer::new(service))
         .serve(addr.into())
         .await
@@ -43,10 +43,10 @@ async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Resul
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    utils::set_aborting_panic_hook();
+    misc_utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(
+    tracing_utils::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;

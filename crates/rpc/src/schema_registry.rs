@@ -19,6 +19,6 @@ async fn connect_inner(
 
     Ok(SchemaRegistryClient::with_interceptor(
         conn,
-        tracing_tools::grpc::interceptor(),
+        tracing_utils::grpc::interceptor(),
     ))
 }

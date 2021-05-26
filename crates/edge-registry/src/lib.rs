@@ -2,9 +2,12 @@ use anyhow::{Context, Error};
 use bb8_postgres::bb8::{Pool, PooledConnection};
 use bb8_postgres::tokio_postgres::{Config, NoTls};
 use bb8_postgres::{bb8, PostgresConnectionManager};
+use communication_utils::consumer::ConsumerHandler;
+use communication_utils::message::CommunicationMessage;
 use futures::future::BoxFuture;
 use futures::FutureExt;
 use itertools::Itertools;
+use metrics_utils::{self as metrics, counter};
 use rpc::edge_registry::edge_registry_server::EdgeRegistry;
 use rpc::edge_registry::{
     Edge, Empty, ObjectIdQuery, ObjectRelations, RelationDetails, RelationId, RelationIdQuery,
@@ -12,6 +15,7 @@ use rpc::edge_registry::{
     TreeResponse, ValidateRelationQuery,
 };
 use serde::{Deserialize, Serialize};
+use settings_utils::PostgresSettings;
 use std::cmp::min;
 use std::convert::TryInto;
 use std::str::FromStr;
@@ -21,11 +25,7 @@ use thiserror::Error;
 use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 use tracing::{debug, error, trace};
-use utils::communication::consumer::ConsumerHandler;
-use utils::communication::message::CommunicationMessage;
-use utils::metrics::{self, counter};
 use utils::notification::NotificationPublisher;
-use utils::settings::PostgresSettings;
 use uuid::Uuid;
 
 pub mod settings;

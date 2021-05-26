@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::types::IntoQueried;
 
-use utils::types::materialization::{Filter, Relation};
+use cdl_dto::materialization::{Filter, Relation};
 
 /// A new view under a schema.
 #[derive(Clone, Debug, InputObject)]

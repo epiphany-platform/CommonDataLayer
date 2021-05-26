@@ -1,12 +1,9 @@
-use crate::communication::consumer::{CommonConsumer, CommonConsumerConfig};
-use crate::communication::parallel_consumer::{
+use anyhow::bail;
+use communication_utils::consumer::{CommonConsumer, CommonConsumerConfig};
+use communication_utils::parallel_consumer::{
     ParallelCommonConsumer, ParallelCommonConsumerConfig,
 };
-use crate::communication::publisher::CommonPublisher;
-use crate::notification::full_notification_sender::FullNotificationSenderBase;
-use crate::notification::NotificationPublisher;
-use crate::task_limiter::TaskLimiter;
-use anyhow::bail;
+use communication_utils::publisher::CommonPublisher;
 use config::{Config, Environment, File};
 use derive_more::Display;
 use lapin::options::BasicConsumeOptions;
@@ -14,6 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::env;
 use std::fmt::Debug;
 use std::net::SocketAddrV4;
+use task_utils::task_limiter::TaskLimiter;
 use url::Url;
 
 #[derive(Clone, Copy, Debug, Deserialize, Display, PartialEq, Serialize)]
@@ -64,15 +62,6 @@ pub struct AmqpSettings {
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
 pub struct GRpcSettings {
     pub address: SocketAddrV4,
-}
-
-#[derive(Clone, Debug, Default, Deserialize, PartialEq, Serialize)]
-pub struct NotificationSettings {
-    /// Kafka topic, AMQP queue or GRPC url
-    #[serde(default)]
-    pub destination: String,
-    #[serde(default)]
-    pub enabled: bool,
 }
 
 #[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
@@ -246,28 +235,5 @@ impl GRpcSettings {
             ParallelCommonConsumer::new(ParallelCommonConsumerConfig::Grpc { addr: self.address })
                 .await?,
         )
-    }
-}
-
-impl NotificationSettings {
-    pub async fn publisher<T: Serialize + Send + Sync + 'static>(
-        &self,
-        publisher: CommonPublisher, // FIXME
-        context: String,
-        application: &'static str,
-    ) -> NotificationPublisher<T> {
-        if self.enabled {
-            NotificationPublisher::Full(
-                FullNotificationSenderBase::new(
-                    publisher,
-                    self.destination.clone(),
-                    context,
-                    application,
-                )
-                .await,
-            )
-        } else {
-            NotificationPublisher::Disabled
-        }
     }
 }

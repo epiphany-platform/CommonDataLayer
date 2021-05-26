@@ -1,22 +1,23 @@
 use anyhow::Context;
+use metrics_utils as metrics;
 use rpc::schema_registry::schema_registry_server::SchemaRegistryServer;
 use schema_registry::rpc::SchemaRegistryImpl;
 use schema_registry::settings::Settings;
+use settings_utils::load_settings;
 use std::fs::File;
 use std::net::{Ipv4Addr, SocketAddrV4};
 use std::path::PathBuf;
 use tokio::time::sleep;
 use tokio::time::Duration;
 use tonic::transport::Server;
-use utils::settings::load_settings;
-use utils::{metrics, status_endpoints};
+use utils::status_endpoints;
 
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
-    utils::set_aborting_panic_hook();
+    misc_utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(
+    tracing_utils::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;
@@ -48,7 +49,7 @@ pub async fn main() -> anyhow::Result<()> {
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), settings.input_port);
     status_endpoints::mark_as_started();
     Server::builder()
-        .trace_fn(utils::tracing::grpc::trace_fn)
+        .trace_fn(tracing_utils::grpc::trace_fn)
         .add_service(SchemaRegistryServer::new(registry))
         .serve(addr.into())
         .await

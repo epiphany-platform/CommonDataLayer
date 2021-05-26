@@ -9,9 +9,9 @@ use crate::{
     types::IntoQueried,
 };
 use async_graphql::{Context, FieldResult, Object};
+use cdl_dto::ingestion::OwnedInsertMessage;
+use misc_utils::current_timestamp;
 use serde_json::value::to_raw_value;
-use utils::current_timestamp;
-use utils::message_types::OwnedInsertMessage;
 use uuid::Uuid;
 
 pub struct MutationRoot;

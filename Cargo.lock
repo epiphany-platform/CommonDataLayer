@@ -14,12 +14,6 @@ dependencies = [
 
 [[package]]
 name = "ahash"
-version = "0.4.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "739f4a8db6605981345c5654f3a85b056ce52f37a39d34da03f25bf2151ea16e"
-
-[[package]]
-name = "ahash"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f200cbb1e856866d9eade941cf3aa0c5d7dd36f74311c4273b494f4ef036957"
@@ -109,17 +103,23 @@ dependencies = [
  "async-stream",
  "async-trait",
  "bb8",
+ "cdl_dto",
+ "communication_utils",
  "futures",
  "itertools 0.10.0",
+ "metrics_utils",
+ "misc_utils",
  "reqwest",
  "rpc",
  "semver 0.11.0",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
  "thiserror",
  "tokio",
  "tracing",
  "tracing-futures",
+ "tracing_utils",
  "utils",
  "uuid",
  "warp",
@@ -451,6 +451,7 @@ name = "cdl-cli"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "cdl_dto",
  "clap",
  "rpc",
  "semver 0.11.0",
@@ -458,7 +459,22 @@ dependencies = [
  "serde_json",
  "tokio",
  "tonic",
+ "tracing_utils",
  "utils",
+ "uuid",
+]
+
+[[package]]
+name = "cdl_dto"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-graphql",
+ "rpc",
+ "serde 1.0.126",
+ "serde_json",
+ "thiserror",
+ "tonic",
  "uuid",
 ]
 
@@ -536,21 +552,51 @@ dependencies = [
  "async-trait",
  "bb8",
  "bb8-postgres",
+ "cdl_dto",
+ "communication_utils",
  "fnv",
  "futures",
+ "metrics_utils",
+ "misc_utils",
  "rdkafka",
  "reqwest",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
+ "task_utils",
  "test-case",
  "thiserror",
  "tokio",
  "tonic",
  "tracing",
+ "tracing_utils",
  "url",
  "utils",
  "uuid",
+]
+
+[[package]]
+name = "communication_utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "futures-util",
+ "lapin",
+ "misc_utils",
+ "rdkafka",
+ "reqwest",
+ "rpc",
+ "task_utils",
+ "thiserror",
+ "tokio",
+ "tokio-amqp",
+ "tonic",
+ "tracing",
+ "tracing-futures",
+ "tracing_utils",
+ "url",
 ]
 
 [[package]]
@@ -799,12 +845,19 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "cdl_dto",
+ "communication_utils",
  "lru-cache",
+ "metrics_utils",
+ "misc_utils",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
+ "task_utils",
  "tokio",
  "tracing",
+ "tracing_utils",
  "url",
  "utils",
  "uuid",
@@ -820,6 +873,7 @@ dependencies = [
  "serde_json",
  "test-case",
  "tracing",
+ "tracing_utils",
  "utils",
  "uuid",
 ]
@@ -904,16 +958,21 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bb8-postgres",
+ "communication_utils",
  "futures",
  "itertools 0.10.0",
+ "metrics_utils",
+ "misc_utils",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
  "thiserror",
  "tokio",
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_utils",
  "utils",
  "uuid",
 ]
@@ -1176,9 +1235,6 @@ name = "hashbrown"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
-dependencies = [
- "ahash 0.4.7",
-]
 
 [[package]]
 name = "hashbrown"
@@ -1186,16 +1242,16 @@ version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 dependencies = [
- "ahash 0.7.2",
+ "ahash",
 ]
 
 [[package]]
 name = "hashlink"
-version = "0.6.0"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d99cf782f0dc4372d26846bec3de7804ceb5df083c2d4462c0b8d2330e894fa8"
+checksum = "7249a3129cbc1ffccd74857f81464a323a152173cdb134e0fd81bc803b29facf"
 dependencies = [
- "hashbrown 0.9.1",
+ "hashbrown 0.11.2",
 ]
 
 [[package]]
@@ -1424,7 +1480,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4108001eeeda998245bddfe994dea2b7e15e919e149c2db87bac65ea22048226"
 dependencies = [
- "ahash 0.7.2",
+ "ahash",
  "base64",
  "chrono",
  "fancy-regex",
@@ -1576,13 +1632,17 @@ dependencies = [
  "bb8-postgres",
  "futures",
  "itertools 0.10.0",
+ "metrics_utils",
+ "misc_utils",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
  "tokio",
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_utils",
  "utils",
  "uuid",
 ]
@@ -1594,13 +1654,17 @@ dependencies = [
  "anyhow",
  "async-trait",
  "futures",
+ "metrics_utils",
+ "misc_utils",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
  "tokio",
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_utils",
  "utils",
  "uuid",
 ]
@@ -1711,6 +1775,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "metrics_utils"
+version = "0.1.0"
+dependencies = [
+ "metrics",
+ "metrics-exporter-prometheus",
+ "settings_utils",
+ "tracing",
+]
+
+[[package]]
 name = "mime"
 version = "0.3.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1746,6 +1820,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9f1c5b025cda876f66ef43a113f91ebc9f4ccef34843000e0adf6ebbab84e21"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "misc_utils"
+version = "0.1.0"
+dependencies = [
+ "tracing",
 ]
 
 [[package]]
@@ -1982,15 +2063,21 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bb8",
+ "cdl_dto",
+ "communication_utils",
  "futures",
+ "metrics_utils",
+ "misc_utils",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
  "thiserror",
  "tokio",
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_utils",
  "utils",
  "uuid",
 ]
@@ -2145,13 +2232,18 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "cdl_dto",
+ "metrics_utils",
+ "misc_utils",
  "rdkafka",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
  "tokio",
  "tokio-stream",
  "tracing",
+ "tracing_utils",
  "utils",
  "uuid",
 ]
@@ -2500,12 +2592,16 @@ dependencies = [
  "anyhow",
  "futures-util",
  "lru-cache",
+ "metrics_utils",
+ "misc_utils",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
  "tokio",
  "tracing",
  "tracing-futures",
+ "tracing_utils",
  "utils",
  "uuid",
  "warp",
@@ -2519,15 +2615,19 @@ dependencies = [
  "bb8",
  "bb8-postgres",
  "futures-util",
+ "metrics_utils",
+ "misc_utils",
  "reqwest",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
  "thiserror",
  "tokio",
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_utils",
  "utils",
  "uuid",
 ]
@@ -2538,14 +2638,18 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bb8",
+ "metrics_utils",
+ "misc_utils",
  "reqwest",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
  "tokio",
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_utils",
  "utils",
 ]
 
@@ -2818,7 +2922,7 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tonic",
- "tracing_tools",
+ "tracing_utils",
 ]
 
 [[package]]
@@ -2878,15 +2982,20 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bb8",
+ "cdl_dto",
+ "communication_utils",
  "either",
  "futures",
  "futures-util",
  "jsonschema",
  "maplit",
+ "metrics_utils",
+ "misc_utils",
  "rpc",
  "semver 0.11.0",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
  "sqlx",
  "thiserror",
  "tokio",
@@ -2894,6 +3003,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-futures",
+ "tracing_utils",
  "url",
  "utils",
  "uuid",
@@ -3041,6 +3151,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "settings_utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "communication_utils",
+ "config",
+ "derive_more",
+ "dirs",
+ "lapin",
+ "serde 1.0.126",
+ "task_utils",
+ "url",
+]
+
+[[package]]
 name = "sha-1"
 version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3142,9 +3267,9 @@ dependencies = [
 
 [[package]]
 name = "sqlx"
-version = "0.5.2"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d582b9bc04ec6c03084196efc42c2226b018e9941f03ee62bd88921d500917c0"
+checksum = "ba82f79b31f30acebf19905bcd8b978f46891b9d0723f578447361a8910b6584"
 dependencies = [
  "sqlx-core",
  "sqlx-macros",
@@ -3152,11 +3277,11 @@ dependencies = [
 
 [[package]]
 name = "sqlx-core"
-version = "0.5.2"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "de52d1d473cebb2abb79c886ef6a8023e965e34c0676a99cfeac2cc7f0fde4c1"
+checksum = "7f23af36748ec8ea8d49ef8499839907be41b0b1178a4e82b8cb45d29f531dc9"
 dependencies = [
- "ahash 0.7.2",
+ "ahash",
  "atoi",
  "base64",
  "bitflags",
@@ -3204,9 +3329,9 @@ dependencies = [
 
 [[package]]
 name = "sqlx-macros"
-version = "0.5.2"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a40f0be97e704d3fbf059e7e3333c3735639146a72d586c5534c70e79da88a4"
+checksum = "47e4a2349d1ffd60a03ca0de3f116ba55d7f406e55a0d84c64a5590866d94c06"
 dependencies = [
  "dotenv",
  "either",
@@ -3227,9 +3352,9 @@ dependencies = [
 
 [[package]]
 name = "sqlx-rt"
-version = "0.5.2"
+version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b6ae97ab05063ed515cdc23d90253213aa24dda0a288c5ec079af3d10f9771bc"
+checksum = "8199b421ecf3493ee9ef3e7bc90c904844cfb2ea7ea2f57347a93f52bfd3e057"
 dependencies = [
  "once_cell",
  "tokio",
@@ -3292,6 +3417,13 @@ name = "tap"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
+
+[[package]]
+name = "task_utils"
+version = "0.1.0"
+dependencies = [
+ "tokio",
+]
 
 [[package]]
 name = "tcp-stream"
@@ -3731,7 +3863,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "tracing_tools"
+name = "tracing_utils"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -3898,6 +4030,8 @@ dependencies = [
  "async-graphql",
  "async-stream",
  "async-trait",
+ "cdl_dto",
+ "communication_utils",
  "config",
  "derive_more",
  "dirs",
@@ -3905,13 +4039,14 @@ dependencies = [
  "hyper",
  "lapin",
  "lazy_static",
- "metrics",
- "metrics-exporter-prometheus",
+ "misc_utils",
  "rdkafka",
  "reqwest",
  "rpc",
  "serde 1.0.126",
  "serde_json",
+ "settings_utils",
+ "task_utils",
  "test-case",
  "thiserror",
  "tokio",
@@ -3919,7 +4054,7 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing-futures",
- "tracing_tools",
+ "tracing_utils",
  "url",
  "uuid",
 ]

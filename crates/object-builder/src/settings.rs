@@ -1,6 +1,6 @@
+use communication_utils::consumer::{CommonConsumer, CommonConsumerConfig};
 use serde::Deserialize;
-use utils::communication::consumer::{CommonConsumer, CommonConsumerConfig};
-use utils::settings::*;
+use settings_utils::*;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {

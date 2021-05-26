@@ -13,6 +13,8 @@ path = "src/main.rs"
 # Workspace
 rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }
+cdl_dto     = { path = "../dto" }
+tracing_utils           = { path = "../utils/crates/tracing" }
 
 # Crates.io
 anyhow      = "1.0"

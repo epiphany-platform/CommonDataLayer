@@ -7,17 +7,14 @@ use serde_json::Value;
 use tracing::{error, trace};
 use uuid::Uuid;
 
-use utils::{
-    communication::{
-        get_order_group_id, message::CommunicationMessage,
-        parallel_consumer::ParallelConsumerHandler, publisher::CommonPublisher,
-    },
-    current_timestamp,
-    message_types::BorrowedInsertMessage,
-    message_types::DataRouterInsertMessage,
-    metrics::{self, counter},
-    parallel_task_queue::ParallelTaskQueue,
+use cdl_dto::ingestion::{BorrowedInsertMessage, DataRouterInsertMessage};
+use communication_utils::{
+    get_order_group_id, message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,
+    publisher::CommonPublisher,
 };
+use metrics_utils::{self as metrics, counter};
+use misc_utils::current_timestamp;
+use utils::parallel_task_queue::ParallelTaskQueue;
 
 pub struct Handler {
     pub cache: Arc<Mutex<LruCache<Uuid, String>>>,

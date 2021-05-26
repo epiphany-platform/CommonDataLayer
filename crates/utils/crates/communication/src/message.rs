@@ -1,5 +1,8 @@
+#![allow(unused_imports)]
 use anyhow::Context;
+#[cfg(feature = "amqp")]
 use lapin::message::Delivery;
+#[cfg(feature = "kafka")]
 use rdkafka::{message::BorrowedMessage, Message};
 
 use super::Result;
@@ -9,9 +12,11 @@ pub trait CommunicationMessage: Send + Sync {
     fn key(&self) -> Result<&str>;
 }
 
+#[cfg(feature = "kafka")]
 pub struct KafkaCommunicationMessage<'a> {
     pub(super) message: BorrowedMessage<'a>,
 }
+#[cfg(feature = "kafka")]
 impl<'a> CommunicationMessage for KafkaCommunicationMessage<'a> {
     fn key(&self) -> Result<&str> {
         let key = self
@@ -28,9 +33,11 @@ impl<'a> CommunicationMessage for KafkaCommunicationMessage<'a> {
     }
 }
 
+#[cfg(feature = "amqp")]
 pub struct AmqpCommunicationMessage {
     pub(super) delivery: Delivery,
 }
+#[cfg(feature = "amqp")]
 impl CommunicationMessage for AmqpCommunicationMessage {
     fn key(&self) -> Result<&str> {
         let key = self.delivery.routing_key.as_str();
@@ -41,6 +48,7 @@ impl CommunicationMessage for AmqpCommunicationMessage {
     }
 }
 
+#[cfg(feature = "grpc")]
 impl CommunicationMessage for rpc::generic::Message {
     fn payload(&self) -> Result<&str> {
         Ok(std::str::from_utf8(&self.payload)?)

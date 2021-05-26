@@ -18,14 +18,14 @@ use crate::settings::Settings;
 use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{FullView, NewView, ViewUpdate};
 use crate::types::{DbExport, VersionedUuid};
+use cdl_dto::materialization::{Filter, Relation};
+use communication_utils::metadata_fetcher::MetadataFetcher;
+use communication_utils::Result;
 use rpc::edge_registry::{edge_registry_client::EdgeRegistryClient, ValidateRelationQuery};
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate, SchemaViews,
     ValueToValidate, VersionedId,
 };
-use utils::communication::Result;
-use utils::types::materialization::Relation;
-use utils::{communication::metadata_fetcher::MetadataFetcher, types::materialization::Filter};
 
 pub struct SchemaRegistryImpl {
     pub edge_registry: EdgeRegistryPool,
