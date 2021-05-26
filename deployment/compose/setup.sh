@@ -15,6 +15,16 @@ echo "Starting $COMMUNICATION_METHOD + $QS_TYPE:$REPOSITORY_KIND"
 sed -i -E "s|communication_method = .+|communication_method = \"$COMMUNICATION_METHOD\"|g" setup/configuration/default.toml
 sed -i -E "s|repository_kind = .+|repository_kind = \"$REPOSITORY_KIND\"|g" setup/configuration/default.toml
 
+if [ "$COMMUNICATION_METHOD" == "grpc" ]; then
+sed -i -E "s|import_file = .+|import_file = \"/var/data/initial-schema.grpc.json\"|g" setup/configuration/schema-registry.toml
+sed -i -E "s|insert_destination = .+|insert_destination = \"http://data_router:50102\"|g" setup/configuration/api.toml
+sed -i -E "s|enabled = .+|enabled = false|g" setup/configuration/command-service.toml
+else
+sed -i -E "s|import_file = .+|import_file = \"/var/data/initial-schema.mq.json\"|g" setup/configuration/schema-registry.toml
+sed -i -E "s|insert_destination = .+|insert_destination = \"cdl.data.input\"|g" setup/configuration/api.toml
+sed -i -E "s|enabled = .+|enabled = true|g" setup/configuration/command-service.toml
+fi
+
 docker-compose down --remove-orphans
 docker-compose up -d postgres jaeger
 

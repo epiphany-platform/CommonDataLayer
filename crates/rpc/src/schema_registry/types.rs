@@ -105,7 +105,7 @@ rpc_enum! {
     "filter operator",
     "filter_operator_enum",
     [
-        Equals
+        EqualsOp
     ]
 }
 

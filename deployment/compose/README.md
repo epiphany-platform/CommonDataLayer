@@ -35,3 +35,40 @@ It accepts command line args:
 * postgres
 * victoria_metrics
 * druid (supports only kafka)
+
+### Exposed ports
+Dependencies
+| Port exposed | Service name                    |
+|--------------|---------------------------------|
+| 9092         | kafka                           |
+| 9093         | kafka                           |
+| 5432         | postgres                        |
+| 8428         | victoria metrics                |
+| 5672         | rabbitmq                        |
+| 15672        | rabbitmq                        |
+| 8081         | druid coordinator               |
+| 8082         | druid broker                    |
+| 8083         | druid historical                |
+| 8091         | druid middlemanager             |
+| 8888         | druid router                    |
+| 6831/udp     | jaeger                          |
+| 6832/udp     | jaeger                          |
+| 16686        | jaeger                          |
+| 14268        | jaeger                          |
+
+Services
+| Port exposed | Service name                    |
+|--------------|---------------------------------|
+| 50101        | schema registry                 |
+| 50102        | data router (gRPC only)         |
+| 50103        | query router                    |
+| 50104        | **FREE**                        |
+| 50105        | **FREE**                        |
+| 50106        | web api                         |
+| 50107        | object builder                  |
+| 50108        | materializer ondemand           |
+| 50109        | **FREE**                        |
+| 50110        | edge registry                   |
+| 50201        | query service, query service ts |
+| 50202        | command service (gRPC only)     |
+| 50203        | materializer general            |

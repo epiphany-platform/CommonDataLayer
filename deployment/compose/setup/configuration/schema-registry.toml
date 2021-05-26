@@ -1,6 +1,6 @@
 input_port = 50101
 
-import_file = "/var/data/schema.json"
+import_file = "/var/data/initial-schema.grpc.json"
 
 [monitoring]
 otel_service_name = "schema-registry"

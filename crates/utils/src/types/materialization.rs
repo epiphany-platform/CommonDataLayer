@@ -305,7 +305,7 @@ impl ComputationOperator {
             ComputationOperator::FieldValue(filter) => {
                 Self::FieldValue(FieldValueComputation::from_rpc(filter)?)
             }
-            ComputationOperator::Equals(filter) => {
+            ComputationOperator::EqualsComputation(filter) => {
                 Self::Equals(EqualsComputation::from_rpc(filter)?)
             }
         })
@@ -317,7 +317,7 @@ impl ComputationOperator {
             computation_operator: Some(match self {
                 Self::RawValue(op) => ComputationOperator::RawValue(op.into_rpc()?),
                 Self::FieldValue(op) => ComputationOperator::FieldValue(op.into_rpc()),
-                Self::Equals(op) => ComputationOperator::Equals(op.into_rpc()),
+                Self::Equals(op) => ComputationOperator::EqualsComputation(op.into_rpc()),
             }),
         })
     }

@@ -107,7 +107,7 @@ pub mod filter_operator {
     #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
     #[repr(i32)]
     pub enum Operator {
-        Equals = 0,
+        EqualsOp = 0,
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -174,7 +174,7 @@ pub mod computation_operator {
         #[prost(message, tag = "2")]
         FieldValue(super::FieldValueComputation),
         #[prost(message, tag = "3")]
-        Equals(super::EqualsComputation),
+        EqualsComputation(super::EqualsComputation),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

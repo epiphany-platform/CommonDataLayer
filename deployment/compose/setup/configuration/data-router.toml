@@ -10,7 +10,7 @@ tag = "data_router"
 ingest_queue = "cdl.data.input"
 
 [grpc]
-address = "0.0.0.0:50301"
+address = "0.0.0.0:50102"
 
 [monitoring]
 otel_service_name = "data-router"

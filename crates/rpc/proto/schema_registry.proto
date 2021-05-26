@@ -85,7 +85,7 @@ message LogicOperator {
 
 message FilterOperator {
     enum Operator {
-        Equals = 0;
+        EqualsOp = 0;
     }
     required Operator operator = 1;
 }
@@ -126,7 +126,7 @@ message ComputationOperator {
     oneof computation_operator {
         RawValueComputation raw_value = 1;
         FieldValueComputation field_value = 2;
-        EqualsComputation equals = 3;
+        EqualsComputation equals_computation = 3;
     }
 }
 

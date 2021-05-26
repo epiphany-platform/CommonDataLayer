@@ -1,12 +1,14 @@
-communication_method = "kafka"
+communication_method = "grpc"
 repository_kind = "postgres"
 
 [services]
 schema_registry_url = "http://schema_registry:50101"
-object_builder_url = "http://object_builder:50107"
-edge_registry_url = "http://edge_registry:50110"
+data_router_url = "http://data_router:50102"
 query_router_url = "http://query_router:50103"
+web_api_url = "http://web_api:50106"
+object_builder_url = "http://object_builder:50107"
 on_demand_materializer_url = "http://materializer_ondemand:50108"
+edge_registry_url = "http://edge_registry:50110"
 
 [kafka]
 brokers = "kafka:9093"

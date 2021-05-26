@@ -1,7 +1,7 @@
 async_task_limit = 32
 
 [notifications]
-enabled = true
+enabled = false
 
 [kafka]
 group_id = "postgres_command"
@@ -10,7 +10,7 @@ group_id = "postgres_command"
 tag = "postgres_command"
 
 [grpc]
-address = "0.0.0.0:50302"
+address = "0.0.0.0:50202"
 
 [listener]
 ordered_sources = "cdl.document.1.data"
