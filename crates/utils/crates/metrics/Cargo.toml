@@ -14,4 +14,4 @@ settings_utils = { path = "../settings" }
 # Crates.io
 metrics     = { version = "0.16", features = ["std"] }
 tracing     = "0.1"
-metrics-exporter-prometheus         = "0.4"
+metrics-exporter-prometheus         = "0.5"
