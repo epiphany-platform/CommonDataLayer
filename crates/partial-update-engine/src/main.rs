@@ -263,47 +263,6 @@ async fn process_changes(
     Ok(())
 }
 
-// fn view_to_tree_query(
-//     view: &'_ FullView,
-//     object_ids: Vec<String>,
-// ) -> impl Iterator<Item = TreeQuery> + '_ {
-//     view.relations.iter().map(move |relation| TreeQuery {
-//         relation_id: relation.global_id.to_string(),
-//         relations: relation
-//             .relations
-//             .iter()
-//             .map(relation_to_tree_query)
-//             .collect(),
-//         filter_ids: object_ids.clone(),
-//     })
-// }
-//
-// fn relation_to_tree_query(relation: &Relation) -> TreeQuery {
-//     TreeQuery {
-//         relation_id: relation.global_id.to_owned(),
-//         relations: relation
-//             .relations
-//             .iter()
-//             .map(|relation| relation_to_tree_query(relation))
-//             .collect(),
-//         filter_ids: vec![],
-//     }
-// }
-//
-// fn process_tree_response(tree_response: TreeResponse, schema: &mut Schema) -> Result<()> {
-//     for object in tree_response.objects {
-//         schema.object_ids.insert(object.object_id.parse().unwrap());
-//         for child in object.children {
-//             schema.object_ids.insert(child.parse()?);
-//         }
-//         for subtree in object.subtrees {
-//             process_tree_response(subtree, schema)?;
-//         }
-//     }
-//
-//     Ok(())
-// }
-
 #[tracing::instrument(skip(consumer))]
 async fn acknowledge_messages(
     offsets: &mut HashMap<i32, i64>,

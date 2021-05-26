@@ -10,7 +10,7 @@ class PostgresConfig:
                  host='localhost',
                  port='5432',
                  dbname='postgres',
-                 schema='cdl'):
+                 schema='public'):
         self.user = user
         self.password = password
         self.host = host

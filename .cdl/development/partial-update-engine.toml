@@ -12,4 +12,4 @@ egest_topic = "cdl.materialize"
 otel_service_name = "partial-update-engine"
 
 [log]
-rust_log = "info,partial_update_engine=trace"
+rust_log = "info,partial_update_engine=debug"

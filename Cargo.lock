@@ -848,12 +848,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "deunicode"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
-
-[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1414,18 +1408,6 @@ name = "itoa"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd25036021b0de88a0aff6b850051563c6516d0bf53f8638938edbb9de732736"
-
-[[package]]
-name = "jmespatch"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7acf91a732ade34d8eda2dee9500a051833f14f0d3d10d77c149845d6ac6a5f0"
-dependencies = [
- "lazy_static",
- "serde 1.0.126",
- "serde_json",
- "slug",
-]
 
 [[package]]
 name = "js-sys"
@@ -2163,7 +2145,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
- "itertools 0.10.0",
  "rdkafka",
  "rpc",
  "serde 1.0.126",
@@ -2900,7 +2881,6 @@ dependencies = [
  "either",
  "futures",
  "futures-util",
- "jmespatch",
  "jsonschema",
  "maplit",
  "rpc",
@@ -3124,15 +3104,6 @@ name = "slab"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f173ac3d1a7e3b28003f40de0b5ce7fe2710f9b9dc3fc38664cebee46b3b6527"
-
-[[package]]
-name = "slug"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3bc762e6a4b6c6fcaade73e77f9ebc6991b676f88bb2358bddb56560f073373"
-dependencies = [
- "deunicode",
-]
 
 [[package]]
 name = "smallvec"
