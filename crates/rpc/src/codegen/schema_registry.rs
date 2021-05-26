@@ -608,6 +608,22 @@ pub mod schema_registry_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
+        pub async fn get_all_views_by_relation(
+            &mut self,
+            request: impl tonic::IntoRequest<super::Id>,
+        ) -> Result<tonic::Response<super::SchemaViews>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/schema_registry.SchemaRegistry/GetAllViewsByRelation",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
         pub async fn get_base_schema_of_view(
             &mut self,
             request: impl tonic::IntoRequest<super::Id>,
@@ -743,6 +759,10 @@ pub mod schema_registry_server {
             request: tonic::Request<super::Empty>,
         ) -> Result<tonic::Response<super::FullSchemas>, tonic::Status>;
         async fn get_all_views_of_schema(
+            &self,
+            request: tonic::Request<super::Id>,
+        ) -> Result<tonic::Response<super::SchemaViews>, tonic::Status>;
+        async fn get_all_views_by_relation(
             &self,
             request: tonic::Request<super::Id>,
         ) -> Result<tonic::Response<super::SchemaViews>, tonic::Status>;
@@ -1178,6 +1198,35 @@ pub mod schema_registry_server {
                         let interceptor = inner.1.clone();
                         let inner = inner.0;
                         let method = GetAllViewsOfSchemaSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = if let Some(interceptor) = interceptor {
+                            tonic::server::Grpc::with_interceptor(codec, interceptor)
+                        } else {
+                            tonic::server::Grpc::new(codec)
+                        };
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/schema_registry.SchemaRegistry/GetAllViewsByRelation" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetAllViewsByRelationSvc<T: SchemaRegistry>(pub Arc<T>);
+                    impl<T: SchemaRegistry> tonic::server::UnaryService<super::Id> for GetAllViewsByRelationSvc<T> {
+                        type Response = super::SchemaViews;
+                        type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
+                        fn call(&mut self, request: tonic::Request<super::Id>) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut =
+                                async move { (*inner).get_all_views_by_relation(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let interceptor = inner.1.clone();
+                        let inner = inner.0;
+                        let method = GetAllViewsByRelationSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = if let Some(interceptor) = interceptor {
                             tonic::server::Grpc::with_interceptor(codec, interceptor)

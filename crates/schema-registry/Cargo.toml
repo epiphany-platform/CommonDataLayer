@@ -22,6 +22,8 @@ utils       = { path = "../utils" }
 anyhow      = "1.0"
 async-trait = "0.1"
 bb8         = "0.7"
+futures     = "0.3"
+either      = "1.6"
 jmespatch   = "0.3"
 jsonschema  = { version = "0.9", default-features = false }
 semver      = { version = "0.11", features = ["serde"] }

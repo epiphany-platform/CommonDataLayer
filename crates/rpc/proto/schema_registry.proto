@@ -16,6 +16,7 @@ service SchemaRegistry {
     rpc GetAllSchemas (Empty) returns (Schemas);
     rpc GetAllFullSchemas (Empty) returns (FullSchemas);
     rpc GetAllViewsOfSchema (Id) returns (SchemaViews);
+    rpc GetAllViewsByRelation (Id) returns (SchemaViews);
     rpc GetBaseSchemaOfView (Id) returns (Schema);
     rpc ValidateValue (ValueToValidate) returns (Errors);
     rpc WatchAllSchemaUpdates (Empty) returns (stream Schema);

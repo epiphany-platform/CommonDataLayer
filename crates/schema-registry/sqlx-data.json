@@ -84,6 +84,66 @@
       "nullable": []
     }
   },
+  "3be3f8ac48398f706e50035b390d431d64d5fd23bb165e724ddb80e3c940cc8e": {
+    "query": "SELECT id, base_schema, name, materializer_address, materializer_options,\n            fields as \"fields: _\",\n            filters as \"filters: _\",\n            relations as \"relations: _\"\n             FROM views",
+    "describe": {
+      "columns": [
+        {
+          "ordinal": 0,
+          "name": "id",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 1,
+          "name": "base_schema",
+          "type_info": "Uuid"
+        },
+        {
+          "ordinal": 2,
+          "name": "name",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 3,
+          "name": "materializer_address",
+          "type_info": "Varchar"
+        },
+        {
+          "ordinal": 4,
+          "name": "materializer_options",
+          "type_info": "Json"
+        },
+        {
+          "ordinal": 5,
+          "name": "fields: _",
+          "type_info": "Json"
+        },
+        {
+          "ordinal": 6,
+          "name": "filters: _",
+          "type_info": "Json"
+        },
+        {
+          "ordinal": 7,
+          "name": "relations: _",
+          "type_info": "Json"
+        }
+      ],
+      "parameters": {
+        "Left": []
+      },
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false
+      ]
+    }
+  },
   "5fcf769aa07e54c6e61761c533b92e6af4a51f6a110e1605e511c3ecc0413178": {
     "query": "SELECT id, base_schema, name, materializer_address, materializer_options,\n            fields as \"fields: _\",\n            filters as \"filters: _\",\n            relations as \"relations: _\"\n             FROM views WHERE id = $1",
     "describe": {

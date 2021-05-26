@@ -16,11 +16,11 @@ use crate::db::SchemaRegistryDb;
 use crate::error::{RegistryError, RegistryResult};
 use crate::settings::Settings;
 use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
-use crate::types::view::{NewView, ViewUpdate};
+use crate::types::view::{FullView, NewView, ViewUpdate};
 use crate::types::{DbExport, VersionedUuid};
 use rpc::edge_registry::{edge_registry_client::EdgeRegistryClient, ValidateRelationQuery};
 use rpc::schema_registry::{
-    schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate,
+    schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate, SchemaViews,
     ValueToValidate, VersionedId,
 };
 use utils::communication::Result;
@@ -557,40 +557,28 @@ impl SchemaRegistry for SchemaRegistryImpl {
     async fn get_all_views_of_schema(
         &self,
         request: Request<Id>,
-    ) -> Result<Response<rpc::schema_registry::SchemaViews>, Status> {
+    ) -> Result<Response<SchemaViews>, Status> {
         let request = request.into_inner();
         let schema_id = parse_uuid(&request.id)?;
 
         let views = self.db.get_all_views_of_schema(schema_id).await?;
 
         Ok(Response::new(rpc::schema_registry::SchemaViews {
-            views: views
-                .into_iter()
-                .map(|view| {
-                    Ok(rpc::schema_registry::FullView {
-                        id: view.id.to_string(),
-                        base_schema_id: view.base_schema.to_string(),
-                        name: view.name,
-                        materializer_address: view.materializer_address,
-                        materializer_options: serde_json::to_string(&view.materializer_options)
-                            .map_err(RegistryError::MalformedViewFields)?,
-                        fields: view
-                            .fields
-                            .0
-                            .into_iter()
-                            .map(|(key, value)| {
-                                Ok((
-                                    key,
-                                    serde_json::to_string(&value)
-                                        .map_err(RegistryError::MalformedViewFields)?,
-                                ))
-                            })
-                            .collect::<RegistryResult<_>>()?,
-                        relations: view.relations.0.into_iter().map(|r| r.into_rpc()).collect(),
-                        filters: view.filters.0.map(|f| f.into_rpc()).transpose()?,
-                    })
-                })
-                .collect::<Result<Vec<_>, tonic::Status>>()?,
+            views: vec_into_rpc(views)?,
+        }))
+    }
+
+    async fn get_all_views_by_relation(
+        &self,
+        request: Request<Id>,
+    ) -> Result<Response<SchemaViews>, Status> {
+        let views = self
+            .db
+            .get_all_views_by_relation(parse_uuid(&request.into_inner().id)?)
+            .await?;
+
+        Ok(Response::new(SchemaViews {
+            views: vec_into_rpc(views)?,
         }))
     }
 
@@ -725,4 +713,34 @@ fn parse_uuid(id: &str) -> Result<Uuid, Status> {
 fn serialize_json<T: serde::Serialize>(json: &T) -> Result<Vec<u8>, Status> {
     serde_json::to_vec(json)
         .map_err(|err| Status::internal(format!("Unable to serialize JSON: {}", err)))
+}
+
+fn vec_into_rpc(views: Vec<FullView>) -> Result<Vec<rpc::schema_registry::FullView>, Status> {
+    views
+        .into_iter()
+        .map(|view| {
+            Ok(rpc::schema_registry::FullView {
+                id: view.id.to_string(),
+                base_schema_id: view.base_schema.to_string(),
+                name: view.name,
+                materializer_address: view.materializer_address,
+                materializer_options: serde_json::to_string(&view.materializer_options)
+                    .map_err(RegistryError::MalformedViewFields)?,
+                fields: view
+                    .fields
+                    .0
+                    .into_iter()
+                    .map(|(key, value)| {
+                        Ok((
+                            key,
+                            serde_json::to_string(&value)
+                                .map_err(RegistryError::MalformedViewFields)?,
+                        ))
+                    })
+                    .collect::<RegistryResult<_>>()?,
+                relations: view.relations.0.into_iter().map(|r| r.into_rpc()).collect(),
+                filters: view.filters.0.map(|f| f.into_rpc()).transpose()?,
+            })
+        })
+        .collect::<Result<Vec<_>, tonic::Status>>()
 }
