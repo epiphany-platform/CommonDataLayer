@@ -48,9 +48,9 @@ def test_kafka(prepare):
     parent_object_id = "1d1cc7a5-9277-48bc-97d3-3d99cfb63300"
     child_object_id = "1d1cc7a5-9277-48bc-97d3-3d99cfb63301"
     push_to_kafka(kafka_config, [{
-        "relation_id": relation_id,
-        "parent_object_id": parent_object_id,
-        "child_object_ids": [child_object_id]
+        "relationId": relation_id,
+        "parentObjectId": parent_object_id,
+        "childObjectIds": [child_object_id]
     }],
                   key='edge',
                   timestamp=1616759706)
