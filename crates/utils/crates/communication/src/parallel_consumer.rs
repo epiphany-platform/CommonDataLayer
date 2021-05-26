@@ -77,8 +77,6 @@ pub enum ParallelCommonConsumerConfig<'a> {
     },
     #[cfg(feature = "grpc")]
     Grpc { addr: SocketAddrV4 },
-    #[cfg(not(any(feature = "kafka", feature = "amqp", feature = "grpc")))]
-    Unimplemented(std::marker::PhantomData<&'a ()>),
 }
 pub enum ParallelCommonConsumer {
     #[cfg(feature = "kafka")]
@@ -124,8 +122,6 @@ impl ParallelCommonConsumer {
             }
             #[cfg(feature = "grpc")]
             ParallelCommonConsumerConfig::Grpc { addr } => Ok(Self::new_grpc(addr)),
-            #[allow(unreachable_patterns)]
-            _ => unreachable!("Enable at least one feature"),
         }
     }
 
@@ -278,15 +274,12 @@ impl ParallelCommonConsumer {
             #[cfg(feature = "grpc")]
             Self::Grpc { addr } => {
                 tonic::transport::Server::builder()
-                    .trace_fn(crate::tracing::grpc::trace_fn)
+                    .trace_fn(tracing_utils::grpc::trace_fn)
                     .add_service(GenericRpcServer::new(GenericRpcImpl { handler }))
                     .serve(addr.into())
                     .await?;
             }
-            #[allow(unreachable_patterns)]
-            _ => unreachable!("Enable at least one feature"),
         }
-        #[allow(unreachable_code)]
         Ok(())
     }
 }

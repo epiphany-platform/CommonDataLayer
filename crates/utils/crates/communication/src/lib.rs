@@ -1,11 +1,19 @@
 #![feature(linked_list_cursors)]
 
+#[cfg(any(feature = "kafka", feature = "amqp"))]
 pub mod consumer;
 #[cfg(feature = "kafka")]
 mod kafka_ack_queue;
 pub mod message;
 pub mod metadata_fetcher;
+#[cfg(any(feature = "kafka", feature = "amqp", feature = "grpc"))]
 pub mod parallel_consumer;
+#[cfg(any(
+    feature = "kafka",
+    feature = "amqp",
+    feature = "grpc",
+    feature = "http"
+))]
 pub mod publisher;
 
 use message::CommunicationMessage;

@@ -45,8 +45,6 @@ pub enum CommonConsumerConfig<'a> {
         queue_name: &'a str,
         options: Option<BasicConsumeOptions>,
     },
-    #[cfg(not(any(feature = "kafka", feature = "amqp")))]
-    Unimplemented(std::marker::PhantomData<&'a ()>),
 }
 
 pub enum CommonConsumer {
@@ -74,8 +72,6 @@ impl CommonConsumer {
                 queue_name,
                 options,
             } => Self::new_amqp(connection_string, consumer_tag, queue_name, options).await,
-            #[allow(unreachable_patterns)]
-            _ => unreachable!("Enable at least one feature"),
         }
     }
 
@@ -172,10 +168,7 @@ impl CommonConsumer {
                     }
                 }
             }
-            #[allow(unreachable_patterns)]
-            _ => unreachable!("Enable at least one feature"),
         }
-        #[allow(unreachable_code)]
         Ok(())
     }
 }

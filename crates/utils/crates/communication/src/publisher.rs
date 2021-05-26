@@ -126,8 +126,6 @@ impl CommonPublisher {
                     Err(status) => Err(Error::GrpcStatusCode(status.code().description().into())),
                 }
             }
-            #[allow(unreachable_patterns)]
-            _ => unreachable!("Enable at least one feature"),
         }
     }
 }
