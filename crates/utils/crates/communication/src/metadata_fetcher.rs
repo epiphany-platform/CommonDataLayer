@@ -104,8 +104,6 @@ impl MetadataFetcher {
                 let client = rpc::generic::connect(owned_destination).await;
                 Ok(client.is_ok())
             }
-            #[allow(unreachable_patterns)]
-            _ => unreachable!("Enable at least one feature"),
         }
     }
 }

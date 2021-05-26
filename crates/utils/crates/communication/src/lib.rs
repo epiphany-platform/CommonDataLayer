@@ -5,6 +5,7 @@ pub mod consumer;
 #[cfg(feature = "kafka")]
 mod kafka_ack_queue;
 pub mod message;
+#[cfg(any(feature = "kafka", feature = "amqp", feature = "grpc"))]
 pub mod metadata_fetcher;
 #[cfg(any(feature = "kafka", feature = "amqp", feature = "grpc"))]
 pub mod parallel_consumer;
