@@ -45,7 +45,6 @@ struct NotificationConsumerSettings {
 #[derive(Deserialize, Debug, Serialize)]
 struct ServicesSettings {
     pub schema_registry_url: String,
-    pub edge_registry_url: String,
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
