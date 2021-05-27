@@ -8,7 +8,7 @@ pub struct Settings {
     pub input_port: u16,
 
     pub postgres: PostgresSettings,
-    pub kafka: KafkaProducerSettings,
+    pub kafka: Option<KafkaProducerSettings>,
     #[serde(default)]
     pub notifications: NotificationSettings,
 
@@ -24,6 +24,10 @@ pub struct KafkaProducerSettings {
 
 impl Settings {
     pub async fn publisher(&self) -> anyhow::Result<CommonPublisher> {
-        Ok(CommonPublisher::new_kafka(&self.kafka.brokers).await?)
+        if let Some(kafka) = &self.kafka {
+            Ok(CommonPublisher::new_kafka(&kafka.brokers).await?)
+        } else {
+            anyhow::bail!("Missing Kafka config for notifications")
+        }
     }
 }
