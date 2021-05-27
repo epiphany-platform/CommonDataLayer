@@ -1,5 +1,9 @@
 input_port = 50203
 
+[notifications]
+enabled = true
+destination = "cdl.materialization.reports"
+
 [monitoring]
 otel_service_name = "materializer-general"
 
