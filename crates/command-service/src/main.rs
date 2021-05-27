@@ -1,3 +1,5 @@
+#![feature(async_closure)]
+
 use anyhow::bail;
 use cdl_dto::ingestion::OwnedInsertMessage;
 use command_service::communication::MessageRouter;
@@ -30,11 +32,11 @@ async fn main() -> anyhow::Result<()> {
     let notification_publisher = settings
         .notifications
         .publisher(
-            settings.publisher().await?,
+            async || settings.publisher().await,
             settings.communication_method.to_string(),
             "CommandService",
         )
-        .await;
+        .await?;
 
     match (
         settings.postgres,
