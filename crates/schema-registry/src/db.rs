@@ -20,7 +20,7 @@ use crate::{settings::Settings, types::view::FullView};
 use cdl_dto::materialization::{FieldDefinition, Filter, Relation};
 use either::Either;
 use futures::future;
-use futures_util::stream::StreamExt;
+use futures_util::stream::{StreamExt, TryStreamExt};
 
 const SCHEMAS_LISTEN_CHANNEL: &str = "schemas";
 const VIEWS_LISTEN_CHANNEL: &str = "views";
@@ -204,25 +204,35 @@ impl SchemaRegistryDb {
         )
         .fetch_many(&mut conn);
 
-        Ok(stream
+        stream
             .filter_map(
                 |res: Result<Either<PgQueryResult, FullView>, sqlx::Error>| {
-                    let view = res.unwrap().right().unwrap();
-                    future::ready(
-                        if view
-                            .relations
-                            .iter()
-                            .any(|relation| relation.global_id == relation_id)
-                        {
-                            Some(view)
-                        } else {
-                            None
-                        },
-                    )
+                    let view = res
+                        .map_err(RegistryError::DbError)
+                        .map(|res| {
+                            res.right().ok_or(RegistryError::Critical(
+                                "get_all_views_by_relation sql query returned left-side",
+                            ))
+                        })
+                        .flatten();
+                    future::ready(match view {
+                        Ok(view) => {
+                            if view
+                                .relations
+                                .iter()
+                                .any(|relation| relation.global_id == relation_id)
+                            {
+                                Some(Ok(view))
+                            } else {
+                                None
+                            }
+                        }
+                        Err(err) => Some(Err(err)),
+                    })
                 },
             )
-            .collect()
-            .await)
+            .try_collect()
+            .await
     }
 
     pub async fn get_schema_versions(&self, id: Uuid) -> RegistryResult<Vec<Version>> {

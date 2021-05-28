@@ -1,5 +1,5 @@
 #![feature(drain_filter)]
-#![feature(async_stream)]
+#![feature(result_flattening)]
 
 pub mod db;
 pub mod error;
