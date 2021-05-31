@@ -9,4 +9,4 @@ license = "Apache-2.0"
 
 [dependencies]
 # Crates.io
-tracing     = "0.1"
+tracing     = "0.1.26"

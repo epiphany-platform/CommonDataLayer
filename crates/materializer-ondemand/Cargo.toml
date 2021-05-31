@@ -15,13 +15,13 @@ metrics_utils           = { path = "../utils/crates/metrics" }
 tracing_utils           = { path = "../utils/crates/tracing" }
 
 # Crates.io
-anyhow      = "1.0"
-async-trait = "0.1"
-futures     = "0.3"
-serde       = { version = "1.0", features = ["derive"] }
-serde_json  = "1.0"
-tokio       = { version = "1.6", features = ["rt-multi-thread", "macros", "sync"] }
-tonic       = "0.4"
-tracing     = "0.1"
-uuid        = "0.8"
-tracing-futures         = "0.2"
+anyhow      = "1.0.40"
+async-trait = "0.1.50"
+futures     = "0.3.15"
+serde       = { version = "1.0.126", features = ["derive"] }
+serde_json  = "1.0.64"
+tokio       = { version = "1.6.1", features = ["rt-multi-thread", "macros", "sync"] }
+tonic       = "0.4.3"
+tracing     = "0.1.26"
+uuid        = "0.8.2"
+tracing-futures         = "0.2.5"

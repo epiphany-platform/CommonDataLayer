@@ -24,16 +24,16 @@ communication_utils     = { path = "../utils/crates/communication" }
 tracing_utils           = { path = "../utils/crates/tracing" }
 
 # Crates.io
-anyhow      = "1.0"
-async-trait = "0.1"
-futures     = "0.3"
-itertools   = "0.10"
-serde       = { version = "1.0", features = ["derive"] }
-serde_json  = "1.0"
-thiserror   = "1.0"
-tokio       = { version = "1.6", features = ["rt-multi-thread", "macros", "sync"] }
-tonic       = "0.4"
-tracing     = "0.1"
-uuid        = "0.8"
-bb8-postgres             = { version = "0.7", features = ["with-uuid-0_8"] }
-tracing-futures          = "0.2"
+anyhow      = "1.0.40"
+async-trait = "0.1.50"
+futures     = "0.3.15"
+itertools   = "0.10.0"
+serde       = { version = "1.0.126", features = ["derive"] }
+serde_json  = "1.0.64"
+thiserror   = "1.0.25"
+tokio       = { version = "1.6.1", features = ["rt-multi-thread", "macros", "sync"] }
+tonic       = "0.4.3"
+tracing     = "0.1.26"
+uuid        = "0.8.2"
+bb8-postgres             = { version = "0.7.0", features = ["with-uuid-0_8"] }
+tracing-futures          = "0.2.5"

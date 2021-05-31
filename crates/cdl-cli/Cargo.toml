@@ -17,11 +17,11 @@ cdl_dto     = { path = "../dto" }
 tracing_utils           = { path = "../utils/crates/tracing" }
 
 # Crates.io
-anyhow      = "1.0"
+anyhow      = "1.0.40"
 clap        = "3.0.0-beta.2"
-semver      = { version = "0.11", features = ["serde"] }
-serde       = { version = "1.0", features = ["derive"] }
-serde_json  = "1.0"
-tokio       = { version = "1.6", features = ["rt-multi-thread", "macros", "io-std", "io-util", "fs"] }
-tonic       = "0.4"
-uuid        = { version = "0.8", features = ["v4", "serde"] }
+semver      = { version = "1.0.1", features = ["serde"] }
+serde       = { version = "1.0.126", features = ["derive"] }
+serde_json  = "1.0.64"
+tokio       = { version = "1.6.1", features = ["rt-multi-thread", "macros", "io-std", "io-util", "fs"] }
+tonic       = "0.4.3"
+uuid        = { version = "0.8.2", features = ["v4", "serde"] }

@@ -20,7 +20,7 @@ pub enum RegistryError {
     #[error("Given schema type is invalid")]
     InvalidSchemaType,
     #[error("Invalid version retrieved from database: {0}")]
-    InvalidVersion(semver::SemVerError),
+    InvalidVersion(semver::Error),
     #[error("No version of schema with id {} matches the given requirement {}", .0.id, .0.version_req)]
     NoVersionMatchesRequirement(VersionedUuid),
     #[error(

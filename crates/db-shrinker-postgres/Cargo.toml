@@ -15,12 +15,12 @@ utils       = { path = "../utils" }
 tracing_utils           = { path = "../utils/crates/tracing" }
 
 # Crates.io
-anyhow      = "1.0"
+anyhow      = "1.0.40"
 clap        = "3.0.0-beta.2"
-postgres    = { version = "0.19", features = ["with-uuid-0_8", "with-serde_json-1"] }
-uuid        = { version = "0.8", features = ["v4", "serde"] }
-serde_json  = "1.0"
-tracing     = "0.1"
+postgres    = { version = "0.19.1", features = ["with-uuid-0_8", "with-serde_json-1"] }
+uuid        = { version = "0.8.2", features = ["v4", "serde"] }
+serde_json  = "1.0.64"
+tracing     = "0.1.26"
 
 [dev-dependencies]
-test-case = "1.1"
+test-case = "1.1.0"

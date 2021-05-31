@@ -19,13 +19,13 @@ metrics_utils           = { path = "../utils/crates/metrics" }
 tracing_utils           = { path = "../utils/crates/tracing", features = ["http"] }
 
 # Crates.io
-anyhow      = "1.0"
-lru-cache   = "0.1"
-serde       = { version = "1.0", features = ["derive"] }
-serde_json  = "1.0"
-uuid        = { version = "0.8", features = ["v4", "serde"] }
-tokio       = { version = "1.6", features = ["macros"] }
-tracing     = "0.1"
-warp        = "0.3"
-futures-util            = "0.3"
-tracing-futures         = "0.2"
+anyhow      = "1.0.40"
+lru-cache   = "0.1.2"
+serde       = { version = "1.0.126", features = ["derive"] }
+serde_json  = "1.0.64"
+uuid        = { version = "0.8.2", features = ["v4", "serde"] }
+tokio       = { version = "1.6.1", features = ["macros"] }
+tracing     = "0.1.26"
+warp        = "0.3.1"
+futures-util            = "0.3.15"
+tracing-futures         = "0.2.5"

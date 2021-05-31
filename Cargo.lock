@@ -111,7 +111,7 @@ dependencies = [
  "misc_utils",
  "reqwest",
  "rpc",
- "semver 0.11.0",
+ "semver 1.0.1",
  "serde 1.0.126",
  "serde_json",
  "settings_utils",
@@ -148,7 +148,7 @@ dependencies = [
  "indexmap",
  "multer",
  "once_cell",
- "opentelemetry",
+ "opentelemetry 0.13.0",
  "pin-project-lite",
  "regex",
  "serde 1.0.126",
@@ -454,7 +454,7 @@ dependencies = [
  "cdl_dto",
  "clap",
  "rpc",
- "semver 0.11.0",
+ "semver 1.0.1",
  "serde 1.0.126",
  "serde_json",
  "tokio",
@@ -2150,31 +2150,49 @@ dependencies = [
  "pin-project",
  "rand 0.8.3",
  "thiserror",
+]
+
+[[package]]
+name = "opentelemetry"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "492848ff47f11b7f9de0443b404e2c5775f695e1af6b7076ca25f999581d547a"
+dependencies = [
+ "async-trait",
+ "crossbeam-channel 0.5.1",
+ "futures",
+ "js-sys",
+ "lazy_static",
+ "percent-encoding",
+ "pin-project",
+ "rand 0.8.3",
+ "thiserror",
  "tokio",
  "tokio-stream",
 ]
 
 [[package]]
 name = "opentelemetry-http"
-version = "0.2.0"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba72bd27f28377a2e4f0f15a040c06ab0e70ea73df0689f8adf4d22d04591a1a"
+checksum = "9b752610d59706ff7cae48003552b3d0bf19bcce532629c8a49095894f21c319"
 dependencies = [
  "async-trait",
+ "bytes 1.0.1",
+ "futures-util",
  "http",
- "opentelemetry",
- "thiserror",
+ "opentelemetry 0.14.0",
 ]
 
 [[package]]
 name = "opentelemetry-jaeger"
-version = "0.12.1"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ddd4984441954f9ebbe3eebdfc6fd4fa95be6400d403171228779b949f3cd918"
+checksum = "97fd9ed34f208e0394bfb17522ba0d890925685dfd883147670ed474339d4647"
 dependencies = [
  "async-trait",
  "lazy_static",
- "opentelemetry",
+ "opentelemetry 0.14.0",
  "thiserror",
  "thrift",
  "tokio",
@@ -2996,7 +3014,7 @@ dependencies = [
  "metrics_utils",
  "misc_utils",
  "rpc",
- "semver 0.11.0",
+ "semver 1.0.1",
  "serde 1.0.126",
  "serde_json",
  "settings_utils",
@@ -3064,16 +3082,15 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d7eb9ef2c18661902cc47e535f9bc51b78acd254da71d375c2f6720d9a40403"
 dependencies = [
- "semver-parser 0.7.0",
+ "semver-parser",
 ]
 
 [[package]]
 name = "semver"
-version = "0.11.0"
+version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f301af10236f6df4160f7c3f04eec6dbc70ace82d23326abad5edee88801c6b6"
+checksum = "d023dabf011d5dcb5ac64e3685d97d3b0ef412911077a2851455c6098524a723"
 dependencies = [
- "semver-parser 0.10.2",
  "serde 1.0.126",
 ]
 
@@ -3082,15 +3099,6 @@ name = "semver-parser"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
-
-[[package]]
-name = "semver-parser"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "00b0bef5b7f9e0df16536d3961cfb6e84331c065b4066afb39768d0e319411f7"
-dependencies = [
- "pest",
-]
 
 [[package]]
 name = "serde"
@@ -3823,11 +3831,11 @@ dependencies = [
 
 [[package]]
 name = "tracing-opentelemetry"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99003208b647dae59dcefc49c98aecaa3512fbc29351685d4b9ef23a9218458e"
+checksum = "e2f4cb277b92a8ba1170b3b911056428ce2ef9993351baf5965bb0359a2e5963"
 dependencies = [
- "opentelemetry",
+ "opentelemetry 0.14.0",
  "tracing",
  "tracing-core",
  "tracing-log",
@@ -3873,7 +3881,7 @@ dependencies = [
  "anyhow",
  "futures-util",
  "hyper",
- "opentelemetry",
+ "opentelemetry 0.14.0",
  "opentelemetry-http",
  "opentelemetry-jaeger",
  "rdkafka",

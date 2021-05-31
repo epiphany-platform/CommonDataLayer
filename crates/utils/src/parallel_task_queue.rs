@@ -138,6 +138,7 @@ mod tests {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)] // `Miri` doesn't support kqueue() syscall in this test
     async fn should_process_unrelated_tasks_in_parallel() -> anyhow::Result<()> {
         let task_queue = Arc::new(ParallelTaskQueue::new());
         let barrier = Arc::new(Barrier::new(2));
@@ -156,6 +157,7 @@ mod tests {
         Ok(())
     }
     #[tokio::test]
+    #[cfg_attr(miri, ignore)] // `Miri` doesn't support kqueue() syscall in this test
     async fn should_wait_for_related_task_to_finish() -> anyhow::Result<()> {
         let task_queue = Arc::new(ParallelTaskQueue::new());
         let (tx1, rx1) = oneshot::channel();
@@ -193,15 +195,13 @@ mod tests {
         Ok(())
     }
     #[tokio::test]
+    #[cfg_attr(miri, ignore)] // `Miri` doesn't support kqueue() syscall in this test
     async fn should_clean_up_after_task_group_is_done() {
         let task_queue = Arc::new(ParallelTaskQueue::new());
         {
             let _guard = task_queue.acquire_permit("A".to_string()).await;
             // DO SOME WORK
         }
-        assert!(
-            task_queue.locks.lock().unwrap().len() == 0,
-            "Lock key was not removed from parallel task queue"
-        );
+        assert_eq!(task_queue.locks.lock().unwrap().len(), 0, "Lock key was not removed from parallel task queue");
     }
 }
