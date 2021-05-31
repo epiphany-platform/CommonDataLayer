@@ -9,4 +9,4 @@ license = "Apache-2.0"
 
 [dependencies]
 # Crates.io
-tokio       = { version = "1.5", features = ["sync"] }
+tokio       = { version = "1.6", features = ["sync"] }
