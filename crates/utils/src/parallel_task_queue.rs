@@ -202,6 +202,10 @@ mod tests {
             let _guard = task_queue.acquire_permit("A".to_string()).await;
             // DO SOME WORK
         }
-        assert_eq!(task_queue.locks.lock().unwrap().len(), 0, "Lock key was not removed from parallel task queue");
+        assert_eq!(
+            task_queue.locks.lock().unwrap().len(),
+            0,
+            "Lock key was not removed from parallel task queue"
+        );
     }
 }
