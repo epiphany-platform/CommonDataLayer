@@ -20,7 +20,7 @@ pub struct MaterializationNotification {
 
 #[derive(Serialize, Clone)]
 struct MaterializationRow {
-    object_id: String,
+    object_ids: Vec<String>,
     fields: HashMap<String, String>,
 }
 
@@ -33,7 +33,7 @@ impl IntoSerialize<MaterializationNotification> for MaterializedView {
                 .rows
                 .into_iter()
                 .map(|row| MaterializationRow {
-                    object_id: row.object_id,
+                    object_ids: row.object_ids,
                     fields: row.fields,
                 })
                 .collect(),

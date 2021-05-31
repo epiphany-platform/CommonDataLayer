@@ -2058,6 +2058,7 @@ name = "object-builder"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-stream",
  "async-trait",
  "bb8",
  "cdl_dto",

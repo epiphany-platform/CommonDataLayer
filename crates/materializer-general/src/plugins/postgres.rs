@@ -29,7 +29,7 @@ struct PsqlView {
 
 #[derive(Debug)]
 struct RowDefinition {
-    object_id: Uuid,
+    object_ids: Vec<Uuid>,
     fields: HashMap<String, Value>,
 }
 
@@ -48,7 +48,11 @@ impl TryFrom<MaterializedView> for PsqlView {
             .rows
             .into_iter()
             .map(|row| {
-                let object_id: Uuid = row.object_id.parse()?;
+                let object_ids = row
+                    .object_ids
+                    .into_iter()
+                    .map(|oid| oid.parse().map_err(anyhow::Error::from))
+                    .collect::<anyhow::Result<_>>()?;
                 let fields = row
                     .fields
                     .into_iter()
@@ -57,7 +61,7 @@ impl TryFrom<MaterializedView> for PsqlView {
                         Ok((key, field))
                     })
                     .collect::<anyhow::Result<_>>()?;
-                Ok(RowDefinition { object_id, fields })
+                Ok(RowDefinition { object_ids, fields })
             })
             .collect::<anyhow::Result<_>>()?;
 
@@ -89,7 +93,7 @@ impl MaterializerPlugin for PostgresMaterializer {
             // Temporary table is unique per session
             tx.batch_execute(&format!(
                 "CREATE TABLE IF NOT EXISTS {table} ( \
-                    object_id UUID NOT NULL,\
+                    object_ids UUID[] NOT NULL,\
                     {columns},\
                     PRIMARY KEY (object_id)
                  );\
@@ -127,7 +131,7 @@ impl PostgresMaterializer {
         let mut row: Vec<&'_ (dyn ToSql + Sync)> = Vec::with_capacity(view.rows.len());
         for m in view.rows.iter() {
             row.clear();
-            row.push(&m.object_id);
+            row.push(&m.object_ids);
             row.extend(
                 m.fields
                     .iter()
@@ -162,7 +166,7 @@ impl PostgresMaterializer {
                      ON CONFLICT (object_id) DO UPDATE SET {}",
                     table, update_columns
                 );
-                let copy_stm = format!("COPY upserts (object_id, {}) FROM STDIN BINARY", columns);
+                let copy_stm = format!("COPY upserts (object_ids, {}) FROM STDIN BINARY", columns);
                 let mut types = vec![Type::UUID];
                 // TODO: For now each column is stored as a JSON field.
                 // Later we can introduce some kind of type infering mechanism here, so each field in

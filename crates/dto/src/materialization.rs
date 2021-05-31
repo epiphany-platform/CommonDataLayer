@@ -1,3 +1,5 @@
+// TODO: Refactor: Split me into smaller modules
+
 use std::{
     collections::{HashMap, HashSet},
     convert::{TryFrom, TryInto},
@@ -13,66 +15,8 @@ pub type LocalId = u8; // ID from Relation->local_id. 0 for base_schema_id.
 
 use async_graphql::{Json, SimpleObject, Union};
 use rpc::schema_registry::types::{FilterOperator, LogicOperator};
-use thiserror::Error;
 
-#[derive(Debug, Error)]
-#[error("{0}")]
-pub struct RequestError(String);
-
-impl RequestError {
-    fn new(error: impl Into<String>) -> Self {
-        Self(error.into())
-    }
-}
-
-impl From<anyhow::Error> for RequestError {
-    fn from(err: anyhow::Error) -> Self {
-        Self(format!("{:?}", err))
-    }
-}
-
-impl From<uuid::Error> for RequestError {
-    fn from(err: uuid::Error) -> Self {
-        Self(err.to_string())
-    }
-}
-
-impl From<serde_json::Error> for RequestError {
-    fn from(err: serde_json::Error) -> Self {
-        Self(err.to_string())
-    }
-}
-
-impl From<std::num::TryFromIntError> for RequestError {
-    fn from(err: std::num::TryFromIntError) -> Self {
-        Self(err.to_string())
-    }
-}
-
-impl From<RequestError> for tonic::Status {
-    fn from(err: RequestError) -> Self {
-        tonic::Status::invalid_argument(err.0)
-    }
-}
-
-#[derive(Debug, Error)]
-#[error("{0}")]
-pub struct ResponseError(String);
-
-impl From<serde_json::Error> for ResponseError {
-    fn from(err: serde_json::Error) -> Self {
-        Self(err.to_string())
-    }
-}
-
-impl From<ResponseError> for tonic::Status {
-    fn from(err: ResponseError) -> Self {
-        tonic::Status::internal(err.0)
-    }
-}
-
-type RequestResult<T> = std::result::Result<T, RequestError>;
-type ResponseResult<T> = std::result::Result<T, ResponseError>;
+use crate::{RequestError, RequestResult, ResponseResult};
 
 /// View's filter
 #[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq)]
@@ -237,7 +181,7 @@ pub struct ComputedFilter {
 impl ComputedFilter {
     fn from_rpc(rpc: rpc::schema_registry::ComputedFilter) -> RequestResult<Self> {
         Ok(Self {
-            computation: Computation::from_rpc(&rpc.computation)?,
+            computation: Computation::from_rpc(rpc.computation)?,
         })
     }
 
@@ -248,76 +192,38 @@ impl ComputedFilter {
     }
 }
 
-#[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
-pub struct Computation {
-    pub operator: ComputationOperator,
-    pub lhs: Box<Computation>,
-    pub rhs: Option<Box<Computation>>,
-}
-
-impl Computation {
-    fn from_rpc(rpc: &rpc::schema_registry::Computation) -> RequestResult<Self> {
-        Ok(Self {
-            operator: ComputationOperator::from_rpc(rpc.operator.clone())?,
-            lhs: Box::new(Computation::from_rpc(&rpc.lhs)?),
-            rhs: rpc
-                .rhs
-                .as_ref()
-                .map(|rhs| RequestResult::Ok(Box::new(Computation::from_rpc(rhs)?)))
-                .transpose()?,
-        })
-    }
-
-    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::Computation> {
-        Ok(rpc::schema_registry::Computation {
-            operator: self.operator.into_rpc()?,
-            lhs: Box::new(self.lhs.into_rpc()?),
-            rhs: self
-                .rhs
-                .map(|rhs| ResponseResult::Ok(Box::new(rhs.into_rpc()?)))
-                .transpose()?,
-        })
-    }
-}
-
 #[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq)]
-pub enum ComputationOperator {
+pub enum Computation {
     RawValue(RawValueComputation),
     FieldValue(FieldValueComputation),
     Equals(EqualsComputation),
 }
 
-impl ComputationOperator {
-    fn from_rpc(rpc: rpc::schema_registry::ComputationOperator) -> RequestResult<Self> {
-        let kind = match rpc.computation_operator {
+impl Computation {
+    fn from_rpc(rpc: rpc::schema_registry::Computation) -> RequestResult<Self> {
+        let kind = match rpc.computation {
             Some(kind) => kind,
-            None => {
-                return Err(RequestError::new(
-                    "Expected computation operator, found none",
-                ))
-            }
+            None => return Err(RequestError::new("Expected computation, found none")),
         };
-        use rpc::schema_registry::computation_operator::ComputationOperator;
+        use rpc::schema_registry::computation::Computation;
         Ok(match kind {
-            ComputationOperator::RawValue(filter) => {
-                Self::RawValue(RawValueComputation::from_rpc(filter)?)
-            }
-            ComputationOperator::FieldValue(filter) => {
+            Computation::RawValue(filter) => Self::RawValue(RawValueComputation::from_rpc(filter)?),
+            Computation::FieldValue(filter) => {
                 Self::FieldValue(FieldValueComputation::from_rpc(filter)?)
             }
-            ComputationOperator::EqualsComputation(filter) => {
-                Self::Equals(EqualsComputation::from_rpc(filter)?)
+            Computation::EqualsComputation(filter) => {
+                Self::Equals(EqualsComputation::from_rpc(*filter)?)
             }
         })
     }
 
-    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::ComputationOperator> {
-        use rpc::schema_registry::computation_operator::ComputationOperator;
-        Ok(rpc::schema_registry::ComputationOperator {
-            computation_operator: Some(match self {
-                Self::RawValue(op) => ComputationOperator::RawValue(op.into_rpc()?),
-                Self::FieldValue(op) => ComputationOperator::FieldValue(op.into_rpc()),
-                Self::Equals(op) => ComputationOperator::EqualsComputation(op.into_rpc()),
+    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::Computation> {
+        use rpc::schema_registry::computation::Computation;
+        Ok(rpc::schema_registry::Computation {
+            computation: Some(match self {
+                Self::RawValue(op) => Computation::RawValue(op.into_rpc()?),
+                Self::FieldValue(op) => Computation::FieldValue(op.into_rpc()),
+                Self::Equals(op) => Computation::EqualsComputation(Box::new(op.into_rpc()?)),
             }),
         })
     }
@@ -325,7 +231,7 @@ impl ComputationOperator {
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
 pub struct RawValueComputation {
-    value: Json<Value>,
+    pub value: Json<Value>,
 }
 
 impl RawValueComputation {
@@ -344,21 +250,24 @@ impl RawValueComputation {
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
 pub struct FieldValueComputation {
-    base_schema: Option<Uuid>,
-    field_path: String,
+    pub schema_id: LocalId,
+    pub field_path: String,
 }
 
 impl FieldValueComputation {
     fn from_rpc(rpc: rpc::schema_registry::FieldValueComputation) -> RequestResult<Self> {
         Ok(Self {
-            base_schema: rpc.base_schema.map(|bs| bs.parse()).transpose()?,
+            schema_id: rpc.schema_id.unwrap_or_default().try_into()?,
             field_path: rpc.field_path,
         })
     }
 
     fn into_rpc(self) -> rpc::schema_registry::FieldValueComputation {
         rpc::schema_registry::FieldValueComputation {
-            base_schema: self.base_schema.map(|s| s.to_string()),
+            schema_id: match self.schema_id {
+                0 => None,
+                x => Some(x.into()),
+            },
             field_path: self.field_path,
         }
     }
@@ -366,16 +275,23 @@ impl FieldValueComputation {
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
 pub struct EqualsComputation {
-    _placeholder: bool, // Hack for "SimpleObject needs at least one field"
+    pub lhs: Box<Computation>,
+    pub rhs: Box<Computation>,
 }
 
 impl EqualsComputation {
-    fn from_rpc(_rpc: rpc::schema_registry::EqualsComputation) -> RequestResult<Self> {
-        Ok(EqualsComputation { _placeholder: true })
+    fn from_rpc(rpc: rpc::schema_registry::EqualsComputation) -> RequestResult<Self> {
+        Ok(EqualsComputation {
+            lhs: Box::new(Computation::from_rpc(*rpc.lhs)?),
+            rhs: Box::new(Computation::from_rpc(*rpc.rhs)?),
+        })
     }
 
-    fn into_rpc(self) -> rpc::schema_registry::EqualsComputation {
-        rpc::schema_registry::EqualsComputation {}
+    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::EqualsComputation> {
+        Ok(rpc::schema_registry::EqualsComputation {
+            lhs: Box::new(self.lhs.into_rpc()?),
+            rhs: Box::new(self.rhs.into_rpc()?),
+        })
     }
 }
 
@@ -504,6 +420,40 @@ impl<'de> Deserialize<'de> for FieldType {
         }
 
         deserializer.deserialize_str(VariantVisitor)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+// Todo: probably unify it with api::types::view::queried::FullView
+pub struct FullView {
+    pub id: Uuid,
+    pub base_schema_id: Uuid,
+    pub name: String,
+    pub materializer_address: String,
+    pub materializer_options: Value,
+    pub fields: HashMap<String, FieldDefinition>,
+    pub relations: Vec<Relation>,
+}
+
+impl FullView {
+    pub fn from_rpc(rpc: rpc::schema_registry::FullView) -> RequestResult<Self> {
+        Ok(Self {
+            id: rpc.id.parse()?,
+            base_schema_id: rpc.base_schema_id.parse()?,
+            name: rpc.name,
+            materializer_address: rpc.materializer_address,
+            materializer_options: serde_json::from_str(&rpc.materializer_options)?,
+            fields: rpc
+                .fields
+                .into_iter()
+                .map(|(key, field)| Ok((key, serde_json::from_str(&field)?)))
+                .collect::<RequestResult<HashMap<_, _>>>()?,
+            relations: rpc
+                .relations
+                .into_iter()
+                .map(Relation::from_rpc)
+                .collect::<RequestResult<_>>()?,
+        })
     }
 }
 

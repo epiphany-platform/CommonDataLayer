@@ -18,6 +18,8 @@ pub struct TreeObject {
     pub object_id: ::prost::alloc::string::String,
     #[prost(string, required, tag = "2")]
     pub relation_id: ::prost::alloc::string::String,
+    #[prost(message, required, tag = "5")]
+    pub relation: SchemaRelation,
     #[prost(string, repeated, tag = "3")]
     pub children: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     #[prost(message, repeated, tag = "4")]

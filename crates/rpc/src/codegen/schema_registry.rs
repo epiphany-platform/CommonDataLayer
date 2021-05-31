@@ -153,28 +153,19 @@ pub struct ComputedFilter {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Computation {
-    #[prost(message, required, tag = "1")]
-    pub operator: ComputationOperator,
-    #[prost(message, required, boxed, tag = "2")]
-    pub lhs: ::prost::alloc::boxed::Box<Computation>,
-    #[prost(message, optional, boxed, tag = "3")]
-    pub rhs: ::core::option::Option<::prost::alloc::boxed::Box<Computation>>,
+    #[prost(oneof = "computation::Computation", tags = "1, 2, 3")]
+    pub computation: ::core::option::Option<computation::Computation>,
 }
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ComputationOperator {
-    #[prost(oneof = "computation_operator::ComputationOperator", tags = "1, 2, 3")]
-    pub computation_operator: ::core::option::Option<computation_operator::ComputationOperator>,
-}
-/// Nested message and enum types in `ComputationOperator`.
-pub mod computation_operator {
+/// Nested message and enum types in `Computation`.
+pub mod computation {
     #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum ComputationOperator {
+    pub enum Computation {
         #[prost(message, tag = "1")]
         RawValue(super::RawValueComputation),
         #[prost(message, tag = "2")]
         FieldValue(super::FieldValueComputation),
         #[prost(message, tag = "3")]
-        EqualsComputation(super::EqualsComputation),
+        EqualsComputation(::prost::alloc::boxed::Box<super::EqualsComputation>),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -184,13 +175,18 @@ pub struct RawValueComputation {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FieldValueComputation {
-    #[prost(string, optional, tag = "1")]
-    pub base_schema: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(uint32, optional, tag = "1")]
+    pub schema_id: ::core::option::Option<u32>,
     #[prost(string, required, tag = "2")]
     pub field_path: ::prost::alloc::string::String,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EqualsComputation {}
+pub struct EqualsComputation {
+    #[prost(message, required, boxed, tag = "2")]
+    pub lhs: ::prost::alloc::boxed::Box<Computation>,
+    #[prost(message, required, boxed, tag = "3")]
+    pub rhs: ::prost::alloc::boxed::Box<Computation>,
+}
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct FullView {
     #[prost(string, required, tag = "1")]

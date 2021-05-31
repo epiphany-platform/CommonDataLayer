@@ -353,10 +353,12 @@ impl QueryRoot {
                     })
                     .collect::<Result<_, async_graphql::Error>>()?;
 
-                Ok(RowDefinition {
-                    object_id: row.object_id.parse()?,
-                    fields,
-                })
+                let object_ids = row
+                    .object_ids
+                    .into_iter()
+                    .map(|oid| oid.parse().map_err(async_graphql::Error::from))
+                    .collect::<Result<_, async_graphql::Error>>()?;
+                Ok(RowDefinition { object_ids, fields })
             })
             .try_collect::<_>()
             .await?; //In the future we could probably use graphQL @stream directive when its standarized.

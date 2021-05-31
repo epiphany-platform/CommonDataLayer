@@ -31,6 +31,7 @@ message TreeResponse {
 message TreeObject {
   required string object_id = 1;
   required string relation_id = 2;
+  required SchemaRelation relation = 5;
   repeated string children = 3;
   repeated TreeResponse subtrees = 4;
 }

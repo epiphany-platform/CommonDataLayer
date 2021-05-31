@@ -1,69 +1,49 @@
-use anyhow::Context;
+use async_stream::stream;
 use async_trait::async_trait;
-use bb8::{Pool, PooledConnection};
-use cdl_dto::materialization;
+use bb8::Pool;
+use cdl_dto::{
+    edges::TreeResponse,
+    materialization::{self},
+};
 use communication_utils::{consumer::ConsumerHandler, message::CommunicationMessage};
-use futures::{Stream, StreamExt, TryStreamExt};
+use futures::{pin_mut, Stream, StreamExt, TryStreamExt};
 use metrics_utils::{self as metrics, counter};
+use row_builder::RowBuilder;
 use rpc::common::RowDefinition as RpcRowDefinition;
 use rpc::materializer_general::{MaterializedView as RpcMaterializedView, Options};
 use rpc::object_builder::{object_builder_server::ObjectBuilder, Empty, View};
-use rpc::schema_registry::{schema_registry_client::SchemaRegistryClient, types::SchemaType};
+use rpc::schema_registry::types::SchemaType;
 use serde::Serialize;
 use serde_json::Value;
-use std::{collections::HashMap, convert::TryInto, pin::Pin};
-use std::{collections::HashSet, sync::Arc};
-use tonic::transport::Channel;
+use std::collections::HashSet;
+use std::{collections::HashMap, convert::TryInto, num::NonZeroU8, pin::Pin};
 use uuid::Uuid;
+
+use crate::buffer::ObjectBuffer;
 
 pub mod settings;
 
+mod pool;
+
+mod buffer;
+
+mod row_builder;
+
 #[derive(Clone)]
 pub struct ObjectBuilderImpl {
-    pool: SchemaRegistryPool,
+    sr_pool: pool::SchemaRegistryPool,
+    er_pool: pool::EdgeRegistryPool,
     chunk_capacity: usize,
 }
 
-#[derive(Clone)]
-pub struct SchemaRegistryConnectionManager {
-    pub address: String,
-}
+type DynStream<T, E = anyhow::Error> =
+    Pin<Box<dyn Stream<Item = Result<T, E>> + Send + Sync + 'static>>;
 
-pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
-pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;
-
-type ObjectStream =
-    Pin<Box<dyn Stream<Item = Result<(Uuid, Value), anyhow::Error>> + Send + Sync + 'static>>;
-type RowStream =
-    Pin<Box<dyn Stream<Item = Result<RowDefinition, anyhow::Error>> + Send + Sync + 'static>>;
-type MaterializedChunksStream =
-    Pin<Box<dyn Stream<Item = Result<MaterializedView, anyhow::Error>> + Send + Sync + 'static>>;
-type MaterializeStream =
-    Pin<Box<dyn Stream<Item = Result<RpcRowDefinition, tonic::Status>> + Send + Sync + 'static>>;
-
-#[async_trait::async_trait]
-impl bb8::ManageConnection for SchemaRegistryConnectionManager {
-    type Connection = SchemaRegistryConn;
-    type Error = rpc::error::ClientError;
-
-    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        tracing::debug!("Connecting to registry");
-
-        rpc::schema_registry::connect(self.address.clone()).await
-    }
-
-    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        conn.ping(rpc::schema_registry::Empty {})
-            .await
-            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
-
-        Ok(())
-    }
-
-    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
-        false
-    }
-}
+type ObjectStream = DynStream<(Uuid, Value)>;
+type SchemaObjectStream = DynStream<(Uuid, Uuid, Value)>;
+type RowStream = DynStream<RowDefinition>;
+type MaterializedChunksStream = DynStream<MaterializedView>;
+type MaterializeStream = DynStream<RpcRowDefinition, tonic::Status>;
 
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
@@ -76,22 +56,29 @@ struct MaterializedView {
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
 struct RowDefinition {
-    object_id: Uuid,
+    object_ids: HashSet<Uuid>,
     fields: HashMap<String, Value>,
 }
 
 impl ObjectBuilderImpl {
-    pub async fn new(schema_registry_addr: &str, chunk_capacity: usize) -> anyhow::Result<Self> {
-        let pool = Pool::builder()
-            .build(SchemaRegistryConnectionManager {
-                address: schema_registry_addr.to_string(),
+    pub async fn new(settings: &settings::Settings) -> anyhow::Result<Self> {
+        let sr_pool = Pool::builder()
+            .build(pool::SchemaRegistryConnectionManager {
+                address: settings.services.schema_registry_url.to_string(),
             })
             .await
             .unwrap();
 
+        let er_pool = Pool::builder()
+            .build(pool::EdgeRegistryConnectionManager {
+                address: settings.services.edge_registry_url.to_string(),
+            })
+            .await
+            .unwrap();
         Ok(Self {
-            pool,
-            chunk_capacity,
+            sr_pool,
+            er_pool,
+            chunk_capacity: settings.chunk_capacity,
         })
     }
 }
@@ -106,7 +93,11 @@ impl TryInto<RpcRowDefinition> for RowDefinition {
             .map(|(key, value)| Ok((key, serde_json::to_string(&value)?)))
             .collect::<serde_json::Result<_>>()?;
         Ok(RpcRowDefinition {
-            object_id: self.object_id.to_string(),
+            object_ids: self
+                .object_ids
+                .into_iter()
+                .map(|id| id.to_string())
+                .collect(),
             fields,
         })
     }
@@ -225,14 +216,12 @@ impl ObjectBuilderImpl {
         let rows = self.build_rows(request).await?;
         let rows = rows.chunks(self.chunk_capacity);
 
-        let options: Value = serde_json::from_str(&view.materializer_options)?;
-
         let chunks = rows.map(move |rows: Vec<anyhow::Result<RowDefinition>>| {
             let rows: Vec<RowDefinition> = rows.into_iter().collect::<anyhow::Result<_>>()?;
 
             let materialized = MaterializedView {
                 view_id,
-                options: options.clone(),
+                options: view.materializer_options.clone(),
                 rows,
             };
 
@@ -251,67 +240,35 @@ impl ObjectBuilderImpl {
         let view = self.get_view(view_id).await?;
         tracing::debug!(?view, "View");
 
-        // TODO: Handle more than one schema
+        let object_filters = create_object_filters(&schemas);
+        let edges = self.resolve_tree(&view, &object_filters).await?;
 
         let objects = self.get_objects(view_id, schemas).await?;
 
-        let fields_defs: HashMap<String, materialization::FieldDefinition> = view
-            .fields
-            .into_iter()
-            .map(|(key, field)| Ok((key, serde_json::from_str(&field)?)))
-            .collect::<anyhow::Result<HashMap<_, _>>>()?;
+        let mut object_buffer = ObjectBuffer::new(&edges);
 
-        let fields_defs = Arc::new(fields_defs);
-
-        let rows = objects.and_then(move |(object_id, object)| {
-            let fields_defs = fields_defs.clone();
-            async move { Self::build_row_def(object_id, object, &fields_defs) }
-        });
+        let rows = stream! {
+            let row_builder = RowBuilder::new(&view);
+            pin_mut!(objects);
+            loop {
+                match objects.try_next().await {
+                    Err(e) => yield Err(e),
+                    Ok(None) => break,
+                    Ok(Some((schema_id, object_id, object))) => {
+                        if let Some(row) = object_buffer.add_object(schema_id, object_id, object) {
+                            yield row_builder.build(row);
+                        }
+                        else {
+                            continue;
+                        }
+                    }
+                }
+            }
+        };
 
         let rows = Box::pin(rows) as RowStream;
 
         Ok(rows)
-    }
-
-    #[tracing::instrument]
-    fn build_row_def(
-        object_id: Uuid,
-        object: Value,
-        fields_defs: &HashMap<String, materialization::FieldDefinition>,
-    ) -> anyhow::Result<RowDefinition> {
-        use materialization::FieldDefinition::*;
-
-        let object = object
-            .as_object()
-            .with_context(|| format!("Expected object ({}) to be a JSON object", object_id))?;
-
-        let fields = fields_defs
-            .iter()
-            .map(|(field_def_key, field_def)| {
-                Ok((
-                    field_def_key.into(),
-                    match field_def {
-                        Simple { field_name, .. } => {
-                            //TODO: Use field_type
-                            let value = object.get(field_name).with_context(|| {
-                                format!(
-                                    "Object ({}) does not have a field named `{}`",
-                                    object_id, field_name
-                                )
-                            })?;
-                            value.clone()
-                        }
-                        Computed { .. } => {
-                            todo!()
-                        }
-                        Array { .. } => {
-                            todo!()
-                        }
-                    },
-                ))
-            })
-            .collect::<anyhow::Result<_>>()?;
-        Ok(RowDefinition { object_id, fields })
     }
 
     #[tracing::instrument(skip(self))]
@@ -319,23 +276,23 @@ impl ObjectBuilderImpl {
         &self,
         view_id: Uuid,
         mut schemas: HashMap<Uuid, materialization::Schema>,
-    ) -> anyhow::Result<ObjectStream> {
+    ) -> anyhow::Result<SchemaObjectStream> {
         if schemas.is_empty() {
             let base_schema = self.get_base_schema_for_view(view_id).await?;
             let base_schema_id: Uuid = base_schema.id.parse()?;
             schemas.insert(base_schema_id, Default::default());
         }
 
-        if schemas.len() == 1 {
-            let (schema_id, schema) = schemas.into_iter().next().unwrap();
-
-            self.get_objects_for_ids(schema_id, &schema.object_ids)
-                .await
-        } else {
-            // TODO: Merging more than one schema. Phase II
-            // It cannot be empty, because at least one schema has to be assigned to view.
-            todo!();
+        let mut streams = vec![];
+        for (schema_id, schema) in schemas.into_iter() {
+            let stream = self
+                .get_objects_for_ids(schema_id, &schema.object_ids)
+                .await?
+                .map_ok(move |(object_id, object)| (schema_id, object_id, object));
+            streams.push(stream);
         }
+        let stream = futures::stream::select_all(streams);
+        Ok(Box::pin(stream) as SchemaObjectStream)
     }
 
     async fn get_base_schema_for_view(
@@ -343,7 +300,7 @@ impl ObjectBuilderImpl {
         view_id: Uuid,
     ) -> anyhow::Result<rpc::schema_registry::Schema> {
         let schema = self
-            .pool
+            .sr_pool
             .get()
             .await?
             .get_base_schema_of_view(rpc::schema_registry::Id {
@@ -396,9 +353,9 @@ impl ObjectBuilderImpl {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn get_view(&self, view_id: Uuid) -> anyhow::Result<rpc::schema_registry::FullView> {
+    async fn get_view(&self, view_id: Uuid) -> anyhow::Result<cdl_dto::materialization::FullView> {
         let view = self
-            .pool
+            .sr_pool
             .get()
             .await?
             .get_view(rpc::schema_registry::Id {
@@ -407,6 +364,7 @@ impl ObjectBuilderImpl {
             .await?
             .into_inner();
 
+        let view = cdl_dto::materialization::FullView::from_rpc(view)?;
         Ok(view)
     }
 
@@ -416,7 +374,7 @@ impl ObjectBuilderImpl {
         schema_id: Uuid,
     ) -> anyhow::Result<rpc::schema_registry::SchemaMetadata> {
         let schema = self
-            .pool
+            .sr_pool
             .get()
             .await?
             .get_schema_metadata(rpc::schema_registry::Id {
@@ -426,4 +384,51 @@ impl ObjectBuilderImpl {
             .into_inner();
         Ok(schema)
     }
+
+    #[tracing::instrument(skip(self))]
+    async fn resolve_tree(
+        &self,
+        view: &cdl_dto::materialization::FullView,
+        object_filters: &[Uuid],
+    ) -> anyhow::Result<HashMap<NonZeroU8, TreeResponse>> {
+        let mut relations = HashMap::default();
+        for relation in view.relations.iter() {
+            let local_id = relation.local_id;
+            let request = into_resolve_tree_request(relation, object_filters);
+            let tree = self
+                .er_pool
+                .get()
+                .await?
+                .resolve_tree(request)
+                .await?
+                .into_inner();
+
+            let tree = TreeResponse::from_rpc(tree)?;
+            relations.insert(local_id, tree);
+        }
+        Ok(relations)
+    }
+}
+
+fn into_resolve_tree_request(
+    relation: &cdl_dto::materialization::Relation,
+    object_filters: &[Uuid],
+) -> rpc::edge_registry::TreeQuery {
+    rpc::edge_registry::TreeQuery {
+        relation_id: relation.global_id.to_string(),
+        relations: relation
+            .relations
+            .iter()
+            .map(|r| into_resolve_tree_request(r, object_filters))
+            .collect(),
+        filter_ids: object_filters.iter().map(|o| o.to_string()).collect(),
+    }
+}
+
+fn create_object_filters(schemas: &HashMap<Uuid, materialization::Schema>) -> Vec<Uuid> {
+    schemas
+        .values()
+        .map(|s| s.object_ids.iter().copied())
+        .flatten()
+        .collect()
 }
