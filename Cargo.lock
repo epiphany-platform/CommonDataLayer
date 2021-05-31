@@ -902,12 +902,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "deunicode"
-version = "0.4.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "850878694b7933ca4c9569d30a34b55031b9b139ee1fc7b94a527c4ef960d690"
-
-[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1470,18 +1464,6 @@ name = "itoa"
 version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd25036021b0de88a0aff6b850051563c6516d0bf53f8638938edbb9de732736"
-
-[[package]]
-name = "jmespatch"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7acf91a732ade34d8eda2dee9500a051833f14f0d3d10d77c149845d6ac6a5f0"
-dependencies = [
- "lazy_static",
- "serde 1.0.126",
- "serde_json",
- "slug",
-]
 
 [[package]]
 name = "js-sys"
@@ -3003,8 +2985,9 @@ dependencies = [
  "bb8",
  "cdl_dto",
  "communication_utils",
+ "either",
+ "futures",
  "futures-util",
- "jmespatch",
  "jsonschema",
  "maplit",
  "metrics_utils",
@@ -3247,15 +3230,6 @@ name = "slab"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f173ac3d1a7e3b28003f40de0b5ce7fe2710f9b9dc3fc38664cebee46b3b6527"
-
-[[package]]
-name = "slug"
-version = "0.1.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3bc762e6a4b6c6fcaade73e77f9ebc6991b676f88bb2358bddb56560f073373"
-dependencies = [
- "deunicode",
-]
 
 [[package]]
 name = "smallvec"
@@ -4330,18 +4304,18 @@ checksum = "85e60b0d1b5f99db2556934e21937020776a5d31520bf169e851ac44e6420214"
 
 [[package]]
 name = "xshell"
-version = "0.1.13"
+version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb15bb1b41eb14efe628006294c294e10c366e03a0283b9c2063fc27d97934c6"
+checksum = "c640362f1b150e186b76e88606e4b01a7b2f1d56cc50fcc184ddb683fb567c23"
 dependencies = [
  "xshell-macros",
 ]
 
 [[package]]
 name = "xshell-macros"
-version = "0.1.13"
+version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf7ed94a2c75b9bcc57031229be2b57ee47ba71122f71aabef8610ec66a97e52"
+checksum = "0607c095c96c1d8420ce4a018a0954fb15d73d5eb59b521a05a0f04cffc05059"
 
 [[package]]
 name = "xtask"

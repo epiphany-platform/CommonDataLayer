@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use semver::Version;
 use serde_json::Value;
 use sqlx::pool::PoolConnection;
-use sqlx::postgres::{PgConnectOptions, PgListener, PgPool, PgPoolOptions};
+use sqlx::postgres::{PgConnectOptions, PgListener, PgPool, PgPoolOptions, PgQueryResult};
 use sqlx::types::Json;
 use sqlx::{Acquire, Connection, Postgres};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
@@ -18,6 +18,9 @@ use crate::types::VersionedUuid;
 use crate::utils::build_full_schema;
 use crate::{settings::Settings, types::view::FullView};
 use cdl_dto::materialization::{FieldDefinition, Filter, Relation};
+use either::Either;
+use futures::future;
+use futures_util::stream::{StreamExt, TryStreamExt};
 
 const SCHEMAS_LISTEN_CHANNEL: &str = "schemas";
 const VIEWS_LISTEN_CHANNEL: &str = "views";
@@ -183,6 +186,53 @@ impl SchemaRegistryDb {
         .fetch_all(&mut conn)
         .await
         .map_err(RegistryError::DbError)
+    }
+
+    pub async fn get_all_views_by_relation(
+        &self,
+        relation_id: Uuid,
+    ) -> RegistryResult<Vec<FullView>> {
+        let mut conn = self.connect().await?;
+
+        let stream = sqlx::query_as!(
+            FullView,
+            "SELECT id, base_schema, name, materializer_address, materializer_options,
+            fields as \"fields: _\",
+            filters as \"filters: _\",
+            relations as \"relations: _\"
+             FROM views"
+        )
+        .fetch_many(&mut conn);
+
+        stream
+            .filter_map(
+                |res: Result<Either<PgQueryResult, FullView>, sqlx::Error>| {
+                    let view = res
+                        .map_err(RegistryError::DbError)
+                        .map(|res| {
+                            res.right().ok_or(RegistryError::Critical(
+                                "get_all_views_by_relation sql query returned left-side",
+                            ))
+                        })
+                        .flatten();
+                    future::ready(match view {
+                        Ok(view) => {
+                            if view
+                                .relations
+                                .iter()
+                                .any(|relation| relation.global_id == relation_id)
+                            {
+                                Some(Ok(view))
+                            } else {
+                                None
+                            }
+                        }
+                        Err(err) => Some(Err(err)),
+                    })
+                },
+            )
+            .try_collect()
+            .await
     }
 
     pub async fn get_schema_versions(&self, id: Uuid) -> RegistryResult<Vec<Version>> {

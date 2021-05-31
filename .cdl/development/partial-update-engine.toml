@@ -1,4 +1,4 @@
-sleep_phase_length = 1000
+sleep_phase_length = 1
 
 [notification_consumer]
 brokers = "localhost:9092"

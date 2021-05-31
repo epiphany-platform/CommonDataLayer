@@ -1,5 +1,3 @@
-SET SCHEMA 'cdl';
-
 DROP TABLE IF EXISTS schemas CASCADE;
 DROP TABLE IF EXISTS views CASCADE;
 DROP TABLE IF EXISTS definitions CASCADE;
@@ -31,7 +29,7 @@ CREATE TABLE views (
 
     CONSTRAINT fk_base_schema_1
         FOREIGN KEY(base_schema)
-        REFERENCES schemas(id) 
+        REFERENCES schemas(id)
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
@@ -44,7 +42,7 @@ CREATE TABLE definitions (
     PRIMARY KEY(schema, version),
     CONSTRAINT fk_schema_2
         FOREIGN KEY(schema)
-        REFERENCES schemas(id) 
+        REFERENCES schemas(id)
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );

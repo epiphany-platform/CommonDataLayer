@@ -1,19 +1,21 @@
-use std::{
-    collections::{HashMap, HashSet},
-    time::Duration,
-};
-
 use anyhow::{Context, Result};
-use cdl_dto::materialization;
-use metrics_utils as metrics;
+use cdl_dto::materialization::Request;
+use misc_utils::set_aborting_panic_hook;
+use rdkafka::consumer::Consumer;
 use rdkafka::{
     consumer::{CommitMode, DefaultConsumerContext, StreamConsumer},
     message::{BorrowedMessage, OwnedHeaders},
     producer::{FutureProducer, FutureRecord},
     ClientConfig, Message, Offset, TopicPartitionList,
 };
+use rpc::schema_registry::{FullView, Id};
 use serde::{Deserialize, Serialize};
 use settings_utils::*;
+use std::collections::hash_map::Entry;
+use std::{
+    collections::{HashMap, HashSet},
+    time::Duration,
+};
 use tokio::time::sleep;
 use tokio_stream::StreamExt;
 use tracing::{trace, Instrument};
@@ -49,6 +51,7 @@ struct ServicesSettings {
 #[serde(untagged)]
 enum PartialNotification {
     CommandServiceNotification(CommandServiceNotification),
+    EdgeRegistryNotification(EdgeRegistryNotification),
 }
 
 #[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
@@ -58,9 +61,16 @@ struct CommandServiceNotification {
     pub schema_id: Uuid,
 }
 
+#[derive(Deserialize, Debug, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+struct EdgeRegistryNotification {
+    pub relation_id: Uuid,
+    pub parent_object_id: Uuid,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    misc_utils::set_aborting_panic_hook();
+    set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
     tracing_utils::init(
@@ -70,7 +80,7 @@ async fn main() -> anyhow::Result<()> {
 
     tracing::debug!(?settings, "application environment");
 
-    metrics::serve(&settings.monitoring);
+    metrics_utils::serve(&settings.monitoring);
 
     let consumer: StreamConsumer<DefaultConsumerContext> = ClientConfig::new()
         .set("group.id", &settings.notification_consumer.group_id)
@@ -81,7 +91,8 @@ async fn main() -> anyhow::Result<()> {
         .context("Consumer creation failed")?;
     let topics = [settings.notification_consumer.source.as_str()];
 
-    rdkafka::consumer::Consumer::subscribe(&consumer, &topics)
+    consumer
+        .subscribe(&topics)
         .context("Can't subscribe to specified topics")?;
 
     let producer = ClientConfig::new()
@@ -163,50 +174,72 @@ async fn process_changes(
     changes: &mut HashSet<PartialNotification>,
 ) -> Result<()> {
     trace!("processing changes {:#?}", changes);
-    let mut client =
+    let mut sr_client =
         rpc::schema_registry::connect(settings.services.schema_registry_url.to_owned()).await?;
-    let mut schema_cache: HashMap<Uuid, Vec<Uuid>> // (Schema_ID, Vec<View_ID>)
-        = Default::default();
 
-    let mut requests: HashMap<Uuid, materialization::Request> = Default::default();
+    let mut schema_cache: HashMap<Uuid, Vec<FullView>> = HashMap::default();
+    let mut relation_cache: HashMap<Uuid, Vec<FullView>> = HashMap::default();
+    let mut requests: HashMap<Uuid, Request> = HashMap::default();
 
-    for PartialNotification::CommandServiceNotification(CommandServiceNotification {
-        object_id,
-        schema_id,
-    }) in std::mem::take(changes).into_iter()
-    {
-        let entry = schema_cache.entry(schema_id);
-        let view_ids = match entry {
-            std::collections::hash_map::Entry::Occupied(ref entry) => entry.get(),
-            std::collections::hash_map::Entry::Vacant(entry) => {
-                let response = client
-                    .get_all_views_of_schema(rpc::schema_registry::Id {
-                        id: schema_id.to_string(),
-                    })
-                    .await?;
+    for change in changes.drain() {
+        match change {
+            PartialNotification::CommandServiceNotification(notification) => {
+                // New object or new object version was added
+                let entry = schema_cache.entry(notification.schema_id);
+                let views = match entry {
+                    Entry::Occupied(ref entry) => entry.get(),
+                    Entry::Vacant(entry) => {
+                        let response = sr_client
+                            .get_all_views_of_schema(Id {
+                                id: notification.schema_id.to_string(),
+                            })
+                            .await?
+                            .into_inner();
 
-                trace!(?response, "Response");
+                        entry.insert(response.views)
+                    }
+                };
 
-                let view_ids = response
-                    .into_inner()
-                    .views
-                    .iter()
-                    .map(|view| Ok(view.id.parse()?))
-                    .collect::<Result<Vec<Uuid>>>()?;
-
-                entry.insert(view_ids)
+                for view in views {
+                    let view_id = view.id.parse()?;
+                    requests
+                        .entry(view_id)
+                        .or_insert_with(|| Request::new(view_id))
+                        .schemas
+                        .entry(notification.schema_id)
+                        .or_default()
+                        .object_ids
+                        .insert(notification.object_id);
+                }
             }
-        };
+            PartialNotification::EdgeRegistryNotification(notification) => {
+                let entry = relation_cache.entry(notification.relation_id);
+                let views = match entry {
+                    Entry::Occupied(ref entry) => entry.get(),
+                    Entry::Vacant(entry) => {
+                        let response = sr_client
+                            .get_all_views_by_relation(Id {
+                                id: notification.relation_id.to_string(),
+                            })
+                            .await?
+                            .into_inner();
 
-        for view_id in view_ids {
-            requests
-                .entry(*view_id)
-                .or_insert_with(|| materialization::Request::new(*view_id))
-                .schemas
-                .entry(schema_id)
-                .or_default()
-                .object_ids
-                .insert(object_id);
+                        entry.insert(response.views)
+                    }
+                };
+
+                for view in views {
+                    let view_id = view.id.parse()?;
+                    requests
+                        .entry(view_id)
+                        .or_insert_with(|| Request::new(view_id))
+                        .schemas
+                        .entry(view.base_schema_id.parse()?)
+                        .or_default()
+                        .object_ids
+                        .insert(notification.parent_object_id);
+                }
+            }
         }
     }
 
@@ -225,6 +258,7 @@ async fn process_changes(
             .await
             .map_err(|err| anyhow::anyhow!("Error sending message to Kafka {:?}", err))?;
     }
+
     Ok(())
 }
 

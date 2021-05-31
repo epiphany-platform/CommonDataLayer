@@ -49,6 +49,8 @@ pub enum RegistryError {
     MalformedViewFilters(serde_json::Error),
     #[error("JSON error processing view relations: {0}")]
     MalformedViewRelations(serde_json::Error),
+    #[error("Critical error occured: {0}")]
+    Critical(&'static str),
 }
 
 pub type RegistryResult<T> = Result<T, RegistryError>;
@@ -81,6 +83,7 @@ impl From<RegistryError> for Status {
             | RegistryError::MalformedViewFilters(_)
             | RegistryError::MalformedViewRelations(_)
             | RegistryError::NotificationError(_)
+            | RegistryError::Critical(_)
             | RegistryError::CacheError(_) => Status::internal(error.to_string()),
         }
     }

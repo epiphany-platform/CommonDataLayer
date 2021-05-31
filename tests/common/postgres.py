@@ -10,7 +10,7 @@ class PostgresConfig:
                  host='localhost',
                  port='5432',
                  dbname='postgres',
-                 schema='cdl'):
+                 schema='public'):
         self.user = user
         self.password = password
         self.host = host
@@ -51,7 +51,7 @@ def fetch_data(config: PostgresConfig):
     db = connect_to_postgres(config)
     curr = db.cursor()
 
-    curr.execute('SELECT * FROM cdl.data ORDER BY version')
+    curr.execute('SELECT * FROM data ORDER BY version')
     rows = curr.fetchall()
     rows = [{
         'object_id': row[0],
@@ -70,7 +70,7 @@ def insert_data(config: PostgresConfig, data):
 
     for entry in data:
         curr.execute(
-            'INSERT INTO cdl.data (object_id, version, schema_id, payload) VALUES (%s, %s, %s, %s)',
+            'INSERT INTO data (object_id, version, schema_id, payload) VALUES (%s, %s, %s, %s)',
             (entry['object_id'], entry['version'], entry['schema_id'],
              json.dumps(entry['payload'])))
     db.commit()
@@ -82,7 +82,7 @@ def clear_data(config: PostgresConfig):
     db = connect_to_postgres(config)
     curr = db.cursor()
 
-    curr.execute('DELETE FROM cdl.data')
+    curr.execute('DELETE FROM data')
 
     db.commit()
     curr.close()
@@ -93,8 +93,8 @@ def clear_relations(config: PostgresConfig):
     db = connect_to_postgres(config)
     curr = db.cursor()
 
-    curr.execute('DELETE FROM cdl.edges')
-    curr.execute('DELETE FROM cdl.relations')
+    curr.execute('DELETE FROM edges')
+    curr.execute('DELETE FROM relations')
 
     db.commit()
     curr.close()

@@ -1,4 +1,5 @@
 #![feature(drain_filter)]
+#![feature(result_flattening)]
 
 pub mod db;
 pub mod error;
