@@ -4,16 +4,59 @@ pub mod settings;
 use plugins::{MaterializerPlugin, PostgresMaterializer};
 use rpc::materializer_general::MaterializedView;
 use rpc::materializer_general::{general_materializer_server::GeneralMaterializer, Empty, Options};
+use serde::Serialize;
 use settings_utils::PostgresSettings;
+use std::collections::HashMap;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use utils::notification::{IntoSerialize, NotificationPublisher};
+
+#[derive(Serialize, Clone)]
+pub struct MaterializationNotification {
+    view_id: String,
+    options: String,
+    rows: Vec<MaterializationRow>,
+}
+
+#[derive(Serialize, Clone)]
+struct MaterializationRow {
+    object_id: String,
+    fields: HashMap<String, String>,
+}
+
+impl IntoSerialize<MaterializationNotification> for MaterializedView {
+    fn into_serialize(self) -> MaterializationNotification {
+        MaterializationNotification {
+            view_id: self.view_id,
+            options: self.options.options,
+            rows: self
+                .rows
+                .into_iter()
+                .map(|row| MaterializationRow {
+                    object_id: row.object_id,
+                    fields: row.fields,
+                })
+                .collect(),
+        }
+    }
+}
+
+type MaterializerNotificationPublisher =
+    Arc<Mutex<NotificationPublisher<MaterializedView, MaterializationNotification>>>;
 
 pub struct MaterializerImpl {
-    materializer: std::sync::Arc<dyn MaterializerPlugin>,
+    materializer: Arc<dyn MaterializerPlugin>,
+    notification_publisher: MaterializerNotificationPublisher,
 }
 
 impl MaterializerImpl {
-    pub async fn new(args: PostgresSettings) -> anyhow::Result<Self> {
+    pub async fn new(
+        args: PostgresSettings,
+        notification_publisher: MaterializerNotificationPublisher,
+    ) -> anyhow::Result<Self> {
         Ok(Self {
-            materializer: std::sync::Arc::new(PostgresMaterializer::new(&args).await?),
+            materializer: Arc::new(PostgresMaterializer::new(&args).await?),
+            notification_publisher,
         })
     }
 }
@@ -50,8 +93,18 @@ impl GeneralMaterializer for MaterializerImpl {
         let materialized_view = request.into_inner();
         tracing::debug!(?materialized_view, "materialized view");
 
+        let publisher = self.notification_publisher.clone();
+        let publisher = publisher.lock().await;
+        let instance =
+            NotificationPublisher::clone(&publisher).with_message_body(&materialized_view);
+
         match self.materializer.upsert_view(materialized_view).await {
-            Ok(_) => Ok(tonic::Response::new(Empty {})),
+            Ok(_) => {
+                if let Err(err) = instance.notify("success").await {
+                    tracing::error!("Failed to send notification {:?}", err)
+                }
+                Ok(tonic::Response::new(Empty {}))
+            }
             Err(err) => Err(tonic::Status::internal(format!("{}", err))),
         }
     }

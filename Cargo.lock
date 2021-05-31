@@ -1630,6 +1630,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bb8-postgres",
+ "communication_utils",
  "futures",
  "itertools 0.10.0",
  "metrics_utils",

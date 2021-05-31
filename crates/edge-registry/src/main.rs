@@ -1,3 +1,5 @@
+#![feature(async_closure)]
+
 use edge_registry::settings::Settings;
 use edge_registry::EdgeRegistryImpl;
 use metrics_utils as metrics;
@@ -28,11 +30,11 @@ async fn main() -> anyhow::Result<()> {
     let notification_publisher = settings
         .notifications
         .publisher(
-            settings.publisher().await?,
+            async || settings.publisher().await,
             settings.communication_method.to_string(),
             "EdgeRegistry",
         )
-        .await;
+        .await?;
 
     let registry = EdgeRegistryImpl::new(
         &settings.postgres,
