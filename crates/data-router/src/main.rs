@@ -1,5 +1,4 @@
-use lru_cache::LruCache;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use crate::{config::Settings, handler::Handler};
 use metrics_utils as metrics;
@@ -27,14 +26,12 @@ async fn main() -> anyhow::Result<()> {
     let consumer = settings.consumer().await?;
     let producer = Arc::new(settings.producer().await?);
 
-    let cache = Arc::new(Mutex::new(LruCache::new(settings.cache_capacity)));
     let schema_registry_addr = Arc::new(settings.services.schema_registry_url);
 
     let task_queue = Arc::new(ParallelTaskQueue::default());
 
     consumer
         .par_run(Handler {
-            cache,
             producer,
             schema_registry_addr,
             task_queue,

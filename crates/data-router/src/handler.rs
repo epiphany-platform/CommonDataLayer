@@ -1,12 +1,5 @@
-use std::sync::{Arc, Mutex};
-
 use anyhow::Context;
 use async_trait::async_trait;
-use lru_cache::LruCache;
-use serde_json::Value;
-use tracing::{error, trace};
-use uuid::Uuid;
-
 use cdl_dto::ingestion::{BorrowedInsertMessage, DataRouterInsertMessage};
 use communication_utils::{
     get_order_group_id, message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,
@@ -14,10 +7,12 @@ use communication_utils::{
 };
 use metrics_utils::{self as metrics, counter};
 use misc_utils::current_timestamp;
+use serde_json::Value;
+use std::sync::Arc;
+use tracing::{error, trace};
 use utils::parallel_task_queue::ParallelTaskQueue;
 
 pub struct Handler {
-    pub cache: Arc<Mutex<LruCache<Uuid, String>>>,
     pub producer: Arc<CommonPublisher>,
     pub schema_registry_addr: Arc<String>,
     pub task_queue: Arc<ParallelTaskQueue>,
@@ -54,7 +49,6 @@ impl ParallelConsumerHandler for Handler {
 
                 for entry in maybe_array.iter() {
                     let r = route(
-                        &self.cache,
                         entry,
                         &message_key,
                         &self.producer,
@@ -80,7 +74,6 @@ impl ParallelConsumerHandler for Handler {
                         "Payload deserialization failed, message is not a valid cdl message",
                     )?;
                 let result = route(
-                    &self.cache,
                     &owned,
                     &message_key,
                     &self.producer,
@@ -112,7 +105,6 @@ impl ParallelConsumerHandler for Handler {
 
 #[tracing::instrument(skip(producer))]
 async fn route(
-    cache: &Mutex<LruCache<Uuid, String>>,
     event: &DataRouterInsertMessage<'_>,
     message_key: &str,
     producer: &CommonPublisher,
