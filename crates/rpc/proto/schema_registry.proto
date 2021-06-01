@@ -153,13 +153,14 @@ message FullView {
 }
 
 message NewView {
-    required string base_schema_id = 1;
-    required string name = 2;
-    required string materializer_address = 3;
-    required string materializer_options = 4;
-    map<string, string> fields = 5;
-    optional Filter filters = 6;
-    repeated Relation relations = 7;
+    optional string view_id = 1;
+    required string base_schema_id = 2;
+    required string name = 3;
+    required string materializer_address = 4;
+    required string materializer_options = 5;
+    map<string, string> fields = 6;
+    optional Filter filters = 7;
+    repeated Relation relations = 8;
 }
 
 message Relation {

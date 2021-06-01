@@ -215,6 +215,11 @@ impl SchemaRegistry for SchemaRegistryImpl {
         tracing::debug!(options = ?materializer_options, "Materializer options");
 
         let new_view = NewView {
+            view_id: request
+                .view_id
+                .as_ref()
+                .map(|view_id| parse_uuid(&view_id))
+                .transpose()?,
             base_schema_id: parse_uuid(&request.base_schema_id)?,
             name: request.name,
             materializer_address: request.materializer_address,

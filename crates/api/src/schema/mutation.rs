@@ -60,12 +60,14 @@ impl MutationRoot {
         &self,
         context: &Context<'_>,
         schema_id: Uuid,
+        view_id: Option<Uuid>,
         new_view: NewView,
     ) -> FieldResult<View> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
         let id = conn
             .add_view_to_schema(rpc::schema_registry::NewView {
+                view_id: view_id.map(|view_id| view_id.to_string()),
                 base_schema_id: schema_id.to_string(),
                 name: new_view.name.clone(),
                 materializer_address: new_view.materializer_address.clone(),
