@@ -196,12 +196,14 @@ impl MutationRoot {
     async fn add_relation(
         &self,
         context: &Context<'_>,
+        relation_id: Option<Uuid>,
         parent_schema_id: Uuid,
         child_schema_id: Uuid,
     ) -> FieldResult<Uuid> {
         let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
         Ok(conn
-            .add_relation(rpc::edge_registry::SchemaRelation {
+            .add_relation(rpc::edge_registry::AddSchemaRelation {
+                relation_id: relation_id.map(|relation_id| relation_id.to_string()),
                 parent_schema_id: parent_schema_id.to_string(),
                 child_schema_id: child_schema_id.to_string(),
             })

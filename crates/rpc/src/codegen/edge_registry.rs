@@ -24,6 +24,15 @@ pub struct TreeObject {
     pub subtrees: ::prost::alloc::vec::Vec<TreeResponse>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AddSchemaRelation {
+    #[prost(string, optional, tag = "1")]
+    pub relation_id: ::core::option::Option<::prost::alloc::string::String>,
+    #[prost(string, required, tag = "2")]
+    pub parent_schema_id: ::prost::alloc::string::String,
+    #[prost(string, required, tag = "3")]
+    pub child_schema_id: ::prost::alloc::string::String,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SchemaRelation {
     #[prost(string, required, tag = "1")]
     pub parent_schema_id: ::prost::alloc::string::String,
@@ -134,7 +143,7 @@ pub mod edge_registry_client {
         }
         pub async fn add_relation(
             &mut self,
-            request: impl tonic::IntoRequest<super::SchemaRelation>,
+            request: impl tonic::IntoRequest<super::AddSchemaRelation>,
         ) -> Result<tonic::Response<super::RelationId>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
@@ -320,7 +329,7 @@ pub mod edge_registry_server {
     pub trait EdgeRegistry: Send + Sync + 'static {
         async fn add_relation(
             &self,
-            request: tonic::Request<super::SchemaRelation>,
+            request: tonic::Request<super::AddSchemaRelation>,
         ) -> Result<tonic::Response<super::RelationId>, tonic::Status>;
         async fn get_relation(
             &self,
@@ -398,12 +407,12 @@ pub mod edge_registry_server {
                 "/edge_registry.EdgeRegistry/AddRelation" => {
                     #[allow(non_camel_case_types)]
                     struct AddRelationSvc<T: EdgeRegistry>(pub Arc<T>);
-                    impl<T: EdgeRegistry> tonic::server::UnaryService<super::SchemaRelation> for AddRelationSvc<T> {
+                    impl<T: EdgeRegistry> tonic::server::UnaryService<super::AddSchemaRelation> for AddRelationSvc<T> {
                         type Response = super::RelationId;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
-                            request: tonic::Request<super::SchemaRelation>,
+                            request: tonic::Request<super::AddSchemaRelation>,
                         ) -> Self::Future {
                             let inner = self.0.clone();
                             let fut = async move { (*inner).add_relation(request).await };

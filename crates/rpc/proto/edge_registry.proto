@@ -2,7 +2,7 @@ syntax = "proto2";
 package edge_registry;
 
 service EdgeRegistry {
-  rpc AddRelation(SchemaRelation) returns (RelationId);
+  rpc AddRelation(AddSchemaRelation) returns (RelationId);
   rpc GetRelation(RelationQuery) returns (RelationResponse);
   rpc GetSchemaByRelation(RelationId) returns (SchemaRelation);
   rpc GetSchemaRelations(SchemaId) returns (RelationList);
@@ -33,6 +33,12 @@ message TreeObject {
   required string relation_id = 2;
   repeated string children = 3;
   repeated TreeResponse subtrees = 4;
+}
+
+message AddSchemaRelation {
+  optional string relation_id = 1;
+  required string parent_schema_id = 2;
+  required string child_schema_id = 3;
 }
 
 message SchemaRelation {
