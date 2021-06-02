@@ -117,7 +117,7 @@ impl EdgeRegistryImpl {
             conn
                 .query(
                     "INSERT INTO relations (relation_id, parent_schema_id, child_schema_id) VALUES ($1::uuid, $2::uuid, $3::uuid)",
-                    &[&parent_schema_id, &child_schema_id]
+                    &[&relation_id, &parent_schema_id, &child_schema_id]
                 )
                 .await?;
 
