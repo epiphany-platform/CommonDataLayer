@@ -24,7 +24,7 @@ pub async fn get_schema_insert_destination(
     }
 
     let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
-    let channel = client
+    let insert_destination = client
         .get_schema_metadata(Id {
             id: schema_id.to_string(),
         })
@@ -39,7 +39,7 @@ pub async fn get_schema_insert_destination(
     cache
         .lock()
         .unwrap_or_else(abort_on_poison)
-        .insert(schema_id, channel.clone());
+        .insert(schema_id, insert_destination.clone());
 
-    Ok(channel)
+    Ok(insert_destination)
 }
