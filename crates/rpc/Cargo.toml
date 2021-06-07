@@ -21,5 +21,5 @@ serde       = { version = "1.0.126", features = ["derive"] }
 sqlx        = { version = "0.5.5", features = ['runtime-tokio-rustls'] }
 thiserror   = "1.0.25"
 tonic       = "0.4.3"
-async-graphql           = { version = "2.8.5", features = ["uuid"] }
+async-graphql           = { version = "2.9.0", features = ["uuid"] }
 futures-util            = "0.3.15"

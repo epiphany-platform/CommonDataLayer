@@ -10,6 +10,6 @@ license = "Apache-2.0"
 [dependencies]
 anyhow      = "1.0.40"
 itertools   = "0.10.0"
-pico-args   = "0.4.1"
+pico-args   = "0.4.2"
 tonic-build = { version = "0.4.2", default-features = false, features = ["prost", "transport"] }
 xshell      = "0.1.14"

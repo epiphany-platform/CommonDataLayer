@@ -18,4 +18,4 @@ serde_json  = { version = "1.0.64", features = ["raw_value"] }
 thiserror   = "1.0.25"
 uuid        = { version = "0.8.2", features = ["v4", "serde"] }
 tonic                   = "0.4.3"
-async-graphql           = { version = "2.8.5", features = ["uuid", "opentelemetry", "tracing-futures", "tracinglib"] }
+async-graphql           = { version = "2.9.0", features = ["uuid", "opentelemetry", "tracing-futures", "tracinglib"] }
