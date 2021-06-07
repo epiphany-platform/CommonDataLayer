@@ -125,18 +125,13 @@ async fn route(
         data: event.data,
     };
 
-    let mut conn = rpc::schema_registry::connect(schema_registry_addr.to_owned()).await?;
-    let schema = conn
-        .get_schema_metadata(rpc::schema_registry::Id {
-            id: event.schema_id.to_string(),
-        })
-        .await
-        .context("failed to get schema metadata")?
-        .into_inner();
+    let insert_destination =
+        crate::schema::get_schema_insert_destination(cache, event.schema_id, schema_registry_addr)
+            .await?;
 
     send_message(
         producer,
-        &schema.insert_destination,
+        &insert_destination,
         message_key,
         serde_json::to_vec(&payload)?,
     )

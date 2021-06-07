@@ -13,18 +13,18 @@ pub async fn get_schema_insert_destination(
     schema_id: Uuid,
     schema_addr: &str,
 ) -> anyhow::Result<String> {
-    let recv_channel = cache
+    let destination = cache
         .lock()
         .unwrap_or_else(abort_on_poison)
         .get_mut(&schema_id)
         .cloned();
-    if let Some(val) = recv_channel {
+    if let Some(dest) = destination {
         trace!("Retrieved insert destination for {} from cache", schema_id);
-        return Ok(val);
+        return Ok(dest);
     }
 
     let mut client = rpc::schema_registry::connect(schema_addr.to_owned()).await?;
-    let channel = client
+    let insert_destination = client
         .get_schema_metadata(Id {
             id: schema_id.to_string(),
         })
@@ -39,7 +39,7 @@ pub async fn get_schema_insert_destination(
     cache
         .lock()
         .unwrap_or_else(abort_on_poison)
-        .insert(schema_id, channel.clone());
+        .insert(schema_id, insert_destination.clone());
 
-    Ok(channel)
+    Ok(insert_destination)
 }
