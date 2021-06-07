@@ -213,20 +213,22 @@ pub struct FullView {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct NewView {
-    #[prost(string, required, tag = "1")]
-    pub base_schema_id: ::prost::alloc::string::String,
+    #[prost(string, optional, tag = "1")]
+    pub view_id: ::core::option::Option<::prost::alloc::string::String>,
     #[prost(string, required, tag = "2")]
-    pub name: ::prost::alloc::string::String,
+    pub base_schema_id: ::prost::alloc::string::String,
     #[prost(string, required, tag = "3")]
-    pub materializer_address: ::prost::alloc::string::String,
+    pub name: ::prost::alloc::string::String,
     #[prost(string, required, tag = "4")]
+    pub materializer_address: ::prost::alloc::string::String,
+    #[prost(string, required, tag = "5")]
     pub materializer_options: ::prost::alloc::string::String,
-    #[prost(map = "string, string", tag = "5")]
+    #[prost(map = "string, string", tag = "6")]
     pub fields:
         ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
-    #[prost(message, optional, tag = "6")]
+    #[prost(message, optional, tag = "7")]
     pub filters: ::core::option::Option<Filter>,
-    #[prost(message, repeated, tag = "7")]
+    #[prost(message, repeated, tag = "8")]
     pub relations: ::prost::alloc::vec::Vec<Relation>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]

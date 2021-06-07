@@ -7,7 +7,7 @@ from tests.common.edge_registry import EdgeRegistry
 from tests.common.kafka import KafkaInputConfig, create_kafka_topic, delete_kafka_topic, push_to_kafka
 from tests.common.postgres import PostgresConfig, clear_relations
 from tests.rpc.proto import edge_registry_pb2_grpc
-from tests.rpc.proto.edge_registry_pb2 import SchemaRelation, RelationIdQuery
+from tests.rpc.proto.edge_registry_pb2 import AddSchemaRelation, RelationIdQuery
 
 TOPIC = "cdl.edge.tests_data"
 
@@ -42,7 +42,7 @@ def test_kafka(prepare):
     parent_schema_id = "3fb03807-2c51-43c8-aa57-34f8d2fa0186"
     child_schema_id = "1d1cc7a5-9277-48bc-97d3-3d99cfb633dd"
     relation_id = stub.AddRelation(
-        SchemaRelation(parent_schema_id=parent_schema_id,
+        AddSchemaRelation(parent_schema_id=parent_schema_id,
                        child_schema_id=child_schema_id)).relation_id
 
     parent_object_id = "1d1cc7a5-9277-48bc-97d3-3d99cfb63300"

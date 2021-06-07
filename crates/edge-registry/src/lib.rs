@@ -10,9 +10,9 @@ use itertools::Itertools;
 use metrics_utils::{self as metrics, counter};
 use rpc::edge_registry::edge_registry_server::EdgeRegistry;
 use rpc::edge_registry::{
-    Edge, Empty, ObjectIdQuery, ObjectRelations, RelationDetails, RelationId, RelationIdQuery,
-    RelationList, RelationQuery, RelationResponse, SchemaId, SchemaRelation, TreeObject, TreeQuery,
-    TreeResponse, ValidateRelationQuery,
+    AddSchemaRelation, Edge, Empty, ObjectIdQuery, ObjectRelations, RelationDetails, RelationId,
+    RelationIdQuery, RelationList, RelationQuery, RelationResponse, SchemaId, SchemaRelation,
+    TreeObject, TreeQuery, TreeResponse, ValidateRelationQuery,
 };
 use serde::{Deserialize, Serialize};
 use settings_utils::PostgresSettings;
@@ -105,6 +105,7 @@ impl EdgeRegistryImpl {
     #[tracing::instrument(skip(self))]
     async fn add_relation_impl(
         &self,
+        relation_id: Option<Uuid>,
         parent_schema_id: Uuid,
         child_schema_id: Uuid,
     ) -> anyhow::Result<Uuid> {
@@ -112,14 +113,27 @@ impl EdgeRegistryImpl {
 
         let conn = self.connect().await?;
 
-        let row = conn
-            .query(
-                "INSERT INTO relations (parent_schema_id, child_schema_id) VALUES ($1::uuid, $2::uuid) RETURNING id",
-                &[&parent_schema_id, &child_schema_id]
-            )
-            .await?;
+        let relation = if let Some(relation_id) = relation_id {
+            conn
+                .query(
+                    "INSERT INTO relations (relation_id, parent_schema_id, child_schema_id) VALUES ($1::uuid, $2::uuid, $3::uuid)",
+                    &[&relation_id, &parent_schema_id, &child_schema_id]
+                )
+                .await?;
 
-        Ok(row.get(0).context("Critical error, missing rows")?.get(0))
+            relation_id
+        } else {
+            let row = conn
+                .query(
+                    "INSERT INTO relations (parent_schema_id, child_schema_id) VALUES ($1::uuid, $2::uuid) RETURNING id",
+                    &[&parent_schema_id, &child_schema_id]
+                )
+                .await?;
+
+            row.get(0).context("Critical error, missing rows")?.get(0)
+        };
+
+        Ok(relation)
     }
 
     #[tracing::instrument(skip(self))]
@@ -417,23 +431,31 @@ fn intersect<T: PartialEq + Clone>(left: &[T], right: &[T]) -> Vec<T> {
 impl EdgeRegistry for EdgeRegistryImpl {
     async fn add_relation(
         &self,
-        request: Request<SchemaRelation>,
+        request: Request<AddSchemaRelation>,
     ) -> Result<Response<RelationId>, Status> {
         let request = request.into_inner();
 
         trace!(
-            "Received `add_relation` message with parent_id `{}` and child_id `{}`",
+            "Received `add_relation` message with parent_id `{}` and child_id `{}` and relation_id `{:?}`",
             request.parent_schema_id,
-            request.child_schema_id
+            request.child_schema_id,
+            request.relation_id,
         );
 
+        let relation_id = request
+            .relation_id
+            .as_ref()
+            .map(|relation_id| {
+                Uuid::from_str(&relation_id).map_err(|_| Status::invalid_argument("relation_id"))
+            })
+            .transpose()?;
         let parent_schema_id = Uuid::from_str(&request.parent_schema_id)
             .map_err(|_| Status::invalid_argument("parent_schema_id"))?;
         let child_schema_id = Uuid::from_str(&request.child_schema_id)
             .map_err(|_| Status::invalid_argument("child_schema_id"))?;
 
         let relation_id = self
-            .add_relation_impl(parent_schema_id, child_schema_id)
+            .add_relation_impl(relation_id, parent_schema_id, child_schema_id)
             .await
             .map_err(|err| db_communication_error("add_relation", err))?;
 

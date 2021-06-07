@@ -377,7 +377,7 @@ impl SchemaRegistryDb {
     #[tracing::instrument(skip(self))]
     pub async fn add_view_to_schema(&self, new_view: NewView) -> RegistryResult<Uuid> {
         let mut conn = self.connect().await?;
-        let new_id = Uuid::new_v4();
+        let new_id = new_view.view_id.unwrap_or_else(Uuid::new_v4);
 
         sqlx::query!(
             "INSERT INTO views(id, base_schema, name, materializer_address, materializer_options, fields, filters, relations)

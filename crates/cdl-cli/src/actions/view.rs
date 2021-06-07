@@ -25,6 +25,7 @@ pub async fn get_view(view_id: Uuid, registry_addr: String) -> anyhow::Result<()
 
 #[allow(clippy::too_many_arguments)]
 pub async fn add_view_to_schema(
+    view_id: Option<Uuid>,
     base_schema_id: Uuid,
     name: String,
     materializer_address: String,
@@ -41,6 +42,7 @@ pub async fn add_view_to_schema(
     let relations: Vec<Relation> = serde_json::from_value(read_json(relations)?)?;
 
     let view = NewView {
+        view_id: view_id.map(|view_id| view_id.to_string()),
         base_schema_id: base_schema_id.to_string(),
         name: name.clone(),
         materializer_address,

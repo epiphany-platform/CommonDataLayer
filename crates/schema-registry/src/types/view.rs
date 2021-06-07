@@ -35,6 +35,7 @@ pub struct View {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewView {
+    pub view_id: Option<Uuid>,
     pub base_schema_id: Uuid,
     pub name: String,
     pub materializer_address: String,

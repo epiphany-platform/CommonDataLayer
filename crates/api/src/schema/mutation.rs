@@ -60,12 +60,14 @@ impl MutationRoot {
         &self,
         context: &Context<'_>,
         schema_id: Uuid,
+        view_id: Option<Uuid>,
         new_view: NewView,
     ) -> FieldResult<View> {
         let mut conn = context.data_unchecked::<SchemaRegistryPool>().get().await?;
 
         let id = conn
             .add_view_to_schema(rpc::schema_registry::NewView {
+                view_id: view_id.map(|view_id| view_id.to_string()),
                 base_schema_id: schema_id.to_string(),
                 name: new_view.name.clone(),
                 materializer_address: new_view.materializer_address.clone(),
@@ -194,12 +196,14 @@ impl MutationRoot {
     async fn add_relation(
         &self,
         context: &Context<'_>,
+        relation_id: Option<Uuid>,
         parent_schema_id: Uuid,
         child_schema_id: Uuid,
     ) -> FieldResult<Uuid> {
         let mut conn = context.data_unchecked::<EdgeRegistryPool>().get().await?;
         Ok(conn
-            .add_relation(rpc::edge_registry::SchemaRelation {
+            .add_relation(rpc::edge_registry::AddSchemaRelation {
+                relation_id: relation_id.map(|relation_id| relation_id.to_string()),
                 parent_schema_id: parent_schema_id.to_string(),
                 child_schema_id: child_schema_id.to_string(),
             })
