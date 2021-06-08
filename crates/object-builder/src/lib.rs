@@ -18,13 +18,13 @@ use std::collections::HashSet;
 use std::{collections::HashMap, convert::TryInto, num::NonZeroU8, pin::Pin};
 use uuid::Uuid;
 
-use crate::buffer::ObjectBufferedStream;
+use crate::buffer_stream::ObjectBufferedStream;
 
 pub mod settings;
 
 mod pool;
 
-mod buffer;
+mod buffer_stream;
 
 mod row_builder;
 
