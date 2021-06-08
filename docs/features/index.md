@@ -25,7 +25,7 @@
 | CDLF-00007-00 | System Metrics Support                         | Ready    | 0.0.1       | N/A                                               |
 | CDLF-00008-00 | Victoria Metrics Support                       | Ready    | 0.0.9       | N/A                                               |
 | CDLF-00009-00 | CDL Input Message Batching                     | RC       | -----       | N/A                                               |
-| CDLF-0000A-00 | Message Ordering                               | RC       | 0.0.9       | [DOC](./ordering)                                 |
+| CDLF-0000A-00 | Message Ordering                               | RC       | 0.0.9       | [DOC](./ordering.md)                              |
 | CDLF-0000B-00 | Access Groups                                  | Request  | -----       |                                                   |
 | CDLF-0000C-00 | Full GRPC communication support                | PoC      | -----       | [RFC](../rfc/CDLF-0000C-00-rfc-01.md)             |
 | CDLF-0000D-00 | Service Mesh (istio)                           | Abandoned| -----       | N/A                                               |
