@@ -35,3 +35,7 @@ tonic       = "0.4.3"
 tracing     = "0.1.26"
 uuid        = { version = "0.8.2", features = ["v1", "serde"] }
 tracing-futures         = "0.2.5"
+tokio-stream = "0.1.6"
+
+[dev-dependencies]
+maplit = "1.0.2"

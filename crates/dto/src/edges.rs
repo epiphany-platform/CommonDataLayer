@@ -1,13 +1,14 @@
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{RequestError, RequestResult};
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct TreeResponse {
     pub objects: Vec<TreeObject>,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct TreeObject {
     pub object_id: Uuid,
     pub relation_id: Uuid,
@@ -16,7 +17,7 @@ pub struct TreeObject {
     pub subtrees: Vec<TreeResponse>,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub struct SchemaRelation {
     pub parent_schema_id: Uuid,
     pub child_schema_id: Uuid,

@@ -65,7 +65,7 @@ pub struct ObjectIdPair {
     pub object_id: Uuid,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum RowSource {
     Join {
         objects: HashMap<ObjectIdPair, Value>,

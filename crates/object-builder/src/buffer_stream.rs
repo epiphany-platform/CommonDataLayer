@@ -4,6 +4,8 @@ use futures::Stream;
 use serde_json::Value;
 use std::{collections::HashMap, num::NonZeroU8, pin::Pin, task::Poll};
 
+mod buffer;
+
 use crate::{ObjectIdPair, RowSource};
 use buffer::ObjectBuffer;
 
@@ -48,123 +50,252 @@ where
     }
 }
 
-mod buffer {
-    use cdl_dto::edges::{TreeObject, TreeResponse};
-    use serde_json::Value;
-    use std::{
-        collections::{HashMap, HashSet},
-        num::NonZeroU8,
-    };
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use cdl_dto::edges::{SchemaRelation, TreeObject, TreeResponse};
+    use futures::{pin_mut, FutureExt, StreamExt};
+    use maplit::*;
+    use tokio::sync::mpsc::{channel, Sender};
+    use tokio_stream::wrappers::ReceiverStream;
+    use uuid::Uuid;
 
-    use crate::{ObjectIdPair, RowSource};
+    #[tokio::test]
+    async fn when_there_are_no_edges() {
+        let edges = hashmap! {};
+        let obj = new_obj(None);
 
-    /// Because objects are received on the go, and object builder needs to create joins,
-    /// these objects need to be tempoirairly stored in some kind of buffer until the last part
-    /// of the join arrives
-    pub struct ObjectBuffer {
-        unfinished_rows: Vec<Option<UnfinishedRow>>,
-        missing: HashMap<ObjectIdPair, usize>, // (_, index to unfinished_rows)
+        let (tx, stream) = act(&edges);
+        pin_mut!(stream);
+
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(obj.clone())).await.unwrap();
+
+        assert_eq!(
+            stream.next().now_or_never().unwrap().unwrap().unwrap(),
+            RowSource::Single {
+                object_pair: obj.0,
+                value: obj.1
+            }
+        );
     }
 
-    struct UnfinishedRow {
-        /// Number of objects that are still missing to finish the join
-        missing: usize,
-        /// Stored objects waiting for missing ones
-        objects: HashMap<ObjectIdPair, Value>,
-        /// TreeObject defining edges
-        tree_object: TreeObject,
-    }
+    #[tokio::test]
+    async fn when_there_are_edges() {
+        let child_schema = Uuid::new_v4();
+        let objects = vec![new_obj(None), new_obj(child_schema), new_obj(child_schema)];
+        // Reversed order - to simulate the fact that objects can arrive via network in any order;
+        let mut objects_it = objects.clone().into_iter().rev();
 
-    impl UnfinishedRow {
-        fn into_source(self) -> RowSource {
+        let edges = hashmap! {
+            1 => TreeResponse {
+                objects: vec![
+                    new_tree_obj(&objects, vec![])
+                ]
+            }
+        };
+
+        let (tx, stream) = act(&edges);
+        pin_mut!(stream);
+
+        // No object arrived, pending
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        // First object arrived, but the row is not finished
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        // Second object arrived, but the row is not finished
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+
+        // Last object arrived, row is finished
+        assert_eq!(
+            stream.next().now_or_never().unwrap().unwrap().unwrap(),
             RowSource::Join {
-                objects: self.objects,
-                tree_object: self.tree_object,
+                objects: objects.into_iter().collect(),
+                tree_object: edges[&1].objects[0].clone()
             }
+        );
+    }
+
+    #[tokio::test]
+    async fn when_there_is_more_than_one_edge() {
+        let child_schema = Uuid::new_v4();
+        let edge_1 = vec![new_obj(None), new_obj(child_schema), new_obj(child_schema)];
+        let edge_2 = vec![new_obj(None), new_obj(child_schema), new_obj(child_schema)];
+
+        let edges = hashmap! {
+            1 => TreeResponse {
+                objects: vec![
+                    new_tree_obj(&edge_1, vec![]),
+                    new_tree_obj(&edge_2, vec![])
+                ]
+            },
+        };
+
+        let objects: Vec<_> = edge_1
+            .iter()
+            .cloned()
+            .chain(edge_2.iter().cloned())
+            .collect();
+        let mut objects_it = objects.into_iter();
+
+        let (tx, stream) = act(&edges);
+        pin_mut!(stream);
+
+        // No object arrived, pending
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        // First object arrived, but the row is not finished
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        // Second object arrived, but the row is not finished
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+
+        // Last object arrived, row is finished
+        assert_eq!(
+            stream.next().now_or_never().unwrap().unwrap().unwrap(),
+            RowSource::Join {
+                objects: edge_1.into_iter().collect(),
+                tree_object: edges[&1].objects[0].clone()
+            }
+        );
+
+        // No object arrived, pending
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        // First object arrived, but the row is not finished
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        // Second object arrived, but the row is not finished
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+
+        // Last object arrived, row is finished
+        assert_eq!(
+            stream.next().now_or_never().unwrap().unwrap().unwrap(),
+            RowSource::Join {
+                objects: edge_2.into_iter().collect(),
+                tree_object: edges[&1].objects[1].clone()
+            }
+        );
+    }
+
+    #[tokio::test]
+    async fn when_there_are_subedges() {
+        let child_schema = Uuid::new_v4();
+        let edge_1 = vec![new_obj(None), new_obj(child_schema), new_obj(child_schema)];
+        let edge_2 = vec![new_obj(None), new_obj(child_schema), new_obj(child_schema)];
+
+        let edges = hashmap! {
+            1 => TreeResponse {
+                objects: vec![
+                    new_tree_obj(&edge_1, vec![
+                        TreeResponse {
+                            objects: vec![
+                                new_tree_obj(&edge_2, vec![])
+                            ]
+                        }
+                    ]),
+                ]
+            },
+        };
+
+        let objects: Vec<_> = edge_1
+            .iter()
+            .cloned()
+            .chain(edge_2.iter().cloned())
+            .collect();
+        let mut objects_it = objects.clone().into_iter();
+
+        let (tx, stream) = act(&edges);
+        pin_mut!(stream);
+
+        // No object arrived, pending
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        // First object arrived, but the row is not finished
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        // Second object arrived, but the row is not finished
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+        assert!(stream.next().now_or_never().is_none());
+
+        tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+
+        // Last object arrived, row is finished
+        assert_eq!(
+            stream.next().now_or_never().unwrap().unwrap().unwrap(),
+            RowSource::Join {
+                objects: objects.into_iter().collect(),
+                tree_object: edges[&1].objects[0].clone()
+            }
+        );
+    }
+
+    fn new_tree_obj(edge: &[(ObjectIdPair, Value)], subtrees: Vec<TreeResponse>) -> TreeObject {
+        let child_schema_id = edge[1].0.schema_id;
+        let mut edge = edge.iter();
+        let parent = edge.next().unwrap();
+        let children: Vec<_> = edge.map(|e| e.0.object_id).collect();
+        TreeObject {
+            object_id: parent.0.object_id,
+            children,
+            subtrees,
+            relation_id: Uuid::new_v4(),
+            relation: SchemaRelation {
+                parent_schema_id: parent.0.schema_id,
+                child_schema_id,
+            },
         }
     }
 
-    impl ObjectBuffer {
-        pub fn new(edges: &HashMap<NonZeroU8, TreeResponse>) -> Self {
-            let mut unfinished_rows: Vec<_> = Default::default();
-
-            let missing = edges
-                .values()
-                .flat_map(|res| res.objects.iter())
-                .map(|obj| (retrieve_all_objects(obj), obj))
-                .map(|(res, obj)| {
-                    unfinished_rows.push(Some(UnfinishedRow {
-                        missing: res.len(),
-                        tree_object: obj.clone(),
-                        objects: Default::default(),
-                    }));
-                    res
-                })
-                .enumerate()
-                .flat_map(|(idx, set)| set.into_iter().map(move |o| (o, idx)))
-                .collect();
-
-            Self {
-                unfinished_rows,
-                missing,
-            }
-        }
-
-        pub fn add_object(&mut self, pair: ObjectIdPair, value: Value) -> Option<RowSource> {
-            match self.missing.remove(&pair) {
-                Some(missing_idx) => {
-                    let unfinished_row_opt = self.unfinished_rows.get_mut(missing_idx).unwrap();
-                    let unfinished_row = unfinished_row_opt.as_mut()?;
-                    unfinished_row.missing =
-                        unfinished_row.missing.checked_sub(1).unwrap_or_default();
-                    unfinished_row.objects.insert(pair, value);
-                    if unfinished_row.missing == 0 {
-                        let row = std::mem::take(unfinished_row_opt)?; // Cant remove it because it would invalidate indices
-                        Some(row.into_source())
-                    } else {
-                        None
-                    }
-                }
-                None => {
-                    // if we are processing object that is not missing it means either:
-                    // 1. there are no relations defined for this view and we should just process it
-                    // 2. we got an object_id event when we didnt ask for it.
-                    //      remember - object builder asks for specific object ids
-                    // Therefore only 1. option should be possible and we should return it
-                    Some(RowSource::Single {
-                        object_pair: pair,
-                        value,
-                    })
-                }
-            }
-        }
+    fn new_obj(schema_id: impl Into<Option<Uuid>>) -> (ObjectIdPair, Value) {
+        let value = "{}";
+        let schema_id = schema_id.into().unwrap_or_else(Uuid::new_v4);
+        let pair = ObjectIdPair {
+            schema_id,
+            object_id: Uuid::new_v4(),
+        };
+        let value: Value = serde_json::from_str(value).unwrap();
+        (pair, value)
     }
 
-    fn retrieve_all_objects(tree_obj: &TreeObject) -> HashSet<ObjectIdPair> {
-        fn retrieve_obj(set: &mut HashSet<ObjectIdPair>, tree_object: &TreeObject) {
-            set.insert(ObjectIdPair {
-                schema_id: tree_object.relation.parent_schema_id,
-                object_id: tree_object.object_id,
-            });
+    fn act(
+        edges: &HashMap<u8, TreeResponse>,
+    ) -> (
+        Sender<Result<(ObjectIdPair, Value)>>,
+        ObjectBufferedStream<ReceiverStream<Result<(ObjectIdPair, Value)>>>,
+    ) {
+        let edges = edges
+            .into_iter()
+            .filter_map(|(k, v)| NonZeroU8::new(*k).map(|k| (k, v.clone())))
+            .collect();
+        let (tx, rx) = channel(16);
+        let rx_stream = ReceiverStream::new(rx);
+        let stream = ObjectBufferedStream::new(rx_stream, &edges);
 
-            for child in tree_object.children.iter() {
-                set.insert(ObjectIdPair {
-                    schema_id: tree_object.relation.child_schema_id,
-                    object_id: *child,
-                });
-            }
-            for subtree in tree_object.subtrees.iter() {
-                retrieve_rec(set, subtree);
-            }
-        }
-
-        fn retrieve_rec(set: &mut HashSet<ObjectIdPair>, response: &TreeResponse) {
-            for tree_object in &response.objects {
-                retrieve_obj(set, tree_object);
-            }
-        }
-        let mut set = Default::default();
-        retrieve_obj(&mut set, tree_obj);
-        set
+        (tx, stream)
     }
 }
