@@ -6,27 +6,23 @@ use cdl_dto::materialization::{FieldDefinition, FullView};
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{
-    buffer::{ObjectIdPair, RowSource},
-    RowDefinition,
-};
+use crate::{ObjectIdPair, RowDefinition, RowSource};
 
 mod field_builder;
 mod utils;
 
 use field_builder::FieldBuilder;
 
-#[derive(Clone, Copy)]
-pub struct RowBuilder<'a> {
-    view: &'a FullView,
+pub struct RowBuilder {
+    view: FullView,
 }
 
-impl<'a> RowBuilder<'a> {
-    pub fn new(view: &'a FullView) -> Self {
+impl RowBuilder {
+    pub fn new(view: FullView) -> Self {
         Self { view }
     }
 
-    pub(crate) fn build(self, source: RowSource) -> Result<RowDefinition> {
+    pub(crate) fn build(&self, source: RowSource) -> Result<RowDefinition> {
         match source {
             RowSource::Join {
                 objects,
@@ -37,7 +33,7 @@ impl<'a> RowBuilder<'a> {
     }
 
     fn build_join(
-        self,
+        &self,
         objects: HashMap<ObjectIdPair, Value>,
         tree_object: TreeObject,
     ) -> Result<RowDefinition> {
@@ -52,7 +48,7 @@ impl<'a> RowBuilder<'a> {
             object_pair: base_object_id_pair,
             objects: &objects,
             tree_object: &tree_object,
-            view: self.view,
+            view: &self.view,
         };
 
         let fields = self
@@ -69,7 +65,7 @@ impl<'a> RowBuilder<'a> {
     }
 
     fn build_single(
-        self,
+        &self,
         ObjectIdPair { object_id, .. }: ObjectIdPair,
         object_value: Value,
     ) -> Result<RowDefinition> {

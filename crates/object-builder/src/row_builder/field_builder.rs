@@ -7,7 +7,7 @@ use cdl_dto::{
 };
 use serde_json::Value;
 
-use crate::{buffer::ObjectIdPair, row_builder::utils::get_objects_ids_for_relation};
+use crate::{row_builder::utils::get_objects_ids_for_relation, ObjectIdPair};
 
 mod computation;
 use computation::ComputationEngine;

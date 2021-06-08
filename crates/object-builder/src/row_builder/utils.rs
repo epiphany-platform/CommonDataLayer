@@ -9,7 +9,7 @@ use rpc::schema_registry::types::SearchFor;
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::buffer::ObjectIdPair;
+use crate::ObjectIdPair;
 
 fn find_relation(relation: &Relation, relation_id: NonZeroU8) -> Option<&Relation> {
     if relation.local_id == relation_id {

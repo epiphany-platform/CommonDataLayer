@@ -1,12 +1,11 @@
-use async_stream::stream;
 use async_trait::async_trait;
 use bb8::Pool;
 use cdl_dto::{
-    edges::TreeResponse,
-    materialization::{self},
+    edges::{TreeObject, TreeResponse},
+    materialization,
 };
 use communication_utils::{consumer::ConsumerHandler, message::CommunicationMessage};
-use futures::{pin_mut, Stream, StreamExt, TryStreamExt};
+use futures::{future::ready, Stream, StreamExt, TryStreamExt};
 use metrics_utils::{self as metrics, counter};
 use row_builder::RowBuilder;
 use rpc::common::RowDefinition as RpcRowDefinition;
@@ -19,7 +18,7 @@ use std::collections::HashSet;
 use std::{collections::HashMap, convert::TryInto, num::NonZeroU8, pin::Pin};
 use uuid::Uuid;
 
-use crate::buffer::ObjectBuffer;
+use crate::buffer::ObjectBufferedStream;
 
 pub mod settings;
 
@@ -40,7 +39,7 @@ type DynStream<T, E = anyhow::Error> =
     Pin<Box<dyn Stream<Item = Result<T, E>> + Send + Sync + 'static>>;
 
 type ObjectStream = DynStream<(Uuid, Value)>;
-type SchemaObjectStream = DynStream<(Uuid, Uuid, Value)>;
+type SchemaObjectStream = DynStream<(ObjectIdPair, Value)>;
 type RowStream = DynStream<RowDefinition>;
 type MaterializedChunksStream = DynStream<MaterializedView>;
 type MaterializeStream = DynStream<RpcRowDefinition, tonic::Status>;
@@ -58,6 +57,25 @@ struct MaterializedView {
 struct RowDefinition {
     object_ids: HashSet<Uuid>,
     fields: HashMap<String, Value>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ObjectIdPair {
+    pub schema_id: Uuid,
+    pub object_id: Uuid,
+}
+
+#[derive(Debug)]
+pub enum RowSource {
+    Join {
+        objects: HashMap<ObjectIdPair, Value>,
+        /// TreeObject defining edges
+        tree_object: TreeObject,
+    },
+    Single {
+        object_pair: ObjectIdPair,
+        value: Value,
+    },
 }
 
 impl ObjectBuilderImpl {
@@ -245,26 +263,9 @@ impl ObjectBuilderImpl {
 
         let objects = self.get_objects(view_id, schemas).await?;
 
-        let mut object_buffer = ObjectBuffer::new(&edges);
-
-        let rows = stream! {
-            let row_builder = RowBuilder::new(&view);
-            pin_mut!(objects);
-            loop {
-                match objects.try_next().await {
-                    Err(e) => yield Err(e),
-                    Ok(None) => break,
-                    Ok(Some((schema_id, object_id, object))) => {
-                        if let Some(row) = object_buffer.add_object(schema_id, object_id, object) {
-                            yield row_builder.build(row);
-                        }
-                        else {
-                            continue;
-                        }
-                    }
-                }
-            }
-        };
+        let buffered_objects = ObjectBufferedStream::new(objects, &edges);
+        let row_builder = RowBuilder::new(view);
+        let rows = buffered_objects.and_then(move |row| ready(row_builder.build(row)));
 
         let rows = Box::pin(rows) as RowStream;
 
@@ -288,7 +289,15 @@ impl ObjectBuilderImpl {
             let stream = self
                 .get_objects_for_ids(schema_id, &schema.object_ids)
                 .await?
-                .map_ok(move |(object_id, object)| (schema_id, object_id, object));
+                .map_ok(move |(object_id, object)| {
+                    (
+                        ObjectIdPair {
+                            schema_id,
+                            object_id,
+                        },
+                        object,
+                    )
+                });
             streams.push(stream);
         }
         let stream = futures::stream::select_all(streams);

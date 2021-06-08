@@ -10,8 +10,8 @@ use cdl_dto::{
 use serde_json::Value;
 
 use crate::{
-    buffer::ObjectIdPair,
     row_builder::utils::{get_object_id_for_relation, get_sub_object},
+    ObjectIdPair,
 };
 
 use super::FieldBuilder;
