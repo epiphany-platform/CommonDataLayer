@@ -2070,6 +2070,7 @@ dependencies = [
  "serde 1.0.126",
  "serde_json",
  "settings_utils",
+ "test-case",
  "thiserror",
  "tokio",
  "tokio-stream",
