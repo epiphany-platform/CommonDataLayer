@@ -2,8 +2,8 @@ mod plugins;
 pub mod settings;
 
 use plugins::{MaterializerPlugin, PostgresMaterializer};
-use rpc::materializer_general::MaterializedView;
 use rpc::materializer_general::{general_materializer_server::GeneralMaterializer, Empty, Options};
+use rpc::{common::RowDefinition, materializer_general::MaterializedView};
 use serde::Serialize;
 use settings_utils::PostgresSettings;
 use std::collections::HashMap;
@@ -24,6 +24,15 @@ struct MaterializationRow {
     fields: HashMap<String, String>,
 }
 
+impl From<RowDefinition> for MaterializationRow {
+    fn from(row: RowDefinition) -> Self {
+        Self {
+            object_ids: row.object_ids,
+            fields: row.fields,
+        }
+    }
+}
+
 impl IntoSerialize<MaterializationNotification> for MaterializedView {
     fn into_serialize(self) -> MaterializationNotification {
         MaterializationNotification {
@@ -32,10 +41,7 @@ impl IntoSerialize<MaterializationNotification> for MaterializedView {
             rows: self
                 .rows
                 .into_iter()
-                .map(|row| MaterializationRow {
-                    object_ids: row.object_ids,
-                    fields: row.fields,
-                })
+                .map(MaterializationRow::from)
                 .collect(),
         }
     }

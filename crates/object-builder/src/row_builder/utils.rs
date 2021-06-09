@@ -83,7 +83,7 @@ pub fn get_object_id_for_relation(
                     })
                 }
                 SearchFor::Children => {
-                    // TODO: Send error to materializer so it can do transaction rollup #543 
+                    // TODO: Send error to materializer so it can do transaction rollup #543
                     anyhow::bail!("Could not retrieve single row.")
                 }
             }
