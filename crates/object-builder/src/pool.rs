@@ -8,6 +8,7 @@ pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;
 
 pub type EdgeRegistryPool = Pool<EdgeRegistryConnectionManager>;
 pub type EdgeRegistryConn = EdgeRegistryClient<Channel>;
+
 #[derive(Clone)]
 pub struct SchemaRegistryConnectionManager {
     pub address: String,
