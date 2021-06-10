@@ -44,6 +44,7 @@
 | CDLF-00019-00 | Materializer - General                         | RC         | 0.3.1-rc    |                                                   |
 | CDLF-0001A-00 | Materialization - Notifications                | RC         | 0.3.1-rc    |                                                   |
 | CDLF-0001B-00 | Object-side configuration                      | Suggestion | -----       |                                                   |
+| CDLF-0001B-00 | CIM Object Valdiation                          | Suggestion | -----       |                                                   |
 
 ## References:
 [CDL RFC directory](https://github.com/epiphany-platform/CommonDataLayer/tree/develop/docs/rfc)
