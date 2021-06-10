@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use bb8::Pool;
 use cdl_dto::{
-    edges::{TreeObject, TreeResponse},
-    materialization,
+    edges::TreeResponse,
+    materialization::{self, FieldType},
 };
 use communication_utils::{consumer::ConsumerHandler, message::CommunicationMessage};
 use futures::{future::ready, Stream, StreamExt, TryStreamExt};
@@ -12,7 +12,7 @@ use rpc::common::RowDefinition as RpcRowDefinition;
 use rpc::materializer_general::{MaterializedView as RpcMaterializedView, Options};
 use rpc::object_builder::{object_builder_server::ObjectBuilder, Empty, View};
 use rpc::schema_registry::types::SchemaType;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::{collections::HashMap, convert::TryInto, num::NonZeroU8, pin::Pin};
@@ -23,6 +23,7 @@ use crate::buffer_stream::ObjectBufferedStream;
 pub mod settings;
 
 mod pool;
+mod utils;
 
 mod buffer_stream;
 
@@ -59,10 +60,46 @@ struct RowDefinition {
     fields: HashMap<String, Value>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Deserialize)]
 pub struct ObjectIdPair {
     pub schema_id: Uuid,
     pub object_id: Uuid,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct ArrayElementSource {
+    fields: HashMap<String, FieldDefinitionSource>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum FieldDefinitionSource {
+    Simple {
+        object: ObjectIdPair,
+        field_name: String,
+        field_type: FieldType,
+    },
+    Computed {
+        computation: ComputationSource,
+        field_type: FieldType,
+    },
+    Array {
+        elements: Vec<ArrayElementSource>,
+    },
+}
+
+#[derive(Debug, PartialEq, Deserialize, Clone)]
+pub enum ComputationSource {
+    RawValue {
+        value: Value,
+    },
+    FieldValue {
+        object: ObjectIdPair,
+        field_path: String,
+    },
+    Equals {
+        lhs: Box<ComputationSource>,
+        rhs: Box<ComputationSource>,
+    },
 }
 
 #[derive(Debug, PartialEq)]
@@ -70,11 +107,14 @@ pub enum RowSource {
     Join {
         objects: HashMap<ObjectIdPair, Value>,
         /// TreeObject defining edges
-        tree_object: TreeObject,
+        // tree_object: TreeObject,
+        root_object: ObjectIdPair,
+        fields: HashMap<String, FieldDefinitionSource>,
     },
     Single {
-        object_pair: ObjectIdPair,
+        root_object: ObjectIdPair,
         value: Value,
+        fields: HashMap<String, FieldDefinitionSource>,
     },
 }
 
@@ -263,8 +303,8 @@ impl ObjectBuilderImpl {
 
         let objects = self.get_objects(view_id, schemas).await?;
 
-        let buffered_objects = ObjectBufferedStream::new(objects, &edges);
-        let row_builder = RowBuilder::new(view);
+        let buffered_objects = ObjectBufferedStream::try_new(objects, view, &edges)?;
+        let row_builder = RowBuilder::new();
         let rows = buffered_objects.and_then(move |row| ready(row_builder.build(row)));
 
         let rows = Box::pin(rows) as RowStream;

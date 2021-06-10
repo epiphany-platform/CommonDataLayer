@@ -49,16 +49,13 @@ pub fn get_sub_object(value: &Value, mut path: std::str::Split<char>) -> Result<
     }
 }
 
-pub fn get_object_id_for_relation(
+pub fn find_tree_object_for_relation<'a>(
     relation_id: LocalId,
-    base_pair: ObjectIdPair,
-    view: &cdl_dto::materialization::FullView,
-    tree_object: &TreeObject,
-) -> anyhow::Result<ObjectIdPair> {
-    let relation_id = NonZeroU8::new(relation_id);
-
-    match relation_id {
-        None => Ok(base_pair),
+    view: &FullView,
+    tree_object: Option<&'a TreeObject>,
+) -> Result<Option<&'a TreeObject>> {
+    Ok(match NonZeroU8::new(relation_id) {
+        None => None,
         Some(relation_id) => {
             let relation = view
                 .relations
@@ -67,40 +64,27 @@ pub fn get_object_id_for_relation(
                 .with_context(|| format!("Could not find a relation: {}", relation_id))?;
 
             let global_id = relation.global_id;
-            match relation.search_for {
-                SearchFor::Parents => {
-                    let tree_object =
-                        find_tree_object(tree_object, global_id).with_context(|| {
-                            format!(
-                                "Could not find a relation in edge registry: {}",
-                                relation_id
-                            )
-                        })?;
-
-                    Ok(ObjectIdPair {
-                        schema_id: tree_object.relation.parent_schema_id,
-                        object_id: tree_object.object_id,
-                    })
-                }
-                SearchFor::Children => {
-                    // TODO: Send error to materializer so it can do transaction rollup #543
-                    anyhow::bail!("Could not retrieve single row.")
-                }
-            }
+            let tree_object =
+                tree_object.context("Trying to retrieve relation but got no edges")?;
+            let tree_object = find_tree_object(tree_object, global_id).with_context(|| {
+                format!(
+                    "Could not find a relation in edge registry: {}",
+                    relation_id
+                )
+            })?;
+            Some(tree_object)
         }
-    }
+    })
 }
 
 pub fn get_objects_ids_for_relation(
     relation_id: LocalId,
     view: &FullView,
-    tree_object: &TreeObject,
-) -> Result<Vec<ObjectIdPair>> {
+    tree_object: Option<&TreeObject>,
+) -> Result<Option<Vec<ObjectIdPair>>> {
     let relation_id = NonZeroU8::new(relation_id);
-    match relation_id {
-        None => anyhow::bail!(
-            "Array field definition must points into relation id (value higher than zero)"
-        ),
+    Ok(match relation_id {
+        None => None,
         Some(relation_id) => {
             let relation = view
                 .relations
@@ -109,6 +93,8 @@ pub fn get_objects_ids_for_relation(
                 .with_context(|| format!("Could not find a relation: {}", relation_id))?;
 
             let global_id = relation.global_id;
+            let tree_object =
+                tree_object.context("Trying to retrieve relation but got no edges")?;
             let tree_object = find_tree_object(tree_object, global_id).with_context(|| {
                 format!(
                     "Could not find a relation in edge registry: {}",
@@ -116,7 +102,7 @@ pub fn get_objects_ids_for_relation(
                 )
             })?;
 
-            match relation.search_for {
+            Some(match relation.search_for {
                 SearchFor::Children => {
                     let schema_id = tree_object.relation.child_schema_id;
 
@@ -129,13 +115,13 @@ pub fn get_objects_ids_for_relation(
                         })
                         .collect::<Vec<_>>();
 
-                    Ok(children)
+                    children
                 }
-                SearchFor::Parents => Ok(vec![ObjectIdPair {
+                SearchFor::Parents => vec![ObjectIdPair {
                     schema_id: tree_object.relation.parent_schema_id,
                     object_id: tree_object.object_id,
-                }]),
-            }
+                }],
+            })
         }
-    }
+    })
 }

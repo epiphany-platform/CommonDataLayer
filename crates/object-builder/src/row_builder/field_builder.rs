@@ -1,52 +1,39 @@
 use std::collections::HashMap;
 
 use anyhow::{Context, Result};
-use cdl_dto::{
-    edges::TreeObject,
-    materialization::{FieldDefinition, FullView},
-};
 use serde_json::Value;
 
-use crate::{row_builder::utils::get_objects_ids_for_relation, ObjectIdPair};
+use crate::{FieldDefinitionSource, ObjectIdPair};
 
 mod computation;
-use computation::ComputationEngine;
+pub use computation::ComputationEngine;
 
 #[derive(Clone, Copy)]
 pub struct FieldBuilder<'a> {
-    pub object_pair: ObjectIdPair,
     pub objects: &'a HashMap<ObjectIdPair, Value>,
-    pub tree_object: &'a TreeObject,
-    pub view: &'a FullView,
 }
 
 impl<'a> FieldBuilder<'a> {
-    pub fn with_object(mut self, object_pair: ObjectIdPair) -> Self {
-        self.object_pair = object_pair;
-        self
-    }
-
     pub fn build(
         self,
-        (field_name, field_def): (&String, &FieldDefinition),
+        (field_name, field_def): (&String, &FieldDefinitionSource),
     ) -> Result<(String, Value)> {
-        use FieldDefinition::*;
+        use FieldDefinitionSource::*;
 
         Ok((
             field_name.into(),
             match field_def {
-                Simple { field_name, .. } => {
-                    let object = self.objects.get(&self.object_pair).unwrap();
-                    let object = object.as_object().with_context(|| {
-                        format!(
-                            "Expected object ({}) to be a JSON object",
-                            self.object_pair.object_id
-                        )
+                Simple {
+                    field_name, object, ..
+                } => {
+                    let object_value = self.objects.get(object).unwrap();
+                    let object_value = object_value.as_object().with_context(|| {
+                        format!("Expected object ({}) to be a JSON object", object.object_id)
                     })?;
-                    let value = object.get(field_name).with_context(|| {
+                    let value = object_value.get(field_name).with_context(|| {
                         format!(
                             "Object ({}) does not have a field named `{}`",
-                            self.object_pair.object_id, field_name
+                            object.object_id, field_name
                         )
                     })?;
                     value.clone()
@@ -55,22 +42,19 @@ impl<'a> FieldBuilder<'a> {
                     let engine: ComputationEngine = self.into();
                     engine.compute(computation)?
                 }
-                Array { base, fields } => {
-                    let objects_ids =
-                        get_objects_ids_for_relation(*base, self.view, self.tree_object)?;
-                    let objects = objects_ids
-                        .into_iter()
-                        .map(|object_id| {
-                            let field_builder = self.with_object(object_id);
-                            let fields = fields
+                Array { elements } => {
+                    let elements = elements
+                        .iter()
+                        .map(|element| {
+                            let fields = element
+                                .fields
                                 .iter()
-                                .map(|field| field_builder.build(field))
+                                .map(|field| self.build(field))
                                 .collect::<anyhow::Result<_>>()?;
-
                             Ok(Value::Object(fields))
                         })
                         .collect::<anyhow::Result<_>>()?;
-                    Value::Array(objects)
+                    Value::Array(elements)
                 }
             },
         ))

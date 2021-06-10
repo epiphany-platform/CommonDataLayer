@@ -1,59 +1,45 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{Context, Result};
-use cdl_dto::edges::TreeObject;
-use cdl_dto::materialization::{FieldDefinition, FullView};
 use serde_json::Value;
-use uuid::Uuid;
 
-use crate::{ObjectIdPair, RowDefinition, RowSource};
+use crate::{
+    row_builder::field_builder::ComputationEngine, FieldDefinitionSource, ObjectIdPair,
+    RowDefinition, RowSource,
+};
 
 mod field_builder;
-mod utils;
 
 use field_builder::FieldBuilder;
 
-pub struct RowBuilder {
-    view: FullView,
-}
+pub struct RowBuilder {}
 
 impl RowBuilder {
-    pub fn new(view: FullView) -> Self {
-        Self { view }
+    pub fn new() -> Self {
+        Self {}
     }
 
     pub(crate) fn build(&self, source: RowSource) -> Result<RowDefinition> {
         match source {
             RowSource::Join {
-                objects,
-                tree_object,
-            } => self.build_join(objects, tree_object),
-            RowSource::Single { object_pair, value } => self.build_single(object_pair, value),
+                objects, fields, ..
+            } => self.build_join(objects, fields),
+            RowSource::Single {
+                root_object,
+                value,
+                fields,
+            } => self.build_single(root_object, value, fields),
         }
     }
 
     fn build_join(
         &self,
         objects: HashMap<ObjectIdPair, Value>,
-        tree_object: TreeObject,
+        fields: HashMap<String, FieldDefinitionSource>,
     ) -> Result<RowDefinition> {
-        let base_object_id: Uuid = tree_object.object_id;
-        let base_schema_id: Uuid = tree_object.relation.parent_schema_id;
-        let base_object_id_pair = ObjectIdPair {
-            schema_id: base_schema_id,
-            object_id: base_object_id,
-        };
+        let field_builder = FieldBuilder { objects: &objects };
 
-        let field_builder = FieldBuilder {
-            object_pair: base_object_id_pair,
-            objects: &objects,
-            tree_object: &tree_object,
-            view: &self.view,
-        };
-
-        let fields = self
-            .view
-            .fields
+        let fields = fields
             .iter()
             .map(|field| field_builder.build(field))
             .collect::<anyhow::Result<_>>()?;
@@ -66,18 +52,17 @@ impl RowBuilder {
 
     fn build_single(
         &self,
-        ObjectIdPair { object_id, .. }: ObjectIdPair,
+        pair: ObjectIdPair,
         object_value: Value,
+        fields: HashMap<String, FieldDefinitionSource>,
     ) -> Result<RowDefinition> {
         let object = object_value
             .as_object()
-            .with_context(|| format!("Expected object ({}) to be a JSON object", object_id))?;
+            .with_context(|| format!("Expected object ({}) to be a JSON object", pair.object_id))?;
 
-        use FieldDefinition::*;
+        use FieldDefinitionSource::*;
 
-        let fields = self
-            .view
-            .fields
+        let fields = fields
             .iter()
             .map(|(field_def_key, field_def)| {
                 Ok((
@@ -88,17 +73,16 @@ impl RowBuilder {
                             let value = object.get(field_name).with_context(|| {
                                 format!(
                                     "Object ({}) does not have a field named `{}`",
-                                    object_id, field_name
+                                    pair.object_id, field_name
                                 )
                             })?;
                             value.clone()
                         }
-                        Computed { .. } => {
-                            // TODO: In theory we could enable subset of it later
-                            anyhow::bail!(
-                                "Computed field definition is not supported in relation-less view"
-                            )
+                        Computed { computation, .. } => ComputationEngine::Simple {
+                            object_id: pair,
+                            value: &object_value,
                         }
+                        .compute(computation)?,
                         Array { .. } => {
                             anyhow::bail!(
                                 "Array field definition is not supported in relation-less view"
@@ -109,7 +93,7 @@ impl RowBuilder {
             })
             .collect::<anyhow::Result<_>>()?;
         let mut object_ids = HashSet::new();
-        object_ids.insert(object_id);
+        object_ids.insert(pair.object_id);
         Ok(RowDefinition { object_ids, fields })
     }
 }

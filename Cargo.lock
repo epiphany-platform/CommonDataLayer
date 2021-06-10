@@ -2066,6 +2066,7 @@ dependencies = [
  "maplit",
  "metrics_utils",
  "misc_utils",
+ "pin-project-lite",
  "rpc",
  "serde 1.0.126",
  "serde_json",
