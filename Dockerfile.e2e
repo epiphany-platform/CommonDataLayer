@@ -1,0 +1,46 @@
+# syntax=docker/dockerfile:experimental
+
+
+
+FROM clux/muslrust:1.46.0-stable as cargo-build
+
+# For librdkafka
+RUN apt-get update && apt-get install -y cmake
+
+WORKDIR /usr/src/cdl/
+COPY rust-toolchain ./
+RUN rustup target add x86_64-unknown-linux-musl
+COPY Cargo.lock Cargo.toml ./
+
+COPY benchmarking/ benchmarking/
+COPY e2e/ e2e/
+COPY xtask/ xtask/
+COPY crates/ crates/
+
+ARG ENV
+
+RUN --mount=type=cache,mode=0755,target=/root/.cargo/registry \
+    --mount=type=cache,mode=0755,target=/root/.cargo/git \
+    --mount=type=cache,mode=0755,target=/usr/src/cdl/target \
+    if [ "$ENV" = "DEV" ]; \
+    then CARGO_ARGS="-Z unstable-options"; \
+    elif [ "$ENV" = "CI" ]; \
+    then CARGO_ARGS="-Z unstable-options --profile ci"; \
+    else CARGO_ARGS="-Z unstable-options --release"; \
+    fi && \
+    LIB_LDFLAGS=-L/usr/lib/x86_64-linux-gnu CFLAGS=-I/usr/local/musl/include CC=musl-gcc CXX=g++ \
+    cargo test $CARGO_ARGS -p e2e --no-run && \
+    cp `ls -t ./target/x86_64-unknown-linux-musl/debug/deps/e2e* | head -1` ./e2e && \
+    cd e2e && \
+    mv e2e* e2e
+
+
+# -----------------
+# Final Stage
+# -----------------
+
+FROM alpine
+
+ARG BIN
+WORKDIR /usr/src/cdl/
+COPY --from=cargo-build /usr/src/cdl/e2e /usr/src/cdl/

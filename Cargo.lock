@@ -948,6 +948,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
+name = "e2e"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "cdl_dto",
+ "futures",
+ "lazy_static",
+ "rpc",
+ "serde 1.0.126",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
 name = "edge-registry"
 version = "0.1.0"
 dependencies = [

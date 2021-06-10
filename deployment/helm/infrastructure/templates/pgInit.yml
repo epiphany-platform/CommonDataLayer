@@ -4,15 +4,14 @@ metadata:
   name: infrastructure-postgres-migrations
 data:
   0.init.sql:
-    SET SCHEMA 'cdl';
+    DROP TABLE IF EXISTS schemas CASCADE;
+    DROP TABLE IF EXISTS views CASCADE;
+    DROP TABLE IF EXISTS definitions CASCADE;
+    DROP TYPE IF EXISTS schema_type_enum CASCADE ;
+    DROP TRIGGER IF EXISTS  notify_view_updated ON views CASCADE ;
+    DROP TRIGGER IF EXISTS notify_schema_updated ON schemas CASCADE ;
+    DROP FUNCTION IF EXISTS notify_row_updated ( ) CASCADE ;
 
-    CREATE TABLE IF NOT EXISTS data (
-      object_id UUID NOT NULL,
-      version BIGINT NOT NULL,
-      schema_id UUID NOT NULL,
-      payload JSON NOT NULL,
-      PRIMARY KEY (object_id, version)
-    );
 
     CREATE TYPE schema_type_enum AS ENUM ('documentstorage', 'timeseries');
 
@@ -36,7 +35,7 @@ data:
 
         CONSTRAINT fk_base_schema_1
             FOREIGN KEY(base_schema)
-            REFERENCES schemas(id) 
+            REFERENCES schemas(id)
             ON UPDATE CASCADE
             ON DELETE CASCADE
     );
@@ -49,7 +48,7 @@ data:
         PRIMARY KEY(schema, version),
         CONSTRAINT fk_schema_2
             FOREIGN KEY(schema)
-            REFERENCES schemas(id) 
+            REFERENCES schemas(id)
             ON UPDATE CASCADE
             ON DELETE CASCADE
     );
@@ -76,4 +75,3 @@ data:
         AFTER UPDATE ON views
         FOR EACH ROW
         EXECUTE PROCEDURE notify_row_updated('views');
-

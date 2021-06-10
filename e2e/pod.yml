@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cdl-e2e
+spec:
+  containers:
+  - name: e2e
+    image: cdl-e2e
+    imagePullPolicy: IfNotPresent
+    command: ['./e2e', '--nocapture']
+  restartPolicy: Never
