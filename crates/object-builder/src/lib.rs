@@ -26,6 +26,7 @@ mod pool;
 mod utils;
 
 mod buffer_stream;
+mod view_plan;
 
 mod row_builder;
 
