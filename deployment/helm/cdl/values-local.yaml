@@ -8,6 +8,8 @@ global:
   reportDestination: cdl.errors
   objectBuilderInput: cdl.materialize
   amqpConnectionString: "amqp://user:CHANGEME@infrastructure-rabbitmq:5672/%2f"
+  jaegerAgentHost: "jaeger-agent"
+  jaegerAgentPort: "6831"
 
 api:
   port: 30152
