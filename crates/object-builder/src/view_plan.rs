@@ -15,7 +15,7 @@ mod builder;
 
 type UnfinishedRowPair = (UnfinishedRow, HashSet<ObjectIdPair>);
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct UnfinishedRow {
     /// Number of objects that are still missing to finish the join
     pub missing: usize,
@@ -59,6 +59,7 @@ impl UnfinishedRow {
 /// Because objects are received on the go, and object builder needs to create joins,
 /// these objects need to be tempoirairly stored in some kind of buffer until the last part
 /// of the join arrives
+#[derive(Debug)]
 pub struct ViewPlan {
     pub(crate) unfinished_rows: Vec<Option<UnfinishedRow>>,
     pub(crate) missing: HashMap<ObjectIdPair, Vec<usize>>, // (_, indices to unfinished_rows)
@@ -84,6 +85,12 @@ impl ViewPlan {
             .collect::<Result<Vec<_>>>()?
             .into_iter()
             .flatten()
+            .map(|(mut row, set)| {
+                dbg!(&row, &set);
+                row.missing = set.len();
+                (row, set)
+            })
+            .filter(|(row, _)| row.missing > 0)
             .enumerate()
             .map(|(idx, (row, set))| {
                 for object in set {
@@ -102,5 +109,23 @@ impl ViewPlan {
 
     pub fn builder(&self) -> ViewPlanBuilder {
         ViewPlanBuilder { view: &self.view }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use anyhow::Result;
+
+    #[test]
+    fn build_view_plan_test() -> Result<()> {
+        snapshot_runner::test_snapshots("view_plan_build", |input| {
+            let view = input.get_json("view").expect("view");
+            let edges = input.get_json("edges").expect("edges");
+
+            let view_plan = ViewPlan::try_new(view, &edges).expect("valid view plan");
+
+            format!("{:#?}", view_plan)
+        })
     }
 }

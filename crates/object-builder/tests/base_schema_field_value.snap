@@ -2,15 +2,22 @@
 [
   {
     "id": {
-      "schema_id": "00000000-0000-0000-0000-000000000001",
+      "schema_id": "a0000000-0000-0000-0000-000000000001",
       "object_id": "00000000-0000-0000-0000-000000000001"
     },
     "value": { "a": 2 }
   },
   {
     "id": {
-      "schema_id": "00000000-0000-0000-0000-000000000002",
+      "schema_id": "a0000000-0000-0000-0000-000000000002",
       "object_id": "00000000-0000-0000-0000-000000000002"
+    },
+    "value": { "b": 42 }
+  },
+  {
+    "id": {
+      "schema_id": "a0000000-0000-0000-0000-000000000002",
+      "object_id": "00000000-0000-0000-0000-000000000003"
     },
     "value": { "b": 42 }
   }
@@ -20,13 +27,160 @@
 {
   "FieldValue": {
     "object": {
-      "schema_id": "00000000-0000-0000-0000-000000000001",
+      "schema_id": "a0000000-0000-0000-0000-000000000001",
       "object_id": "00000000-0000-0000-0000-000000000001"
     },
     "field_path": "a"
   }
 }
 
+[edges]
+{
+  "1": {
+    "objects": [
+      {
+        "relation_id": "b0000000-0000-0000-0000-000000000001",
+        "object_id": "00000000-0000-0000-0000-000000000001",
+        "children": [
+          "00000000-0000-0000-0000-000000000002",
+          "00000000-0000-0000-0000-000000000003"
+        ],
+        "subtrees": [],
+        "relation": {
+          "parent_schema_id": "a0000000-0000-0000-0000-000000000001",
+          "child_schema_id": "a0000000-0000-0000-0000-000000000002"
+        }
+      }
+    ]
+  }
+}
+
+[view]
+{
+  "id": "00000000-0000-0000-0000-000000000001",
+  "name": "Sample View",
+  "base_schema_id": "00000000-0000-0000-0000-000000000001",
+  "materializer_options": {},
+  "materializer_address": "",
+  "fields": {
+    "foo": {
+      "computed": {
+        "computation": {
+          "FieldValue": {
+            "schema_id": 1,
+            "field_path": "a"
+          }
+        },
+        "field_type": "numeric"
+      }
+    }
+  },
+  "relations": [
+    {
+      "global_id": "b0000000-0000-0000-0000-000000000001",
+      "local_id": 1,
+      "search_for": "Children"
+    }
+ ]
+}
+
 [expected.computation]
 2
+
+[expected.view_plan_build]
+ViewPlan {
+    unfinished_rows: [
+        Some(
+            UnfinishedRow {
+                missing: 2,
+                objects: {},
+                root_object: ObjectIdPair {
+                    schema_id: a0000000-0000-0000-0000-000000000001,
+                    object_id: 00000000-0000-0000-0000-000000000001,
+                },
+                fields: {
+                    "foo": Computed {
+                        computation: FieldValue {
+                            object: ObjectIdPair {
+                                schema_id: a0000000-0000-0000-0000-000000000002,
+                                object_id: 00000000-0000-0000-0000-000000000002,
+                            },
+                            field_path: "a",
+                        },
+                        field_type: Numeric,
+                    },
+                },
+            },
+        ),
+        Some(
+            UnfinishedRow {
+                missing: 2,
+                objects: {},
+                root_object: ObjectIdPair {
+                    schema_id: a0000000-0000-0000-0000-000000000001,
+                    object_id: 00000000-0000-0000-0000-000000000001,
+                },
+                fields: {
+                    "foo": Computed {
+                        computation: FieldValue {
+                            object: ObjectIdPair {
+                                schema_id: a0000000-0000-0000-0000-000000000002,
+                                object_id: 00000000-0000-0000-0000-000000000003,
+                            },
+                            field_path: "a",
+                        },
+                        field_type: Numeric,
+                    },
+                },
+            },
+        ),
+    ],
+    missing: {
+        ObjectIdPair {
+            schema_id: a0000000-0000-0000-0000-000000000001,
+            object_id: 00000000-0000-0000-0000-000000000001,
+        }: [
+            0,
+            1,
+        ],
+        ObjectIdPair {
+            schema_id: a0000000-0000-0000-0000-000000000002,
+            object_id: 00000000-0000-0000-0000-000000000003,
+        }: [
+            1,
+        ],
+        ObjectIdPair {
+            schema_id: a0000000-0000-0000-0000-000000000002,
+            object_id: 00000000-0000-0000-0000-000000000002,
+        }: [
+            0,
+        ],
+    },
+    view: FullView {
+        id: 00000000-0000-0000-0000-000000000001,
+        base_schema_id: 00000000-0000-0000-0000-000000000001,
+        name: "Sample View",
+        materializer_address: "",
+        materializer_options: Object({}),
+        fields: {
+            "foo": Computed {
+                computation: FieldValue(
+                    FieldValueComputation {
+                        schema_id: 1,
+                        field_path: "a",
+                    },
+                ),
+                field_type: Numeric,
+            },
+        },
+        relations: [
+            Relation {
+                global_id: b0000000-0000-0000-0000-000000000001,
+                local_id: 1,
+                search_for: Children,
+                relations: [],
+            },
+        ],
+    },
+}
 

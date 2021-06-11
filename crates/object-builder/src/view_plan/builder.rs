@@ -39,11 +39,6 @@ impl<'a> ViewPlanBuilder<'a> {
                     .collect::<Result<Vec<_>, _>>()?
                     .into_iter()
                     .flatten()
-                    .map(|(mut row, set)| {
-                        row.missing = set.len();
-                        (row, set)
-                    })
-                    .filter(|(row, _)| row.missing > 0)
                     .collect();
             } else {
                 break Ok(pairs);
@@ -82,7 +77,7 @@ impl<'a> ViewPlanBuilder<'a> {
                             object,
                             field_path: field_path.clone(),
                         };
-                        (computation, hashset!(object))
+                        (computation, hashset!(object, base_object))
                     })
                     .collect()
             }

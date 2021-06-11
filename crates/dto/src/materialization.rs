@@ -423,7 +423,7 @@ impl<'de> Deserialize<'de> for FieldType {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Deserialize)]
 // Todo: probably unify it with api::types::view::queried::FullView
 pub struct FullView {
     pub id: Uuid,
