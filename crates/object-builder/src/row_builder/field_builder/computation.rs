@@ -50,38 +50,31 @@ impl<'a> From<FieldBuilder<'a>> for ComputationEngine<'a> {
 
 #[cfg(test)]
 mod tests {
-    use maplit::*;
-    use serde_json::json;
-    use test_case::test_case;
-    use uuid::Uuid;
+    use anyhow::Result;
+    use serde::Deserialize;
 
     use super::*;
 
-    #[test_case(json!({"a": 2}), json!({"b": 42}), r#"{"FieldValue": { "schema_id": 0, "field_path": "a" }}"# => json!(2); "compute base schema field value")]
-    #[test_case(json!({"a": {"aa": 58}}), json!({"b": 42}), r#"{"FieldValue": { "schema_id": 0, "field_path": "a.aa" }}"# => json!(58); "compute base schema inner field value")]
-    #[test_case(json!({"a": 58}), json!({"b": 42}), r#"{"FieldValue": { "schema_id": 1, "field_path": "a" }}"# => json!(58); "compute joined field value")]
-    #[test_case(json!({"a": {"aa": 58}}), json!({"b": 42}), r#"{"RawValue": { "value": "aaa" }}"# => json!("aaa"); "compute raw value")]
-    fn calculates_value(
-        object_value: Value,
-        subobject_value: Value,
-        computation_str: &str,
-    ) -> Value {
-        let computation: ComputationSource = serde_json::from_str(computation_str).unwrap();
-        let object = ObjectIdPair {
-            schema_id: Uuid::new_v4(),
-            object_id: Uuid::new_v4(),
-        };
-        let subobject = ObjectIdPair {
-            schema_id: Uuid::new_v4(),
-            object_id: Uuid::new_v4(),
-        };
-        let objects = hashmap! {
-            object => object_value,
-            subobject => subobject_value
-        };
+    #[derive(Deserialize)]
+    struct ObjectSource {
+        id: ObjectIdPair,
+        value: Value,
+    }
 
-        let engine = ComputationEngine::Join { objects: &objects };
+    #[test]
+    fn test_computation() -> Result<()> {
+        snapshot_runner::test_snapshots("computation", |input| {
+            let objects: Vec<ObjectSource> =
+                input.get_json("objects").expect("could not get objects");
+            let objects = objects.into_iter().map(|o| (o.id, o.value)).collect();
 
-        engine.compute(&computation).unwrap()
+            let computation: ComputationSource = input
+                .get_json("computation")
+                .expect("could not get computation");
+            let engine = ComputationEngine::Join { objects: &objects };
+
+            let value = engine.compute(&computation).expect("could not compute");
+            serde_json::to_string(&value).expect("could not serialize")
+        })
     }
 }
