@@ -170,7 +170,7 @@ mod tests {
             unfinished_rows: vec![
                 Some(UnfinishedRow {
                     fields: hashmap! {
-                        "ab".into() => FieldDefinitionSource::Computed {
+                        "foo".into() => FieldDefinitionSource::Computed {
                             field_type: FieldType::Numeric,
                             computation: crate::ComputationSource::FieldValue {
                                 object: b_id,
@@ -184,7 +184,7 @@ mod tests {
                 }),
                 Some(UnfinishedRow {
                     fields: hashmap! {
-                        "ac".into() => FieldDefinitionSource::Computed {
+                        "foo".into() => FieldDefinitionSource::Computed {
                             field_type: FieldType::Numeric,
                             computation: crate::ComputationSource::FieldValue {
                                 object: c_id,
@@ -230,7 +230,7 @@ mod tests {
                 objects: second_row_objects.into_iter().collect(),
                 root_object: a_id,
                 fields: hashmap! {
-                    "ac".into() => FieldDefinitionSource::Computed {
+                    "foo".into() => FieldDefinitionSource::Computed {
                         field_type: FieldType::Numeric,
                         computation: crate::ComputationSource::FieldValue {
                             object: c_id,
@@ -248,7 +248,7 @@ mod tests {
                 objects: first_row_objects.into_iter().collect(),
                 root_object: a_id,
                 fields: hashmap! {
-                    "ab".into() => FieldDefinitionSource::Computed {
+                    "foo".into() => FieldDefinitionSource::Computed {
                         field_type: FieldType::Numeric,
                         computation: crate::ComputationSource::FieldValue {
                             object: b_id,
