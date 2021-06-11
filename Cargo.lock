@@ -142,6 +142,7 @@ dependencies = [
  "async-graphql-value",
  "async-stream",
  "async-trait",
+ "chrono",
  "fnv",
  "futures-util",
  "http",
@@ -952,13 +953,13 @@ name = "e2e"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "cdl_dto",
  "futures",
  "lazy_static",
- "rpc",
+ "reqwest",
  "serde 1.0.126",
  "serde_json",
  "tokio",
+ "uuid",
 ]
 
 [[package]]

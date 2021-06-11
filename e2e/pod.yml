@@ -7,5 +7,8 @@ spec:
   - name: e2e
     image: cdl-e2e
     imagePullPolicy: IfNotPresent
+    env:
+    - name: RUST_TEST_THREADS
+      value: "1"
     command: ['./e2e', '--nocapture']
   restartPolicy: Never
