@@ -24,7 +24,7 @@ impl ObjectBuffer {
         pair: ObjectIdPair,
         value: Value,
     ) -> Option<Result<Vec<RowSource>>> {
-        match self.plan.missing.get_mut(&pair) {
+        match self.plan.missing.remove(&pair) {
             Some(missing_indices) => {
                 if missing_indices.is_empty() {
                     tracing::error!("Got unexpected object: {}. Skipping...", pair.object_id);
@@ -33,7 +33,7 @@ impl ObjectBuffer {
                 let mut result = vec![];
                 for missing_idx in missing_indices {
                     let unfinished_row_opt =
-                        self.plan.unfinished_rows.get_mut(*missing_idx).unwrap();
+                        self.plan.unfinished_rows.get_mut(missing_idx).unwrap();
                     let unfinished_row = unfinished_row_opt.as_mut()?;
                     unfinished_row.missing =
                         unfinished_row.missing.checked_sub(1).unwrap_or_default();
@@ -67,6 +67,17 @@ impl ObjectBuffer {
                         .collect()
                 }))
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    impl ObjectBuffer {
+        pub fn new_test(plan: ViewPlan) -> Self {
+            Self { plan }
         }
     }
 }
