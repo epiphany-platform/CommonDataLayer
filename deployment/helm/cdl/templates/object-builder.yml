@@ -25,7 +25,7 @@ spec:
         command: ["/bin/object-builder"]
         env:
         - name: OBJECT_BUILDER_INPUT_PORT
-          value: "{{ .Values.objectBuilder.inputPort }}"
+          value: "6400"
         - name: OBJECT_BUILDER_CHUNK_CAPACITY
           value: "128"
         {{- if eq .Values.global.communicationMethod "kafka" }}
@@ -61,3 +61,16 @@ spec:
         - containerPort: 51805
       imagePullSecrets:
       - name: {{ .Values.global.cdlImagePullSecrets }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-object-builder
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-object-builder
+  ports:
+    - port: 6400
+      targetPort: 6400

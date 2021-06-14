@@ -6,7 +6,6 @@ pub mod types;
 
 use std::convert::Infallible;
 
-use async_graphql::extensions::ApolloTracing;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::Schema;
 use async_graphql_warp::{graphql_subscription, Response};
@@ -65,7 +64,6 @@ async fn main() -> anyhow::Result<()> {
         .data(MQEvents {
             events: Default::default(),
         })
-        .extension(ApolloTracing)
         .finish();
 
     let graphql_post = async_graphql_warp::graphql(schema.clone()).and_then(

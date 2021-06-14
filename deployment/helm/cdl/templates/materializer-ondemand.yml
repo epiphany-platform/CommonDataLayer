@@ -25,9 +25,9 @@ spec:
         command: ["/bin/materializer-ondemand"]
         env:
         - name: MATERIALIZER_ONDEMAND_INPUT_PORT
-          value: "{{ .Values.materializerOnDemand.inputPort }}"
+          value: "6400"
         - name: MATERIALIZER_ONDEMAND_SERVICES__OBJECT_BUILDER_URL
-          value: "http://{{ .Release.Name }}-object-builder:{{ .Values.objectBuilder.inputPort }}"
+          value: "http://{{ .Release.Name }}-object-builder:6400"
         - name: MATERIALIZER_ONDEMAND_LOG__RUST_LOG
           value: "info,materializer_ondemand=debug"
         - name: MATERIALIZER_ONDEMAND_MONITORING__OTEL_SERVICE_NAME
@@ -40,3 +40,16 @@ spec:
         - containerPort: 51805
       imagePullSecrets:
         - name: {{ .Values.global.cdlImagePullSecrets }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-materializer-ondemand
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-materializer-ondemand
+  ports:
+    - port: 6400
+      targetPort: 6400

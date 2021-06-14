@@ -141,7 +141,7 @@ pub async fn materialize_view(view_id: &str, schema_id: &str) -> Result<Value> {
         }}"#, view_id,schema_id))
         .send()
         .await?.json().await.unwrap();
-    let result = resp["data"]["onDemandRequest"].clone();
+    let result = resp["data"]["onDemandView"]["rows"].clone();
     Ok(result)
 }
 

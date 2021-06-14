@@ -31,7 +31,7 @@ spec:
         - name: API_SERVICES__EDGE_REGISTRY_URL
           value: "http://{{ .Release.Name }}-edge-registry:{{ .Values.edgeRegistry.rpcPort }}"
         - name: API_SERVICES__ON_DEMAND_MATERIALIZER_URL
-          value: "http://{{ .Release.Name }}-materializer-ondemand:{{ .Values.materializerOnDemand.inputPort }}"
+          value: "http://{{ .Release.Name }}-materializer-ondemand:6400"
         - name: API_INPUT_PORT
           value: "6402"
         - name: API_NOTIFICATION_CONSUMER__SOURCE
