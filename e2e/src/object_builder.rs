@@ -22,6 +22,7 @@ mod simple_views {
         assert!(view_data.rows.is_empty());
         Ok(())
     }
+
     #[tokio::test]
     async fn should_generate_results() -> Result<()> {
         let schema_id =
@@ -44,25 +45,13 @@ mod simple_views {
 }
 
 mod filtering {
-    use super::*;
-
-    #[tokio::test]
-    #[ignore = "todo"]
-    async fn should_work_correctly_without_defined_filter() -> Result<()> {
-        Ok(())
-    }
-
-    #[tokio::test]
-    #[ignore = "todo"]
-    async fn should_filter_results_based_on_object_id() -> Result<()> {
-        Ok(())
-    }
+    // TODO:
 }
 
 mod relations {
-    use super::*;
+    // TODO:
 }
 
 mod computed_fields {
-    use super::*;
+    // TODO:
 }

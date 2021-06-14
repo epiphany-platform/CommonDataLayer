@@ -10,5 +10,7 @@ spec:
     env:
     - name: RUST_TEST_THREADS
       value: "1"
-    command: ['./e2e', '--nocapture']
+    command:
+      - './e2e'
+#      - '--nocapture'
   restartPolicy: Never

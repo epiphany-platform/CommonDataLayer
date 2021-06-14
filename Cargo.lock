@@ -953,7 +953,6 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "api",
- "futures",
  "lazy_static",
  "reqwest",
  "serde 1.0.126",

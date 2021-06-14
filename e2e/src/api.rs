@@ -1,4 +1,4 @@
-use std::{collections::HashMap, convert::TryInto};
+use std::collections::HashMap;
 
 use anyhow::{Context, Result};
 use cdl_api::types::view::MaterializedView;
@@ -13,6 +13,7 @@ use crate::{
 lazy_static! {
     static ref GRAPHQL_CLIENT: reqwest::Client = reqwest::Client::new();
 }
+
 pub async fn add_schema(name: &str, query_addr: &str, insert_destination: &str) -> Result<Uuid> {
     let resp: Value = GRAPHQL_CLIENT
         .post(GRAPHQL_ADDR)

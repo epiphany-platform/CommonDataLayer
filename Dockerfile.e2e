@@ -1,7 +1,5 @@
 # syntax=docker/dockerfile:experimental
 
-
-
 FROM clux/muslrust:1.46.0-stable as cargo-build
 
 # For librdkafka
@@ -33,7 +31,6 @@ RUN --mount=type=cache,mode=0755,target=/root/.cargo/registry \
     cp `ls -t ./target/x86_64-unknown-linux-musl/debug/deps/e2e* | head -1` ./e2e && \
     cd e2e && \
     mv e2e* e2e
-
 
 # -----------------
 # Final Stage
