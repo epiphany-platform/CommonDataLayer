@@ -59,7 +59,7 @@ impl<'a> ViewPlanBuilder<'a> {
                     ComputationSource::RawValue {
                         value: value.0.clone(),
                     },
-                    hashset![],
+                    hashset![base_object],
                 )]
             }
             Computation::FieldValue(FieldValueComputation {
@@ -88,7 +88,8 @@ impl<'a> ViewPlanBuilder<'a> {
                 lhs.into_iter()
                     .flat_map(|(lhs, lhs_objects)| {
                         rhs.iter().map(move |(rhs, rhs_objects)| {
-                            let set = &lhs_objects | rhs_objects;
+                            let set = hashset![base_object];
+                            let set = &(&lhs_objects | rhs_objects) | &set;
                             (
                                 ComputationSource::Equals {
                                     lhs: Box::new(lhs.clone()),

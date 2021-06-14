@@ -12,6 +12,87 @@
   }
 }
 
+[edges]
+{
+  "1": {
+    "objects": [
+      {
+        "relation_id": "b0000000-0000-0000-0000-000000000001",
+        "object_id": "00000000-0000-0000-0000-000000000001",
+        "children": [
+          "00000000-0000-0000-0000-000000000002"
+        ],
+        "subtrees": [],
+        "relation": {
+          "parent_schema_id": "a0000000-0000-0000-0000-000000000001",
+          "child_schema_id": "a0000000-0000-0000-0000-000000000002"
+        }
+      }
+    ]
+  }
+}
+
+[view]
+{
+  "id": "00000000-0000-0000-0000-000000000001",
+  "name": "Sample View",
+  "base_schema_id": "00000000-0000-0000-0000-000000000001",
+  "materializer_options": {},
+  "materializer_address": "",
+  "fields": {
+    "foo": {
+      "computed": {
+        "computation": {
+          "FieldValue": {
+            "schema_id": 1,
+            "field_path": "a.aa"
+          }
+        },
+        "field_type": "numeric"
+      }
+    }
+  },
+  "relations": [
+    {
+      "global_id": "b0000000-0000-0000-0000-000000000001",
+      "local_id": 1,
+      "search_for": "Children"
+    }
+ ]
+}
+
 [expected.computation]
 58
+
+[expected.view_plan_build]
+{
+  "missing": {
+    "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001": [
+      0
+    ],
+    "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002": [
+      0
+    ]
+  },
+  "unfinished_rows": [
+    {
+      "fields": {
+        "foo": {
+          "Computed": {
+            "computation": {
+              "FieldValue": {
+                "field_path": "a.aa",
+                "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002"
+              }
+            },
+            "field_type": "Numeric"
+          }
+        }
+      },
+      "missing": 2,
+      "objects": {},
+      "root_object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
+    }
+  ]
+}
 
