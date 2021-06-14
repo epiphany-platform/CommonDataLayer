@@ -48,7 +48,7 @@ impl<'a> From<FieldBuilder<'a>> for ComputationEngine<'a> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(miri)))]
 mod tests {
     use anyhow::Result;
     use misc_utils::serde_json;
