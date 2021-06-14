@@ -118,34 +118,6 @@
       "objects": {},
       "root_object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
     }
-  ],
-  "view": {
-    "base_schema_id": "00000000-0000-0000-0000-000000000001",
-    "fields": {
-      "foo": {
-        "computed": {
-          "computation": {
-            "FieldValue": {
-              "field_path": "a",
-              "schema_id": 1
-            }
-          },
-          "field_type": "Numeric"
-        }
-      }
-    },
-    "id": "00000000-0000-0000-0000-000000000001",
-    "materializer_address": "",
-    "materializer_options": {},
-    "name": "Sample View",
-    "relations": [
-      {
-        "global_id": "b0000000-0000-0000-0000-000000000001",
-        "local_id": 1,
-        "relations": [],
-        "search_for": "Children"
-      }
-    ]
-  }
+  ]
 }
 

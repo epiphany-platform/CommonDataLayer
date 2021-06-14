@@ -64,6 +64,7 @@ impl UnfinishedRow {
 pub struct ViewPlan {
     pub(crate) unfinished_rows: Vec<Option<UnfinishedRow>>,
     pub(crate) missing: HashMap<ObjectIdPair, Vec<usize>>, // (_, indices to unfinished_rows)
+    #[serde(skip)] // Serialize is used only for tests, we dont need to assert view
     pub(crate) view: FullView,
 }
 

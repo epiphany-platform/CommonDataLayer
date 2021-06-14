@@ -4,3 +4,4 @@
 tmp/
 
 tests/**/*.new
+tests/**/*.orig
