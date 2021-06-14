@@ -677,7 +677,7 @@ pub mod schema_registry_client {
                 .server_streaming(request.into_request(), path, codec)
                 .await
         }
-        pub async fn ping(
+        pub async fn heartbeat(
             &mut self,
             request: impl tonic::IntoRequest<super::Empty>,
         ) -> Result<tonic::Response<super::Empty>, tonic::Status> {
@@ -688,7 +688,8 @@ pub mod schema_registry_client {
                 )
             })?;
             let codec = tonic::codec::ProstCodec::default();
-            let path = http::uri::PathAndQuery::from_static("/schema_registry.SchemaRegistry/Ping");
+            let path =
+                http::uri::PathAndQuery::from_static("/schema_registry.SchemaRegistry/Heartbeat");
             self.inner.unary(request.into_request(), path, codec).await
         }
     }
@@ -785,7 +786,7 @@ pub mod schema_registry_server {
             &self,
             request: tonic::Request<super::Empty>,
         ) -> Result<tonic::Response<Self::WatchAllSchemaUpdatesStream>, tonic::Status>;
-        async fn ping(
+        async fn heartbeat(
             &self,
             request: tonic::Request<super::Empty>,
         ) -> Result<tonic::Response<super::Empty>, tonic::Status>;
@@ -1335,15 +1336,15 @@ pub mod schema_registry_server {
                     };
                     Box::pin(fut)
                 }
-                "/schema_registry.SchemaRegistry/Ping" => {
+                "/schema_registry.SchemaRegistry/Heartbeat" => {
                     #[allow(non_camel_case_types)]
-                    struct PingSvc<T: SchemaRegistry>(pub Arc<T>);
-                    impl<T: SchemaRegistry> tonic::server::UnaryService<super::Empty> for PingSvc<T> {
+                    struct HeartbeatSvc<T: SchemaRegistry>(pub Arc<T>);
+                    impl<T: SchemaRegistry> tonic::server::UnaryService<super::Empty> for HeartbeatSvc<T> {
                         type Response = super::Empty;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(&mut self, request: tonic::Request<super::Empty>) -> Self::Future {
                             let inner = self.0.clone();
-                            let fut = async move { (*inner).ping(request).await };
+                            let fut = async move { (*inner).heartbeat(request).await };
                             Box::pin(fut)
                         }
                     }
@@ -1351,7 +1352,7 @@ pub mod schema_registry_server {
                     let fut = async move {
                         let interceptor = inner.1.clone();
                         let inner = inner.0;
-                        let method = PingSvc(inner);
+                        let method = HeartbeatSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = if let Some(interceptor) = interceptor {
                             tonic::server::Grpc::with_interceptor(codec, interceptor)

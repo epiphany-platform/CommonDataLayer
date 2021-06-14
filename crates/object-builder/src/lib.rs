@@ -1,6 +1,6 @@
 use anyhow::Context;
 use async_trait::async_trait;
-use bb8::{Pool, PooledConnection};
+use bb8::Pool;
 use cdl_dto::materialization;
 use communication_utils::{consumer::ConsumerHandler, message::CommunicationMessage};
 use futures::{Stream, StreamExt, TryStreamExt};
@@ -8,12 +8,13 @@ use metrics_utils::{self as metrics, counter};
 use rpc::common::RowDefinition as RpcRowDefinition;
 use rpc::materializer_general::{MaterializedView as RpcMaterializedView, Options};
 use rpc::object_builder::{object_builder_server::ObjectBuilder, Empty, View};
-use rpc::schema_registry::{schema_registry_client::SchemaRegistryClient, types::SchemaType};
+use rpc::schema_registry::{
+    types::SchemaType, SchemaRegistryConnectionManager, SchemaRegistryPool,
+};
 use serde::Serialize;
 use serde_json::Value;
 use std::{collections::HashMap, convert::TryInto, pin::Pin};
 use std::{collections::HashSet, sync::Arc};
-use tonic::transport::Channel;
 use uuid::Uuid;
 
 pub mod settings;
@@ -24,14 +25,6 @@ pub struct ObjectBuilderImpl {
     chunk_capacity: usize,
 }
 
-#[derive(Clone)]
-pub struct SchemaRegistryConnectionManager {
-    pub address: String,
-}
-
-pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
-pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;
-
 type ObjectStream =
     Pin<Box<dyn Stream<Item = Result<(Uuid, Value), anyhow::Error>> + Send + Sync + 'static>>;
 type RowStream =
@@ -40,30 +33,6 @@ type MaterializedChunksStream =
     Pin<Box<dyn Stream<Item = Result<MaterializedView, anyhow::Error>> + Send + Sync + 'static>>;
 type MaterializeStream =
     Pin<Box<dyn Stream<Item = Result<RpcRowDefinition, tonic::Status>> + Send + Sync + 'static>>;
-
-#[async_trait::async_trait]
-impl bb8::ManageConnection for SchemaRegistryConnectionManager {
-    type Connection = SchemaRegistryConn;
-    type Error = rpc::error::ClientError;
-
-    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        tracing::debug!("Connecting to registry");
-
-        rpc::schema_registry::connect(self.address.clone()).await
-    }
-
-    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        conn.ping(rpc::schema_registry::Empty {})
-            .await
-            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
-
-        Ok(())
-    }
-
-    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
-        false
-    }
-}
 
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "snake_case")]

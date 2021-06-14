@@ -1,68 +1,33 @@
-use std::collections::HashMap;
-use std::convert::TryInto;
-use std::pin::Pin;
-
-use bb8::{Pool, PooledConnection};
-use futures_util::future::{BoxFuture, FutureExt};
-use semver::Version;
-use semver::VersionReq;
-use sqlx::types::Json;
-use tokio_stream::{Stream, StreamExt};
-use tonic::transport::Channel;
-use tonic::{Request, Response, Status};
-use uuid::Uuid;
-
 use crate::db::SchemaRegistryDb;
 use crate::error::{RegistryError, RegistryResult};
 use crate::settings::Settings;
 use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{FullView, NewView, ViewUpdate};
 use crate::types::{DbExport, VersionedUuid};
+use bb8::Pool;
 use cdl_dto::materialization::{Filter, Relation};
 use communication_utils::metadata_fetcher::MetadataFetcher;
 use communication_utils::Result;
-use rpc::edge_registry::{edge_registry_client::EdgeRegistryClient, ValidateRelationQuery};
+use futures_util::future::{BoxFuture, FutureExt};
+use rpc::edge_registry::{EdgeRegistryConnectionManager, EdgeRegistryPool, ValidateRelationQuery};
 use rpc::schema_registry::{
     schema_registry_server::SchemaRegistry, Empty, Errors, Id, SchemaMetadataUpdate, SchemaViews,
     ValueToValidate, VersionedId,
 };
+use semver::Version;
+use semver::VersionReq;
+use sqlx::types::Json;
+use std::collections::HashMap;
+use std::convert::TryInto;
+use std::pin::Pin;
+use tokio_stream::{Stream, StreamExt};
+use tonic::{Request, Response, Status};
+use uuid::Uuid;
 
 pub struct SchemaRegistryImpl {
     pub edge_registry: EdgeRegistryPool,
     pub db: SchemaRegistryDb,
     pub mq_metadata: MetadataFetcher,
-}
-
-#[derive(Clone)]
-pub struct EdgeRegistryConnectionManager {
-    pub address: String,
-}
-
-pub type EdgeRegistryPool = Pool<EdgeRegistryConnectionManager>;
-pub type EdgeRegistryConn = EdgeRegistryClient<Channel>;
-
-#[async_trait::async_trait]
-impl bb8::ManageConnection for EdgeRegistryConnectionManager {
-    type Connection = EdgeRegistryConn;
-    type Error = rpc::error::ClientError;
-
-    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        tracing::debug!("Connecting to registry");
-
-        rpc::edge_registry::connect(self.address.clone()).await
-    }
-
-    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        conn.heartbeat(rpc::edge_registry::Empty {})
-            .await
-            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
-
-        Ok(())
-    }
-
-    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
-        false
-    }
 }
 
 impl SchemaRegistryImpl {
@@ -660,7 +625,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         )))
     }
 
-    async fn ping(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
+    async fn heartbeat(&self, _request: Request<Empty>) -> Result<Response<Empty>, Status> {
         Ok(Response::new(Empty {}))
     }
 }
