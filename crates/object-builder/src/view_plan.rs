@@ -1,6 +1,7 @@
 use anyhow::Result;
 use cdl_dto::{edges::TreeResponse, materialization::FullView};
 use maplit::hashset;
+use serde::Serialize;
 use serde_json::Value;
 use std::{
     collections::{HashMap, HashSet},
@@ -15,7 +16,7 @@ mod builder;
 
 type UnfinishedRowPair = (UnfinishedRow, HashSet<ObjectIdPair>);
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct UnfinishedRow {
     /// Number of objects that are still missing to finish the join
     pub missing: usize,
@@ -59,7 +60,7 @@ impl UnfinishedRow {
 /// Because objects are received on the go, and object builder needs to create joins,
 /// these objects need to be tempoirairly stored in some kind of buffer until the last part
 /// of the join arrives
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct ViewPlan {
     pub(crate) unfinished_rows: Vec<Option<UnfinishedRow>>,
     pub(crate) missing: HashMap<ObjectIdPair, Vec<usize>>, // (_, indices to unfinished_rows)
@@ -86,7 +87,6 @@ impl ViewPlan {
             .into_iter()
             .flatten()
             .map(|(mut row, set)| {
-                dbg!(&row, &set);
                 row.missing = set.len();
                 (row, set)
             })
@@ -116,6 +116,7 @@ impl ViewPlan {
 mod tests {
     use super::*;
     use anyhow::Result;
+    use misc_utils::serde_json;
 
     #[test]
     fn build_view_plan_test() -> Result<()> {
@@ -125,7 +126,7 @@ mod tests {
 
             let view_plan = ViewPlan::try_new(view, &edges).expect("valid view plan");
 
-            format!("{:#?}", view_plan)
+            serde_json::to_string_sorted_pretty(&view_plan).expect("Cannot serialize")
         })
     }
 }

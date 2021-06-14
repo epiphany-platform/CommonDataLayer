@@ -1,35 +1,15 @@
 [objects]
-[
-  {
-    "id": {
-      "schema_id": "a0000000-0000-0000-0000-000000000001",
-      "object_id": "00000000-0000-0000-0000-000000000001"
-    },
-    "value": { "a": 2 }
-  },
-  {
-    "id": {
-      "schema_id": "a0000000-0000-0000-0000-000000000002",
-      "object_id": "00000000-0000-0000-0000-000000000002"
-    },
-    "value": { "b": 42 }
-  },
-  {
-    "id": {
-      "schema_id": "a0000000-0000-0000-0000-000000000002",
-      "object_id": "00000000-0000-0000-0000-000000000003"
-    },
-    "value": { "b": 42 }
-  }
-]
+{
+
+    "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001": { "a": 2 },
+    "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002": { "b": 42 },
+    "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003": { "b": 42 }
+}
 
 [computation]
 {
   "FieldValue": {
-    "object": {
-      "schema_id": "a0000000-0000-0000-0000-000000000001",
-      "object_id": "00000000-0000-0000-0000-000000000001"
-    },
+    "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001",
     "field_path": "a"
   }
 }
@@ -88,99 +68,84 @@
 2
 
 [expected.view_plan_build]
-ViewPlan {
-    unfinished_rows: [
-        Some(
-            UnfinishedRow {
-                missing: 2,
-                objects: {},
-                root_object: ObjectIdPair {
-                    schema_id: a0000000-0000-0000-0000-000000000001,
-                    object_id: 00000000-0000-0000-0000-000000000001,
-                },
-                fields: {
-                    "foo": Computed {
-                        computation: FieldValue {
-                            object: ObjectIdPair {
-                                schema_id: a0000000-0000-0000-0000-000000000002,
-                                object_id: 00000000-0000-0000-0000-000000000002,
-                            },
-                            field_path: "a",
-                        },
-                        field_type: Numeric,
-                    },
-                },
-            },
-        ),
-        Some(
-            UnfinishedRow {
-                missing: 2,
-                objects: {},
-                root_object: ObjectIdPair {
-                    schema_id: a0000000-0000-0000-0000-000000000001,
-                    object_id: 00000000-0000-0000-0000-000000000001,
-                },
-                fields: {
-                    "foo": Computed {
-                        computation: FieldValue {
-                            object: ObjectIdPair {
-                                schema_id: a0000000-0000-0000-0000-000000000002,
-                                object_id: 00000000-0000-0000-0000-000000000003,
-                            },
-                            field_path: "a",
-                        },
-                        field_type: Numeric,
-                    },
-                },
-            },
-        ),
+{
+  "missing": {
+    "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001": [
+      0,
+      1
     ],
-    missing: {
-        ObjectIdPair {
-            schema_id: a0000000-0000-0000-0000-000000000001,
-            object_id: 00000000-0000-0000-0000-000000000001,
-        }: [
-            0,
-            1,
-        ],
-        ObjectIdPair {
-            schema_id: a0000000-0000-0000-0000-000000000002,
-            object_id: 00000000-0000-0000-0000-000000000003,
-        }: [
-            1,
-        ],
-        ObjectIdPair {
-            schema_id: a0000000-0000-0000-0000-000000000002,
-            object_id: 00000000-0000-0000-0000-000000000002,
-        }: [
-            0,
-        ],
-    },
-    view: FullView {
-        id: 00000000-0000-0000-0000-000000000001,
-        base_schema_id: 00000000-0000-0000-0000-000000000001,
-        name: "Sample View",
-        materializer_address: "",
-        materializer_options: Object({}),
-        fields: {
-            "foo": Computed {
-                computation: FieldValue(
-                    FieldValueComputation {
-                        schema_id: 1,
-                        field_path: "a",
-                    },
-                ),
-                field_type: Numeric,
+    "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002": [
+      0
+    ],
+    "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003": [
+      1
+    ]
+  },
+  "unfinished_rows": [
+    {
+      "fields": {
+        "foo": {
+          "Computed": {
+            "computation": {
+              "FieldValue": {
+                "field_path": "a",
+                "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002"
+              }
             },
-        },
-        relations: [
-            Relation {
-                global_id: b0000000-0000-0000-0000-000000000001,
-                local_id: 1,
-                search_for: Children,
-                relations: [],
-            },
-        ],
+            "field_type": "Numeric"
+          }
+        }
+      },
+      "missing": 2,
+      "objects": {},
+      "root_object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
     },
+    {
+      "fields": {
+        "foo": {
+          "Computed": {
+            "computation": {
+              "FieldValue": {
+                "field_path": "a",
+                "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003"
+              }
+            },
+            "field_type": "Numeric"
+          }
+        }
+      },
+      "missing": 2,
+      "objects": {},
+      "root_object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
+    }
+  ],
+  "view": {
+    "base_schema_id": "00000000-0000-0000-0000-000000000001",
+    "fields": {
+      "foo": {
+        "computed": {
+          "computation": {
+            "FieldValue": {
+              "field_path": "a",
+              "schema_id": 1
+            }
+          },
+          "field_type": "Numeric"
+        }
+      }
+    },
+    "id": "00000000-0000-0000-0000-000000000001",
+    "materializer_address": "",
+    "materializer_options": {},
+    "name": "Sample View",
+    "relations": [
+      {
+        "global_id": "b0000000-0000-0000-0000-000000000001",
+        "local_id": 1,
+        "relations": [],
+        "search_for": "Children"
+      }
+    ]
+  }
 }
 

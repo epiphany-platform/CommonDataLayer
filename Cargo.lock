@@ -1863,6 +1863,10 @@ dependencies = [
 name = "misc_utils"
 version = "0.1.0"
 dependencies = [
+ "itertools 0.10.0",
+ "serde 1.0.126",
+ "serde_json",
+ "test-case",
  "tracing",
 ]
 
@@ -3300,7 +3304,7 @@ checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
 [[package]]
 name = "snapshot-runner"
 version = "0.1.0"
-source = "git+https://github.com/frondeus/snapshot-runner.git#5b1f2192e1f92870434a3c09f9ee8c10f1b2fb63"
+source = "git+https://github.com/frondeus/snapshot-runner.git#05beacad44af0976e0106487dbfea2b21bad73fc"
 dependencies = [
  "anyhow",
  "chrono",

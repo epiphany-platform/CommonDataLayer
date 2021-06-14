@@ -51,22 +51,14 @@ impl<'a> From<FieldBuilder<'a>> for ComputationEngine<'a> {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use serde::Deserialize;
+    use misc_utils::serde_json;
 
     use super::*;
-
-    #[derive(Deserialize)]
-    struct ObjectSource {
-        id: ObjectIdPair,
-        value: Value,
-    }
 
     #[test]
     fn test_computation() -> Result<()> {
         snapshot_runner::test_snapshots("computation", |input| {
-            let objects: Vec<ObjectSource> =
-                input.get_json("objects").expect("could not get objects");
-            let objects = objects.into_iter().map(|o| (o.id, o.value)).collect();
+            let objects = input.get_json("objects").expect("could not get objects");
 
             let computation: ComputationSource = input
                 .get_json("computation")
@@ -74,7 +66,7 @@ mod tests {
             let engine = ComputationEngine::Join { objects: &objects };
 
             let value = engine.compute(&computation).expect("could not compute");
-            serde_json::to_string(&value).expect("could not serialize")
+            serde_json::to_string_sorted_pretty(&value).expect("could not serialize")
         })
     }
 }
