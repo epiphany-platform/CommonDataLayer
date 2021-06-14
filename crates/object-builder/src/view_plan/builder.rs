@@ -15,7 +15,6 @@ use rpc::schema_registry::types::SearchFor;
 use uuid::Uuid;
 
 use super::{UnfinishedRow, UnfinishedRowPair};
-use crate::utils::get_base_object;
 use crate::{ArrayElementSource, ComputationSource, FieldDefinitionSource, ObjectIdPair};
 
 pub struct ViewPlanBuilder<'a> {
@@ -150,13 +149,18 @@ impl<'a> ViewPlanBuilder<'a> {
                     .find_tree_object_for_relation(*base, tree_obj)?
                     .context("Array field type needs a reference to relation in view definition")?;
 
-                let (elements, objects): (Vec<_>, Vec<_>) = self
-                    .prepare_unfinished_rows(
-                        get_base_object(tree_object),
-                        fields.iter(),
-                        Some(tree_object),
-                    )?
+                let objects = self
+                    .get_objects_ids_for_relation(*base, tree_obj)?
+                    .context("Array field type needs a reference to relation in view definition")?;
+
+                let (elements, objects): (Vec<_>, Vec<_>) = objects
                     .into_iter()
+                    .map(|base_object| {
+                        self.prepare_unfinished_rows(base_object, fields.iter(), Some(tree_object))
+                    })
+                    .collect::<Result<Vec<_>>>()?
+                    .into_iter()
+                    .flatten()
                     .map(|(row, objects)| (ArrayElementSource { fields: row.fields }, objects))
                     .unzip();
 

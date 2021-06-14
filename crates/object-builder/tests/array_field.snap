@@ -6,14 +6,6 @@
     "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003": { "b": 42 }
 }
 
-[computation]
-{
-  "FieldValue": {
-    "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001",
-    "field_path": "a"
-  }
-}
-
 [edges]
 {
   "1": {
@@ -44,14 +36,16 @@
   "materializer_address": "",
   "fields": {
     "foo": {
-      "computed": {
-        "computation": {
-          "FieldValue": {
-            "schema_id": 1,
-            "field_path": "a"
+      "array": {
+        "base": 1,
+        "fields": {
+          "bar": {
+            "simple": {
+              "field_name": "b",
+              "field_type": "numeric"
+            }
           }
-        },
-        "field_type": "numeric"
+        }
       }
     }
   },
@@ -64,53 +58,45 @@
  ]
 }
 
-[expected.computation]
-2
-
 [expected.view_plan_build]
 {
   "missing": {
-    "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001": [
-      0,
-      1
-    ],
     "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002": [
       0
     ],
     "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003": [
-      1
+      0
     ]
   },
   "unfinished_rows": [
     {
       "fields": {
         "foo": {
-          "Computed": {
-            "computation": {
-              "FieldValue": {
-                "field_path": "a",
-                "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002"
+          "Array": {
+            "elements": [
+              {
+                "fields": {
+                  "b": {
+                    "Simple": {
+                      "field_name": "b",
+                      "field_type": "Numeric",
+                      "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002"
+                    }
+                  }
+                }
+              },
+              {
+                "fields": {
+                  "b": {
+                    "Simple": {
+                      "field_name": "b",
+                      "field_type": "Numeric",
+                      "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003"
+                    }
+                  }
+                }
               }
-            },
-            "field_type": "Numeric"
-          }
-        }
-      },
-      "missing": 2,
-      "objects": {},
-      "root_object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
-    },
-    {
-      "fields": {
-        "foo": {
-          "Computed": {
-            "computation": {
-              "FieldValue": {
-                "field_path": "a",
-                "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003"
-              }
-            },
-            "field_type": "Numeric"
+            ]
           }
         }
       },
