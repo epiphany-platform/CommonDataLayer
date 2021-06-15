@@ -5,18 +5,16 @@ export const schemas = writable<RemoteData<Schema[]>>(notLoaded);
 
 export const apiUrl = writable(localStorage.getItem("api-url") || "");
 
-apiUrl.subscribe(url => {
+apiUrl.subscribe((url) => {
   localStorage.setItem("api-url", url);
 });
 
 if (get(apiUrl) === "") {
-  apiUrl.set("http://localhost:50106");
+  apiUrl.set("http://localhost:50106/graphql");
 }
 
-export const darkMode = writable(
-  localStorage.getItem("dark-mode") === "true",
-);
+export const darkMode = writable(localStorage.getItem("dark-mode") === "true");
 
-darkMode.subscribe(isDarkMode => {
+darkMode.subscribe((isDarkMode) => {
   localStorage.setItem("dark-mode", JSON.stringify(isDarkMode));
 });

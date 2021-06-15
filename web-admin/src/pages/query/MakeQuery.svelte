@@ -96,12 +96,6 @@
   }
 </script>
 
-<style>
-  .run-query-button {
-    margin-top: 10px;
-  }
-</style>
-
 <form on:submit|preventDefault={submit}>
   <div class="form-control">
     <label>
@@ -129,26 +123,28 @@
       </RemoteContent>
     </label>
   </div>
-  {#if $queryBy === 'single'}
+  {#if $queryBy === "single"}
     <div class="form-control">
       <label>
         Object ID
         <input
-          class={objectIdError ? 'error' : ''}
+          class={objectIdError ? "error" : ""}
           type="text"
-          bind:value={objectId} />
+          bind:value={objectId}
+        />
       </label>
     </div>
     {#if objectIdError}
       <p class="validation-error">{objectIdError}</p>
     {/if}
-  {:else if $queryBy === 'multiple'}
+  {:else if $queryBy === "multiple"}
     <div class="form-control">
       <label>
         Object ID's
         <textarea
-          class={objectIdsError ? 'invalid' : ''}
-          bind:value={objectIds} />
+          class={objectIdsError ? "invalid" : ""}
+          bind:value={objectIds}
+        />
       </label>
     </div>
     {#if objectIdsError}
@@ -160,3 +156,9 @@
     <button class="run-query-button" type="submit">Run Query</button>
   </div>
 </form>
+
+<style>
+  .run-query-button {
+    margin-top: 10px;
+  }
+</style>

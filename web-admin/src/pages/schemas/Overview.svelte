@@ -11,8 +11,9 @@
   export let schema: Schema;
   export let version: string | null;
 
-  $: versionDefinition = schema.versions.find((v) => v.version === version)
-    ?.definition;
+  $: versionDefinition = schema.versions.find(
+    (v) => v.version === version
+  )?.definition;
   $: versionPretty = versionDefinition
     ? JSON.stringify(JSON.parse(versionDefinition), null, 4)
     : "";
@@ -21,17 +22,6 @@
     return { ...(get(route) as SchemasRoute), version };
   }
 </script>
-
-<style>
-  .breadcrumb-container {
-    width: 100%;
-  }
-
-  .version {
-    white-space: pre-wrap;
-    text-align: left;
-  }
-</style>
 
 <div class="col-8 align-center">
   <section>
@@ -94,3 +84,14 @@
     </div>
   </section>
 </div>
+
+<style>
+  .breadcrumb-container {
+    width: 100%;
+  }
+
+  .version {
+    white-space: pre-wrap;
+    text-align: left;
+  }
+</style>

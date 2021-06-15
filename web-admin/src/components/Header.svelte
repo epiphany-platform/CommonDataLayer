@@ -10,6 +10,78 @@
   });
 </script>
 
+<nav class={`${$darkMode ? "dark-mode" : ""}`}>
+  <div class="nav-container">
+    <div class="display-lg-up">
+      <div class="nav-logo">
+        <Link to={{ page: "home" }}>Common Data Layer</Link>
+      </div>
+    </div>
+    <div class="display-lg-down">
+      <div class="nav-logo">
+        <Link to={{ page: "home" }}>CDL</Link>
+      </div>
+    </div>
+    <ul class="nav-links">
+      <li>
+        <Link to={{ page: "insert" }}>
+          <span class="desktop-link">Insert</span>
+        </Link>
+      </li>
+      <li>
+        <Link to={{ page: "query" }}>
+          <span class="desktop-link">Query</span>
+        </Link>
+      </li>
+      <li>
+        <Link
+          className={$route?.page === "schemas" ? "active" : ""}
+          to={{ page: "schemas" }}
+        >
+          <span class="desktop-link">Schemas</span>
+        </Link>
+      </li>
+      <li>
+        <Link to={{ page: "settings" }}>
+          <span class="desktop-link">Settings</span>
+        </Link>
+      </li>
+    </ul>
+    <span class="mobile-menu-toggle" on:click={() => (menuOpen = !menuOpen)} />
+    {#if menuOpen}
+      <div class="mobile-menu-background" on:click={() => (menuOpen = false)} />
+    {/if}
+    <ul
+      class="mobile-menu menu"
+      style={`display: ${menuOpen ? "block" : "none"};`}
+    >
+      <li>
+        <Link to={{ page: "insert" }}>
+          <span class="mobile-link">Insert</span>
+        </Link>
+      </li>
+      <li>
+        <Link to={{ page: "query" }}>
+          <span class="mobile-link">Query</span>
+        </Link>
+      </li>
+      <li>
+        <Link
+          className={$route?.page === "schemas" ? "active" : ""}
+          to={{ page: "schemas" }}
+        >
+          <span class="mobile-link">Schemas</span>
+        </Link>
+      </li>
+      <li>
+        <Link to={{ page: "settings" }}>
+          <span class="mobile-link">Settings</span>
+        </Link>
+      </li>
+    </ul>
+  </div>
+</nav>
+
 <style>
   nav {
     background: #346cc1;
@@ -52,72 +124,3 @@
     background: rgba(0, 0, 0, 0.25);
   }
 </style>
-
-<nav class={`${$darkMode ? 'dark-mode' : ''}`}>
-  <div class="nav-container">
-    <div class="display-lg-up">
-      <div class="nav-logo">
-        <Link to={{ page: 'home' }}>Common Data Layer</Link>
-      </div>
-    </div>
-    <div class="display-lg-down">
-      <div class="nav-logo">
-        <Link to={{ page: 'home' }}>CDL</Link>
-      </div>
-    </div>
-    <ul class="nav-links">
-      <li>
-        <Link to={{ page: 'insert' }}>
-          <span class="desktop-link">Insert</span>
-        </Link>
-      </li>
-      <li>
-        <Link to={{ page: 'query' }}>
-          <span class="desktop-link">Query</span>
-        </Link>
-      </li>
-      <li>
-        <Link
-          className={$route?.page === 'schemas' ? 'active' : ''}
-          to={{ page: 'schemas' }}>
-          <span class="desktop-link">Schemas</span>
-        </Link>
-      </li>
-      <li>
-        <Link to={{ page: 'settings' }}>
-          <span class="desktop-link">Settings</span>
-        </Link>
-      </li>
-    </ul>
-    <span class="mobile-menu-toggle" on:click={() => (menuOpen = !menuOpen)} />
-    {#if menuOpen}
-      <div class="mobile-menu-background" on:click={() => (menuOpen = false)} />
-    {/if}
-    <ul
-      class="mobile-menu menu"
-      style={`display: ${menuOpen ? 'block' : 'none'};`}>
-      <li>
-        <Link to={{ page: 'insert' }}>
-          <span class="mobile-link">Insert</span>
-        </Link>
-      </li>
-      <li>
-        <Link to={{ page: 'query' }}>
-          <span class="mobile-link">Query</span>
-        </Link>
-      </li>
-      <li>
-        <Link
-          className={$route?.page === 'schemas' ? 'active' : ''}
-          to={{ page: 'schemas' }}>
-          <span class="mobile-link">Schemas</span>
-        </Link>
-      </li>
-      <li>
-        <Link to={{ page: 'settings' }}>
-          <span class="mobile-link">Settings</span>
-        </Link>
-      </li>
-    </ul>
-  </div>
-</nav>

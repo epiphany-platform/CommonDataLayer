@@ -10,7 +10,7 @@
         <p>
           <button on:click={() => darkMode.update((m) => !m)}>
             Your colorscheme is
-            {$darkMode ? 'Dark Mode' : 'Light Mode'}
+            {$darkMode ? "Dark Mode" : "Light Mode"}
           </button>
         </p>
         <div class="form-control">
@@ -19,7 +19,8 @@
             <input
               type="url"
               value={$apiUrl}
-              on:input={(event) => apiUrl.set(event.currentTarget.value)} />
+              on:input={(event) => apiUrl.set(event.currentTarget.value)}
+            />
           </label>
         </div>
       </section>

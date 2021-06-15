@@ -14,13 +14,14 @@
       <p><i>TODO: ADD A DIAGRAM HERE</i></p>
       <p>
         Get started by
-        <Link to={{ page: 'schemas' }}><u>creating a schema</u></Link>
+        <Link to={{ page: "schemas" }}><u>creating a schema</u></Link>
         for your data.
       </p>
       <p>
         You can learn more by visiting our
         <a href="https://github.com/epiphany-platform/CommonDataLayer">
-          <u>GitHub page</u></a>.
+          <u>GitHub page</u></a
+        >.
       </p>
     </div>
   </div>

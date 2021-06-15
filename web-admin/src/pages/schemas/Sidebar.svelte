@@ -36,6 +36,40 @@
   }
 </script>
 
+<div class={`sidebar ${fullWidth ? "" : "sidebar-left align-right"}`}>
+  <h3 class="sidebar-category">Your Schemas</h3>
+  <div class="schema-name-query">
+    <input
+      type="text"
+      placeholder="Employee"
+      value={$nameQuery || ""}
+      on:input={(event) => setQuery(event.currentTarget.value)}
+    />
+  </div>
+  <ul class="sidebar-links">
+    {#if $visibleSchemas.length}
+      {#each $visibleSchemas as schema}
+        <li>
+          <a
+            title={schema.id}
+            class={schema.id === $selectedId ? "active" : ""}
+            on:click={() => selectSchema(schema.id)}
+          >
+            {schema.name}
+          </a>
+        </li>
+      {/each}
+    {:else}
+      <li><i>No schemas match the given query.</i></li>
+    {/if}
+    <li class="add-schema-button">
+      <Link to={{ page: "schemas", creating: true }}>
+        <button>New Schema</button>
+      </Link>
+    </li>
+  </ul>
+</div>
+
 <style>
   .schema-name-query {
     padding-top: 10px;
@@ -48,35 +82,3 @@
     margin-top: 5px;
   }
 </style>
-
-<div class={`sidebar ${fullWidth ? '' : 'sidebar-left align-right'}`}>
-  <h3 class="sidebar-category">Your Schemas</h3>
-  <div class="schema-name-query">
-    <input
-      type="text"
-      placeholder="Employee"
-      value={$nameQuery || ''}
-      on:input={(event) => setQuery(event.currentTarget.value)} />
-  </div>
-  <ul class="sidebar-links">
-    {#if $visibleSchemas.length}
-      {#each $visibleSchemas as schema}
-        <li>
-          <a
-            title={schema.id}
-            class={schema.id === $selectedId ? 'active' : ''}
-            on:click={() => selectSchema(schema.id)}>
-            {schema.name}
-          </a>
-        </li>
-      {/each}
-    {:else}
-      <li><i>No schemas match the given query.</i></li>
-    {/if}
-    <li class="add-schema-button">
-      <Link to={{ page: 'schemas', creating: true }}>
-        <button>New Schema</button>
-      </Link>
-    </li>
-  </ul>
-</div>

@@ -24,14 +24,6 @@
   );
 </script>
 
-<style>
-  .no-schema-selected {
-    margin: auto;
-    height: 100%;
-    vertical-align: middle;
-  }
-</style>
-
 <RemoteContent data={$schemas}>
   <div slot="loading" class="container container-small">
     <div class="row">
@@ -51,7 +43,7 @@
           <h2>Schemas</h2>
           <p>You have no schemas.</p>
           <p>
-            <Link to={{ page: 'schemas', creating: true }}>
+            <Link to={{ page: "schemas", creating: true }}>
               <button>Create a Schema</button>
             </Link>
           </p>
@@ -69,7 +61,8 @@
             <Overview
               showBreadcrumbs={true}
               schema={$schema}
-              version={$version} />
+              version={$version}
+            />
           {:else}
             <Sidebar fullWidth={true} />
           {/if}
@@ -96,3 +89,11 @@
     </div>
   {/if}
 </RemoteContent>
+
+<style>
+  .no-schema-selected {
+    margin: auto;
+    height: 100%;
+    vertical-align: middle;
+  }
+</style>

@@ -10,13 +10,6 @@
   }
 </script>
 
-<style>
-  .form-container {
-    margin-left: auto;
-    margin-right: auto;
-  }
-</style>
-
 <div class="container">
   <div class="row">
     <div class="col align-center">
@@ -30,8 +23,16 @@
       </div>
       <div class="form-container col-sm-8 col-sm-offset-1">
         <MessageForm
-          addMessage={(message) => (transaction = [...transaction, message])} />
+          addMessage={(message) => (transaction = [...transaction, message])}
+        />
       </div>
     </div>
   </section>
 </div>
+
+<style>
+  .form-container {
+    margin-left: auto;
+    margin-right: auto;
+  }
+</style>

@@ -1,6 +1,9 @@
 import { RemoteData, loaded } from "./models";
 
-export function mapLoaded<T, U>(data: RemoteData<T>, mapper: (t: T) => U): RemoteData<U> {
+export function mapLoaded<T, U>(
+  data: RemoteData<T>,
+  mapper: (t: T) => U
+): RemoteData<U> {
   if (data.status === "loaded") {
     return loaded(mapper(data.data));
   } else {
@@ -13,6 +16,7 @@ export function getLoaded<T>(data: RemoteData<T>): T | null {
 }
 
 export function validUuid(id: string): boolean {
-  const uuidRegex = /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
+  const uuidRegex =
+    /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
   return uuidRegex.test(id);
-};
+}

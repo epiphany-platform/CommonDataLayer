@@ -1,19 +1,23 @@
 import { get } from "svelte/store";
 import { schemas, apiUrl } from "./stores";
-import type { RemoteData } from "./models";
+import type { RemoteData, Schema } from "./models";
 import { loading, loaded } from "./models";
-import { allSchemas, mockData } from "./sample-data";
+import { getClient } from "svelte-apollo";
+import { gql } from "@apollo/client";
 
-export async function queryApi<T>(query: string, variables?: Object): Promise<RemoteData<T>> {
+export async function queryApi<T>(
+  query: string,
+  variables?: Object
+): Promise<RemoteData<T>> {
   try {
     const response = await fetch(get(apiUrl), {
       method: "post",
       mode: "cors",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/json"
+        Accept: "application/json",
       },
-      body: JSON.stringify({ query, variables })
+      body: JSON.stringify({ query, variables }),
     });
     const data = await response.json();
 
@@ -27,11 +31,44 @@ export async function queryApi<T>(query: string, variables?: Object): Promise<Re
   }
 }
 
-export const GET_SCHEMAS = ``;
-
-export function loadSchemas() {
+export async function loadSchemas() {
   schemas.set(loading);
-  setTimeout(() => {
-    schemas.set(loaded(allSchemas));
-  }, 1000);
-};
+  const client = getClient();
+  const r = await client.query({
+    query: gql`
+      query AllSchemas {
+        schemas {
+          id
+          name
+          insertDestination
+          queryAddress
+          type
+          definitions {
+            version
+            definition
+          }
+        }
+      }
+    `,
+  });
+  console.log(r);
+  schemas.set(
+    loaded(
+      r.data.schemas.map(function (s) {
+        return {
+          name: s.name,
+          id: s.id,
+          topic: s.insertDestination,
+          queryAddress: s.queryAddress,
+          schemaType: s.type,
+          versions: s.definitions.map(function (d) {
+            return {
+              version: d.version,
+              definition: d.definition,
+            };
+          }),
+        };
+      })
+    )
+  );
+}

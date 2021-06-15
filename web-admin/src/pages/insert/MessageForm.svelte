@@ -54,12 +54,14 @@
 
 <form on:submit|preventDefault={submit}>
   <div class="form-control">
-    <label>Object ID
+    <label
+      >Object ID
       <input
         type="text"
         bind:value={objectId}
-        class={objectIdError ? 'invalid' : ''}
-        placeholder="Leave empty for a random ID" />
+        class={objectIdError ? "invalid" : ""}
+        placeholder="Leave empty for a random ID"
+      />
       {#if objectIdError}
         <p class="validation-error">{objectIdError}</p>
       {/if}
@@ -83,12 +85,14 @@
     </RemoteContent>
   </div>
   <div class="form-control">
-    <label>Payload
+    <label
+      >Payload
       <textarea
         required
         bind:value={data}
-        class={dataError ? 'invalid' : ''}
-        placeholder="JSON content goes here..." />
+        class={dataError ? "invalid" : ""}
+        placeholder="JSON content goes here..."
+      />
     </label>
     {#if dataError}
       <p class="validation-error">{dataError}</p>

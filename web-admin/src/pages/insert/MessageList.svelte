@@ -7,12 +7,6 @@
   export let sendTransaction: () => void;
 </script>
 
-<style>
-  .send-button {
-    margin-top: 10px;
-  }
-</style>
-
 <div class="sidebar sidebar-left align-right">
   <h3 class="sidebar-category">Messages in Transaction</h3>
   <ul class="sidebar-links">
@@ -23,7 +17,8 @@
             <b>{index + 1}:</b>
             {JSON.stringify(message).length / 500}
             kb,
-            {(getLoaded($schemas) || []).find((s) => s.id === message.schemaId)?.name || 'Unknown schema'}
+            {(getLoaded($schemas) || []).find((s) => s.id === message.schemaId)
+              ?.name || "Unknown schema"}
           </span>
         </li>
       {/each}
@@ -37,3 +32,9 @@
     </li>
   </ul>
 </div>
+
+<style>
+  .send-button {
+    margin-top: 10px;
+  }
+</style>

@@ -26,13 +26,6 @@
   }
 </script>
 
-<style>
-  ul.breadcrumbs {
-    justify-content: center;
-    font-size: 16px;
-  }
-</style>
-
 <ul class="breadcrumbs">
   <li><a on:click={backToAllSchemas}>All Schemas</a></li>
   {#if $schemaId}
@@ -44,3 +37,10 @@
     {/if}
   {/if}
 </ul>
+
+<style>
+  ul.breadcrumbs {
+    justify-content: center;
+    font-size: 16px;
+  }
+</style>

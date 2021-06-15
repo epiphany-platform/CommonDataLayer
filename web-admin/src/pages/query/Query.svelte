@@ -21,13 +21,6 @@
   }
 </script>
 
-<style>
-  .data {
-    white-space: pre-wrap;
-    text-align: left;
-  }
-</style>
-
 <div class="container">
   <div class="row">
     <div class="col align-center">
@@ -51,3 +44,10 @@
     </div>
   </section>
 </div>
+
+<style>
+  .data {
+    white-space: pre-wrap;
+    text-align: left;
+  }
+</style>
