@@ -51,7 +51,6 @@ export async function loadSchemas() {
       }
     `,
   });
-  console.log(r);
   schemas.set(
     loaded(
       r.data.schemas.map(function (s) {
