@@ -1,7 +1,7 @@
-use crate::schema::context::SchemaRegistryConn;
 use crate::types::schema::FullSchema;
 use crate::types::view::FullView;
 use async_graphql::FieldResult;
+use rpc::schema_registry::SchemaRegistryConn;
 use uuid::Uuid;
 
 pub async fn get_view(conn: &mut SchemaRegistryConn, id: Uuid) -> FieldResult<FullView> {

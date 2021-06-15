@@ -9,15 +9,14 @@ use std::convert::Infallible;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::Schema;
 use async_graphql_warp::{graphql_subscription, Response};
-use warp::{http::Response as HttpResponse, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
-
-use crate::schema::context::EdgeRegistryConnectionManager;
-use schema::context::{
-    MQEvents, OnDemandMaterializerConnectionManager, SchemaRegistryConnectionManager,
-};
+use rpc::edge_registry::EdgeRegistryConnectionManager;
+use rpc::materializer_ondemand::OnDemandMaterializerConnectionManager;
+use rpc::schema_registry::SchemaRegistryConnectionManager;
+use schema::context::MQEvents;
 use schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
 use settings::Settings;
 use settings_utils::load_settings;
+use warp::{http::Response as HttpResponse, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

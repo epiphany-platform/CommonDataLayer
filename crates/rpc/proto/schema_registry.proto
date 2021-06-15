@@ -20,7 +20,7 @@ service SchemaRegistry {
     rpc GetBaseSchemaOfView (Id) returns (Schema);
     rpc ValidateValue (ValueToValidate) returns (Errors);
     rpc WatchAllSchemaUpdates (Empty) returns (stream Schema);
-    rpc Ping (Empty) returns (Empty);
+    rpc Heartbeat (Empty) returns (Empty);
 }
 
 message NewSchema {
