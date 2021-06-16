@@ -42,7 +42,7 @@ mod simple_views {
         .await?;
         let object_id = Uuid::new_v4();
         insert_message(object_id, schema_id, "{}").await?;
-        sleep(Duration::from_secs(1)); // async insert
+        sleep(Duration::from_secs(1)).await; // async insert
 
         let view_data = materialize_view(view_id, schema_id).await?;
         assert_eq!(view_data.rows.len(), 1);
