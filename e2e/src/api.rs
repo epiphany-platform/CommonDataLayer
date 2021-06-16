@@ -164,6 +164,7 @@ pub async fn materialize_view(view_id: Uuid, schema_id: Uuid) -> Result<Material
 }
 
 #[tokio::test]
+#[cfg_attr(miri, ignore)]
 async fn general_api_compatibility_test() -> Result<()> {
     let schema_id1 = add_schema(
         "test_schema",

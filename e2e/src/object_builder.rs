@@ -7,6 +7,7 @@ mod simple_views {
     use super::*;
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn should_generate_empty_result_set_for_view_without_objects() -> Result<()> {
         let schema_id =
             add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
@@ -24,6 +25,7 @@ mod simple_views {
     }
 
     #[tokio::test]
+    #[cfg_attr(miri, ignore)]
     async fn should_generate_results() -> Result<()> {
         let schema_id =
             add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
