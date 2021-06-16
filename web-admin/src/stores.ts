@@ -1,5 +1,5 @@
 import { get, writable } from "svelte/store";
-import { notLoaded, RemoteData, Schema } from "./models";
+import { notLoaded, RemoteData, Schema} from "./models";
 import { getSdk, Sdk } from "./generated/graphql";
 import { GraphQLClient } from "graphql-request";
 
@@ -19,6 +19,10 @@ apiUrl.subscribe((url) => {
 apiUrl.subscribe((url) => {
   graphqlClient.set(newGraphqlClient(url));
 });
+
+graphqlClient.subscribe((_) => {
+  schemas.set(notLoaded)
+})
 
 darkMode.subscribe((isDarkMode) => {
   localStorage.setItem("dark-mode", JSON.stringify(isDarkMode));
