@@ -7,7 +7,7 @@ const DEFAULT_GRAPHQL_ENDPOINT = "http://localhost:50106/graphql";
 
 export const schemas = writable<RemoteData<Schema[]>>(notLoaded);
 export const apiUrl = writable(
-  localStorage.getItem("api-url") || initLocalStorage()
+  localStorage.getItem("api-url") || initApiUrl()
 );
 export const graphqlClient = writable(newGraphqlClient());
 export const darkMode = writable(localStorage.getItem("dark-mode") === "true");
@@ -24,7 +24,7 @@ darkMode.subscribe((isDarkMode) => {
   localStorage.setItem("dark-mode", JSON.stringify(isDarkMode));
 });
 
-function initLocalStorage() {
+function initApiUrl() {
   localStorage.setItem("api-url", DEFAULT_GRAPHQL_ENDPOINT);
   return DEFAULT_GRAPHQL_ENDPOINT;
 }
