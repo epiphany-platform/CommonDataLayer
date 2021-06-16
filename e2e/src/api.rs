@@ -90,6 +90,10 @@ pub async fn insert_message(object_id: Uuid, schema_id: Uuid, payload: &str) -> 
         .await?.json().await.unwrap();
     let result = resp["data"]["insertMessage"].as_bool().unwrap();
     assert!(result);
+    println!(
+        "Added object obj_id: {} schema_id: {}",
+        object_id, schema_id
+    );
     Ok(())
 }
 pub async fn add_relation(parent_schema: Uuid, child_schema: Uuid) -> Result<Uuid> {
@@ -109,7 +113,7 @@ pub async fn add_relation(parent_schema: Uuid, child_schema: Uuid) -> Result<Uui
         .as_str()
         .context("Failed to read return data")
         .map(Uuid::parse_str)??;
-
+    println!("Added relation {} -> {}", parent_schema, child_schema);
     Ok(relation_id)
 }
 pub async fn add_edges(
@@ -136,6 +140,10 @@ pub async fn add_edges(
         .await?.json().await.unwrap();
     let result = resp["data"]["addEdges"].as_bool().unwrap();
     assert!(result);
+    println!(
+        "Added edges relation_id:{}, {} -> {:?}",
+        relation_id, parent_object_id, child_object_ids
+    );
     Ok(())
 }
 
