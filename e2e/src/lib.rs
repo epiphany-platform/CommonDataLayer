@@ -2,6 +2,8 @@
 mod api;
 #[cfg(test)]
 mod object_builder;
+#[cfg(test)]
+mod on_demand_materializer;
 
 #[cfg(test)]
 const POSTGRES_QUERY_ADDR: &str = "http://cdl-postgres-query-service:6400";

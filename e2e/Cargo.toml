@@ -12,6 +12,7 @@ path = "src/lib.rs"
 [dependencies]
 # Workspace
 cdl_api     = { path = "../crates/api", package="api" }
+cdl_rpc     = { path = "../crates/rpc", package="rpc" }
 
 # Crates.io
 anyhow      = "1.0.40"

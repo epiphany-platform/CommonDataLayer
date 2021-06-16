@@ -989,6 +989,7 @@ dependencies = [
  "api",
  "lazy_static",
  "reqwest",
+ "rpc",
  "serde 1.0.126",
  "serde_json",
  "tokio",

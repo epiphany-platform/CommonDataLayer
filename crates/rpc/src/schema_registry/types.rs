@@ -20,6 +20,7 @@ macro_rules! rpc_enum {
     ) => {
         #[derive(Clone, Copy, Debug, Serialize, Deserialize, PartialEq, Eq, sqlx::Type, Enum, Display)]
         #[sqlx(type_name = $sql, rename_all = "lowercase")]
+        #[serde(rename_all = "UPPERCASE")]
         pub enum $name {
             $($variant),*
         }
