@@ -3,12 +3,12 @@ use std::convert::Infallible;
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::Schema;
 use async_graphql_warp::{graphql_subscription, Response};
+use rpc::edge_registry::EdgeRegistryConnectionManager;
+use rpc::materializer_ondemand::OnDemandMaterializerConnectionManager;
+use rpc::schema_registry::SchemaRegistryConnectionManager;
 use warp::{http::Response as HttpResponse, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
 
-use api::schema::context::EdgeRegistryConnectionManager;
-use api::schema::context::{
-    MQEvents, OnDemandMaterializerConnectionManager, SchemaRegistryConnectionManager,
-};
+use api::schema::context::MQEvents;
 use api::schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
 use api::settings::Settings;
 use settings_utils::load_settings;

@@ -1,38 +1,11 @@
+use crate::{events::EventStream, events::EventSubscriber, settings::Settings};
 use std::collections::HashMap;
 use std::sync::Arc;
-
-use bb8::{Pool, PooledConnection};
-
-use crate::{events::EventStream, events::EventSubscriber, settings::Settings};
-use rpc::edge_registry::edge_registry_client::EdgeRegistryClient;
-use rpc::materializer_ondemand::on_demand_materializer_client::OnDemandMaterializerClient;
-use rpc::schema_registry::schema_registry_client::SchemaRegistryClient;
-use rpc::tonic::transport::Channel;
 use tokio::sync::Mutex;
-
-pub type SchemaRegistryPool = Pool<SchemaRegistryConnectionManager>;
-pub type EdgeRegistryPool = Pool<EdgeRegistryConnectionManager>;
-pub type OnDemandMaterializerPool = Pool<OnDemandMaterializerConnectionManager>;
-
-pub type SchemaRegistryConn = SchemaRegistryClient<Channel>;
-pub type EdgeRegistryConn = EdgeRegistryClient<Channel>;
-pub type OnDemandMaterializerConn = OnDemandMaterializerClient<Channel>;
 
 #[derive(Clone)]
 pub struct MQEvents {
     pub events: Arc<Mutex<HashMap<String, EventSubscriber>>>,
-}
-
-pub struct SchemaRegistryConnectionManager {
-    pub address: String,
-}
-
-pub struct EdgeRegistryConnectionManager {
-    pub address: String,
-}
-
-pub struct OnDemandMaterializerConnectionManager {
-    pub address: String,
 }
 
 impl MQEvents {
@@ -63,77 +36,5 @@ impl MQEvents {
                 Ok(stream)
             }
         }
-    }
-}
-
-#[async_trait::async_trait]
-impl bb8::ManageConnection for SchemaRegistryConnectionManager {
-    type Connection = SchemaRegistryConn;
-    type Error = rpc::error::ClientError;
-
-    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        tracing::debug!("Connecting to registry");
-
-        rpc::schema_registry::connect(self.address.clone()).await
-    }
-
-    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        conn.ping(rpc::schema_registry::Empty {})
-            .await
-            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
-
-        Ok(())
-    }
-
-    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
-        false
-    }
-}
-
-#[async_trait::async_trait]
-impl bb8::ManageConnection for EdgeRegistryConnectionManager {
-    type Connection = EdgeRegistryConn;
-    type Error = rpc::error::ClientError;
-
-    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        tracing::debug!("Connecting to registry");
-
-        rpc::edge_registry::connect(self.address.clone()).await
-    }
-
-    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        conn.heartbeat(rpc::edge_registry::Empty {})
-            .await
-            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
-
-        Ok(())
-    }
-
-    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
-        false
-    }
-}
-
-#[async_trait::async_trait]
-impl bb8::ManageConnection for OnDemandMaterializerConnectionManager {
-    type Connection = OnDemandMaterializerConn;
-    type Error = rpc::error::ClientError;
-
-    async fn connect(&self) -> Result<Self::Connection, Self::Error> {
-        tracing::debug!("Connecting to object builder");
-
-        rpc::materializer_ondemand::connect(self.address.clone()).await
-    }
-
-    async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        conn.heartbeat(rpc::materializer_ondemand::Empty {})
-            .await
-            .map_err(|source| rpc::error::ClientError::QueryError { source })?;
-
-        Ok(())
-    }
-
-    fn has_broken(&self, _conn: &mut Self::Connection) -> bool {
-        false
     }
 }
