@@ -9,29 +9,6 @@
   import Settings from "./pages/Settings.svelte";
   import Schemas from "./pages/schemas/Schemas.svelte";
   import NotFound from "./pages/NotFound.svelte";
-
-  import { ApolloClient, InMemoryCache } from "@apollo/client";
-  import { get } from "svelte/store";
-  import { setClient } from "svelte-apollo";
-  import { onDestroy } from "svelte";
-
-  const apolloClient = new ApolloClient({
-    cache: new InMemoryCache(),
-    uri: get(apiUrl),
-  });
-
-  setClient(apolloClient);
-
-  const unsubscribe = apiUrl.subscribe((uri) => {
-    const apolloClient = new ApolloClient({
-      cache: new InMemoryCache(),
-      uri,
-    });
-
-    setClient(apolloClient);
-  });
-
-  onDestroy(() => unsubscribe());
 </script>
 
 <main>

@@ -6,12 +6,17 @@ export interface InsertMessage {
 
 export type QueryResult = Map<string, Object>;
 
+export enum SchemaKind {
+  DocumentStorage = 'DOCUMENT_STORAGE',
+  Timeseries = 'TIMESERIES'
+}
+
 export interface Schema {
   id: string;
   name: string;
   topic: string;
   queryAddress: string;
-  schemaType: SchemaType;
+  schemaType: SchemaKind;
   versions: SchemaVersion[];
 }
 
@@ -26,10 +31,8 @@ export interface NewSchema {
   topic: string;
   queryAddress: string;
   definition: string;
-  schemaType: SchemaType;
+  schemaType: SchemaKind;
 }
-
-export type SchemaType = "DocumentStorage" | "Timeseries";
 
 export type RemoteData<T> =
   | { status: "not-loaded" }
