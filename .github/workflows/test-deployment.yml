@@ -32,6 +32,8 @@ env:
   CARGO_NET_RETRY: 10
   RUST_BACKTRACE: short
   RUSTUP_MAX_RETRIES: 10
+  DOCKER_BUILDKIT: 1
+  ENV: CI
 
 jobs:
   deployment-test:
@@ -71,12 +73,7 @@ jobs:
         run: DOCKER_BUILDKIT=1 docker build --no-cache --target cache-import .
         continue-on-error: true
       - name: build cdl images
-        run: DOCKER_BUILDKIT=1 ENV=CI ./build.sh
-      - name: Build cache
-        if: steps.cache.outputs.cache-hit != 'true'
-        run: |
-          DOCKER_BUILDKIT=1 docker build -t local/cache --no-cache --target cache-export .
-          docker save local/cache:latest > cache_img
+        run: ./build.sh
       - name: add kafka topics
         run: |
           topics=(cdl.data.input CDL_SCHEMA_SYNCHRO cdl.document.data cdl.timeseries.data cdl.timeseries.generic-druid cdl.timeseries2.data cdl.edge.input cdl.errors cdl.materialize)
@@ -114,3 +111,8 @@ jobs:
           [[ -z `kubectl get pods -o=jsonpath="{.items[?(.status.containerStatuses[0].started==false)]['metadata.name']}"` ]]
       - name: uninstall cdl rabbitmq
         run: helm uninstall cdl
+      - name: Build cache
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          DOCKER_BUILDKIT=1 docker build -t local/cache --no-cache --target cache-export .
+          docker save local/cache:latest > cache_img

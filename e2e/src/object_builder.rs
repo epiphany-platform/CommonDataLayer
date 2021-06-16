@@ -4,6 +4,10 @@ use uuid::Uuid;
 
 mod simple_views {
 
+    use std::time::Duration;
+
+    use tokio::time::sleep;
+
     use super::*;
 
     #[tokio::test]
@@ -38,6 +42,7 @@ mod simple_views {
         .await?;
         let object_id = Uuid::new_v4();
         insert_message(object_id, schema_id, "{}").await?;
+        sleep(Duration::from_secs(1)); // async insert
 
         let view_data = materialize_view(view_id, schema_id).await?;
         assert_eq!(view_data.rows.len(), 1);
