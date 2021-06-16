@@ -7,8 +7,8 @@ export interface InsertMessage {
 export type QueryResult = Map<string, Object>;
 
 export enum SchemaKind {
-  DocumentStorage = 'DOCUMENT_STORAGE',
-  Timeseries = 'TIMESERIES'
+  DocumentStorage = "DOCUMENT_STORAGE",
+  Timeseries = "TIMESERIES",
 }
 
 export interface Schema {

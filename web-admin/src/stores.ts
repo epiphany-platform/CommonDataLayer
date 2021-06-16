@@ -1,12 +1,14 @@
 import { get, writable } from "svelte/store";
 import { notLoaded, RemoteData, Schema } from "./models";
-import {getSdk, Sdk} from "./generated/graphql";
-import {GraphQLClient} from "graphql-request";
+import { getSdk, Sdk } from "./generated/graphql";
+import { GraphQLClient } from "graphql-request";
 
 const DEFAULT_GRAPHQL_ENDPOINT = "http://localhost:50106/graphql";
 
 export const schemas = writable<RemoteData<Schema[]>>(notLoaded);
-export const apiUrl = writable(localStorage.getItem("api-url") || initLocalStorage());
+export const apiUrl = writable(
+  localStorage.getItem("api-url") || initLocalStorage()
+);
 export const graphqlClient = writable(newGraphqlClient());
 export const darkMode = writable(localStorage.getItem("dark-mode") === "true");
 
@@ -15,8 +17,8 @@ apiUrl.subscribe((url) => {
 });
 
 apiUrl.subscribe((url) => {
-  graphqlClient.set(newGraphqlClient(url))
-})
+  graphqlClient.set(newGraphqlClient(url));
+});
 
 darkMode.subscribe((isDarkMode) => {
   localStorage.setItem("dark-mode", JSON.stringify(isDarkMode));
@@ -24,11 +26,11 @@ darkMode.subscribe((isDarkMode) => {
 
 function initLocalStorage() {
   localStorage.setItem("api-url", DEFAULT_GRAPHQL_ENDPOINT);
-  return DEFAULT_GRAPHQL_ENDPOINT
+  return DEFAULT_GRAPHQL_ENDPOINT;
 }
 
 export function newGraphqlClient(url: string = null): Sdk {
   const graphqlUrl = url == null ? get(apiUrl) : url;
   const client = new GraphQLClient(graphqlUrl);
-  return getSdk(client)
+  return getSdk(client);
 }

@@ -1,13 +1,13 @@
 query AllSchemas {
-    schemas {
-        id,
-        name,
-        type,
-        definitions {
-            version,
-            definition
-        },
-        queryAddress,
-        insertDestination
+  schemas {
+    id
+    name
+    type
+    definitions {
+      version
+      definition
     }
+    queryAddress
+    insertDestination
+  }
 }
