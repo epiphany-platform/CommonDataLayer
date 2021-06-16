@@ -90,7 +90,7 @@ impl FullView {
     }
 }
 
-#[derive(Debug, SimpleObject)]
+#[derive(Debug, SimpleObject, serde::Deserialize)]
 pub struct MaterializedView {
     /// Source view's UUID
     pub id: Uuid,
@@ -98,7 +98,8 @@ pub struct MaterializedView {
     pub rows: Vec<RowDefinition>,
 }
 
-#[derive(Debug, SimpleObject)]
+#[derive(Debug, SimpleObject, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RowDefinition {
     /// Object UUIDs
     pub object_ids: Vec<Uuid>,

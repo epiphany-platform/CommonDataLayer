@@ -1,22 +1,16 @@
-pub mod error;
-pub mod events;
-pub mod schema;
-pub mod settings;
-pub mod types;
-
 use std::convert::Infallible;
 
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::Schema;
 use async_graphql_warp::{graphql_subscription, Response};
+use rpc::edge_registry::EdgeRegistryConnectionManager;
+use rpc::materializer_ondemand::OnDemandMaterializerConnectionManager;
+use rpc::schema_registry::SchemaRegistryConnectionManager;
 use warp::{http::Response as HttpResponse, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
 
-use crate::schema::context::EdgeRegistryConnectionManager;
-use schema::context::{
-    MQEvents, OnDemandMaterializerConnectionManager, SchemaRegistryConnectionManager,
-};
-use schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
-use settings::Settings;
+use api::schema::context::MQEvents;
+use api::schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
+use api::settings::Settings;
 use settings_utils::load_settings;
 
 #[tokio::main]

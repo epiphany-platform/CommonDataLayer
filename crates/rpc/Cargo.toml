@@ -15,11 +15,14 @@ tracing_utils           = { path    = "../utils/crates/tracing", features = ["gr
 
 # Crates.io
 anyhow      = "1.0.40"
+async-trait = "0.1.50"
+bb8         = "0.7.0"
 derive_more = "0.99.14"
 prost       = "0.7.0"
 serde       = { version = "1.0.126", features = ["derive"] }
 sqlx        = { version = "0.5.5", features = ['runtime-tokio-rustls'] }
 thiserror   = "1.0.25"
 tonic       = "0.4.3"
+tracing     = "0.1.26"
 async-graphql           = { version = "2.9.0", features = ["uuid"] }
 futures-util            = "0.3.15"

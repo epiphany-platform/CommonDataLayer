@@ -982,6 +982,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
 
 [[package]]
+name = "e2e"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "api",
+ "lazy_static",
+ "reqwest",
+ "serde 1.0.126",
+ "serde_json",
+ "tokio",
+ "uuid",
+]
+
+[[package]]
 name = "edge-registry"
 version = "0.1.0"
 dependencies = [
@@ -2990,6 +3004,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-graphql",
+ "async-trait",
+ "bb8",
  "derive_more",
  "futures-util",
  "prost",
@@ -2997,6 +3013,7 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tonic",
+ "tracing",
  "tracing_utils",
 ]
 
