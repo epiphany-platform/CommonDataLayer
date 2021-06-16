@@ -19,7 +19,7 @@
             <input
               type="url"
               value={$apiUrl}
-              on:input={(event) => apiUrl.set(event.currentTarget.value)}
+              on:blur={(event) => apiUrl.set(event.currentTarget.value)}
             />
           </label>
         </div>

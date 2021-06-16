@@ -20,3 +20,12 @@ export function validUuid(id: string): boolean {
     /^[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}$/i;
   return uuidRegex.test(id);
 }
+
+// export function debounce(callback: (...args: any[]) => void, interval: number): (...args: any[]) => void {
+//   let debounceTimeoutId: number;
+
+//   return function(...args) {
+//     clearTimeout(debounceTimeoutId);
+//     debounceTimeoutId = setTimeout(() => callback.apply(this, args), interval);
+//   };
+// }
