@@ -163,7 +163,7 @@ pub async fn materialize_view(view_id: Uuid, schema_id: Uuid) -> Result<Material
                     ]
                 }}
             }},
-            "query": "query OnDemandRequest($req: OnDemandViewRequest!) {{\n  onDemandView(request: $req) {{\n    id\n    rows {{\n      objectId\n      fields\n    }}\n  }}\n}}\n"
+            "query": "query OnDemandRequest($req: OnDemandViewRequest!) {{\n  onDemandView(request: $req) {{\n    id\n    rows {{\n      objectIds\n      fields\n    }}\n  }}\n}}\n"
         }}"#, view_id,schema_id))
         .send()
         .await?.json().await.unwrap();
@@ -186,7 +186,7 @@ async fn general_api_compatibility_test() -> Result<()> {
         POSTGRES_INSERT_DESTINATION,
     )
     .await?;
-    let _view_id = add_view(
+    let view_id = add_view(
         schema_id1,
         "test_view",
         POSTGRES_MATERIALIZER_ADDR,
@@ -202,5 +202,6 @@ async fn general_api_compatibility_test() -> Result<()> {
 
     add_edges(relation_id, obj1_id, &[obj2_id]).await?;
 
+    materialize_view(view_id, schema_id1).await?;
     Ok(())
 }

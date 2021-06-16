@@ -26,7 +26,7 @@ impl bb8::ManageConnection for SchemaRegistryConnectionManager {
     }
 
     async fn is_valid(&self, conn: &mut PooledConnection<'_, Self>) -> Result<(), Self::Error> {
-        conn.ping(rpc::schema_registry::Empty {})
+        conn.heartbeat(rpc::schema_registry::Empty {})
             .await
             .map_err(|source| rpc::error::ClientError::QueryError { source })?;
 
