@@ -15,7 +15,7 @@
     (v) => v.version === version
   )?.definition;
   $: versionPretty = versionDefinition
-    ? JSON.stringify(JSON.parse(versionDefinition), null, 4)
+    ? JSON.stringify(versionDefinition, null, 4)
     : "";
 
   function versionLink(version: string): SchemasRoute {
