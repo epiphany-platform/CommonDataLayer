@@ -16,7 +16,7 @@ mod simple_views {
             POSTGRES_MATERIALIZER_ADDR,
             Default::default(),
         )
-        .await?; // TODO: Materializer_addr - optional if none view should not me automatically materialized(only on demand)
+        .await?; // TODO: Materializer_addr - should be optional if none view should not be automatically materialized(only on demand)
 
         let view_data = materialize_view(view_id, schema_id).await?;
         assert!(view_data.rows.is_empty());
