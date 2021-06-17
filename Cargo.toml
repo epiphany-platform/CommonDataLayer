@@ -16,6 +16,3 @@ incremental = false
 [profile.release]
 lto = true
 codegen-units = 1
-
-# [patch."https://github.com/frondeus/snapshot-runner.git"]
-# snapshot-runner = { path = "../Personal/snapshot-runner" } # todo: remove me before merge

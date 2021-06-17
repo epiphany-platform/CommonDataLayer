@@ -15,4 +15,4 @@ dependencies: `colordiff`
 
 TODO:
 * [ ] Edge cases when View is invalid
-* [ ] Edge case for inner/left join 
+* [x] Edge case for inner/left join 

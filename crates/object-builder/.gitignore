@@ -1,7 +1,2 @@
-.DS_Store
-.idea
-*.log
-tmp/
-
 tests/**/*.new
 tests/**/*.orig
