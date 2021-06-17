@@ -12,5 +12,5 @@ spec:
       value: "1"
     command:
       - './e2e'
-#      - '--nocapture'
+#       - '--nocapture'
   restartPolicy: Never
