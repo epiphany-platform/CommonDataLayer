@@ -97,3 +97,47 @@ impl RowBuilder {
         Ok(RowDefinition { object_ids, fields })
     }
 }
+
+#[cfg(all(test, not(miri)))]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use anyhow::Result;
+    use misc_utils::serde_json::{to_string_sorted, SortSettings};
+
+    use super::*;
+    use crate::buffer_stream::ObjectBuffer;
+
+    #[test]
+    fn test_row_builder() -> Result<()> {
+        snapshot_runner::test_snapshots("builded_rows", |input| {
+            let view = input.get_json("view").expect("view");
+            let edges: Vec<_> = input.get_json("edges").expect("edges");
+            let objects: BTreeMap<ObjectIdPair, Value> =
+                input.get_json("objects").expect("could not get objects");
+
+            let mut buffer = ObjectBuffer::try_new(view, &edges).expect("valid view plan");
+            let row_builder = RowBuilder::new();
+
+            let rows: Vec<RowDefinition> = objects
+                .into_iter()
+                .filter_map(|(id, value)| buffer.add_object(id, value))
+                .collect::<Result<Vec<_>>>()
+                .expect("row sources")
+                .into_iter()
+                .flatten()
+                .map(|row| row_builder.build(row))
+                .collect::<Result<Vec<_>>>()
+                .expect("builded rows");
+
+            to_string_sorted(
+                &rows,
+                SortSettings {
+                    pretty: true,
+                    sort_arrays: true,
+                },
+            )
+            .expect("Cannot serialize")
+        })
+    }
+}

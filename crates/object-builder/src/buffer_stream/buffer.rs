@@ -1,7 +1,6 @@
 use anyhow::Result;
 use cdl_dto::{edges::TreeResponse, materialization::FullView};
 use serde_json::Value;
-use std::{collections::HashMap, num::NonZeroU8};
 
 use crate::view_plan::ViewPlan;
 use crate::{ObjectIdPair, RowSource};
@@ -11,12 +10,14 @@ use crate::{ObjectIdPair, RowSource};
 /// of the join arrives
 pub struct ObjectBuffer {
     plan: ViewPlan,
+    single_mode: bool,
 }
 
 impl ObjectBuffer {
-    pub fn try_new(view: FullView, edges: &HashMap<NonZeroU8, TreeResponse>) -> Result<Self> {
+    pub fn try_new(view: FullView, edges: &[TreeResponse]) -> Result<Self> {
         let plan = ViewPlan::try_new(view, edges)?;
-        Ok(Self { plan })
+        let single_mode = edges.is_empty();
+        Ok(Self { plan, single_mode })
     }
 
     pub fn add_object(
@@ -49,35 +50,23 @@ impl ObjectBuffer {
                     Some(Ok(result))
                 }
             }
-            None => {
-                // if we are processing object that is not missing it means either:
-                // 1. there are no relations defined for this view and we should just process it
-                // 2. we got an object_id event when we didnt ask for it.
-                //      remember - object builder asks for specific object ids
-                // Therefore only 1. option should be possible and we should return it
-                let rows = self.plan.builder().prepare_unfinished_rows(
-                    pair,
-                    self.plan.view.fields.iter(),
-                    None,
-                );
+            None if self.single_mode => {
+                let row = self.plan.builder().build_single_row(pair);
 
-                Some(rows.map(|rows| {
-                    rows.into_iter()
-                        .map(|(row, _)| row.into_single(value.clone()))
-                        .collect()
-                }))
+                Some(row.map(|row| vec![row.into_single(value.clone())]))
             }
+            None => None,
         }
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, not(miri)))]
 mod tests {
     use super::*;
 
     impl ObjectBuffer {
-        pub fn new_test(plan: ViewPlan) -> Self {
-            Self { plan }
+        pub fn new_test(plan: ViewPlan, single_mode: bool) -> Self {
+            Self { plan, single_mode }
         }
     }
 }

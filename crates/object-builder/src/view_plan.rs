@@ -1,20 +1,20 @@
 use anyhow::Result;
 use cdl_dto::{edges::TreeResponse, materialization::FullView};
-use maplit::hashset;
 use serde::Serialize;
 use serde_json::Value;
-use std::{
-    collections::{HashMap, HashSet},
-    num::NonZeroU8,
-};
+use std::{collections::HashMap, num::NonZeroU8};
 
-use crate::{utils::get_base_object, FieldDefinitionSource, ObjectIdPair, RowSource};
+use crate::{FieldDefinitionSource, ObjectIdPair, RowSource};
 
 use self::builder::ViewPlanBuilder;
 
 mod builder;
 
-type UnfinishedRowPair = (UnfinishedRow, HashSet<ObjectIdPair>);
+#[derive(Clone, Debug)]
+pub struct UnfinishedRowVariant {
+    root_object: ObjectIdPair,
+    objects: HashMap<NonZeroU8, ObjectIdPair>,
+}
 
 #[derive(Clone, Debug, Serialize)]
 pub struct UnfinishedRow {
@@ -29,18 +29,6 @@ pub struct UnfinishedRow {
 }
 
 impl UnfinishedRow {
-    fn new(root_object: ObjectIdPair) -> UnfinishedRowPair {
-        (
-            Self {
-                missing: 0,
-                objects: Default::default(),
-                root_object,
-                fields: Default::default(),
-            },
-            hashset![],
-        )
-    }
-
     pub fn into_single(self, value: Value) -> RowSource {
         RowSource::Single {
             root_object: self.root_object,
@@ -69,29 +57,14 @@ pub struct ViewPlan {
 }
 
 impl ViewPlan {
-    pub fn try_new(view: FullView, edges: &HashMap<NonZeroU8, TreeResponse>) -> Result<Self> {
+    pub fn try_new(view: FullView, edges: &[TreeResponse]) -> Result<Self> {
         let mut missing: HashMap<ObjectIdPair, Vec<usize>> = Default::default();
 
-        let builder = ViewPlanBuilder { view: &view };
+        let builder = ViewPlanBuilder::new(&view);
 
-        let unfinished_rows = edges
-            .values()
-            .flat_map(|res| res.objects.iter())
-            .map(|tree_object| {
-                builder.prepare_unfinished_rows(
-                    get_base_object(tree_object),
-                    view.fields.iter(),
-                    Some(tree_object),
-                )
-            })
-            .collect::<Result<Vec<_>>>()?
+        let unfinished_rows = builder
+            .build_rows(edges)?
             .into_iter()
-            .flatten()
-            .map(|(mut row, set)| {
-                row.missing = set.len();
-                (row, set)
-            })
-            .filter(|(row, _)| row.missing > 0)
             .enumerate()
             .map(|(idx, (row, set))| {
                 for object in set {
@@ -109,7 +82,10 @@ impl ViewPlan {
     }
 
     pub fn builder(&self) -> ViewPlanBuilder {
-        ViewPlanBuilder { view: &self.view }
+        ViewPlanBuilder {
+            view: &self.view,
+            relations: Default::default(),
+        }
     }
 }
 
@@ -117,17 +93,24 @@ impl ViewPlan {
 mod tests {
     use super::*;
     use anyhow::Result;
-    use misc_utils::serde_json;
+    use misc_utils::serde_json::{to_string_sorted, SortSettings};
 
     #[test]
     fn build_view_plan_test() -> Result<()> {
         snapshot_runner::test_snapshots("view_plan_build", |input| {
             let view = input.get_json("view").expect("view");
-            let edges = input.get_json("edges").expect("edges");
+            let edges: Vec<_> = input.get_json("edges").expect("edges");
 
             let view_plan = ViewPlan::try_new(view, &edges).expect("valid view plan");
 
-            serde_json::to_string_sorted_pretty(&view_plan).expect("Cannot serialize")
+            to_string_sorted(
+                &view_plan,
+                SortSettings {
+                    pretty: true,
+                    sort_arrays: true,
+                },
+            )
+            .expect("Cannot serialize")
         })
     }
 }

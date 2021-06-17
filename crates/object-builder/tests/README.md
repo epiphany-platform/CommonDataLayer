@@ -5,6 +5,14 @@ To fix tests by accepting new version:
 patch --ignore-whitespace < *.new
 ```
 
+or use interactive script:
+
+dependencies: `colordiff`
+
+``` sh
+./review.sh
+```
+
 TODO:
 * [ ] Edge cases when View is invalid
-* [ ] Edge case for inner/left join 
+* [x] Edge case for inner/left join 

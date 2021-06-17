@@ -3,12 +3,12 @@ use cdl_dto::{edges::TreeResponse, materialization::FullView};
 use futures::{ready, Stream};
 use pin_project_lite::pin_project;
 use serde_json::Value;
-use std::{collections::HashMap, num::NonZeroU8, task::Poll};
+use std::task::Poll;
 
 mod buffer;
 
 use crate::{ObjectIdPair, RowSource};
-use buffer::ObjectBuffer;
+pub use buffer::ObjectBuffer;
 
 pin_project! {
     pub struct ObjectBufferedStream<S> {
@@ -23,11 +23,7 @@ impl<S> ObjectBufferedStream<S>
 where
     S: Stream<Item = Result<(ObjectIdPair, Value)>> + Unpin,
 {
-    pub fn try_new(
-        input: S,
-        view: FullView,
-        edges: &HashMap<NonZeroU8, TreeResponse>,
-    ) -> Result<Self> {
+    pub fn try_new(input: S, view: FullView, edges: &[TreeResponse]) -> Result<Self> {
         Ok(Self {
             buffer: ObjectBuffer::try_new(view, edges)?,
             vec: Default::default(),
@@ -93,9 +89,9 @@ mod tests {
     where
         S: Stream<Item = Result<(ObjectIdPair, Value)>> + Unpin,
     {
-        pub fn new_test(input: S, plan: ViewPlan) -> Self {
+        pub fn new_test(input: S, plan: ViewPlan, single_mode: bool) -> Self {
             Self {
-                buffer: ObjectBuffer::new_test(plan),
+                buffer: ObjectBuffer::new_test(plan, single_mode),
                 vec: Default::default(),
                 input,
             }
@@ -126,7 +122,7 @@ mod tests {
             view: any_view(obj.0),
         };
 
-        let (tx, stream) = act(plan);
+        let (tx, stream) = act(plan, true);
         pin_mut!(stream);
 
         assert!(stream.next().now_or_never().is_none());
@@ -205,7 +201,7 @@ mod tests {
             view: any_view(a_id),
         };
 
-        let (tx, stream) = act(plan);
+        let (tx, stream) = act(plan, false);
         pin_mut!(stream);
 
         // No object arrived, pending
@@ -274,10 +270,13 @@ mod tests {
         (pair, value)
     }
 
-    fn act(plan: ViewPlan) -> (Sender<Result<(ObjectIdPair, Value)>>, TestStream) {
+    fn act(
+        plan: ViewPlan,
+        single_mode: bool,
+    ) -> (Sender<Result<(ObjectIdPair, Value)>>, TestStream) {
         let (tx, rx) = channel(16);
         let rx_stream = ReceiverStream::new(rx);
-        let stream = ObjectBufferedStream::new_test(rx_stream, plan);
+        let stream = ObjectBufferedStream::new_test(rx_stream, plan, single_mode);
 
         (tx, stream)
     }
