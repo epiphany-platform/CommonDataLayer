@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Polly" Version="7.2.2" />
+		<PackageReference Include="RestSharp" Version="106.11.7" />
     <PackageReference Include="AutoFixture" Version="4.17.0" />
     <PackageReference Include="MassTransit.AspNetCore" Version="7.2.0" />
     <PackageReference Include="MassTransit.Kafka" Version="7.2.0" />    
@@ -35,7 +37,8 @@
   </ItemGroup>
 
   <ItemGroup>
-		<Protobuf Include="Proto/schema_registry.proto" GrpcServices="Client"/>
+		<Protobuf Include="Proto/schema_registry.proto" GrpcServices="Client" />
+    <Protobuf Include="Proto/edge_registry.proto" GrpcServices="Client" />
 	</ItemGroup>
 
 </Project>

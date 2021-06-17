@@ -4,10 +4,11 @@ using MassTransit;
 using MassTransit.KafkaIntegration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using CDL.Tests.GrpcServices;
+using CDL.Tests.Services;
 using static SchemaRegistry.SchemaRegistry;
 using System;
 using AutoFixture;
+using static EdgeRegistry.EdgeRegistry;
 
 namespace CDL.Tests
 {
@@ -44,9 +45,15 @@ namespace CDL.Tests
             {
                 o.Address = new Uri(configuration.CDL_SCHEMA_REGISTRY_ADDRESS);
             });
+            services.AddGrpcClient<EdgeRegistryClient>(o =>
+            {
+                o.Address = new Uri(configuration.CDL_EDGE_REGISTRY_ADDRESS);
+            });
 
-            services.AddTransient<SchemaRegistryService>();
-            services.AddTransient<Fixture>();
+            services.AddScoped<EdgeRegistryService>();
+            services.AddScoped<SchemaRegistryService>();
+            services.AddScoped<QueryRouterService>();
+            services.AddScoped<Fixture>();
 
         } 
 

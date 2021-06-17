@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using SchemaRegistry;
 using static SchemaRegistry.SchemaRegistry;
 
-namespace CDL.Tests.GrpcServices
+namespace CDL.Tests.Services
 {
     public class SchemaRegistryService
     {

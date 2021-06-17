@@ -1,20 +1,31 @@
 using System;
+using System.Collections.Generic;
+using System.Text.Json;
 using AutoFixture;
-using CDL.Tests.GrpcServices;
+using CDL.Tests.MessageBroker.Kafka;
+using CDL.Tests.Services;
+using CDL.Tests.TestDataObjects;
+using MassTransit.KafkaIntegration;
 using SchemaRegistry;
 using Xunit;
 
-namespace CDL.Tests.Tests
+namespace CDL.Tests.ServicesTests
 {
     public class SchemaRegistryServiceTests
     {
         private SchemaRegistryService _schemaRegistryService;
+        private QueryRouterService _queryService;
+        private ITopicProducer<InsertObject> _kafkaProducer;
         private Fixture _fixture;
-        public SchemaRegistryServiceTests(SchemaRegistryService schemaRegistryService, Fixture fixture)
+
+        public SchemaRegistryServiceTests(SchemaRegistryService schemaRegistryService, QueryRouterService queryService, ITopicProducer<InsertObject> kafkaProducer, Fixture fixture)
         {
             _schemaRegistryService = schemaRegistryService;
+            _queryService = queryService;
+            _kafkaProducer = kafkaProducer;
             _fixture = fixture;
         }
+
         [Fact]
         public void ServicePing()
         {
@@ -29,7 +40,7 @@ namespace CDL.Tests.Tests
         public void AddSchema(string schemaName)
         {
             Guid schemaUUID;
-            var schema = _schemaRegistryService.AddSchema(schemaName, "{\"name\": \"test\"}", new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
+            var schema = _schemaRegistryService.AddSchema(schemaName, _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
             Guid.TryParse(schema.Id_, out schemaUUID);
 
             Assert.NotNull(schema);
@@ -41,7 +52,7 @@ namespace CDL.Tests.Tests
         public void GetSchema()
         {
             var name = _fixture.Create<string>();
-            var schema = _schemaRegistryService.AddSchema(name, "{\"name\": \"test\"}", new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
+            var schema = _schemaRegistryService.AddSchema(name, _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
             var results = _schemaRegistryService.GetFullSchema(schema.Id_).Result;
 
             Assert.NotNull(results);
@@ -54,7 +65,7 @@ namespace CDL.Tests.Tests
         {
             var name = _fixture.Create<string>();
             Guid viewUUID;
-            var schema = _schemaRegistryService.AddSchema(name, "{\"name\": \"test\"}", new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
+            var schema = _schemaRegistryService.AddSchema(name, _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
             var view = _schemaRegistryService.AddViewToSchema(schema.Id_, _fixture.Create<string>(), "{\"Name\": \"Name\" }").Result;
             var viewDetails = _schemaRegistryService.GetView(view.Id_).Result;
 
@@ -74,7 +85,7 @@ namespace CDL.Tests.Tests
         {
             var name = _fixture.Create<string>();
             string exceptionMsg = string.Empty;
-            var schema = _schemaRegistryService.AddSchema(_fixture.Create<string>(), "{\"name\": \"test\"}", new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
+            var schema = _schemaRegistryService.AddSchema(_fixture.Create<string>(), _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
             
             try
             {
@@ -113,29 +124,28 @@ namespace CDL.Tests.Tests
 
         }
 
-        // [Fact]
-        // public void GetObjectsAndObjectDetailsFromSchema()
-        // {
-        //     var schemaId = _schemaRegistryService.AddSchema(_fixture.Create<string>(), "{\"name\": \"test\"}", new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
-        //     var schemaObjectsBefore = _queryRouterService.GetAllObjectsFromSchema(schemaId).Result;
-        //     var objectId = Guid.NewGuid().ToString();
-        //     var payload = new InsertDataObject()
-        //     {
-        //         schemaId = schemaId,
-        //         objectId = objectId,
-        //         data = _testData
-        //     };
-        //     _dataRouterService.Messege("NULL", JsonSerializer.Serialize(payload));
-        //     var schemaObjectsAfter = _queryRouterService.GetAllObjectsFromSchema(schemaId).Result;
-        //     var objectDetails = _queryRouterService.GetSingleObject(schemaId, objectId).Result;
+        [Fact]
+        public void GetObjectsAndObjectDetailsFromSchema()
+        {
+            var schema = _schemaRegistryService.AddSchema(_fixture.Create<string>(), _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
+            var schemaObjectsBefore = _queryService.GetAllObjectsFromSchema(schema.Id_).Result;
+            var objectId = Guid.NewGuid().ToString();
+            
+            _kafkaProducer.Produce(new InsertObject()
+            {
+                schemaId = schema.Id_,
+                objectId = objectId,
+                data = _fixture.Create<GeneralObject>(),
+            });
 
-        //     Assert.NotNull(schemaId);
-        //     Assert.NotNull(schemaObjectsBefore);
-        //     Assert.NotNull(schemaObjectsAfter);
-        //     Assert.NotNull(objectDetails);
+            var schemaObjectsAfter = _queryService.GetAllObjectsFromSchema(schema.Id_).Result;
+            var objectDetails = _queryService.GetSingleObject(schema.Id_, objectId).Result;
 
-        //     var testDataFromResponse = JsonSerializer.Deserialize<IList<GeneralObject>>(schemaObjectsBefore.Content);
-        //     var testDataFromResponseAfter = JsonSerializer.Deserialize<IList<GeneralObject>>(schemaObjectsAfter.Content);
-        // }
+            Assert.NotNull(schema.Id_);
+            Assert.NotNull(objectDetails.ResponseStatus);
+            Assert.NotNull(schemaObjectsAfter.ResponseStatus);
+            Assert.Equal(System.Net.HttpStatusCode.OK, objectDetails.StatusCode);
+            Assert.Equal(System.Net.HttpStatusCode.OK, schemaObjectsAfter.StatusCode);
+        }
     }
 }

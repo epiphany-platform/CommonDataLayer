@@ -23,7 +23,6 @@ namespace CDL.Tests.TestDataObjects
         Coupe,
         Sedan,
         Hatchback,
-        Convertible,
         Wagon,
         SUV
     }

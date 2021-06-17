@@ -1,5 +1,4 @@
-﻿using AutoFixture;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Text.Json;
 
 namespace CDL.Tests.TestDataObjects
