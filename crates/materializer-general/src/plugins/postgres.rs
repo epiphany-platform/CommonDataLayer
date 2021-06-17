@@ -7,11 +7,11 @@ use bb8_postgres::{
     bb8::{Pool, PooledConnection},
     tokio_postgres::{binary_copy::BinaryCopyInWriter, types::ToSql},
 };
+use cdl_dto::materialization::PostgresMaterializerOptions;
 use futures::pin_mut;
 use itertools::Itertools;
 use metrics_utils::{self as metrics, counter};
 use rpc::materializer_general::MaterializedView;
-use serde::Deserialize;
 use serde_json::Value;
 use settings_utils::PostgresSettings;
 use uuid::Uuid;
@@ -23,7 +23,7 @@ pub struct PostgresMaterializer {
 
 #[derive(Debug)]
 struct PsqlView {
-    options: Options,
+    options: PostgresMaterializerOptions,
     rows: Vec<RowDefinition>,
 }
 
@@ -31,11 +31,6 @@ struct PsqlView {
 struct RowDefinition {
     object_ids: Vec<Uuid>,
     fields: HashMap<String, Value>,
-}
-
-#[derive(Deserialize, Debug)]
-struct Options {
-    table: String,
 }
 
 impl TryFrom<MaterializedView> for PsqlView {
@@ -95,7 +90,7 @@ impl MaterializerPlugin for PostgresMaterializer {
                 "CREATE TABLE IF NOT EXISTS {table} ( \
                     object_ids UUID[] NOT NULL,\
                     {columns},\
-                    PRIMARY KEY (object_id)
+                    PRIMARY KEY (object_ids)
                  );\
                  CREATE TEMP TABLE upserts ON COMMIT DROP \
                  AS TABLE {table} WITH NO DATA;",
@@ -163,11 +158,11 @@ impl PostgresMaterializer {
                 let insert_stm = format!(
                     "INSERT INTO {} \
                      SELECT * FROM upserts \
-                     ON CONFLICT (object_id) DO UPDATE SET {}",
+                     ON CONFLICT (object_ids) DO UPDATE SET {}",
                     table, update_columns
                 );
                 let copy_stm = format!("COPY upserts (object_ids, {}) FROM STDIN BINARY", columns);
-                let mut types = vec![Type::UUID];
+                let mut types = vec![Type::UUID_ARRAY];
                 // TODO: For now each column is stored as a JSON field.
                 // Later we can introduce some kind of type infering mechanism here, so each field in
                 // Materialized view would be stored with better column type.

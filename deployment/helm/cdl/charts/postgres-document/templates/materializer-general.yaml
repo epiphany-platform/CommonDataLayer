@@ -39,9 +39,13 @@ spec:
         - name: MATERIALIZER_GENERAL_INPUT_PORT
           value: "6400"
         - name: MATERIALIZER_GENERAL_LOG__RUST_LOG
-          value: "info,materializer-general=debug"
+          value: "info,materializer_general=debug"
         - name: MATERIALIZER_GENERAL_MONITORING__OTEL_SERVICE_NAME
           value: "postgres-materializer"
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          value: {{ .Values.global.jaegerAgentHost }}
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          value: "{{ .Values.global.jaegerAgentPort }}"
         ports:
         - containerPort: 51805
       imagePullSecrets:

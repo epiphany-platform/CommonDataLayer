@@ -9,6 +9,7 @@ license = "Apache-2.0"
 
 [dependencies]
 # Workspace
+cdl_dto     = { path = "../dto" }
 misc_utils  = { path = "../utils/crates/misc" }
 rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }

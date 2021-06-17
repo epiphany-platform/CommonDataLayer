@@ -111,7 +111,10 @@ impl GeneralMaterializer for MaterializerImpl {
                 }
                 Ok(tonic::Response::new(Empty {}))
             }
-            Err(err) => Err(tonic::Status::internal(format!("{}", err))),
+            Err(err) => {
+                tracing::error!("Materialization error` {:?}", err);
+                Err(tonic::Status::internal(format!("{}", err)))
+            }
         }
     }
 }

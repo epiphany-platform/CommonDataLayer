@@ -987,6 +987,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "api",
+ "bb8-postgres",
+ "cdl_dto",
  "lazy_static",
  "reqwest",
  "rpc",
@@ -1681,6 +1683,7 @@ dependencies = [
  "anyhow",
  "async-trait",
  "bb8-postgres",
+ "cdl_dto",
  "communication_utils",
  "futures",
  "itertools 0.10.0",

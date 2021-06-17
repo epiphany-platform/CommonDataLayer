@@ -47,7 +47,7 @@ webAdmin:
   port: 30151
 
 partialUpdateEngine:
-  sleepPhaseLength: 120
+  sleepPhaseLength: 5
 
 
 postgres-document:

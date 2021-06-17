@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use anyhow::{Context, Result};
 use cdl_api::types::view::{MaterializedView, NewRelation};
+use cdl_dto::materialization::{FieldDefinition, PostgresMaterializerOptions};
 use lazy_static::lazy_static;
 use serde_json::Value;
 use uuid::Uuid;
@@ -53,9 +54,15 @@ pub async fn add_view(
     schema_id: Uuid,
     name: &str,
     materializer_addr: &str,
-    fields: HashMap<String, String>,
+    fields: HashMap<String, FieldDefinition>,
+    materializer_options: Option<PostgresMaterializerOptions>,
     relations: &[NewRelation],
 ) -> Result<Uuid> {
+    let materializer_options = if let Some(options) = materializer_options {
+        serde_json::to_string(&options)?
+    } else {
+        "{}".to_owned()
+    };
     let resp: Value = send_graphql_request(format!(r#"{{
             "operationName": "AddView",
             "variables": {{
@@ -64,12 +71,12 @@ pub async fn add_view(
                     "name": "{}",
                     "materializerAddress": "{}",
                     "fields": {},
-                    "materializerOptions": "",
+                    "materializerOptions": {},
                     "relations": {}
                 }}
             }},
             "query": "mutation AddView($sch: UUID!, $newView: NewView!) {{\n  addView(schemaId: $sch, newView: $newView) {{\n    id\n  }}\n}}\n"
-        }}"#, schema_id, name, materializer_addr, serde_json::to_string(&fields)?,serde_json::to_string(&relations)?))
+        }}"#, schema_id, name, materializer_addr, serde_json::to_string(&fields)?,materializer_options ,serde_json::to_string(&relations)?))
         .await?;
     let view_id = resp["data"]["addView"]["id"]
         .as_str()
@@ -181,6 +188,7 @@ async fn general_api_compatibility_test() -> Result<()> {
         "test_view",
         POSTGRES_MATERIALIZER_ADDR,
         Default::default(),
+        None,
         Default::default(),
     )
     .await?;

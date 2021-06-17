@@ -21,6 +21,7 @@ mod simple_views {
             "test",
             POSTGRES_MATERIALIZER_ADDR,
             Default::default(),
+            None,
             Default::default(),
         )
         .await?; // TODO: Materializer_addr - should be optional if none view should not be automatically materialized(only on demand)
@@ -40,6 +41,7 @@ mod simple_views {
             "test",
             POSTGRES_MATERIALIZER_ADDR,
             Default::default(),
+            None,
             Default::default(),
         )
         .await?;
@@ -74,6 +76,7 @@ mod relations {
             "test",
             POSTGRES_MATERIALIZER_ADDR,
             Default::default(),
+            None,
             &[NewRelation {
                 global_id: relation_id,
                 local_id: NonZeroU8::new(1).unwrap(),
@@ -109,6 +112,7 @@ mod relations {
             "test",
             POSTGRES_MATERIALIZER_ADDR,
             Default::default(),
+            None,
             &[NewRelation {
                 global_id: relation_id,
                 local_id: NonZeroU8::new(1).unwrap(),
@@ -133,6 +137,7 @@ mod relations {
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
+    #[ignore = "todo"]
     async fn should_apply_inner_join_strategy() -> Result<()> {
         let schema_a = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
         let schema_b = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
@@ -143,6 +148,7 @@ mod relations {
             "test",
             POSTGRES_MATERIALIZER_ADDR,
             Default::default(),
+            None,
             &[NewRelation {
                 global_id: relation_id,
                 local_id: NonZeroU8::new(1).unwrap(),

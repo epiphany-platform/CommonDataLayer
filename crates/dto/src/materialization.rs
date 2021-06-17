@@ -505,6 +505,11 @@ impl TryFrom<rpc::object_builder::View> for Request {
     }
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PostgresMaterializerOptions {
+    pub table: String,
+}
+
 //fn parse_uuid(id: &str) -> Result<Uuid, tonic::Status> {
 //Uuid::parse_str(id)
 //.map_err(|err| tonic::Status::invalid_argument(format!("Failed to parse UUID: {}", err)))
