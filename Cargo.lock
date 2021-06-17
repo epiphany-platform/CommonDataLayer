@@ -2990,6 +2990,8 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-graphql",
+ "async-trait",
+ "bb8",
  "derive_more",
  "futures-util",
  "prost",
@@ -2997,6 +2999,7 @@ dependencies = [
  "sqlx",
  "thiserror",
  "tonic",
+ "tracing",
  "tracing_utils",
 ]
 
