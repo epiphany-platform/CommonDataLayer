@@ -1,7 +1,11 @@
 <script lang="ts">
   import { getLoaded } from "../../utils";
+  import {
+    AsyncSingleObject,
+    AsyncMultipleObjects,
+    AsyncSchemaObjects,
+  } from "../../generated/graphql";
 
-  import RemoteContent from "../../components/RemoteContent.svelte";
   import MakeQuery from "./MakeQuery.svelte";
 
   let results: RemoteData<QueryResult> = notLoaded;

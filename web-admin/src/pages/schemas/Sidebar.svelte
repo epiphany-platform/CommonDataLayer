@@ -4,10 +4,10 @@
   import type { SchemasRoute } from "../../route";
 
   import Link from "../../components/Link.svelte";
-  import type { FullSchema } from "../../generated/graphql";
+  import type { AllSchemasQuery } from "../../generated/graphql";
 
   export let fullWidth: boolean = false;
-  export let schemas: FullSchema[];
+  export let schemas: AllSchemasQuery["schemas"];
 
   const selectedId = derived(route, ($r) => ($r as SchemasRoute).id);
   const nameQuery = derived(route, ($r) => ($r as SchemasRoute).query);

@@ -1,13 +1,11 @@
 <script lang="ts">
   import { derived } from "svelte/store";
-  import { getLoaded } from "../../utils";
   import { route } from "../../route";
   import type { SchemasRoute } from "../../route";
 
   import Overview from "./Overview.svelte";
   import Sidebar from "./Sidebar.svelte";
   import Link from "../../components/Link.svelte";
-  import RemoteContent from "../../components/RemoteContent.svelte";
   import { AllSchemas } from "../../generated/graphql";
   import Error from "../../components/Error.svelte";
 
@@ -18,7 +16,7 @@
   $: schemas = AllSchemas({});
 
   const schema = derived([schemas, schemaId], ([$schemas, $schemaId]) =>
-    (getLoaded($schemas) || []).find((schema) => schema.id === $schemaId)
+    ($schemas?.data?.schemas || []).find((schema) => schema.id === $schemaId)
   );
 </script>
 
