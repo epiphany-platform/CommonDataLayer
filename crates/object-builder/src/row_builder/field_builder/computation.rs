@@ -51,7 +51,7 @@ impl<'a> From<FieldBuilder<'a>> for ComputationEngine<'a> {
 #[cfg(all(test, not(miri)))]
 mod tests {
     use anyhow::Result;
-    use misc_utils::serde_json;
+    use misc_utils::serde_json::{to_string_sorted, SortSettings};
 
     use super::*;
 
@@ -66,7 +66,14 @@ mod tests {
             let engine = ComputationEngine::Join { objects: &objects };
 
             let value = engine.compute(&computation).expect("could not compute");
-            serde_json::to_string_sorted_pretty(&value).expect("could not serialize")
+            to_string_sorted(
+                &value,
+                SortSettings {
+                    pretty: true,
+                    sort_arrays: false,
+                },
+            )
+            .expect("Cannot serialize")
         })
     }
 }

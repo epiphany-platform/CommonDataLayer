@@ -1,277 +1,251 @@
 use anyhow::{Context, Result};
 use cdl_dto::{
-    edges::TreeObject,
+    edges::{TreeObject, TreeResponse},
     materialization::{
         Computation, EqualsComputation, FieldDefinition, FieldValueComputation, FullView,
         RawValueComputation,
     },
 };
-use maplit::hashset;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::num::NonZeroU8;
 
-use cdl_dto::materialization::{LocalId, Relation};
-use rpc::schema_registry::types::SearchFor;
+use cdl_dto::materialization::Relation;
 use uuid::Uuid;
 
-use super::{UnfinishedRow, UnfinishedRowPair};
-use crate::{ArrayElementSource, ComputationSource, FieldDefinitionSource, ObjectIdPair};
+use super::{UnfinishedRow, UnfinishedRowVariant};
+use crate::{utils::get_base_object, ComputationSource, FieldDefinitionSource, ObjectIdPair};
 
+#[derive(Debug)]
 pub struct ViewPlanBuilder<'a> {
     pub view: &'a FullView,
+    pub relations: HashMap<Uuid, NonZeroU8>,
 }
 
 impl<'a> ViewPlanBuilder<'a> {
-    pub fn prepare_unfinished_rows<'b>(
-        &self,
-        root_object: ObjectIdPair,
-        mut fields: impl Iterator<Item = (&'b String, &'b FieldDefinition)>,
-        tree_obj: Option<&TreeObject>,
-    ) -> Result<Vec<(UnfinishedRow, HashSet<ObjectIdPair>)>> {
-        let unfinished_pair = UnfinishedRow::new(root_object);
-        let mut pairs = vec![unfinished_pair];
-        loop {
-            if let Some((field_name, field)) = fields.next() {
-                pairs = pairs
-                    .into_iter()
-                    .map(|pair| self.prepare_unfinished_row(pair, field_name, field, tree_obj))
-                    .collect::<Result<Vec<_>, _>>()?
-                    .into_iter()
-                    .flatten()
-                    .collect();
-            } else {
-                break Ok(pairs);
-            }
-        }
+    pub fn new(view: &'a FullView) -> Self {
+        let relations = Self::relations(view);
+
+        Self { view, relations }
     }
 
-    fn prepare_computation(
-        &self,
-        pair: &UnfinishedRowPair,
-        computation: &Computation,
-        tree_obj: Option<&TreeObject>,
-    ) -> Result<Vec<(ComputationSource, HashSet<ObjectIdPair>)>> {
-        let base_object = pair.0.root_object;
-        Ok(match computation {
-            Computation::RawValue(RawValueComputation { value }) => {
-                vec![(
-                    ComputationSource::RawValue {
-                        value: value.0.clone(),
-                    },
-                    hashset![base_object],
-                )]
-            }
-            Computation::FieldValue(FieldValueComputation {
-                schema_id,
-                field_path,
-            }) => {
-                let objects = self
-                    .get_objects_ids_for_relation(*schema_id, tree_obj)?
-                    .unwrap_or_else(|| vec![base_object]);
+    pub fn build_single_row(&self, root_object: ObjectIdPair) -> Result<UnfinishedRow> {
+        let variant = UnfinishedRowVariant {
+            root_object,
+            objects: Default::default(),
+        };
 
-                objects
-                    .into_iter()
-                    .map(|object| {
-                        let computation = ComputationSource::FieldValue {
-                            object,
-                            field_path: field_path.clone(),
-                        };
-                        (computation, hashset!(object, base_object))
-                    })
-                    .collect()
-            }
-            Computation::Equals(EqualsComputation { lhs, rhs }) => {
-                let lhs = self.prepare_computation(pair, lhs, tree_obj)?;
-                let rhs = self.prepare_computation(pair, rhs, tree_obj)?;
+        let fields = self.build_fields(&variant, &self.view.fields)?;
 
-                lhs.into_iter()
-                    .flat_map(|(lhs, lhs_objects)| {
-                        rhs.iter().map(move |(rhs, rhs_objects)| {
-                            let set = hashset![base_object];
-                            let set = &(&lhs_objects | rhs_objects) | &set;
-                            (
-                                ComputationSource::Equals {
-                                    lhs: Box::new(lhs.clone()),
-                                    rhs: Box::new(rhs.clone()),
-                                },
-                                set,
-                            )
-                        })
-                    })
-                    .collect()
-            }
+        Ok(UnfinishedRow {
+            missing: 1,
+            objects: Default::default(),
+            fields,
+            root_object,
         })
     }
 
-    fn prepare_unfinished_row(
+    pub fn build_rows(
         &self,
-        mut pair: UnfinishedRowPair,
-        field_name: &str,
+        tree_responses: &[TreeResponse],
+    ) -> Result<Vec<(UnfinishedRow, HashSet<ObjectIdPair>)>> {
+        self.build_variants(tree_responses)
+            .into_iter()
+            .map(|variant| {
+                let fields = self.build_fields(&variant, &self.view.fields)?;
+
+                let mut set: HashSet<ObjectIdPair> = variant
+                    .objects
+                    .into_iter()
+                    .map(|(_, object)| object)
+                    .collect();
+
+                set.insert(variant.root_object);
+
+                Ok((
+                    UnfinishedRow {
+                        missing: set.len(),
+                        objects: Default::default(),
+                        fields,
+                        root_object: variant.root_object,
+                    },
+                    set,
+                ))
+            })
+            .collect()
+    }
+
+    fn build_fields(
+        &self,
+        variant: &UnfinishedRowVariant,
+        fields: &HashMap<String, FieldDefinition>,
+    ) -> Result<HashMap<String, FieldDefinitionSource>> {
+        fields
+            .iter()
+            .map(|(field_name, field)| {
+                self.build_field(&variant, field)
+                    .map(|field| (field_name.clone(), field))
+            })
+            .collect::<Result<HashMap<_, _>>>()
+    }
+
+    fn build_variants(&self, tree_responses: &[TreeResponse]) -> Vec<UnfinishedRowVariant> {
+        tree_responses
+            .iter()
+            .flat_map(|tree_response| tree_response.objects.iter())
+            .flat_map(|tree_obj| {
+                let variant = UnfinishedRowVariant {
+                    root_object: get_base_object(tree_obj),
+                    objects: Default::default(),
+                };
+
+                self.find_variants(variant, tree_obj)
+            })
+            .collect()
+    }
+
+    fn find_variants(
+        &self,
+        variant: UnfinishedRowVariant,
+        tree_object: &TreeObject,
+    ) -> Vec<UnfinishedRowVariant> {
+        let local_id = match self.relations.get(&tree_object.relation_id) {
+            None => {
+                tracing::warn!(
+                    "Got relation {} that was not requested in view definition. Skipping it.",
+                    tree_object.relation_id
+                );
+                return vec![variant];
+            }
+            Some(l) => l,
+        };
+
+        tree_object
+            .children
+            .iter()
+            .map(|child| {
+                let mut variant = variant.clone();
+                let object_id = ObjectIdPair {
+                    schema_id: tree_object.relation.child_schema_id,
+                    object_id: *child,
+                };
+                variant.objects.insert(*local_id, object_id);
+                variant
+            })
+            .flat_map(|variant| {
+                if tree_object.subtrees.is_empty() {
+                    vec![variant]
+                } else {
+                    tree_object
+                        .subtrees
+                        .iter()
+                        .flat_map(|subtree| subtree.objects.iter())
+                        .flat_map(move |subtree| {
+                            let variant = variant.clone();
+                            self.find_variants(variant, subtree)
+                        })
+                        .collect()
+                }
+            })
+            .collect()
+    }
+
+    fn relations(view: &'a FullView) -> HashMap<Uuid, NonZeroU8> {
+        fn flat_relation(rel: &Relation) -> Vec<&Relation> {
+            Some(rel)
+                .into_iter()
+                .chain(rel.relations.iter().flat_map(flat_relation))
+                .collect()
+        }
+
+        view.relations
+            .iter()
+            .flat_map(|rel| flat_relation(rel))
+            .map(|rel| (rel.global_id, rel.local_id))
+            .collect()
+    }
+
+    fn build_field(
+        &self,
+        variant: &UnfinishedRowVariant,
         field: &FieldDefinition,
-        tree_obj: Option<&TreeObject>,
-    ) -> Result<Vec<UnfinishedRowPair>> {
-        let base_object = pair.0.root_object;
-        match field {
+    ) -> Result<FieldDefinitionSource> {
+        Ok(match field {
             FieldDefinition::Simple {
                 field_name,
                 field_type,
-            } => {
-                let field = FieldDefinitionSource::Simple {
-                    object: base_object,
-                    field_name: field_name.clone(),
-                    field_type: field_type.clone(),
-                };
-                pair.0.fields.insert(field_name.into(), field);
-                pair.1.insert(base_object);
-                Ok(vec![pair])
-            }
+            } => FieldDefinitionSource::Simple {
+                object: variant.root_object,
+                field_name: field_name.clone(),
+                field_type: field_type.clone(),
+            },
             FieldDefinition::Computed {
                 computation,
                 field_type,
             } => {
-                let computations = self.prepare_computation(&pair, computation, tree_obj)?;
-                Ok(computations
-                    .into_iter()
-                    .map(|(computation, object_ids)| {
-                        let mut pair = pair.clone();
-                        let field = FieldDefinitionSource::Computed {
-                            computation,
-                            field_type: field_type.clone(),
-                        };
-                        pair.0.fields.insert(field_name.into(), field);
-                        pair.1.extend(object_ids.into_iter());
-                        pair
-                    })
-                    .collect())
+                let computation = self.build_computation(variant, computation)?;
+                FieldDefinitionSource::Computed {
+                    computation,
+                    field_type: field_type.clone(),
+                }
             }
             FieldDefinition::Array { base, fields } => {
-                let tree_object = self
-                    .find_tree_object_for_relation(*base, tree_obj)?
+                let relation_id = NonZeroU8::new(*base)
                     .context("Array field type needs a reference to relation in view definition")?;
 
-                let objects = self
-                    .get_objects_ids_for_relation(*base, tree_obj)?
-                    .context("Array field type needs a reference to relation in view definition")?;
-
-                let (elements, objects): (Vec<_>, Vec<_>) = objects
-                    .into_iter()
-                    .map(|base_object| {
-                        self.prepare_unfinished_rows(base_object, fields.iter(), Some(tree_object))
-                    })
-                    .collect::<Result<Vec<_>>>()?
-                    .into_iter()
-                    .flatten()
-                    .map(|(row, objects)| (ArrayElementSource { fields: row.fields }, objects))
-                    .unzip();
-
-                let objects = objects.into_iter().flatten();
-
-                let field = FieldDefinitionSource::Array { elements };
-                pair.0.fields.insert(field_name.into(), field);
-                pair.1.extend(objects);
-                Ok(vec![pair])
-            }
-        }
-    }
-
-    fn find_tree_object_for_relation(
-        &self,
-        relation_id: LocalId,
-        tree_object: Option<&'a TreeObject>,
-    ) -> Result<Option<&'a TreeObject>> {
-        Ok(match NonZeroU8::new(relation_id) {
-            None => None,
-            Some(relation_id) => {
-                let relation = self
-                    .view
-                    .relations
-                    .iter()
-                    .find_map(|r| find_relation(r, relation_id))
-                    .with_context(|| format!("Could not find a relation: {}", relation_id))?;
-
-                let global_id = relation.global_id;
-                let tree_object =
-                    tree_object.context("Trying to retrieve relation but got no edges")?;
-                let tree_object = find_tree_object(tree_object, global_id).with_context(|| {
+                let object = *variant.objects.get(&relation_id).with_context(|| {
                     format!(
-                        "Could not find a relation in edge registry: {}",
-                        relation_id
-                    )
-                })?;
-                Some(tree_object)
-            }
-        })
-    }
-
-    fn get_objects_ids_for_relation(
-        &self,
-        relation_id: LocalId,
-        tree_object: Option<&TreeObject>,
-    ) -> Result<Option<Vec<ObjectIdPair>>> {
-        let relation_id = NonZeroU8::new(relation_id);
-        Ok(match relation_id {
-            None => None,
-            Some(relation_id) => {
-                let relation = self
-                    .view
-                    .relations
-                    .iter()
-                    .find_map(|r| find_relation(r, relation_id))
-                    .with_context(|| format!("Could not find a relation: {}", relation_id))?;
-
-                let global_id = relation.global_id;
-                let tree_object =
-                    tree_object.context("Trying to retrieve relation but got no edges")?;
-                let tree_object = find_tree_object(tree_object, global_id).with_context(|| {
-                    format!(
-                        "Could not find a relation in edge registry: {}",
+                        "Could not find a relation {} in view definition",
                         relation_id
                     )
                 })?;
 
-                Some(match relation.search_for {
-                    SearchFor::Children => {
-                        let schema_id = tree_object.relation.child_schema_id;
+                let mut variant = variant.clone();
+                variant.root_object = object;
 
-                        let children = tree_object
-                            .children
-                            .iter()
-                            .map(|object_id| ObjectIdPair {
-                                schema_id,
-                                object_id: *object_id,
-                            })
-                            .collect::<Vec<_>>();
-
-                        children
-                    }
-                    SearchFor::Parents => vec![ObjectIdPair {
-                        schema_id: tree_object.relation.parent_schema_id,
-                        object_id: tree_object.object_id,
-                    }],
-                })
+                FieldDefinitionSource::Array {
+                    fields: self.build_fields(&variant, fields)?,
+                }
             }
         })
     }
-}
 
-fn find_relation(relation: &Relation, relation_id: NonZeroU8) -> Option<&Relation> {
-    if relation.local_id == relation_id {
-        return Some(relation);
+    fn build_computation(
+        &self,
+        variant: &UnfinishedRowVariant,
+        computation: &Computation,
+    ) -> Result<ComputationSource> {
+        Ok(match computation {
+            Computation::RawValue(RawValueComputation { value }) => ComputationSource::RawValue {
+                value: value.0.clone(),
+            },
+            Computation::FieldValue(FieldValueComputation {
+                schema_id,
+                field_path,
+            }) => {
+                let object = match NonZeroU8::new(*schema_id) {
+                    None => variant.root_object,
+                    Some(relation_id) => *variant.objects.get(&relation_id).with_context(|| {
+                        format!(
+                            "Could not find a relation {} in view definition",
+                            relation_id
+                        )
+                    })?,
+                };
+
+                ComputationSource::FieldValue {
+                    object,
+                    field_path: field_path.clone(),
+                }
+            }
+            Computation::Equals(EqualsComputation { lhs, rhs }) => {
+                let lhs = self.build_computation(variant, lhs)?;
+                let rhs = self.build_computation(variant, rhs)?;
+
+                ComputationSource::Equals {
+                    lhs: Box::new(lhs),
+                    rhs: Box::new(rhs),
+                }
+            }
+        })
     }
-    relation
-        .relations
-        .iter()
-        .find_map(|r| find_relation(r, relation_id))
-}
-
-fn find_tree_object(tree_object: &TreeObject, global_id: Uuid) -> Option<&TreeObject> {
-    if tree_object.relation_id == global_id {
-        return Some(tree_object);
-    }
-
-    tree_object
-        .subtrees
-        .iter()
-        .flat_map(|r| r.objects.iter())
-        .find_map(|t| find_tree_object(t, global_id))
 }

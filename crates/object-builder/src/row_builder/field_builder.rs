@@ -42,19 +42,12 @@ impl<'a> FieldBuilder<'a> {
                     let engine: ComputationEngine = self.into();
                     engine.compute(computation)?
                 }
-                Array { elements } => {
-                    let elements = elements
+                Array { fields } => {
+                    let fields = fields
                         .iter()
-                        .map(|element| {
-                            let fields = element
-                                .fields
-                                .iter()
-                                .map(|field| self.build(field))
-                                .collect::<anyhow::Result<_>>()?;
-                            Ok(Value::Object(fields))
-                        })
+                        .map(|field| self.build(field))
                         .collect::<anyhow::Result<_>>()?;
-                    Value::Array(elements)
+                    Value::Object(fields)
                 }
             },
         ))

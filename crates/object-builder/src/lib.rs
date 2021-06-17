@@ -15,7 +15,7 @@ use rpc::schema_registry::types::SchemaType;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
-use std::{collections::HashMap, convert::TryInto, num::NonZeroU8, pin::Pin};
+use std::{collections::HashMap, convert::TryInto, pin::Pin};
 use uuid::Uuid;
 
 use crate::buffer_stream::ObjectBufferedStream;
@@ -61,7 +61,7 @@ struct RowDefinition {
     fields: HashMap<String, Value>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct ObjectIdPair {
     pub schema_id: Uuid,
     pub object_id: Uuid,
@@ -126,11 +126,6 @@ mod object_id_pair {
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize)]
-pub struct ArrayElementSource {
-    fields: HashMap<String, FieldDefinitionSource>,
-}
-
-#[derive(Debug, PartialEq, Clone, Serialize)]
 pub enum FieldDefinitionSource {
     Simple {
         object: ObjectIdPair,
@@ -142,7 +137,7 @@ pub enum FieldDefinitionSource {
         field_type: FieldType,
     },
     Array {
-        elements: Vec<ArrayElementSource>,
+        fields: HashMap<String, FieldDefinitionSource>,
     },
 }
 
@@ -498,10 +493,9 @@ impl ObjectBuilderImpl {
         &self,
         view: &cdl_dto::materialization::FullView,
         object_filters: &[Uuid],
-    ) -> anyhow::Result<HashMap<NonZeroU8, TreeResponse>> {
-        let mut relations = HashMap::default();
+    ) -> anyhow::Result<Vec<TreeResponse>> {
+        let mut relations = Vec::default();
         for relation in view.relations.iter() {
-            let local_id = relation.local_id;
             let request = into_resolve_tree_request(relation, object_filters);
             let tree = self
                 .er_pool
@@ -512,7 +506,7 @@ impl ObjectBuilderImpl {
                 .into_inner();
 
             let tree = TreeResponse::from_rpc(tree)?;
-            relations.insert(local_id, tree);
+            relations.push(tree);
         }
         Ok(relations)
     }
