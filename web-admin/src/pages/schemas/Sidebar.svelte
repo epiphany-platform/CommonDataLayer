@@ -1,27 +1,23 @@
 <script lang="ts">
   import { get, derived } from "svelte/store";
-  import { schemas } from "../../stores";
-  import { getLoaded } from "../../utils";
   import { route, replaceRoute } from "../../route";
   import type { SchemasRoute } from "../../route";
 
   import Link from "../../components/Link.svelte";
+  import type { FullSchema } from "../../generated/graphql";
 
   export let fullWidth: boolean = false;
+  export let schemas: FullSchema[];
 
-  const allSchemas = derived(schemas, ($schemas) => getLoaded($schemas) || []);
   const selectedId = derived(route, ($r) => ($r as SchemasRoute).id);
   const nameQuery = derived(route, ($r) => ($r as SchemasRoute).query);
 
-  const visibleSchemas = derived(
-    [allSchemas, nameQuery],
-    ([$schemas, $query]) => {
-      const lowerQuery = ($query || "").toLowerCase();
-      return $schemas.filter((schema) =>
-        schema.name.toLowerCase().includes(lowerQuery)
-      );
-    }
-  );
+  const visibleSchemas = derived(nameQuery, ($query) => {
+    const lowerQuery = ($query || "").toLowerCase();
+    return schemas.filter((schema) =>
+      schema.name.toLowerCase().includes(lowerQuery)
+    );
+  });
 
   function setQuery(query: string) {
     replaceRoute({ ...(get(route) as SchemasRoute), query });

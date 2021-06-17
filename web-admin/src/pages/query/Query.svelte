@@ -1,6 +1,4 @@
 <script lang="ts">
-  import type { QueryResult, RemoteData } from "../../models";
-  import { notLoaded } from "../../models";
   import { getLoaded } from "../../utils";
 
   import RemoteContent from "../../components/RemoteContent.svelte";
