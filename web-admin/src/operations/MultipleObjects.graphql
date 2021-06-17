@@ -1,0 +1,6 @@
+query MultipleObjects($objectIds: [UUID!]!, $schemaId: UUID!) {
+  objects(objectIds: $objectIds, schemaId: $schemaId) {
+    objectId
+    data
+  }
+}
