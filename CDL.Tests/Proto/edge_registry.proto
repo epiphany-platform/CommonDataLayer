@@ -1,0 +1,99 @@
+syntax = "proto2";
+package edge_registry;
+
+service EdgeRegistry {
+  rpc AddRelation(AddSchemaRelation) returns (RelationId);
+  rpc GetRelation(RelationQuery) returns (RelationResponse);
+  rpc GetSchemaByRelation(RelationId) returns (SchemaRelation);
+  rpc GetSchemaRelations(SchemaId) returns (RelationList);
+  rpc ListRelations(Empty) returns (RelationList);
+  rpc ValidateRelation(ValidateRelationQuery) returns (Empty);
+
+  rpc AddEdges(ObjectRelations) returns (Empty);
+  rpc GetEdge(RelationIdQuery) returns (Edge);
+  rpc GetEdges(ObjectIdQuery) returns (ObjectRelations);
+
+  rpc Heartbeat (Empty) returns (Empty);
+
+  rpc ResolveTree (TreeQuery) returns (TreeResponse);
+}
+
+message TreeQuery {
+  required string relation_id = 1;
+  repeated TreeQuery relations = 2;
+  repeated string filter_ids = 3;
+}
+
+message TreeResponse {
+  repeated TreeObject objects = 1;
+}
+
+message TreeObject {
+  required string object_id = 1;
+  required string relation_id = 2;
+  repeated string children = 3;
+  repeated TreeResponse subtrees = 4;
+}
+
+message AddSchemaRelation {
+  optional string relation_id = 1;
+  required string parent_schema_id = 2;
+  required string child_schema_id = 3;
+}
+
+message SchemaRelation {
+  required string parent_schema_id = 1;
+  required string child_schema_id = 2;
+}
+
+message RelationId {
+  required string relation_id = 1;
+}
+
+message RelationQuery {
+  required string relation_id = 1;
+  required string parent_schema_id = 2;
+}
+
+message ValidateRelationQuery {
+  required string relation_id = 1;
+}
+
+message RelationResponse {
+  optional string child_schema_id = 1;
+}
+
+message SchemaId {
+  required string schema_id = 1;
+}
+
+message RelationDetails {
+  required string relation_id = 1;
+  required string parent_schema_id = 2;
+  required string child_schema_id = 3;
+}
+
+message RelationList {
+  repeated RelationDetails items = 1;
+}
+
+message ObjectRelations {
+  repeated Edge relations = 1;
+}
+
+message Edge {
+  required string relation_id = 1;
+  required string parent_object_id = 2;
+  repeated string child_object_ids = 3;
+}
+
+message RelationIdQuery {
+  required string relation_id = 1;
+  required string parent_object_id = 2;
+}
+
+message ObjectIdQuery {
+  required string object_id = 1;
+}
+
+message Empty {}
