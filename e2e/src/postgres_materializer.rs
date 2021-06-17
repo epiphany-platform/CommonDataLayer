@@ -5,6 +5,9 @@ use bb8_postgres::{
     tokio_postgres::{Config, NoTls},
     PostgresConnectionManager,
 };
+use cdl_dto::materialization::{FieldDefinition, FieldType, PostgresMaterializerOptions};
+use serde_json::Value;
+use std::collections::HashMap;
 use std::time::Duration;
 use tokio::time::sleep;
 use uuid::Uuid;
@@ -19,18 +22,12 @@ static mut PG_POOL: Option<Pool<PostgresConnectionManager<NoTls>>> = None;
 
 mod simple_views {
 
-    use std::collections::HashMap;
-
-    use cdl_dto::materialization::{FieldDefinition, FieldType, PostgresMaterializerOptions};
-    use serde_json::Value;
-
     use super::*;
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
-    #[ignore = "field name in postgres - todo"]
     async fn should_create_table_and_feed_data() -> Result<()> {
-        let table_name = "test_view";
+        let table_name = "test_simple";
         let pg = pg_connect().await?;
         pg.batch_execute(&format!("DROP TABLE IF EXISTS {} CASCADE;", table_name))
             .await?;
@@ -62,9 +59,109 @@ mod simple_views {
 
         sleep(Duration::from_secs(5)).await; // async view generation
 
-        // TODO: should be field_a
+        let query = format!("SELECT object_ids, field_a FROM {}", table_name);
+        let pg_results = pg.query(query.as_str(), &[]).await.unwrap();
+
+        assert_eq!(pg_results.len(), 1);
+        let row = pg_results.first().unwrap();
+
+        #[derive(Debug)]
+        struct TestRow {
+            object_ids: Vec<Uuid>,
+            field_a: Value,
+        }
+
+        let row = TestRow {
+            object_ids: row.get(0),
+            field_a: row.get(1),
+        };
+        assert_eq!(row.object_ids.first().unwrap(), &object_id);
+        assert_eq!(row.field_a.as_str().unwrap(), "A");
+
+        Ok(())
+    }
+}
+
+mod relations {
+    use std::num::NonZeroU8;
+
+    use cdl_api::types::view::NewRelation;
+    use cdl_rpc::schema_registry::types::SearchFor;
+
+    use super::*;
+
+    #[tokio::test]
+    #[cfg_attr(miri, ignore)]
+    #[ignore = "todo"]
+    async fn should_properly_name_fields_from_subobjects() -> Result<()> {
+        let table_name = "test_relation";
+        let pg = pg_connect().await?;
+        pg.batch_execute(&format!("DROP TABLE IF EXISTS {} CASCADE;", table_name))
+            .await?;
+
+        let mut fields = HashMap::new();
+        fields.insert(
+            "field_a".to_owned(),
+            FieldDefinition::Simple {
+                field_name: "FieldA".to_owned(),
+                field_type: FieldType::String,
+            },
+        );
+        fields.insert(
+            "field_b".to_owned(),
+            FieldDefinition::Array {
+                base: 1,
+                fields: {
+                    let mut subfields = HashMap::new();
+                    subfields.insert(
+                        "field_c".to_owned(),
+                        FieldDefinition::Simple {
+                            field_name: "FieldB".to_owned(),
+                            field_type: FieldType::String,
+                        },
+                    );
+                    subfields
+                },
+            },
+        );
+
+        let schema_a = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
+        let schema_b = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
+        let relation_id = add_relation(schema_a, schema_b).await?;
+
+        let _view_id = add_view(
+            schema_a,
+            "test",
+            POSTGRES_MATERIALIZER_ADDR,
+            fields,
+            Some(PostgresMaterializerOptions {
+                table: table_name.to_owned(),
+            }),
+            &[NewRelation {
+                global_id: relation_id,
+                local_id: NonZeroU8::new(1).unwrap(),
+                relations: vec![],
+                search_for: SearchFor::Children,
+            }],
+        )
+        .await?;
+        let object_id_a = Uuid::new_v4();
+        let object_id_b = Uuid::new_v4();
+        insert_message(object_id_a, schema_a, r#"{"FieldA":"A"}"#).await?;
+        insert_message(object_id_b, schema_b, r#"{"FieldB":"B"}"#).await?;
+        add_edges(relation_id, object_id_a, &[object_id_b]).await?;
+
+        sleep(Duration::from_secs(5)).await; // async view generation
+
         let pg_results = pg
-            .query("SELECT object_ids, fieldab FROM test_view", &[])
+            .query(
+                format!(
+                    "SELECT object_ids, field_a, field_b_field_c FROM {}",
+                    table_name
+                )
+                .as_str(),
+                &[],
+            )
             .await
             .unwrap();
 
@@ -74,16 +171,19 @@ mod simple_views {
         #[derive(Debug)]
         struct TestRow {
             object_ids: Vec<Uuid>,
-            field_ab: Value,
+            field_a: Value,
+            field_b_c: Value,
         }
 
         let row = TestRow {
             object_ids: row.get(0),
-            field_ab: row.get(1),
+            field_a: row.get(1),
+            field_b_c: row.get(2),
         };
-        assert_eq!(row.object_ids.first().unwrap(), &object_id);
-        assert_eq!(row.field_ab.as_str().unwrap(), "A");
-
+        assert_eq!(row.object_ids.first().unwrap(), &object_id_a);
+        assert_eq!(row.object_ids.get(1).unwrap(), &object_id_b);
+        assert_eq!(row.field_a.as_str().unwrap(), "A");
+        assert_eq!(row.field_b_c.as_str().unwrap(), "B");
         Ok(())
     }
 }
