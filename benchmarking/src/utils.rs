@@ -51,9 +51,28 @@ pub fn generate_messages(
     })
 }
 
+
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InboundMessageVersion {
+    major : u32,
+    minor : u32,
+}
+
+impl Default for InboundMessageVersion {
+    fn default() -> Self {
+        InboundMessageVersion {
+            major : 1 as u32,
+            minor : 0 as u32,
+        }
+    }
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Message<'v> {
+    version: InboundMessageVersion,
     object_id: Uuid,
     schema_id: Uuid,
     order_group_id: Option<Uuid>,
@@ -63,6 +82,7 @@ pub struct Message<'v> {
 impl<'v> Message<'v> {
     pub fn new(schema_id: Uuid, data: &'v Value) -> Message<'v> {
         Message {
+            version : InboundMessageVersion::default(),
             object_id: Uuid::new_v4(),
             schema_id,
             order_group_id: Some(schema_id),
