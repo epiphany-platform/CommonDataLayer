@@ -16,6 +16,9 @@ use metrics_utils::{self as metrics, counter};
 use misc_utils::current_timestamp;
 use utils::parallel_task_queue::ParallelTaskQueue;
 
+static CDL_INPUT_PROTOCOL_VERSION_MAJOR : u32 = 1 as u32;
+static CDL_INPUT_PROTOCOL_VERSION_MINOR : u32 = 0 as u32;
+
 pub struct Handler {
     pub cache: Arc<Mutex<LruCache<Uuid, String>>>,
     pub producer: Arc<CommonPublisher>,
@@ -110,6 +113,19 @@ impl ParallelConsumerHandler for Handler {
     }
 }
 
+fn check_inbound_version(
+    event: &DataRouterInsertMessage<'_>,
+) -> anyhow::Result<()> {
+
+    if event.version.major != CDL_INPUT_PROTOCOL_VERSION_MAJOR {
+        anyhow::bail!("unsupported major version");
+    }
+    if event.version.minor != CDL_INPUT_PROTOCOL_VERSION_MINOR {
+        anyhow::bail!("unsupported minor version");
+    }
+    Ok(())
+}
+
 #[tracing::instrument(skip(producer))]
 async fn route(
     cache: &Mutex<LruCache<Uuid, String>>,
@@ -118,6 +134,7 @@ async fn route(
     producer: &CommonPublisher,
     schema_registry_addr: &str,
 ) -> anyhow::Result<()> {
+    check_inbound_version(event)?;
     let payload = BorrowedInsertMessage {
         object_id: event.object_id,
         schema_id: event.schema_id,
