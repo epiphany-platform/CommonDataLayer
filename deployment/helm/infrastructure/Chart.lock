@@ -4,12 +4,12 @@ dependencies:
   version: 8.6.0
 - name: kafka
   repository: https://charts.bitnami.com/bitnami
-  version: 12.4.0
+  version: 12.19.2
 - name: postgresql
   repository: https://charts.bitnami.com/bitnami
   version: 10.2.0
 - name: victoria-metrics-single
   repository: https://victoriametrics.github.io/helm-charts/
   version: 0.6.6
-digest: sha256:76fa9c55c41857bd64f86ff08cea29aa550e117cb1f83fe5ae7933a2dd500ae9
-generated: "2020-12-21T15:33:40.108425242+01:00"
+digest: sha256:c9d1df3f0735b8facacfc0b436d53322f28ff59232a451abdf09e9a4f8ca9b66
+generated: "2021-06-18T11:14:10.518270457+02:00"
