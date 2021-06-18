@@ -47,6 +47,7 @@ impl Settings {
 #[derive(Debug, Deserialize)]
 pub struct ServicesSettings {
     pub schema_registry_url: String,
+    pub edge_registry_url: String,
 }
 
 #[derive(Debug, Deserialize)]
