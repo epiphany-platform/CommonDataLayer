@@ -1,5 +1,4 @@
 use anyhow::Result;
-use cdl_dto::{edges::TreeResponse, materialization::FullView};
 use serde_json::Value;
 
 use crate::view_plan::ViewPlan;
@@ -10,14 +9,11 @@ use crate::{ObjectIdPair, RowSource};
 /// of the join arrives
 pub struct ObjectBuffer {
     plan: ViewPlan,
-    single_mode: bool,
 }
 
 impl ObjectBuffer {
-    pub fn try_new(view: FullView, edges: &[TreeResponse]) -> Result<Self> {
-        let plan = ViewPlan::try_new(view, edges)?;
-        let single_mode = edges.is_empty();
-        Ok(Self { plan, single_mode })
+    pub fn new(plan: ViewPlan) -> Self {
+        Self { plan }
     }
 
     pub fn add_object(
@@ -50,23 +46,12 @@ impl ObjectBuffer {
                     Some(Ok(result))
                 }
             }
-            None if self.single_mode => {
+            None if self.plan.single_mode => {
                 let row = self.plan.builder().build_single_row(pair);
 
                 Some(row.map(|row| vec![row.into_single(value.clone())]))
             }
             None => None,
-        }
-    }
-}
-
-#[cfg(all(test, not(miri)))]
-mod tests {
-    use super::*;
-
-    impl ObjectBuffer {
-        pub fn new_test(plan: ViewPlan, single_mode: bool) -> Self {
-            Self { plan, single_mode }
         }
     }
 }

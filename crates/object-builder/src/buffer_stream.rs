@@ -1,5 +1,4 @@
 use anyhow::Result;
-use cdl_dto::{edges::TreeResponse, materialization::FullView};
 use futures::{ready, Stream};
 use pin_project_lite::pin_project;
 use serde_json::Value;
@@ -7,7 +6,7 @@ use std::task::Poll;
 
 mod buffer;
 
-use crate::{ObjectIdPair, RowSource};
+use crate::{view_plan::ViewPlan, ObjectIdPair, RowSource};
 pub use buffer::ObjectBuffer;
 
 pin_project! {
@@ -23,12 +22,12 @@ impl<S> ObjectBufferedStream<S>
 where
     S: Stream<Item = Result<(ObjectIdPair, Value)>> + Unpin,
 {
-    pub fn try_new(input: S, view: FullView, edges: &[TreeResponse]) -> Result<Self> {
-        Ok(Self {
-            buffer: ObjectBuffer::try_new(view, edges)?,
+    pub fn new(input: S, view_plan: ViewPlan) -> Self {
+        Self {
+            buffer: ObjectBuffer::new(view_plan),
             vec: Default::default(),
             input,
-        })
+        }
     }
 }
 
@@ -77,7 +76,7 @@ mod tests {
     };
 
     use super::*;
-    use cdl_dto::materialization::{FieldDefinition, FieldType};
+    use cdl_dto::materialization::{FieldDefinition, FieldType, FullView};
     use futures::{pin_mut, FutureExt, StreamExt};
     use maplit::*;
     use serde_json::json;
@@ -89,9 +88,9 @@ mod tests {
     where
         S: Stream<Item = Result<(ObjectIdPair, Value)>> + Unpin,
     {
-        pub fn new_test(input: S, plan: ViewPlan, single_mode: bool) -> Self {
+        pub fn new_test(input: S, plan: ViewPlan) -> Self {
             Self {
-                buffer: ObjectBuffer::new_test(plan, single_mode),
+                buffer: ObjectBuffer::new(plan),
                 vec: Default::default(),
                 input,
             }
@@ -120,9 +119,10 @@ mod tests {
             unfinished_rows: Default::default(),
             missing: Default::default(),
             view: any_view(obj.0),
+            single_mode: true,
         };
 
-        let (tx, stream) = act(plan, true);
+        let (tx, stream) = act(plan);
         pin_mut!(stream);
 
         assert!(stream.next().now_or_never().is_none());
@@ -199,9 +199,10 @@ mod tests {
                 c_id => vec![1]
             },
             view: any_view(a_id),
+            single_mode: false,
         };
 
-        let (tx, stream) = act(plan, false);
+        let (tx, stream) = act(plan);
         pin_mut!(stream);
 
         // No object arrived, pending
@@ -270,13 +271,10 @@ mod tests {
         (pair, value)
     }
 
-    fn act(
-        plan: ViewPlan,
-        single_mode: bool,
-    ) -> (Sender<Result<(ObjectIdPair, Value)>>, TestStream) {
+    fn act(plan: ViewPlan) -> (Sender<Result<(ObjectIdPair, Value)>>, TestStream) {
         let (tx, rx) = channel(16);
         let rx_stream = ReceiverStream::new(rx);
-        let stream = ObjectBufferedStream::new_test(rx_stream, plan, single_mode);
+        let stream = ObjectBufferedStream::new_test(rx_stream, plan);
 
         (tx, stream)
     }
