@@ -49,6 +49,8 @@ spec:
             {{- end }}
             - name: OBJECT_BUILDER_SERVICES__SCHEMA_REGISTRY_URL
               value: "http://{{ .Release.Name }}-schema-registry:6400"
+            - name: OBJECT_BUILDER_SERVICES__EDGE_REGISTRY_URL
+              value: "http://{{ .Release.Name }}-edge-registry:6400"
             - name: OBJECT_BUILDER_LOG__RUST_LOG
               value: "info,object_builder=debug"
             - name: OBJECT_BUILDER_MONITORING__OTEL_SERVICE_NAME

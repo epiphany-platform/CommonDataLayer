@@ -162,6 +162,14 @@ impl EdgeRegistryImpl {
         counter!("cdl.edge-registry.get-schema-by-relation", 1);
 
         let conn = self.connect().await?;
+        self.get_schema_by_relation_conn(&conn, relation_id).await
+    }
+
+    async fn get_schema_by_relation_conn(
+        &self,
+        conn: &PooledConnection<'_, PostgresConnectionManager<NoTls>>,
+        relation_id: Uuid,
+    ) -> anyhow::Result<Option<(Uuid, Uuid)>> {
         Ok(conn
             .query(
                 "SELECT parent_schema_id, child_schema_id FROM relations WHERE id = $1",
@@ -362,6 +370,10 @@ impl EdgeRegistryImpl {
     {
         async move {
             let mut objects = Vec::new();
+            let relation = self
+                .get_schema_by_relation_conn(conn, relation_id.as_ref().parse()?)
+                .await?
+                .with_context(|| format!("Relation {} does not exist", relation_id.as_ref()))?;
             for object_id in filter_ids {
                 let children = self
                     .get_edge_with_conn(
@@ -405,6 +417,10 @@ impl EdgeRegistryImpl {
                         relation_id: relation_id.as_ref().to_string(),
                         children,
                         subtrees,
+                        relation: SchemaRelation {
+                            parent_schema_id: relation.0.to_string(),
+                            child_schema_id: relation.1.to_string(),
+                        },
                     });
                 }
             }

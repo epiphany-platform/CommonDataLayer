@@ -20,7 +20,7 @@ service SchemaRegistry {
     rpc GetBaseSchemaOfView (Id) returns (Schema);
     rpc ValidateValue (ValueToValidate) returns (Errors);
     rpc WatchAllSchemaUpdates (Empty) returns (stream Schema);
-    rpc Ping (Empty) returns (Empty);
+    rpc Heartbeat (Empty) returns (Empty);
 }
 
 message NewSchema {
@@ -117,13 +117,7 @@ message ComputedFilter {
 }
 
 message Computation {
-    required ComputationOperator operator = 1;
-    required Computation lhs = 2;
-    optional Computation rhs = 3;
-}
-
-message ComputationOperator {
-    oneof computation_operator {
+    oneof computation {
         RawValueComputation raw_value = 1;
         FieldValueComputation field_value = 2;
         EqualsComputation equals_computation = 3;
@@ -135,11 +129,14 @@ message RawValueComputation {
 }
 
 message FieldValueComputation {
-    optional string base_schema = 1;
+    optional uint32 schema_id = 1;
     required string field_path = 2;
 }
 
-message EqualsComputation {}
+message EqualsComputation {
+    required Computation lhs = 2;
+    required Computation rhs = 3;
+}
 
 message FullView {
     required string id = 1;
