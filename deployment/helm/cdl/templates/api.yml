@@ -29,7 +29,7 @@ spec:
         - name: API_SERVICES__QUERY_ROUTER_URL
           value: "http://{{ .Release.Name }}-query-router:6401"
         - name: API_SERVICES__EDGE_REGISTRY_URL
-          value: "http://{{ .Release.Name }}-edge-registry:{{ .Values.edgeRegistry.rpcPort }}"
+          value: "http://{{ .Release.Name }}-edge-registry:6400"
         - name: API_SERVICES__ON_DEMAND_MATERIALIZER_URL
           value: "http://{{ .Release.Name }}-materializer-ondemand:6400"
         - name: API_INPUT_PORT

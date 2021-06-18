@@ -19,14 +19,14 @@ mod simple_views {
         let view_id = add_view(
             schema_id,
             "test",
-            POSTGRES_MATERIALIZER_ADDR,
+            "",
             Default::default(),
             None,
             Default::default(),
         )
         .await?; // TODO: Materializer_addr - should be optional if none view should not be automatically materialized(only on demand)
 
-        let view_data = materialize_view(view_id, schema_id).await?;
+        let view_data = materialize_view(view_id, &[schema_id]).await?;
         assert!(view_data.rows.is_empty());
         Ok(())
     }
@@ -39,7 +39,7 @@ mod simple_views {
         let view_id = add_view(
             schema_id,
             "test",
-            POSTGRES_MATERIALIZER_ADDR,
+            "",
             Default::default(),
             None,
             Default::default(),
@@ -50,7 +50,7 @@ mod simple_views {
 
         sleep(Duration::from_secs(1)).await; // async insert
 
-        let view_data = materialize_view(view_id, schema_id).await?;
+        let view_data = materialize_view(view_id, &[schema_id]).await?;
         assert_eq!(view_data.rows.len(), 1);
         assert!(view_data
             .rows
@@ -74,7 +74,7 @@ mod relations {
         let view = add_view(
             schema_a,
             "test",
-            POSTGRES_MATERIALIZER_ADDR,
+            "",
             Default::default(),
             None,
             &[NewRelation {
@@ -93,7 +93,7 @@ mod relations {
 
         sleep(Duration::from_secs(1)).await; // async insert
 
-        let view_data = materialize_view(view, schema_a).await?;
+        let view_data = materialize_view(view, &[schema_a, schema_b]).await?;
         assert_eq!(view_data.rows.len(), 1);
 
         Ok(())
@@ -110,7 +110,7 @@ mod relations {
         let view = add_view(
             schema_a,
             "test",
-            POSTGRES_MATERIALIZER_ADDR,
+            "",
             Default::default(),
             None,
             &[NewRelation {
@@ -129,7 +129,7 @@ mod relations {
 
         sleep(Duration::from_secs(1)).await; // async insert
 
-        let view_data = materialize_view(view, schema_a).await?;
+        let view_data = materialize_view(view, &[schema_a, schema_b]).await?;
         assert_eq!(view_data.rows.len(), 0);
 
         Ok(())
@@ -137,7 +137,6 @@ mod relations {
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
-    #[ignore = "todo"]
     async fn should_apply_inner_join_strategy() -> Result<()> {
         let schema_a = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
         let schema_b = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
@@ -146,7 +145,7 @@ mod relations {
         let view = add_view(
             schema_a,
             "test",
-            POSTGRES_MATERIALIZER_ADDR,
+            "",
             Default::default(),
             None,
             &[NewRelation {
@@ -166,7 +165,7 @@ mod relations {
 
         sleep(Duration::from_secs(1)).await; // async insert
 
-        let view_data = materialize_view(view, schema_a).await?;
+        let view_data = materialize_view(view, &[schema_a, schema_b]).await?;
         assert_eq!(view_data.rows.len(), 1);
 
         Ok(())

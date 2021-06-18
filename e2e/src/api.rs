@@ -7,9 +7,7 @@ use lazy_static::lazy_static;
 use serde_json::Value;
 use uuid::Uuid;
 
-use crate::{
-    GRAPHQL_ADDR, POSTGRES_INSERT_DESTINATION, POSTGRES_MATERIALIZER_ADDR, POSTGRES_QUERY_ADDR,
-};
+use crate::{GRAPHQL_ADDR, POSTGRES_INSERT_DESTINATION, POSTGRES_QUERY_ADDR};
 
 lazy_static! {
     static ref GRAPHQL_CLIENT: reqwest::Client = reqwest::Client::new();
@@ -148,22 +146,33 @@ pub async fn add_edges(
     Ok(())
 }
 
-pub async fn materialize_view(view_id: Uuid, schema_id: Uuid) -> Result<MaterializedView> {
+pub async fn materialize_view(view_id: Uuid, schema_ids: &[Uuid]) -> Result<MaterializedView> {
+    // TODO: Remove requirement to pass schemas from api
+    let schemas = schema_ids
+        .iter()
+        .map(|uuid| {
+            format!(
+                r#"{{
+        "id": "{}",
+        "objectIds": []
+    }}"#,
+                uuid
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",");
     let resp: Value = send_graphql_request(format!(r#"{{
             "operationName": "OnDemandRequest",
             "variables": {{
                 "req": {{
                     "viewId": "{}",
                     "schemas": [
-                        {{
-                            "id": "{}",
-                            "objectIds": []
-                        }}
+                        {}
                     ]
                 }}
             }},
             "query": "query OnDemandRequest($req: OnDemandViewRequest!) {{\n  onDemandView(request: $req) {{\n    id\n    rows {{\n      objectIds\n      fields\n    }}\n  }}\n}}\n"
-        }}"#, view_id,schema_id)).await?;
+        }}"#, view_id,schemas)).await?;
     let result: MaterializedView = serde_json::from_value(resp["data"]["onDemandView"].clone())?;
     Ok(result)
 }
@@ -186,7 +195,7 @@ async fn general_api_compatibility_test() -> Result<()> {
     let view_id = add_view(
         schema_id1,
         "test_view",
-        POSTGRES_MATERIALIZER_ADDR,
+        "",
         Default::default(),
         None,
         Default::default(),
@@ -201,6 +210,6 @@ async fn general_api_compatibility_test() -> Result<()> {
 
     add_edges(relation_id, obj1_id, &[obj2_id]).await?;
 
-    materialize_view(view_id, schema_id1).await?;
+    materialize_view(view_id, &[schema_id1]).await?;
     Ok(())
 }

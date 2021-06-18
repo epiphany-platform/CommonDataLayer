@@ -39,7 +39,6 @@ edgeRegistry:
   postgresPort: 5432
   postgresDbname: CDL
   postgresSchema: public
-  rpcPort: 50110
   consumerTag: edge-registry
   consumerSource: cdl.edge.input
 

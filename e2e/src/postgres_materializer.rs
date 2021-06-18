@@ -92,7 +92,7 @@ mod relations {
 
     #[tokio::test]
     #[cfg_attr(miri, ignore)]
-    #[ignore = "todo"]
+    // #[ignore = "todo"]
     async fn should_properly_name_fields_from_subobjects() -> Result<()> {
         let table_name = "test_relation";
         let pg = pg_connect().await?;
@@ -147,9 +147,9 @@ mod relations {
         .await?;
         let object_id_a = Uuid::new_v4();
         let object_id_b = Uuid::new_v4();
+        add_edges(relation_id, object_id_a, &[object_id_b]).await?;
         insert_message(object_id_a, schema_a, r#"{"FieldA":"A"}"#).await?;
         insert_message(object_id_b, schema_b, r#"{"FieldB":"B"}"#).await?;
-        add_edges(relation_id, object_id_a, &[object_id_b]).await?;
 
         sleep(Duration::from_secs(5)).await; // async view generation
 
