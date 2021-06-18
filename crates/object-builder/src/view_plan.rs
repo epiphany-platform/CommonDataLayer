@@ -59,7 +59,7 @@ pub struct ViewPlan {
     pub(crate) missing: HashMap<ObjectIdPair, Vec<usize>>, // (_, indices to unfinished_rows)
     #[serde(skip)] // Serialize is used only for tests, we dont need to assert view
     pub(crate) view: FullView,
-    #[serde(skip)] // Serialize is used only for tests, we dont need to assert view
+    #[serde(skip)] // Serialize is used only for tests, we dont need to asset it
     pub(crate) single_mode: bool,
 }
 
