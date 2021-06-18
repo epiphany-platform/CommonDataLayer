@@ -3,14 +3,12 @@ use crate::types::data::{InputMessage, ObjectRelations};
 use crate::types::schema::{Definition, FullSchema, NewSchema, NewVersion, UpdateSchema};
 use crate::types::view::{NewView, View, ViewUpdate};
 use crate::{error::Error, settings::Settings};
-use crate::{
-    schema::context::{EdgeRegistryPool, SchemaRegistryPool},
-    types::view::FullView,
-    types::IntoQueried,
-};
+use crate::{types::view::FullView, types::IntoQueried};
 use async_graphql::{Context, FieldResult, Object};
 use cdl_dto::ingestion::OwnedInsertMessage;
 use misc_utils::current_timestamp;
+use rpc::edge_registry::EdgeRegistryPool;
+use rpc::schema_registry::SchemaRegistryPool;
 use serde_json::value::to_raw_value;
 use uuid::Uuid;
 

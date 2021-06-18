@@ -100,8 +100,8 @@ pub struct MaterializedView {
 
 #[derive(Debug, SimpleObject)]
 pub struct RowDefinition {
-    /// Object's UUID
-    pub object_id: Uuid,
+    /// Object UUIDs
+    pub object_ids: Vec<Uuid>,
     /// Materialized fields
     pub fields: HashMap<String, Json<Value>>,
 }

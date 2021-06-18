@@ -5,7 +5,6 @@ use itertools::Itertools;
 use semver::VersionReq;
 use uuid::Uuid;
 
-use crate::schema::context::{EdgeRegistryPool, OnDemandMaterializerPool, SchemaRegistryPool};
 use crate::schema::utils::{get_schema, get_view};
 use crate::types::data::{CdlObject, EdgeRelations, SchemaRelation};
 use crate::types::schema::{Definition, FullSchema};
@@ -13,8 +12,10 @@ use crate::types::view::View;
 use crate::types::view::{MaterializedView, RowDefinition};
 use crate::{error::Result, types::view::FullView};
 use crate::{settings::Settings, types::view::OnDemandViewRequest};
-use rpc::materializer_ondemand::OnDemandRequest;
+use rpc::edge_registry::EdgeRegistryPool;
+use rpc::materializer_ondemand::{OnDemandMaterializerPool, OnDemandRequest};
 use rpc::schema_registry::types::SchemaType;
+use rpc::schema_registry::SchemaRegistryPool;
 use tracing_utils::http::RequestBuilderTracingExt;
 
 #[Object]
@@ -353,10 +354,12 @@ impl QueryRoot {
                     })
                     .collect::<Result<_, async_graphql::Error>>()?;
 
-                Ok(RowDefinition {
-                    object_id: row.object_id.parse()?,
-                    fields,
-                })
+                let object_ids = row
+                    .object_ids
+                    .into_iter()
+                    .map(|oid| oid.parse())
+                    .collect::<Result<_, _>>()?;
+                Ok(RowDefinition { object_ids, fields })
             })
             .try_collect::<_>()
             .await?; //In the future we could probably use graphQL @stream directive when its standarized.
