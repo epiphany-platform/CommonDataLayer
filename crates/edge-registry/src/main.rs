@@ -71,6 +71,7 @@ async fn main() -> anyhow::Result<()> {
     status_endpoints::mark_as_started();
     info!("Starting a grpc server");
     Server::builder()
+        .trace_fn(tracing_utils::grpc::trace_fn)
         .add_service(EdgeRegistryServer::new(registry))
         .serve(([0, 0, 0, 0], settings.input_port).into())
         .await?;

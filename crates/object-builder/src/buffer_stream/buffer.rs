@@ -17,6 +17,7 @@ impl ObjectBuffer {
     pub fn try_new(view: FullView, edges: &[TreeResponse]) -> Result<Self> {
         let plan = ViewPlan::try_new(view, edges)?;
         let single_mode = edges.is_empty();
+        tracing::debug!(?plan, "view plan generated");
         Ok(Self { plan, single_mode })
     }
 

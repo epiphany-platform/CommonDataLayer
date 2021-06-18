@@ -1018,7 +1018,6 @@ dependencies = [
  "tokio",
  "tonic",
  "tracing",
- "tracing-futures",
  "tracing_utils",
  "utils",
  "uuid",
