@@ -163,7 +163,7 @@ pub async fn materialize_view(view_id: Uuid, schema_id: Uuid) -> Result<Material
                     ]
                 }}
             }},
-            "query": "query OnDemandRequest($req: OnDemandViewRequest!) {{\n  onDemandView(request: $req) {{\n    id\n    rows {{\n      objectId\n      fields\n    }}\n  }}\n}}\n"
+            "query": "query OnDemandRequest($req: OnDemandViewRequest!) {{\n  onDemandView(request: $req) {{\n    id\n    rows {{\n      objectIds\n      fields\n    }}\n  }}\n}}\n"
         }}"#, view_id,schema_id))
         .send()
         .await?.json().await.unwrap();
