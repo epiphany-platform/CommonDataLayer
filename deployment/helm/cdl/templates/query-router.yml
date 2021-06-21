@@ -34,6 +34,10 @@ spec:
           value: "info,query_router=debug"
         - name: QUERY_ROUTER_MONITORING__OTEL_SERVICE_NAME
           value: "query-router"
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          value: {{ .Values.global.jaegerAgentHost }}
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          value: "{{ .Values.global.jaegerAgentPort }}"
         ports:
         - containerPort: 51805
       imagePullSecrets:

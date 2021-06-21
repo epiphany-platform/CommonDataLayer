@@ -30,6 +30,7 @@ RUN rustup target add x86_64-unknown-linux-musl
 COPY Cargo.lock Cargo.toml ./
 
 COPY benchmarking/ benchmarking/
+COPY e2e/ e2e/
 COPY xtask/ xtask/
 COPY crates/ crates/
 

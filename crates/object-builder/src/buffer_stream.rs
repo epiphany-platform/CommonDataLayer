@@ -1,5 +1,4 @@
 use anyhow::Result;
-use cdl_dto::{edges::TreeResponse, materialization::FullView};
 use futures::{ready, Stream};
 use pin_project_lite::pin_project;
 use serde_json::Value;
@@ -7,7 +6,7 @@ use std::task::Poll;
 
 mod buffer;
 
-use crate::{ObjectIdPair, RowSource};
+use crate::{view_plan::ViewPlan, ObjectIdPair, RowSource};
 pub use buffer::ObjectBuffer;
 
 pin_project! {
@@ -23,12 +22,12 @@ impl<S> ObjectBufferedStream<S>
 where
     S: Stream<Item = Result<(ObjectIdPair, Value)>> + Unpin,
 {
-    pub fn try_new(input: S, view: FullView, edges: &[TreeResponse]) -> Result<Self> {
-        Ok(Self {
-            buffer: ObjectBuffer::try_new(view, edges)?,
+    pub fn new(input: S, view_plan: ViewPlan) -> Self {
+        Self {
+            buffer: ObjectBuffer::new(view_plan),
             vec: Default::default(),
             input,
-        })
+        }
     }
 }
 
@@ -52,7 +51,7 @@ where
                     Err(e) => break (Some(Err(e))),
                     Ok((object_pair, object)) => {
                         match this.buffer.add_object(object_pair, object) {
-                            None => return Poll::Pending,
+                            None => continue,
                             Some(Err(e)) => {
                                 break (Some(Err(e)));
                             }
@@ -77,8 +76,8 @@ mod tests {
     };
 
     use super::*;
-    use cdl_dto::materialization::{FieldDefinition, FieldType};
-    use futures::{pin_mut, FutureExt, StreamExt};
+    use cdl_dto::materialization::{FieldDefinition, FieldType, FullView};
+    use futures::{pin_mut, FutureExt, StreamExt, TryStreamExt};
     use maplit::*;
     use serde_json::json;
     use tokio::sync::mpsc::{channel, Sender};
@@ -89,9 +88,9 @@ mod tests {
     where
         S: Stream<Item = Result<(ObjectIdPair, Value)>> + Unpin,
     {
-        pub fn new_test(input: S, plan: ViewPlan, single_mode: bool) -> Self {
+        pub fn new_test(input: S, plan: ViewPlan) -> Self {
             Self {
-                buffer: ObjectBuffer::new_test(plan, single_mode),
+                buffer: ObjectBuffer::new(plan),
                 vec: Default::default(),
                 input,
             }
@@ -120,9 +119,10 @@ mod tests {
             unfinished_rows: Default::default(),
             missing: Default::default(),
             view: any_view(obj.0),
+            single_mode: true,
         };
 
-        let (tx, stream) = act(plan, true);
+        let (tx, stream) = act(plan);
         pin_mut!(stream);
 
         assert!(stream.next().now_or_never().is_none());
@@ -143,6 +143,86 @@ mod tests {
                 }
             }
         );
+    }
+
+    #[tokio::test]
+    async fn when_there_is_collecting() {
+        let child_schema = Uuid::new_v4();
+        let a = new_obj(None);
+        let b = new_obj(child_schema);
+        let c = new_obj(child_schema);
+
+        let a_id = a.0;
+        let b_id = b.0;
+        let c_id = c.0;
+
+        let objects: Vec<_> = vec![a, b, c];
+        // Reversed order - to simulate the fact that objects can arrive via network in any order;
+        let mut objects_it = objects.clone().into_iter().rev();
+
+        let plan = ViewPlan {
+            unfinished_rows: vec![
+                Some(UnfinishedRow {
+                    fields: hashmap! {
+                        "foo".into() => FieldDefinitionSource::Computed {
+                            field_type: FieldType::Numeric,
+                            computation: crate::ComputationSource::FieldValue {
+                                object: b_id,
+                                field_path: "".into()
+                            }
+                        }
+                    },
+                    missing: 2,
+                    root_object: a_id,
+                    objects: Default::default(),
+                }),
+                Some(UnfinishedRow {
+                    fields: hashmap! {
+                        "foo".into() => FieldDefinitionSource::Computed {
+                            field_type: FieldType::Numeric,
+                            computation: crate::ComputationSource::FieldValue {
+                                object: c_id,
+                                field_path: "".into()
+                            }
+                        }
+                    },
+                    missing: 2,
+                    root_object: a_id,
+                    objects: Default::default(),
+                }),
+            ],
+            missing: hashmap! {
+                a_id => vec![0, 1],
+                b_id => vec![0],
+                c_id => vec![1]
+            },
+            view: any_view(a_id),
+            single_mode: false,
+        };
+
+        let (tx, stream) = act(plan);
+
+        let input = tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        });
+
+        let objects = tokio::spawn(async move {
+            pin_mut!(stream);
+            while let Some(object) = stream.try_next().await.unwrap() {
+                dbg!(&object);
+            }
+        });
+
+        let objects = tokio::time::timeout(tokio::time::Duration::from_secs(1), objects);
+
+        let (objects, _input) = futures::join!(objects, input);
+        let _objects = objects.expect("There is a timeout");
     }
 
     #[tokio::test]
@@ -199,9 +279,10 @@ mod tests {
                 c_id => vec![1]
             },
             view: any_view(a_id),
+            single_mode: false,
         };
 
-        let (tx, stream) = act(plan, false);
+        let (tx, stream) = act(plan);
         pin_mut!(stream);
 
         // No object arrived, pending
@@ -270,13 +351,10 @@ mod tests {
         (pair, value)
     }
 
-    fn act(
-        plan: ViewPlan,
-        single_mode: bool,
-    ) -> (Sender<Result<(ObjectIdPair, Value)>>, TestStream) {
+    fn act(plan: ViewPlan) -> (Sender<Result<(ObjectIdPair, Value)>>, TestStream) {
         let (tx, rx) = channel(16);
         let rx_stream = ReceiverStream::new(rx);
-        let stream = ObjectBufferedStream::new_test(rx_stream, plan, single_mode);
+        let stream = ObjectBufferedStream::new_test(rx_stream, plan);
 
         (tx, stream)
     }
