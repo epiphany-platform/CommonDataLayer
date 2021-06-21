@@ -16,8 +16,10 @@ use metrics_utils::{self as metrics, counter};
 use misc_utils::current_timestamp;
 use utils::parallel_task_queue::ParallelTaskQueue;
 
-static CDL_INPUT_PROTOCOL_VERSION_MAJOR : u32 = 1 as u32;
-static CDL_INPUT_PROTOCOL_VERSION_MINOR : u32 = 0 as u32;
+use lenient_semver::Version;
+
+static CDL_INPUT_MAJOR_VERSION_REQUIREMENT: u64 = 1;
+static CDL_INPUT_MINOR_VERSION_REQUIREMENT: u64 = 0;
 
 pub struct Handler {
     pub cache: Arc<Mutex<LruCache<Uuid, String>>>,
@@ -108,22 +110,48 @@ impl ParallelConsumerHandler for Handler {
         } else {
             counter!("cdl.data-router.success", 1);
         }
-
         Ok(())
     }
 }
 
-fn check_inbound_version(
-    event: &DataRouterInsertMessage<'_>,
-) -> anyhow::Result<()> {
+// versioning dispatcher, cares about format and then passes version for validation
+fn check_inbound_version(inbound_version: &str) -> anyhow::Result<()> {
+    let inbout_copy = String::from(inbound_version);
+    let version = lenient_semver::parse_into::<Version>(inbout_copy.as_ref())
+        .map_err(|e| anyhow::anyhow!("{}", e))?;
 
-    if event.version.major != CDL_INPUT_PROTOCOL_VERSION_MAJOR {
-        anyhow::bail!("unsupported major version");
+    let (version, pre, build) = version.disassociate_metadata();
+
+    let pre: Vec<String> = pre.into_iter().map(ToOwned::to_owned).collect();
+    let build: Vec<String> = build.into_iter().map(ToOwned::to_owned).collect();
+
+    // prerelease and build are not allowed
+    if ! pre.is_empty() {
+        anyhow::bail!("malformed version received, prerelase part is not allwoed in CDL");
     }
-    if event.version.minor != CDL_INPUT_PROTOCOL_VERSION_MINOR {
-        anyhow::bail!("unsupported minor version");
+    if ! build.is_empty() {
+        anyhow::bail!("malformed version received, build part is not allwoed in CDL");
+    }
+    if version.patch != 0 {
+        anyhow::bail!("malformed version received, patch part is not allwoed in CDL");
+    }
+
+    if !check_version_matrix(version) {
+        anyhow::bail!("CDL Input Protocol version mismatch");
     }
     Ok(())
+}
+
+// to be expanded to fully fledged function when
+// we will start using more than one version
+fn check_version_matrix(version: lenient_semver::Version) -> bool {
+    if version.major != CDL_INPUT_MAJOR_VERSION_REQUIREMENT {
+        return false;
+    }
+    if version.minor != CDL_INPUT_MINOR_VERSION_REQUIREMENT {
+        return false;
+    }
+    true
 }
 
 #[tracing::instrument(skip(producer))]
@@ -134,7 +162,7 @@ async fn route(
     producer: &CommonPublisher,
     schema_registry_addr: &str,
 ) -> anyhow::Result<()> {
-    check_inbound_version(event)?;
+    check_inbound_version(event.version.as_str())?;
     let payload = BorrowedInsertMessage {
         object_id: event.object_id,
         schema_id: event.schema_id,
@@ -175,5 +203,35 @@ async fn send_message(
         );
     } else {
         counter!("cdl.data-router.output-singleok", 1);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::check_inbound_version;
+    // use semver::{Version, VersionReq};
+
+    static PROPER_VERSION1: &str = "1.0";
+    static PROPER_VERSION2: &str = "1";
+    static IMPROPER_VERSION1: &str = "1.0-rc1";
+    static IMPROPER_VERSION2: &str = "1.0.1";
+    static IMPROPER_VERSION3: &str = "0.1.0";
+    static IMPROPER_VERSION4: &str = "0.1-rc1";
+    static IMPROPER_VERSION5: &str = "1.1.1.1";
+    static IMPROPER_VERSION6: &str = "darkside";
+    #[test]
+    fn test_version_checking_green() {
+        assert!(check_inbound_version(PROPER_VERSION1).is_ok());
+        assert!(check_inbound_version(PROPER_VERSION2).is_ok());
+    }
+
+    #[test]
+    fn test_version_checking_red() {
+        assert!(check_inbound_version(IMPROPER_VERSION1).is_err());
+        assert!(check_inbound_version(IMPROPER_VERSION2).is_err());
+        assert!(check_inbound_version(IMPROPER_VERSION3).is_err());
+        assert!(check_inbound_version(IMPROPER_VERSION4).is_err());
+        assert!(check_inbound_version(IMPROPER_VERSION5).is_err());
+        assert!(check_inbound_version(IMPROPER_VERSION6).is_err());
     }
 }
