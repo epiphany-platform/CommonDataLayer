@@ -12,6 +12,5 @@ spec:
       value: "1"
     command:
       - './e2e'
-      # - 'should_properly_name_fields_from_subobjects'
-      # - '--nocapture'
+#      - '--nocapture'
   restartPolicy: Never
