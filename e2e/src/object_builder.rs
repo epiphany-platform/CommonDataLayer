@@ -46,7 +46,10 @@ mod simple_views {
 
         let view_data = materialize_view(view_id, schema_id).await?;
         assert_eq!(view_data.rows.len(), 1);
-        assert!(view_data.rows.iter().any(|x| x.object_id == object_id));
+        assert!(view_data
+            .rows
+            .iter()
+            .any(|x| x.object_ids.contains(&object_id)));
         Ok(())
     }
 }
