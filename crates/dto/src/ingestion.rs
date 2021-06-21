@@ -17,9 +17,6 @@ pub struct BorrowedInsertMessage<'a> {
     pub data: &'a RawValue,
 }
 
-
-
-
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OwnedInsertMessage {
@@ -55,25 +52,9 @@ where
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DataRouterInsertMessage<'a> {
-    pub version: InsertMessageVersioning,
+    pub version: String,
     pub object_id: Uuid,
     pub schema_id: Uuid,
     #[serde(borrow)]
     pub data: &'a RawValue,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InsertMessageVersioning {
-    pub major: u32,
-    pub minor: u32,
-}
-
-impl Default for InsertMessageVersioning {
-    fn default() -> Self {
-        InsertMessageVersioning {
-            major: 1 as u32,
-            minor: 0 as u32,
-        }
-    }
 }
