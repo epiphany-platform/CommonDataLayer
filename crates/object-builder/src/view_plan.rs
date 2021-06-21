@@ -1,8 +1,13 @@
 use anyhow::Result;
-use cdl_dto::{edges::TreeResponse, materialization::FullView};
+use cdl_dto::{
+    edges::TreeResponse,
+    materialization::{self, FullView},
+};
+use itertools::Itertools;
 use serde::Serialize;
 use serde_json::Value;
 use std::{collections::HashMap, num::NonZeroU8};
+use uuid::Uuid;
 
 use crate::{FieldDefinitionSource, ObjectIdPair, RowSource};
 
@@ -54,6 +59,8 @@ pub struct ViewPlan {
     pub(crate) missing: HashMap<ObjectIdPair, Vec<usize>>, // (_, indices to unfinished_rows)
     #[serde(skip)] // Serialize is used only for tests, we dont need to assert view
     pub(crate) view: FullView,
+    #[serde(skip)] // Serialize is used only for tests, we dont need to asset it
+    pub(crate) single_mode: bool,
 }
 
 impl ViewPlan {
@@ -78,7 +85,24 @@ impl ViewPlan {
             unfinished_rows,
             missing,
             view,
+            single_mode: edges.is_empty(),
         })
+    }
+
+    pub fn objects_filter(&self) -> HashMap<Uuid, materialization::Schema> {
+        self.missing
+            .keys()
+            .group_by(|ObjectIdPair { schema_id, .. }| schema_id)
+            .into_iter()
+            .map(|(schema_id, objects)| {
+                (
+                    *schema_id,
+                    materialization::Schema {
+                        object_ids: objects.into_iter().map(|pair| pair.object_id).collect(),
+                    },
+                )
+            })
+            .collect()
     }
 
     pub fn builder(&self) -> ViewPlanBuilder {
