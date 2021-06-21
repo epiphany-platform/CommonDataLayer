@@ -51,7 +51,7 @@ where
                     Err(e) => break (Some(Err(e))),
                     Ok((object_pair, object)) => {
                         match this.buffer.add_object(object_pair, object) {
-                            None => return Poll::Pending,
+                            None => continue,
                             Some(Err(e)) => {
                                 break (Some(Err(e)));
                             }
@@ -77,7 +77,7 @@ mod tests {
 
     use super::*;
     use cdl_dto::materialization::{FieldDefinition, FieldType, FullView};
-    use futures::{pin_mut, FutureExt, StreamExt};
+    use futures::{pin_mut, FutureExt, StreamExt, TryStreamExt};
     use maplit::*;
     use serde_json::json;
     use tokio::sync::mpsc::{channel, Sender};
@@ -143,6 +143,86 @@ mod tests {
                 }
             }
         );
+    }
+
+    #[tokio::test]
+    async fn when_there_is_collecting() {
+        let child_schema = Uuid::new_v4();
+        let a = new_obj(None);
+        let b = new_obj(child_schema);
+        let c = new_obj(child_schema);
+
+        let a_id = a.0;
+        let b_id = b.0;
+        let c_id = c.0;
+
+        let objects: Vec<_> = vec![a, b, c];
+        // Reversed order - to simulate the fact that objects can arrive via network in any order;
+        let mut objects_it = objects.clone().into_iter().rev();
+
+        let plan = ViewPlan {
+            unfinished_rows: vec![
+                Some(UnfinishedRow {
+                    fields: hashmap! {
+                        "foo".into() => FieldDefinitionSource::Computed {
+                            field_type: FieldType::Numeric,
+                            computation: crate::ComputationSource::FieldValue {
+                                object: b_id,
+                                field_path: "".into()
+                            }
+                        }
+                    },
+                    missing: 2,
+                    root_object: a_id,
+                    objects: Default::default(),
+                }),
+                Some(UnfinishedRow {
+                    fields: hashmap! {
+                        "foo".into() => FieldDefinitionSource::Computed {
+                            field_type: FieldType::Numeric,
+                            computation: crate::ComputationSource::FieldValue {
+                                object: c_id,
+                                field_path: "".into()
+                            }
+                        }
+                    },
+                    missing: 2,
+                    root_object: a_id,
+                    objects: Default::default(),
+                }),
+            ],
+            missing: hashmap! {
+                a_id => vec![0, 1],
+                b_id => vec![0],
+                c_id => vec![1]
+            },
+            view: any_view(a_id),
+            single_mode: false,
+        };
+
+        let (tx, stream) = act(plan);
+
+        let input = tokio::spawn(async move {
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+            tx.send(Ok(objects_it.next().unwrap())).await.unwrap();
+            tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;
+        });
+
+        let objects = tokio::spawn(async move {
+            pin_mut!(stream);
+            while let Some(object) = stream.try_next().await.unwrap() {
+                dbg!(&object);
+            }
+        });
+
+        let objects = tokio::time::timeout(tokio::time::Duration::from_secs(1), objects);
+
+        let (objects, _input) = futures::join!(objects, input);
+        let _objects = objects.expect("There is a timeout");
     }
 
     #[tokio::test]

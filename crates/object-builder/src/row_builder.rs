@@ -19,6 +19,7 @@ impl RowBuilder {
         Self {}
     }
 
+    #[tracing::instrument(skip(self))]
     pub(crate) fn build(&self, source: RowSource) -> Result<RowDefinition> {
         match source {
             RowSource::Join {

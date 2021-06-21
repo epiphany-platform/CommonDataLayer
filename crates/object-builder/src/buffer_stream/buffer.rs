@@ -7,6 +7,7 @@ use crate::{ObjectIdPair, RowSource};
 /// Because objects are received on the go, and object builder needs to create joins,
 /// these objects need to be tempoirairly stored in some kind of buffer until the last part
 /// of the join arrives
+#[derive(Debug)]
 pub struct ObjectBuffer {
     plan: ViewPlan,
 }
@@ -16,6 +17,7 @@ impl ObjectBuffer {
         Self { plan }
     }
 
+    #[tracing::instrument(skip(value))]
     pub fn add_object(
         &mut self,
         pair: ObjectIdPair,
