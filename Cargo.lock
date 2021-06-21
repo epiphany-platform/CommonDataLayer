@@ -2121,6 +2121,7 @@ dependencies = [
  "cdl_dto",
  "communication_utils",
  "futures",
+ "itertools 0.10.0",
  "maplit",
  "metrics_utils",
  "misc_utils",

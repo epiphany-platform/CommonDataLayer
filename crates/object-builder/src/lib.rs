@@ -18,7 +18,7 @@ use std::collections::HashSet;
 use std::{collections::HashMap, convert::TryInto, pin::Pin};
 use uuid::Uuid;
 
-use crate::buffer_stream::ObjectBufferedStream;
+use crate::{buffer_stream::ObjectBufferedStream, view_plan::ViewPlan};
 
 pub mod settings;
 
@@ -355,9 +355,12 @@ impl ObjectBuilderImpl {
         let object_filters = create_object_filters(&schemas);
         let edges = self.resolve_tree(&view, &object_filters).await?;
 
-        let objects = self.get_objects(view_id, schemas).await?;
+        let view_plan = ViewPlan::try_new(view, &edges)?;
 
-        let buffered_objects = ObjectBufferedStream::try_new(objects, view, &edges)?;
+        let filter = view_plan.objects_filter();
+        let objects = self.get_objects(view_id, filter).await?;
+
+        let buffered_objects = ObjectBufferedStream::new(objects, view_plan);
         let row_builder = RowBuilder::new();
         let rows = buffered_objects.and_then(move |row| ready(row_builder.build(row)));
 
