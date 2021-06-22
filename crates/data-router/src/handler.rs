@@ -125,8 +125,7 @@ fn check_version_matrix(version: lenient_semver::Version) -> anyhow::Result<()> 
 }
 
 fn check_inbound_version(string: &str) -> anyhow::Result<()> {
-    let input = String::from(string);
-    let version = lenient_semver::parse_into::<Version>(input.as_ref())
+    let version = lenient_semver::parse_into::<Version>(string)
         .map_err(|e| anyhow::anyhow!("{}", e))?;
 
     let (version, pre, build) = version.disassociate_metadata();
@@ -144,8 +143,6 @@ fn check_inbound_version(string: &str) -> anyhow::Result<()> {
         anyhow::bail!("Malformed message, version can not contain patch part");
     }
     check_version_matrix(version)?;
-    // now we can safely drop the input
-    // drop(input);
     Ok(())
 }
 
@@ -214,6 +211,7 @@ mod tests {
     static IMPROPER_VERSION4: &str = "0.1-rc1";
     static IMPROPER_VERSION5: &str = "1.1.1.1";
     static IMPROPER_VERSION6: &str = "darkside";
+
     #[test]
     fn test_version_checking_green() {
         assert!(check_inbound_version(PROPER_VERSION1).is_ok());
