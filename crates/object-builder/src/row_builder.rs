@@ -19,6 +19,7 @@ impl RowBuilder {
         Self {}
     }
 
+    #[tracing::instrument(skip(self))]
     pub(crate) fn build(&self, source: RowSource) -> Result<RowDefinition> {
         match source {
             RowSource::Join {
@@ -106,7 +107,7 @@ mod tests {
     use misc_utils::serde_json::{to_string_sorted, SortSettings};
 
     use super::*;
-    use crate::buffer_stream::ObjectBuffer;
+    use crate::{buffer_stream::ObjectBuffer, view_plan::ViewPlan};
 
     #[test]
     fn test_row_builder() -> Result<()> {
@@ -116,7 +117,8 @@ mod tests {
             let objects: BTreeMap<ObjectIdPair, Value> =
                 input.get_json("objects").expect("could not get objects");
 
-            let mut buffer = ObjectBuffer::try_new(view, &edges).expect("valid view plan");
+            let view_plan = ViewPlan::try_new(view, &edges).expect("valid view plan");
+            let mut buffer = ObjectBuffer::new(view_plan);
             let row_builder = RowBuilder::new();
 
             let rows: Vec<RowDefinition> = objects

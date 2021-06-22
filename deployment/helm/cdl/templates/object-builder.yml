@@ -19,43 +19,60 @@ spec:
         prometheus.io/path: '/metrics'
     spec:
       containers:
-        - name: cdl-object-builder
-          image: "{{ .Values.global.imageRepositoryPath }}cdl-object-builder:{{ .Values.global.imageVersion }}"
-          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-          command: ["/bin/object-builder"]
-          env:
-            - name: OBJECT_BUILDER_INPUT_PORT
-              value: "{{ .Values.objectBuilder.inputPort }}"
-            - name: OBJECT_BUILDER_CHUNK_CAPACITY
-              value: "128"
-            {{- if eq .Values.global.communicationMethod "kafka" }}
-            - name: OBJECT_BUILDER_COMMUNICATION_METHOD
-              value: 'kafka'
-            - name: OBJECT_BUILDER_KAFKA__BROKERS
-              value: {{ .Values.global.kafkaBrokers }}
-            - name: OBJECT_BUILDER_KAFKA__GROUP_ID
-              value: "object-builder"
-            - name: OBJECT_BUILDER_KAFKA__INGEST_TOPIC
-              value: {{ .Values.global.objectBuilderInput }}
-            {{- else if eq .Values.global.communicationMethod "amqp" }}
-            - name: OBJECT_BUILDER_COMMUNICATION_METHOD
-              value: 'amqp'
-            - name: OBJECT_BUILDER_AMQP__EXCHANGE_URL
-              value: {{ .Values.global.amqpConnectionString }}
-            - name: OBJECT_BUILDER_AMQP__TAG
-              value: "object-builder"
-            - name: OBJECT_BUILDER_AMQP__INGEST_QUEUE
-              value: {{ .Values.global.objectBuilderInput }}
-            {{- end }}
-            - name: OBJECT_BUILDER_SERVICES__SCHEMA_REGISTRY_URL
-              value: "http://{{ .Release.Name }}-schema-registry:6400"
-            - name: OBJECT_BUILDER_SERVICES__EDGE_REGISTRY_URL
-              value: "http://{{ .Release.Name }}-edge-registry:6400"
-            - name: OBJECT_BUILDER_LOG__RUST_LOG
-              value: "info,object_builder=debug"
-            - name: OBJECT_BUILDER_MONITORING__OTEL_SERVICE_NAME
-              value: "object-builder"
-          ports:
-            - containerPort: 51805
+      - name: cdl-object-builder
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-object-builder:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["/bin/object-builder"]
+        env:
+        - name: OBJECT_BUILDER_INPUT_PORT
+          value: "6400"
+        - name: OBJECT_BUILDER_CHUNK_CAPACITY
+          value: "128"
+        {{- if eq .Values.global.communicationMethod "kafka" }}
+        - name: OBJECT_BUILDER_COMMUNICATION_METHOD
+          value: 'kafka'
+        - name: OBJECT_BUILDER_KAFKA__BROKERS
+          value: {{ .Values.global.kafkaBrokers }}
+        - name: OBJECT_BUILDER_KAFKA__GROUP_ID
+          value: "object-builder"
+        - name: OBJECT_BUILDER_KAFKA__INGEST_TOPIC
+          value: {{ .Values.global.objectBuilderInput }}
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
+        - name: OBJECT_BUILDER_COMMUNICATION_METHOD
+          value: 'amqp'
+        - name: OBJECT_BUILDER_AMQP__EXCHANGE_URL
+          value: {{ .Values.global.amqpConnectionString }}
+        - name: OBJECT_BUILDER_AMQP__TAG
+          value: "object-builder"
+        - name: OBJECT_BUILDER_AMQP__INGEST_QUEUE
+          value: {{ .Values.global.objectBuilderInput }}
+        {{- end }}
+        - name: OBJECT_BUILDER_SERVICES__SCHEMA_REGISTRY_URL
+          value: "http://{{ .Release.Name }}-schema-registry:6400"
+        - name: OBJECT_BUILDER_SERVICES__EDGE_REGISTRY_URL
+          value: "http://{{ .Release.Name }}-edge-registry:6400"
+        - name: OBJECT_BUILDER_LOG__RUST_LOG
+          value: "info,object_builder=trace"
+        - name: OBJECT_BUILDER_MONITORING__OTEL_SERVICE_NAME
+          value: "object-builder"
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          value: {{ .Values.global.jaegerAgentHost }}
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          value: "{{ .Values.global.jaegerAgentPort }}"
+        ports:
+        - containerPort: 51805
       imagePullSecrets:
-        - name: {{ .Values.global.cdlImagePullSecrets }}
+      - name: {{ .Values.global.cdlImagePullSecrets }}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-object-builder
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-object-builder
+  ports:
+    - port: 6400
+      targetPort: 6400
