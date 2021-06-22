@@ -56,6 +56,10 @@ spec:
           value: "info,data_router=debug"
         - name: DATA_ROUTER_MONITORING__OTEL_SERVICE_NAME
           value: "data-router"
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          value: {{ .Values.global.jaegerAgentHost }}
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          value: "{{ .Values.global.jaegerAgentPort }}"
         ports:
         - containerPort: 51805
       imagePullSecrets:

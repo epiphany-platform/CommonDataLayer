@@ -19,51 +19,69 @@ spec:
         prometheus.io/path: '/metrics'
     spec:
       containers:
-        - name: cdl-edge-registry
-          image: "{{ .Values.global.imageRepositoryPath }}cdl-edge-registry:{{ .Values.global.imageVersion }}"
-          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
-          command: ["/bin/edge-registry"]
-          env:
-            - name: EDGE_REGISTRY_POSTGRES__USERNAME
-              value: {{ .Values.edgeRegistry.postgresUsername }}
-            - name: EDGE_REGISTRY_POSTGRES__PASSWORD
-              value: {{ .Values.edgeRegistry.postgresPassword }}
-            - name: EDGE_REGISTRY_POSTGRES__HOST
-              value: {{ .Values.edgeRegistry.postgresHost }}
-            - name: EDGE_REGISTRY_POSTGRES__PORT
-              value: "{{ .Values.edgeRegistry.postgresPort }}"
-            - name: EDGE_REGISTRY_POSTGRES__DBNAME
-              value: {{ .Values.edgeRegistry.postgresDbname }}
-            - name: EDGE_REGISTRY_POSTGRES__SCHEMA
-              value: {{ .Values.edgeRegistry.postgresSchema }}
-            - name: EDGE_REGISTRY_INPUT_PORT
-              value: "{{ .Values.edgeRegistry.rpcPort }}"
-            - name: EDGE_REGISTRY_COMMUNICATION_METHOD
-              value: {{ .Values.global.communicationMethod }}
-            {{- if eq .Values.global.communicationMethod "kafka" }}
-            - name: EDGE_REGISTRY_KAFKA__BROKERS
-              value: {{ .Values.global.kafkaBrokers }}
-            - name: EDGE_REGISTRY_KAFKA__INGEST_TOPIC
-              value: {{ .Values.edgeRegistry.consumerSource }}
-            - name: EDGE_REGISTRY_KAFKA__GROUP_ID
-              value: {{ .Values.edgeRegistry.consumerTag }}
-            {{- else if eq .Values.global.communicationMethod "amqp" }}
-            - name: EDGE_REGISTRY_AMQP__EXCHANGE_URL
-              value: {{ .Values.global.amqpConnectionString }}
-            - name: EDGE_REGISTRY_AMQP__INGEST_QUEUE
-              value: {{ .Values.edgeRegistry.consumerSource }}
-            - name: EDGE_REGISTRY_AMQP__TAG
-              value: {{ .Values.edgeRegistry.consumerTag }}
-            {{- end }}
-            - name: EDGE_REGISTRY_NOTIFICATION__DESTINATION
-              value: {{ .Values.global.reportDestination }}
-            - name: EDGE_REGISTRY_NOTIFICATION__ENABLED
-              value: "true"
-            - name: EDGE_REGISTRY_LOG__RUST_LOG
-              value: "info,edge_registry=debug"
-            - name: EDGE_REGISTRY_MONITORING__OTEL_SERVICE_NAME
-              value: "edge-registry"
-          ports:
-            - containerPort: 51805
+      - name: cdl-edge-registry
+        image: "{{ .Values.global.imageRepositoryPath }}cdl-edge-registry:{{ .Values.global.imageVersion }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        command: ["/bin/edge-registry"]
+        env:
+        - name: EDGE_REGISTRY_POSTGRES__USERNAME
+          value: {{ .Values.edgeRegistry.postgresUsername }}
+        - name: EDGE_REGISTRY_POSTGRES__PASSWORD
+          value: {{ .Values.edgeRegistry.postgresPassword }}
+        - name: EDGE_REGISTRY_POSTGRES__HOST
+          value: {{ .Values.edgeRegistry.postgresHost }}
+        - name: EDGE_REGISTRY_POSTGRES__PORT
+          value: "{{ .Values.edgeRegistry.postgresPort }}"
+        - name: EDGE_REGISTRY_POSTGRES__DBNAME
+          value: {{ .Values.edgeRegistry.postgresDbname }}
+        - name: EDGE_REGISTRY_POSTGRES__SCHEMA
+          value: {{ .Values.edgeRegistry.postgresSchema }}
+        - name: EDGE_REGISTRY_INPUT_PORT
+          value: "{{ .Values.edgeRegistry.rpcPort }}"
+        - name: EDGE_REGISTRY_COMMUNICATION_METHOD
+          value: {{ .Values.global.communicationMethod }}
+        {{- if eq .Values.global.communicationMethod "kafka" }}
+        - name: EDGE_REGISTRY_KAFKA__BROKERS
+          value: {{ .Values.global.kafkaBrokers }}
+        - name: EDGE_REGISTRY_KAFKA__INGEST_TOPIC
+          value: {{ .Values.edgeRegistry.consumerSource }}
+        - name: EDGE_REGISTRY_KAFKA__GROUP_ID
+          value: {{ .Values.edgeRegistry.consumerTag }}
+        {{- else if eq .Values.global.communicationMethod "amqp" }}
+        - name: EDGE_REGISTRY_AMQP__EXCHANGE_URL
+          value: {{ .Values.global.amqpConnectionString }}
+        - name: EDGE_REGISTRY_AMQP__INGEST_QUEUE
+          value: {{ .Values.edgeRegistry.consumerSource }}
+        - name: EDGE_REGISTRY_AMQP__TAG
+          value: {{ .Values.edgeRegistry.consumerTag }}
+        {{- end }}
+        - name: EDGE_REGISTRY_NOTIFICATION__DESTINATION
+          value: {{ .Values.global.reportDestination }}
+        - name: EDGE_REGISTRY_NOTIFICATION__ENABLED
+          value: "true"
+        - name: EDGE_REGISTRY_LOG__RUST_LOG
+          value: "info,edge_registry=debug"
+        - name: EDGE_REGISTRY_MONITORING__OTEL_SERVICE_NAME
+          value: "edge-registry"
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          value: {{ .Values.global.jaegerAgentHost }}
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          value: "{{ .Values.global.jaegerAgentPort }}"
+        ports:
+        - containerPort: 51805
       imagePullSecrets:
         - name: {{ .Values.global.cdlImagePullSecrets }}
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}-edge-registry
+spec:
+  type: ClusterIP
+  selector:
+    app: {{ .Release.Name }}-edge-registry
+  ports:
+    - port: {{ .Values.edgeRegistry.rpcPort }}
+      targetPort: {{ .Values.edgeRegistry.rpcPort }}
