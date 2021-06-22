@@ -13,7 +13,8 @@ use cdl_dto::materialization::Relation;
 use uuid::Uuid;
 
 use super::{UnfinishedRow, UnfinishedRowVariant};
-use crate::{utils::get_base_object, ComputationSource, FieldDefinitionSource, ObjectIdPair};
+use crate::sources::{ComputationSource, FieldDefinitionSource};
+use crate::{utils::get_base_object, ObjectIdPair};
 
 #[derive(Debug)]
 pub struct ViewPlanBuilder<'a> {

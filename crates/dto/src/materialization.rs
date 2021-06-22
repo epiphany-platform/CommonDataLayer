@@ -433,6 +433,7 @@ pub struct FullView {
     pub materializer_options: Value,
     pub fields: HashMap<String, FieldDefinition>,
     pub relations: Vec<Relation>,
+    pub filters: Option<Filter>,
 }
 
 impl FullView {
@@ -453,6 +454,7 @@ impl FullView {
                 .into_iter()
                 .map(Relation::from_rpc)
                 .collect::<RequestResult<_>>()?,
+            filters: rpc.filters.map(Filter::from_rpc).transpose()?,
         })
     }
 }

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::Result;
 use serde_json::Value;
 
-use crate::{utils::get_sub_object, ComputationSource, ObjectIdPair};
+use crate::{sources::ComputationSource, utils::get_sub_object, ObjectIdPair};
 
 use super::FieldBuilder;
 

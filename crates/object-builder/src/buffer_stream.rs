@@ -6,7 +6,7 @@ use std::task::Poll;
 
 mod buffer;
 
-use crate::{view_plan::ViewPlan, ObjectIdPair, RowSource};
+use crate::{sources::RowSource, view_plan::ViewPlan, ObjectIdPair};
 pub use buffer::ObjectBuffer;
 
 pin_project! {
@@ -71,8 +71,8 @@ where
 #[cfg(all(test, not(miri)))]
 mod tests {
     use crate::{
+        sources::FieldDefinitionSource,
         view_plan::{UnfinishedRow, ViewPlan},
-        FieldDefinitionSource,
     };
 
     use super::*;
@@ -108,6 +108,7 @@ mod tests {
                 "foo".into() => FieldDefinition::Simple { field_name: "foo".into(), field_type: FieldType::String }
             },
             relations: vec![],
+            filters: None,
         }
     }
 
@@ -166,7 +167,7 @@ mod tests {
                     fields: hashmap! {
                         "foo".into() => FieldDefinitionSource::Computed {
                             field_type: FieldType::Numeric,
-                            computation: crate::ComputationSource::FieldValue {
+                            computation: crate::sources::ComputationSource::FieldValue {
                                 object: b_id,
                                 field_path: "".into()
                             }
@@ -180,7 +181,7 @@ mod tests {
                     fields: hashmap! {
                         "foo".into() => FieldDefinitionSource::Computed {
                             field_type: FieldType::Numeric,
-                            computation: crate::ComputationSource::FieldValue {
+                            computation: crate::sources::ComputationSource::FieldValue {
                                 object: c_id,
                                 field_path: "".into()
                             }
@@ -248,7 +249,7 @@ mod tests {
                     fields: hashmap! {
                         "foo".into() => FieldDefinitionSource::Computed {
                             field_type: FieldType::Numeric,
-                            computation: crate::ComputationSource::FieldValue {
+                            computation: crate::sources::ComputationSource::FieldValue {
                                 object: b_id,
                                 field_path: "".into()
                             }
@@ -262,7 +263,7 @@ mod tests {
                     fields: hashmap! {
                         "foo".into() => FieldDefinitionSource::Computed {
                             field_type: FieldType::Numeric,
-                            computation: crate::ComputationSource::FieldValue {
+                            computation: crate::sources::ComputationSource::FieldValue {
                                 object: c_id,
                                 field_path: "".into()
                             }
@@ -309,7 +310,7 @@ mod tests {
                 fields: hashmap! {
                     "foo".into() => FieldDefinitionSource::Computed {
                         field_type: FieldType::Numeric,
-                        computation: crate::ComputationSource::FieldValue {
+                        computation: crate::sources::ComputationSource::FieldValue {
                             object: c_id,
                             field_path: "".into()
                         }
@@ -327,7 +328,7 @@ mod tests {
                 fields: hashmap! {
                     "foo".into() => FieldDefinitionSource::Computed {
                         field_type: FieldType::Numeric,
-                        computation: crate::ComputationSource::FieldValue {
+                        computation: crate::sources::ComputationSource::FieldValue {
                             object: b_id,
                             field_path: "".into()
                         }

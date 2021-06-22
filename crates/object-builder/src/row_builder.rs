@@ -4,8 +4,9 @@ use anyhow::{Context, Result};
 use serde_json::Value;
 
 use crate::{
-    row_builder::field_builder::ComputationEngine, FieldDefinitionSource, ObjectIdPair,
-    RowDefinition, RowSource,
+    row_builder::field_builder::ComputationEngine,
+    sources::{FieldDefinitionSource, RowSource},
+    ObjectIdPair, RowDefinition,
 };
 
 mod field_builder;

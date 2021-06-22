@@ -9,7 +9,8 @@ use serde_json::Value;
 use std::{collections::HashMap, num::NonZeroU8};
 use uuid::Uuid;
 
-use crate::{FieldDefinitionSource, ObjectIdPair, RowSource};
+use crate::sources::{FieldDefinitionSource, RowSource};
+use crate::ObjectIdPair;
 
 use self::builder::ViewPlanBuilder;
 
