@@ -54,7 +54,7 @@ struct MaterializedView {
 
 #[derive(Serialize, Debug)]
 #[serde(rename_all = "snake_case")]
-struct RowDefinition {
+pub struct RowDefinition {
     object_ids: HashSet<Uuid>,
     fields: HashMap<String, Value>,
 }
@@ -313,7 +313,7 @@ impl ObjectBuilderImpl {
 
         let buffered_objects = ObjectBufferedStream::new(objects, view_plan);
         let row_builder = RowBuilder::new();
-        let rows = buffered_objects.and_then(move |row| ready(row_builder.build(row)));
+        let rows = buffered_objects.try_filter_map(move |row| ready(row_builder.build(row)));
 
         let rows = Box::pin(rows) as RowStream;
 

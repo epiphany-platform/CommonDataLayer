@@ -135,6 +135,7 @@ mod tests {
             RowSource::Single {
                 root_object: obj.0,
                 value: obj.1,
+                filters: None,
                 fields: hashmap! {
                     "foo".into() => FieldDefinitionSource::Simple {
                         field_name: "foo".into(),
@@ -173,6 +174,7 @@ mod tests {
                             }
                         }
                     },
+                    filters: None,
                     missing: 2,
                     root_object: a_id,
                     objects: Default::default(),
@@ -187,6 +189,7 @@ mod tests {
                             }
                         }
                     },
+                    filters: None,
                     missing: 2,
                     root_object: a_id,
                     objects: Default::default(),
@@ -255,6 +258,7 @@ mod tests {
                             }
                         }
                     },
+                    filters: None,
                     missing: 2,
                     root_object: a_id,
                     objects: Default::default(),
@@ -269,6 +273,7 @@ mod tests {
                             }
                         }
                     },
+                    filters: None,
                     missing: 2,
                     root_object: a_id,
                     objects: Default::default(),
@@ -307,6 +312,7 @@ mod tests {
             RowSource::Join {
                 objects: second_row_objects.into_iter().collect(),
                 root_object: a_id,
+                filters: None,
                 fields: hashmap! {
                     "foo".into() => FieldDefinitionSource::Computed {
                         field_type: FieldType::Numeric,
@@ -325,6 +331,7 @@ mod tests {
             RowSource::Join {
                 objects: first_row_objects.into_iter().collect(),
                 root_object: a_id,
+                filters: None,
                 fields: hashmap! {
                     "foo".into() => FieldDefinitionSource::Computed {
                         field_type: FieldType::Numeric,

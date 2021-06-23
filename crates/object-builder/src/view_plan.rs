@@ -9,7 +9,7 @@ use serde_json::Value;
 use std::{collections::HashMap, num::NonZeroU8};
 use uuid::Uuid;
 
-use crate::sources::{FieldDefinitionSource, RowSource};
+use crate::sources::{FieldDefinitionSource, FilterSource, RowSource};
 use crate::ObjectIdPair;
 
 use self::builder::ViewPlanBuilder;
@@ -32,6 +32,8 @@ pub struct UnfinishedRow {
     pub root_object: ObjectIdPair,
 
     pub fields: HashMap<String, FieldDefinitionSource>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub filters: Option<FilterSource>,
 }
 
 impl UnfinishedRow {
@@ -40,6 +42,7 @@ impl UnfinishedRow {
             root_object: self.root_object,
             value,
             fields: self.fields,
+            filters: self.filters,
         }
     }
     pub fn into_join(self) -> RowSource {
@@ -47,6 +50,7 @@ impl UnfinishedRow {
             objects: self.objects,
             root_object: self.root_object,
             fields: self.fields,
+            filters: self.filters,
         }
     }
 }

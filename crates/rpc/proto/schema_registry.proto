@@ -65,9 +65,14 @@ message Filter {
 }
 
 message SimpleFilter {
-    required FilterOperator operator = 1;
-    required FilterValue lhs = 2;
-    optional FilterValue rhs = 3;
+    oneof simple_filter {
+        EqualsFilter equals = 1;
+    }
+}
+
+message EqualsFilter {
+    required FilterValue lhs = 1;
+    required FilterValue rhs = 2;
 }
 
 message ComplexFilter {
