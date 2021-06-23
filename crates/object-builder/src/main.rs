@@ -18,11 +18,7 @@ async fn main() -> anyhow::Result<()> {
     utils::status_endpoints::serve(&settings.monitoring);
     metrics_utils::serve(&settings.monitoring);
 
-    let object_builder = ObjectBuilderImpl::new(
-        &settings.services.schema_registry_url,
-        settings.chunk_capacity,
-    )
-    .await?;
+    let object_builder = ObjectBuilderImpl::new(&settings).await?;
     let consumer = settings.consumer().await?;
     let handler = object_builder.clone();
     tokio::spawn(async {

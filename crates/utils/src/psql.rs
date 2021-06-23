@@ -5,6 +5,7 @@ pub fn validate_schema(schema: &str) -> bool {
 }
 
 #[cfg(test)]
+#[allow(clippy::bool_assert_comparison)]
 mod tests {
     use super::*;
     use test_case::test_case;
