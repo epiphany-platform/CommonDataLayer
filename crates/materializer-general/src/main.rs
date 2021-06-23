@@ -34,6 +34,8 @@ async fn main() -> anyhow::Result<()> {
     let materializer = MaterializerImpl::new(
         settings.postgres,
         Arc::new(Mutex::new(notification_publisher)),
+        settings.services.schema_registry_url,
+        settings.cache_capacity,
     )
     .await?;
 

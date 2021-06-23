@@ -15,9 +15,6 @@ api:
 dataRouter:
   inputSource: cdl.data.input
 
-leaderElector:
-  heartbeatTime: 2
-
 queryRouter:
   port: 30153
 

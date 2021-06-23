@@ -29,7 +29,7 @@ spec:
         - name: MATERIALIZER_ONDEMAND_SERVICES__OBJECT_BUILDER_URL
           value: "http://{{ .Release.Name }}-object-builder:6400"
         - name: MATERIALIZER_ONDEMAND_LOG__RUST_LOG
-          value: "info,materializer_ondemand=debug"
+          value: "info,materializer_ondemand=trace"
         - name: MATERIALIZER_ONDEMAND_MONITORING__OTEL_SERVICE_NAME
           value: "materializer-ondemand"
         - name: OTEL_EXPORTER_JAEGER_AGENT_HOST

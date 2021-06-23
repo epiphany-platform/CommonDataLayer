@@ -255,6 +255,7 @@ impl ConsumerHandler for ObjectBuilderImpl {
 
         while let Some(chunk) = chunks.try_next().await? {
             let rpc_output: RpcMaterializedView = chunk.try_into()?;
+            tracing::trace!(?rpc_output, "Send request to materializer");
             materializer.upsert_view(rpc_output).await?;
         }
 
