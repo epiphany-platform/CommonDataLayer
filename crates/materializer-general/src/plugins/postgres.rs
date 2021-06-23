@@ -2,6 +2,7 @@ use std::collections::VecDeque;
 use std::{collections::HashMap, convert::TryFrom, convert::TryInto};
 
 use super::MaterializerPlugin;
+use anyhow::Context;
 use bb8_postgres::tokio_postgres::{types::Type, Config, NoTls};
 use bb8_postgres::{bb8, PostgresConnectionManager};
 use bb8_postgres::{
@@ -16,6 +17,8 @@ use rpc::materializer_general::MaterializedView;
 use serde_json::Value;
 use settings_utils::PostgresSettings;
 use uuid::Uuid;
+
+// TODO: Move some of those structs to dto crate
 
 pub struct PostgresMaterializer {
     pool: Pool<PostgresConnectionManager<NoTls>>,
@@ -32,6 +35,14 @@ struct PsqlView {
 struct RowDefinition {
     object_ids: Vec<Uuid>,
     fields: HashMap<String, Value>,
+}
+
+#[derive(Debug)]
+struct Field {
+    sql_name: String,
+    name: String,
+    json_path: String,
+    type_: Type,
 }
 
 impl TryFrom<MaterializedView> for PsqlView {
@@ -140,9 +151,8 @@ impl PostgresMaterializer {
             row.clear();
             row.push(&m.object_ids);
             for field in fields {
-                let f = m.fields.get(&field.field_name).unwrap();
-                println!("f: {:?}  field{:?}", f, field);
-                row.push(f.pointer(&field.json_path).unwrap());
+                let f = m.fields.get(&field.name).context("Field not found")?;
+                row.push(f.pointer(&field.json_path).context("Subobject not found")?);
             }
 
             writer.as_mut().write(&row).await?;
@@ -159,72 +169,7 @@ impl PostgresMaterializer {
     ) -> anyhow::Result<(String, String, Vec<Type>, String, Vec<Field>)> {
         let table = &view.options.table;
 
-        #[derive(Debug)]
-        struct FieldDef<'a> {
-            sql_name: String,
-            field_name: String,
-            json_path: Vec<String>,
-            definition: &'a FieldDefinition,
-        }
-        let mut fields_to_process = definition
-            .fields
-            .iter()
-            .map(|x| FieldDef {
-                json_path: vec!["".to_owned()],
-                sql_name: x.0.to_owned(),
-                field_name: x.0.to_owned(),
-                definition: x.1,
-            })
-            .collect::<VecDeque<_>>();
-        let mut fields = vec![];
-        println!("Before building field defs");
-        while let Some(field) = fields_to_process.pop_front() {
-            match field.definition {
-                FieldDefinition::Simple { .. } | FieldDefinition::Computed { .. } => {
-                    let field_gen = Field {
-                        sql_name: field.sql_name.to_owned(),
-                        field_name: field.field_name.clone(),
-                        json_path: {
-                            println!("field_name: {}", field.field_name);
-                            let mut vec = field.json_path.clone();
-                            // vec.push(field.field_name.clone());
-                            println!("vec: {:?}", vec);
-                            let ret = vec
-                                .into_iter()
-                                // .skip(1)
-                                .collect::<Vec<_>>()
-                                .join("/");
-                            println!("jsonpath: {}", ret);
-                            ret
-                        },
-                        type_: Type::JSON,
-                    };
-                    println!("field-org: {:?}, field-gen: {:?}", field, field_gen);
-                    fields.push(field_gen);
-                }
-                FieldDefinition::Array { fields, .. } => {
-                    println!("field - array : {:?}", field);
-                    fields_to_process = fields
-                        .iter()
-                        .map(|x| {
-                            let def = FieldDef {
-                                definition: x.1,
-                                sql_name: format!("{}_{}", field.sql_name, x.0),
-                                field_name: field.field_name.clone(),
-                                json_path: {
-                                    let mut vec = field.json_path.clone();
-                                    vec.push(x.0.clone());
-                                    vec
-                                },
-                            };
-                            println!("def: {:?}", &def);
-                            def
-                        })
-                        .chain(fields_to_process.into_iter())
-                        .collect()
-                }
-            }
-        }
+        let fields = get_field_list(definition);
 
         let columns = fields.iter().map(|x| x.sql_name.to_owned()).join(", ");
         let update_columns = fields
@@ -277,12 +222,59 @@ impl PostgresMaterializer {
         })
     }
 }
-#[derive(Debug)]
-struct Field {
-    sql_name: String,
-    field_name: String,
-    json_path: String,
-    type_: Type,
+
+fn get_field_list(definition: &FullView) -> Vec<Field> {
+    #[derive(Debug)]
+    struct PartialFieldDefinition<'a> {
+        sql_name: String,
+        field_name: String,
+        json_path: Vec<String>,
+        definition: &'a FieldDefinition,
+    }
+
+    let mut fields = vec![];
+
+    let mut fields_to_process = definition
+        .fields
+        .iter()
+        .map(|x| PartialFieldDefinition {
+            json_path: vec!["".to_owned()],
+            sql_name: x.0.to_owned(),
+            field_name: x.0.to_owned(),
+            definition: x.1,
+        })
+        .collect::<VecDeque<_>>();
+
+    while let Some(field) = fields_to_process.pop_front() {
+        match field.definition {
+            FieldDefinition::Simple { .. } | FieldDefinition::Computed { .. } => {
+                fields.push(Field {
+                    sql_name: field.sql_name,
+                    name: field.field_name,
+                    json_path: field.json_path.join("/"),
+                    type_: Type::JSON,
+                });
+            }
+            FieldDefinition::Array { fields, .. } => {
+                fields_to_process = fields
+                    .iter()
+                    .map(|x| PartialFieldDefinition {
+                        definition: x.1,
+                        sql_name: format!("{}_{}", field.sql_name, x.0),
+                        field_name: field.field_name.clone(),
+                        json_path: {
+                            let mut vec = field.json_path.clone();
+                            vec.push(x.0.clone());
+                            vec
+                        },
+                    })
+                    .chain(fields_to_process.into_iter())
+                    .collect()
+            }
+        }
+    }
+
+    fields
 }
 
 impl PostgresMaterializer {

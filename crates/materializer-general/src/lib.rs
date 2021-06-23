@@ -138,31 +138,33 @@ impl GeneralMaterializer for MaterializerImpl {
         &self,
         request: tonic::Request<MaterializedView>,
     ) -> Result<tonic::Response<Empty>, tonic::Status> {
-        println!("test");
         let materialized_view = request.into_inner();
         tracing::debug!(?materialized_view, "materialized view");
 
-        let err_map = |err| {
-            tracing::error!("Materialization error` {:?}", err);
-            tonic::Status::internal(format!("{}", err))
-        };
-        let err_map2 = |err: anyhow::Error| {
+        let error_handler = |err| {
             tracing::error!("Materialization error` {:?}", err);
             tonic::Status::internal(format!("{}", err))
         };
 
-        let view_id = materialized_view.view_id.parse().map_err(err_map)?;
-        let view_definition = self.get_view_definition(view_id).await.map_err(err_map2)?;
+        let view_id = materialized_view
+            .view_id
+            .parse()
+            .map_err(anyhow::Error::from)
+            .map_err(error_handler)?;
+        let view_definition = self
+            .get_view_definition(view_id)
+            .await
+            .map_err(error_handler)?;
 
         let publisher = self.notification_publisher.clone();
-        let publisher = publisher.lock().await;
+        let publisher = publisher.lock().await; // TODO: Should we have lock active for the whole time?
         let instance =
             NotificationPublisher::clone(&publisher).with_message_body(&materialized_view);
 
         self.materializer
             .upsert_view(materialized_view, view_definition)
             .await
-            .map_err(err_map2)?;
+            .map_err(error_handler)?;
         if let Err(err) = instance.notify("success").await {
             tracing::error!("Failed to send notification {:?}", err)
         }
