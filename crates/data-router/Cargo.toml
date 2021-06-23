@@ -22,13 +22,13 @@ communication_utils     = { path = "../utils/crates/communication" }
 tracing_utils           = { path = "../utils/crates/tracing" }
 
 # Crates.io
-anyhow      = "1.0.40"
-async-trait = "0.1.50"
-lru-cache   = "0.1.2"
-serde       = { version = "1.0.126", features = ["derive"] }
-serde_json  = "1.0.64"
-tokio       = { version = "1.6.1", features = ["macros"] }
-tracing     = "0.1.26"
-url         = { version = "2.2.2", features = ["serde"] }
-uuid        = { version = "0.8.2", features = ["v1", "serde"] }
+anyhow         = "1.0.40"
+async-trait    = "0.1.50"
+lru-cache      = "0.1.2"
+serde          = { version = "1.0.126", features = ["derive"] }
+serde_json     = "1.0.64"
+tokio          = { version = "1.6.1", features = ["macros"] }
+tracing        = "0.1.26"
+url            = { version = "2.2.2", features = ["serde"] }
+uuid           = { version = "0.8.2", features = ["v1", "serde"] }
 lenient_semver = { version = "0.4.2", features = ["version_serde"] }
