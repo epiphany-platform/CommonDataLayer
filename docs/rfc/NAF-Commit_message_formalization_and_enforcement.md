@@ -8,7 +8,6 @@ Reviewer        : CommonDataLayer
 Created         : 2021-03-17
 Last updated    : 2021-03-17
 Version         : 1.0.0
-CDL feature ID  : CDLF-00014-00
 ```
 
 # Commit message formalization:
