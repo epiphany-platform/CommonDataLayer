@@ -125,8 +125,8 @@ fn check_version_matrix(version: lenient_semver::Version) -> anyhow::Result<()> 
 }
 
 fn check_inbound_version(string: &str) -> anyhow::Result<()> {
-    let version = lenient_semver::parse_into::<Version>(string)
-        .map_err(|e| anyhow::anyhow!("{}", e))?;
+    let version =
+        lenient_semver::parse_into::<Version>(string).map_err(|e| anyhow::anyhow!("{}", e))?;
 
     let (version, pre, build) = version.disassociate_metadata();
 
