@@ -1,10 +1,9 @@
 <script lang="ts">
-  import type { InsertMessage } from "../../models";
-  import { schemas } from "../../stores";
-  import { getLoaded } from "../../utils";
+  import type { AllSchemasQuery, InputMessage } from "../../generated/graphql";
 
-  export let messages: InsertMessage[];
+  export let messages: InputMessage[];
   export let sendTransaction: () => void;
+  export let schemas: AllSchemasQuery["schemas"] | null;
 </script>
 
 <div class="sidebar sidebar-left align-right">
@@ -17,8 +16,8 @@
             <b>{index + 1}:</b>
             {JSON.stringify(message).length / 500}
             kb,
-            {(getLoaded($schemas) || []).find((s) => s.id === message.schemaId)
-              ?.name || "Unknown schema"}
+            {(schemas || []).find((s) => s.id === message.schemaId)?.name ||
+              "Unknown schema"}
           </span>
         </li>
       {/each}

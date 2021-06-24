@@ -8,7 +8,7 @@ generates:
       - "typescript-operations"
       - "graphql-codegen-svelte-apollo"
     config:
-      clientPath: "src/apollo-client"
+      clientPath: "../apollo-client"
       asyncQuery: true
       scalars:
         UUID: string

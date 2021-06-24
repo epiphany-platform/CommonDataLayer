@@ -1,14 +1,13 @@
 <script lang="ts">
   import { getLoaded } from "../../utils";
-  import {
-    AsyncSingleObject,
-    AsyncMultipleObjects,
-    AsyncSchemaObjects,
-  } from "../../generated/graphql";
+  import type { CdlObject } from "../../generated/graphql";
 
   import MakeQuery from "./MakeQuery.svelte";
+  import LoadingBar from "../../components/LoadingBar.svelte";
 
-  let results: RemoteData<QueryResult> = notLoaded;
+  let results: CdlObject[] | null = null;
+  let loading = false;
+
   $: resultsPretty = JSON.stringify(
     Array.from(getLoaded(results) || []).reduce((obj, [key, value]) => {
       obj[key] = value;
@@ -18,8 +17,20 @@
     4
   );
 
-  function setResults(res: RemoteData<QueryResult>) {
-    results = res;
+  function setResults(res: Promise<CdlObject[]> | null) {
+    if (!res) {
+      results = null;
+      loading = false;
+    } else {
+      loading = true;
+      res
+        .then((data) => {
+          results = data;
+        })
+        .finally(() => {
+          loading = false;
+        });
+    }
   }
 </script>
 
@@ -37,10 +48,13 @@
       <div class="col-sm-8 align-center">
         <section>
           <h4>Results</h4>
-          <RemoteContent data={results}>
+          {#if !results}
+            <p>Make a query to see data.</p>
+          {:else if loading}
+            <LoadingBar />
+          {:else}
             <pre class="data">{resultsPretty}</pre>
-            <p slot="not-loaded">Make a query to see data.</p>
-          </RemoteContent>
+          {/if}
         </section>
       </div>
     </div>

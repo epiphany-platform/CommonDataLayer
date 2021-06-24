@@ -1,12 +1,31 @@
 <script lang="ts">
-  import type { InsertMessage } from "../../models";
   import MessageList from "./MessageList.svelte";
   import MessageForm from "./MessageForm.svelte";
+  import {
+    AllSchemas,
+    InputMessage,
+    InsertBatch,
+  } from "../../generated/graphql";
 
-  let transaction: InsertMessage[] = [];
+  let messages: InputMessage[] = [];
+  let loading = false;
+
+  $: schemas = AllSchemas({});
 
   function sendTransaction() {
-    alert("Insertion is not supported by the GraphQL API at the moment.");
+    loading = true;
+
+    InsertBatch({ variables: { messages } })
+      .then(() => {
+        alert(`Successfully inserted ${messages.length} rows.`);
+        messages = [];
+      })
+      .catch(() => {
+        alert("Failed to insert messages");
+      })
+      .finally(() => {
+        loading = false;
+      });
   }
 </script>
 
@@ -19,11 +38,16 @@
   <section>
     <div class="row">
       <div class="col-sm-3 align-right">
-        <MessageList messages={transaction} {sendTransaction} />
+        <MessageList
+          {messages}
+          {sendTransaction}
+          schemas={$schemas.data?.schemas || null}
+        />
       </div>
       <div class="form-container col-sm-8 col-sm-offset-1">
         <MessageForm
-          addMessage={(message) => (transaction = [...transaction, message])}
+          addMessage={(message) => (messages = [...messages, message])}
+          schemas={$schemas.data?.schemas || null}
         />
       </div>
     </div>

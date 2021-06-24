@@ -4,15 +4,16 @@
   import type { QueryRoute, QueryType } from "../../route";
   import { derived } from "svelte/store";
   import { getLoaded, validUuid } from "../../utils";
-  import type { QueryResult, RemoteData } from "../../models";
-  import { loaded, loading, notLoaded } from "../../models";
-  import { schemas } from "../../stores";
-  import { loadSchemas } from "../../api";
 
-  import RemoteContent from "../../components/RemoteContent.svelte";
-  import { mockData } from "../../sample-data";
+  import {
+    AsyncSingleObject,
+    CdlObject,
+    AsyncSchemaObjects,
+    AsyncMultipleObjects,
+    AllSchemas,
+  } from "../../generated/graphql";
 
-  export let setResults: (results: RemoteData<QueryResult>) => void;
+  export let setResults: (results: Promise<CdlObject[]> | null) => void;
 
   const queryBy = derived(route, ($r) => ($r as QueryRoute).by || "single");
 
@@ -23,12 +24,10 @@
   let objectIdError: string = "";
   let objectIdsError: string = "";
 
-  if (get(schemas).status === "not-loaded") {
-    loadSchemas();
-  }
+  $: schemas = AllSchemas({});
 
   function resetResults() {
-    setResults(notLoaded);
+    setResults(null);
   }
 
   function setQueryType(event: { currentTarget: { value: string } }) {
@@ -47,51 +46,27 @@
   function submit() {
     objectIdError = "";
     objectIdsError = "";
-    var errorsFound = false;
-    var data: QueryResult | null = null;
 
     const by = get(queryBy);
     if (by === "single") {
       if (!validUuid(objectId)) {
         objectIdError = "Must provide a valid UUID";
-        errorsFound = true;
-      } else {
-        const value = mockData.find(
-          (d) => d.schemaId === schemaId && d.objectId === objectId
-        );
-        if (value) {
-          data = new Map([[value.objectId, value.data]]);
-        } else {
-          data = new Map();
-        }
+        return;
       }
+
+      setResults(AsyncSingleObject({ variables: { objectId, schemaId } }));
     } else if (by === "multiple") {
       const ids = objectIds.trim().split(/[ \r\n\t]+/);
       if (!ids.every(validUuid)) {
         objectIdsError = "Must provide valid UUID's";
-        errorsFound = true;
-      } else {
-        data = new Map(
-          mockData
-            .filter((d) => d.schemaId === schemaId && ids.includes(d.objectId))
-            .map((d) => [d.objectId, d.data])
-        );
+        return;
       }
-    } else {
-      data = new Map(
-        mockData
-          .filter((d) => d.schemaId === schemaId)
-          .map((d) => [d.objectId, d.data])
+
+      setResults(
+        AsyncMultipleObjects({ variables: { objectIds: ids, schemaId } })
       );
-    }
-
-    if (!errorsFound) {
-      console.log(data);
-
-      setResults(loading);
-      setTimeout(() => {
-        setResults(loaded(data));
-      }, 1000);
+    } else {
+      setResults(AsyncSchemaObjects({ variables: { schemaId } }));
     }
   }
 </script>
@@ -110,17 +85,18 @@
   <div class="form-control">
     <label>
       Schema
-      <RemoteContent data={$schemas}>
+      {#if $schemas.loading}
+        <select disabled>
+          <option>Loading...</option>
+        </select>
+      {:else}
         <select required bind:value={schemaId}>
           <option value="">Select a Schema</option>
-          {#each getLoaded($schemas) || [] as schema}
+          {#each $schemas.data?.schemas || [] as schema}
             <option value={schema.id}>{schema.name}</option>
           {/each}
         </select>
-        <select slot="loading" disabled>
-          <option>loading...</option>
-        </select>
-      </RemoteContent>
+      {/if}
     </label>
   </div>
   {#if $queryBy === "single"}

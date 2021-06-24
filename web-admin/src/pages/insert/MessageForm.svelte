@@ -1,13 +1,10 @@
 <script lang="ts">
-  import { get } from "svelte/store";
-  import type { InsertMessage } from "../../models";
-  import { getLoaded, validUuid } from "../../utils";
-  import { schemas } from "../../stores";
-  import { loadSchemas } from "../../api";
-  import RemoteContent from "../../components/RemoteContent.svelte";
+  import { validUuid } from "../../utils";
   import { v4 as uuidv4 } from "uuid";
+  import type { AllSchemasQuery, InputMessage } from "../../generated/graphql";
 
-  export let addMessage: (message: InsertMessage) => void;
+  export let addMessage: (message: InputMessage) => void;
+  export let schemas: AllSchemasQuery["schemas"] | null;
 
   let objectId: string = "";
   let schemaId: string = "";
@@ -15,10 +12,6 @@
 
   let objectIdError: string = "";
   let dataError: string = "";
-
-  if (get(schemas).status === "not-loaded") {
-    loadSchemas();
-  }
 
   function submit() {
     objectIdError = "";
@@ -30,9 +23,8 @@
       errorsFound = true;
     }
 
-    var parsedData: Object | null = null;
     try {
-      parsedData = JSON.parse(data);
+      JSON.parse(data);
     } catch (exception) {
       dataError = "Invalid JSON";
       errorsFound = true;
@@ -42,7 +34,7 @@
       addMessage({
         objectId: objectId || uuidv4(),
         schemaId,
-        data: parsedData,
+        payload: data,
       });
 
       objectId = "";
@@ -69,20 +61,18 @@
   </div>
   <div class="form-control">
     <label>Schema ID</label>
-    <RemoteContent data={$schemas}>
-      {#if getLoaded($schemas)}
-        <select required bind:value={schemaId}>
-          <option value="">Select a Schema</option>
-          {#each getLoaded($schemas) || [] as schema}
-            <option value={schema.id}>{schema.name}</option>
-          {/each}
-        </select>
-      {/if}
-
-      <select disabled slot="loading">
+    {#if !schemas}
+      <select disabled>
         <option>Loading...</option>
       </select>
-    </RemoteContent>
+    {:else}
+      <select required bind:value={schemaId}>
+        <option value="">Select a Schema</option>
+        {#each schemas as schema}
+          <option value={schema.id}>{schema.name}</option>
+        {/each}
+      </select>
+    {/if}
   </div>
   <div class="form-control">
     <label
