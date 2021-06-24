@@ -744,6 +744,7 @@ impl EdgeRegistry for EdgeRegistryImpl {
             )
             .await
             .map_err(|err| db_communication_error("resolve_tree", err))?;
+
         Ok(Response::new(result))
     }
 }

@@ -74,13 +74,8 @@ jobs:
         continue-on-error: true
       - name: build cdl images
         run: ./build.sh
-      - name: add kafka topics
-        run: |
-          topics=(cdl.data.input CDL_SCHEMA_SYNCHRO cdl.document.data cdl.timeseries.data cdl.timeseries.generic-druid cdl.timeseries2.data cdl.edge.input cdl.errors cdl.materialize)
-          for topic in "${topics[@]}"
-          do
-          kubectl exec infrastructure-kafka-0 /bin/bash -- /opt/bitnami/kafka/bin/kafka-topics.sh --create --topic $topic --bootstrap-server localhost:9092
-          done
+      - name: clean kafka provisioning
+        run: kubectl delete job infrastructure-kafka-provisioning
       - name: deploy cdl kafka
         run: helm install --values ./deployment/helm/cdl/values-local.yaml cdl ./deployment/helm/cdl
       - name: wait

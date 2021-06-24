@@ -109,7 +109,6 @@ impl MaterializerPlugin for PostgresMaterializer {
         // Temporary table is unique per session
         tx.batch_execute(&format!(
             "CREATE TABLE IF NOT EXISTS {table} ( \
-            
                     object_ids UUID[] NOT NULL,\
                     {columns},\
                     PRIMARY KEY (object_ids)

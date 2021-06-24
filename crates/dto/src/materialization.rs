@@ -510,11 +510,6 @@ pub struct PostgresMaterializerOptions {
     pub table: String,
 }
 
-//fn parse_uuid(id: &str) -> Result<Uuid, tonic::Status> {
-//Uuid::parse_str(id)
-//.map_err(|err| tonic::Status::invalid_argument(format!("Failed to parse UUID: {}", err)))
-//}
-
 fn create_non_zero_u8(num: u32) -> RequestResult<NonZeroU8> {
     let num: u8 = num.try_into().map_err(|err| {
         RequestError::new(format!(
