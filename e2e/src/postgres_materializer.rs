@@ -57,7 +57,7 @@ mod simple_views {
         let object_id = Uuid::new_v4();
         insert_message(object_id, schema_id, r#"{"FieldAB":"A"}"#).await?;
 
-        sleep(Duration::from_secs(5)).await; // async view generation
+        sleep(Duration::from_secs(10)).await; // async view generation
 
         let query = format!("SELECT object_ids, field_a FROM {}", table_name);
         let pg_results = pg.query(query.as_str(), &[]).await.unwrap();
@@ -150,7 +150,7 @@ mod relations {
         insert_message(object_id_a, schema_a, r#"{"FieldA":"A"}"#).await?;
         insert_message(object_id_b, schema_b, r#"{"FieldD":"D"}"#).await?;
 
-        sleep(Duration::from_secs(5)).await; // async view generation
+        sleep(Duration::from_secs(10)).await; // async view generation
 
         let pg_results = pg
             .query(
