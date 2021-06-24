@@ -22,20 +22,53 @@ You must first add environment variables:
 `DOCKER_BUILDKIT=1`  
 `COMPOSE_DOCKER_CLI_BUILD=1`
 
-Environment with infrastructure alone is started via:
+`./setup.sh` is responsible for modifying/selecting deployments for you.
+It accepts command line args:
+`./setup.sh COMMUNICATION_METHOD REPOSITORY_KIND`
 
-`docker-compose up -d`
+**COMMUNICATION_METHOD**
+* kafka (materialization is only included via kafka atm)
+* amqp
+* grpc
 
-Adding new components happens through invoking `docker-compose` files containing parts of `CDL`.
-First, you must spin up `base` services, eg. for Kafka use:
+**REPOSITORY_KIND**
+* postgres
+* victoria_metrics
+* druid (supports only kafka)
 
-`docker-compose -f docker-compose.cdl.kafka.base.yml up -d`
+### Exposed ports
+Dependencies
+| Port exposed | Service name                    |
+|--------------|---------------------------------|
+| 9092         | kafka                           |
+| 9093         | kafka                           |
+| 5432         | postgres                        |
+| 8428         | victoria metrics                |
+| 5672         | rabbitmq                        |
+| 15672        | rabbitmq                        |
+| 8081         | druid coordinator               |
+| 8082         | druid broker                    |
+| 8083         | druid historical                |
+| 8091         | druid middlemanager             |
+| 8888         | druid router                    |
+| 6831/udp     | jaeger                          |
+| 6832/udp     | jaeger                          |
+| 16686        | jaeger                          |
+| 14268        | jaeger                          |
 
-Then you can add repositories:
-
-`docker-compose -f docker-compose.cdl.kafka.postgres.yml up -d`
-
-Make sure that repository you've chosen matches `base`'s communication protocol.
-
-### ./setup
-Directory contains setup scripts for `postgres`, `schema_registry`, etc..
+Services
+| Port exposed | Service name                    |
+|--------------|---------------------------------|
+| 50101        | schema registry                 |
+| 50102        | data router (gRPC only)         |
+| 50103        | query router                    |
+| 50104        | **FREE**                        |
+| 50105        | **FREE**                        |
+| 50106        | web api                         |
+| 50107        | object builder                  |
+| 50108        | materializer ondemand           |
+| 50109        | **FREE**                        |
+| 50110        | edge registry                   |
+| 50201        | query service, query service ts |
+| 50202        | command service (gRPC only)     |
+| 50203        | materializer general            |

@@ -1,6 +1,7 @@
+use communication_utils::publisher::CommonPublisher;
 use serde::Deserialize;
-use utils::communication::publisher::CommonPublisher;
-use utils::settings::*;
+use settings_utils::*;
+use utils::notification::NotificationSettings;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {

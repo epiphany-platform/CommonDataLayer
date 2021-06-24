@@ -1,17 +1,17 @@
 use crate::communication::resolution::Resolution;
 use crate::output::OutputPlugin;
+use cdl_dto::ingestion::BorrowedInsertMessage;
 use fnv::FnvHashMap;
+use metrics_utils::{self as metrics, counter};
 use reqwest::Url;
 use reqwest::{Client, StatusCode};
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
 use serde_json::Value;
+use settings_utils::VictoriaMetricsSettings;
 use thiserror::Error as DeriveError;
 use tracing::error;
 use url::ParseError;
-use utils::message_types::BorrowedInsertMessage;
-use utils::metrics::{self, counter};
-use utils::settings::VictoriaMetricsSettings;
 use uuid::Uuid;
 
 pub struct VictoriaMetricsOutputPlugin {

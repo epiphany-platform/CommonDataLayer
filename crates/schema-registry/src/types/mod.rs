@@ -1,4 +1,4 @@
-use semver::{Version, VersionReq};
+use semver::{Comparator, Op, Version, VersionReq};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -21,14 +21,22 @@ impl VersionedUuid {
     pub fn exact(id: Uuid, version: Version) -> Self {
         Self {
             id,
-            version_req: VersionReq::exact(&version),
+            version_req: VersionReq {
+                comparators: vec![Comparator {
+                    op: Op::Exact,
+                    major: version.major,
+                    minor: Some(version.minor),
+                    patch: Some(version.patch),
+                    pre: version.pre,
+                }],
+            },
         }
     }
 
     pub fn any(id: Uuid) -> Self {
         Self {
             id,
-            version_req: VersionReq::any(),
+            version_req: VersionReq::STAR,
         }
     }
 }

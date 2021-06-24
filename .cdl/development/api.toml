@@ -5,8 +5,6 @@ insert_destination = "cdl.data.input"
 group_id = "api"
 
 [notification_consumer]
-brokers = "localhost:9092"
-group_id = "partial_update_engine"
 source = "cdl.reports"
 
 [monitoring]

@@ -1,20 +1,23 @@
+#![feature(async_closure)]
+
 use edge_registry::settings::Settings;
 use edge_registry::EdgeRegistryImpl;
+use metrics_utils as metrics;
 use rpc::edge_registry::edge_registry_server::EdgeRegistryServer;
+use settings_utils::{load_settings, CommunicationMethod};
 use std::process;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::transport::Server;
 use tracing::{error, info};
-use utils::settings::{load_settings, CommunicationMethod};
-use utils::{metrics, status_endpoints};
+use utils::status_endpoints;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    utils::set_aborting_panic_hook();
+    misc_utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(
+    tracing_utils::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;
@@ -27,11 +30,11 @@ async fn main() -> anyhow::Result<()> {
     let notification_publisher = settings
         .notifications
         .publisher(
-            settings.publisher().await?,
+            async || settings.publisher().await,
             settings.communication_method.to_string(),
             "EdgeRegistry",
         )
-        .await;
+        .await?;
 
     let registry = EdgeRegistryImpl::new(
         &settings.postgres,

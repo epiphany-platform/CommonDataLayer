@@ -1,0 +1,9 @@
+input_port = 50101
+
+import_file = "/var/data/initial-schema.grpc.json"
+
+[monitoring]
+otel_service_name = "schema-registry"
+
+[log]
+rust_log = "info,schema_registry=debug"

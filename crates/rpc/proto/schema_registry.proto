@@ -16,10 +16,11 @@ service SchemaRegistry {
     rpc GetAllSchemas (Empty) returns (Schemas);
     rpc GetAllFullSchemas (Empty) returns (FullSchemas);
     rpc GetAllViewsOfSchema (Id) returns (SchemaViews);
+    rpc GetAllViewsByRelation (Id) returns (SchemaViews);
     rpc GetBaseSchemaOfView (Id) returns (Schema);
     rpc ValidateValue (ValueToValidate) returns (Errors);
     rpc WatchAllSchemaUpdates (Empty) returns (stream Schema);
-    rpc Ping (Empty) returns (Empty);
+    rpc Heartbeat (Empty) returns (Empty);
 }
 
 message NewSchema {
@@ -64,9 +65,14 @@ message Filter {
 }
 
 message SimpleFilter {
-    required FilterOperator operator = 1;
-    required FilterValue lhs = 2;
-    optional FilterValue rhs = 3;
+    oneof simple_filter {
+        EqualsFilter equals = 1;
+    }
+}
+
+message EqualsFilter {
+    required FilterValue lhs = 1;
+    required FilterValue rhs = 2;
 }
 
 message ComplexFilter {
@@ -84,7 +90,7 @@ message LogicOperator {
 
 message FilterOperator {
     enum Operator {
-        Equals = 0;
+        EqualsOp = 0;
     }
     required Operator operator = 1;
 }
@@ -116,16 +122,10 @@ message ComputedFilter {
 }
 
 message Computation {
-    required ComputationOperator operator = 1;
-    required Computation lhs = 2;
-    optional Computation rhs = 3;
-}
-
-message ComputationOperator {
-    oneof computation_operator {
+    oneof computation {
         RawValueComputation raw_value = 1;
         FieldValueComputation field_value = 2;
-        EqualsComputation equals = 3;
+        EqualsComputation equals_computation = 3;
     }
 }
 
@@ -134,11 +134,14 @@ message RawValueComputation {
 }
 
 message FieldValueComputation {
-    optional string base_schema = 1;
+    optional uint32 schema_id = 1;
     required string field_path = 2;
 }
 
-message EqualsComputation {}
+message EqualsComputation {
+    required Computation lhs = 2;
+    required Computation rhs = 3;
+}
 
 message FullView {
     required string id = 1;
@@ -152,13 +155,14 @@ message FullView {
 }
 
 message NewView {
-    required string base_schema_id = 1;
-    required string name = 2;
-    required string materializer_address = 3;
-    required string materializer_options = 4;
-    map<string, string> fields = 5;
-    optional Filter filters = 6;
-    repeated Relation relations = 7;
+    optional string view_id = 1;
+    required string base_schema_id = 2;
+    required string name = 3;
+    required string materializer_address = 4;
+    required string materializer_options = 5;
+    map<string, string> fields = 6;
+    optional Filter filters = 7;
+    repeated Relation relations = 8;
 }
 
 message Relation {

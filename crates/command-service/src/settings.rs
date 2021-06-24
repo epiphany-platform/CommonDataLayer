@@ -1,12 +1,13 @@
 use anyhow::bail;
-use serde::{Deserialize, Serialize};
-use utils::communication::consumer::BasicConsumeOptions;
-use utils::communication::parallel_consumer::{
+use communication_utils::consumer::BasicConsumeOptions;
+use communication_utils::parallel_consumer::{
     ParallelCommonConsumer, ParallelCommonConsumerConfig,
 };
-use utils::communication::publisher::CommonPublisher;
-use utils::settings::*;
-use utils::task_limiter::TaskLimiter;
+use communication_utils::publisher::CommonPublisher;
+use serde::{Deserialize, Serialize};
+use settings_utils::*;
+use task_utils::task_limiter::TaskLimiter;
+use utils::notification::NotificationSettings;
 
 #[derive(Debug, Deserialize)]
 pub struct Settings {

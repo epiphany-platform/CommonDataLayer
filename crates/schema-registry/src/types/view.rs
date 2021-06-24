@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+use cdl_dto::materialization::{FieldDefinition, Filter, Relation};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sqlx::types::Json;
-use utils::types::materialization::{FieldDefinition, Filter, Relation};
 use uuid::Uuid;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -35,6 +35,7 @@ pub struct View {
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct NewView {
+    pub view_id: Option<Uuid>,
     pub base_schema_id: Uuid,
     pub name: String,
     pub materializer_address: String,

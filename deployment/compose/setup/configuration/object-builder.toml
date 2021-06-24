@@ -1,0 +1,16 @@
+input_port = 50107
+chunk_capacity = 100
+
+[kafka]
+group_id = "object_builder"
+ingest_topic = "cdl.materialize"
+
+[amqp]
+tag = "object_builder"
+ingest_queue = "cdl.materialize"
+
+[monitoring]
+otel_service_name = "object-builder"
+
+[log]
+rust_log = "info,object_builder=debug"

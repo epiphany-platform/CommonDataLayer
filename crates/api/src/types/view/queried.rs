@@ -4,7 +4,7 @@ use async_graphql::{FieldResult, Json, SimpleObject};
 use serde_json::Value;
 use uuid::Uuid;
 
-use utils::types::materialization::{Filter, Relation};
+use cdl_dto::materialization::{Filter, Relation};
 
 /// A view under a schema.
 #[derive(Debug, SimpleObject)]
@@ -90,7 +90,7 @@ impl FullView {
     }
 }
 
-#[derive(Debug, SimpleObject)]
+#[derive(Debug, SimpleObject, serde::Deserialize)]
 pub struct MaterializedView {
     /// Source view's UUID
     pub id: Uuid,
@@ -98,10 +98,11 @@ pub struct MaterializedView {
     pub rows: Vec<RowDefinition>,
 }
 
-#[derive(Debug, SimpleObject)]
+#[derive(Debug, SimpleObject, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct RowDefinition {
-    /// Object's UUID
-    pub object_id: Uuid,
+    /// Object UUIDs
+    pub object_ids: Vec<Uuid>,
     /// Materialized fields
     pub fields: HashMap<String, Json<Value>>,
 }

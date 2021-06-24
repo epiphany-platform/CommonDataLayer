@@ -1,0 +1,23 @@
+async_task_limit = 32
+
+[notifications]
+enabled = false
+
+[kafka]
+group_id = "postgres_command"
+
+[amqp]
+tag = "postgres_command"
+
+[grpc]
+address = "0.0.0.0:50202"
+
+[listener]
+ordered_sources = "cdl.document.1.data"
+unordered_sources = "cdl.document.2.data"
+
+[monitoring]
+otel_service_name = "postgres-command"
+
+[log]
+rust_log = "info,command_service=debug"

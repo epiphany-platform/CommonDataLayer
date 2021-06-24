@@ -1,14 +1,14 @@
 use object_builder::{settings::Settings, ObjectBuilderImpl};
 use rpc::object_builder::object_builder_server::ObjectBuilderServer;
+use settings_utils::load_settings;
 use tonic::transport::Server;
-use utils::settings::load_settings;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    utils::set_aborting_panic_hook();
+    misc_utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(
+    tracing_utils::init(
         settings.log.rust_log.as_str(),
         settings.monitoring.otel_service_name.as_str(),
     )?;
@@ -16,13 +16,9 @@ async fn main() -> anyhow::Result<()> {
     tracing::debug!(?settings, "application environment");
 
     utils::status_endpoints::serve(&settings.monitoring);
-    utils::metrics::serve(&settings.monitoring);
+    metrics_utils::serve(&settings.monitoring);
 
-    let object_builder = ObjectBuilderImpl::new(
-        &settings.services.schema_registry_url,
-        settings.chunk_capacity,
-    )
-    .await?;
+    let object_builder = ObjectBuilderImpl::new(&settings).await?;
     let consumer = settings.consumer().await?;
     let handler = object_builder.clone();
     tokio::spawn(async {
@@ -45,7 +41,7 @@ async fn main() -> anyhow::Result<()> {
     utils::status_endpoints::mark_as_started();
 
     Server::builder()
-        .trace_fn(utils::tracing::grpc::trace_fn)
+        .trace_fn(tracing_utils::grpc::trace_fn)
         .add_service(ObjectBuilderServer::new(object_builder))
         .serve(([0, 0, 0, 0], settings.input_port).into())
         .await?;

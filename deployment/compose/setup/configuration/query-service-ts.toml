@@ -1,0 +1,10 @@
+input_port = 50201
+
+[druid]
+table_name = "cdl.timeseries.internal.druid"
+
+[monitoring]
+otel_service_name = "query-service"
+
+[log]
+rust_log = "info,query_service=debug"

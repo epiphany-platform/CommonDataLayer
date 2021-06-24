@@ -17,6 +17,6 @@ async fn connect_inner(
 
     Ok(GeneralMaterializerClient::with_interceptor(
         conn,
-        tracing_tools::grpc::interceptor(),
+        tracing_utils::grpc::interceptor(),
     ))
 }

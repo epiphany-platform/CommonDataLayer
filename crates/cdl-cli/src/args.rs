@@ -154,6 +154,9 @@ pub enum ViewAction {
 
     /// Add a new view to a schema in the registry.
     Add {
+        /// Id of view to add.
+        #[clap(short, long)]
+        view_id: Option<Uuid>,
         /// The id of the schema.
         #[clap(short, long)]
         schema_id: Uuid,

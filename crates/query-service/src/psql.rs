@@ -4,15 +4,13 @@ use bb8_postgres::tokio_postgres::config::Config as PgConfig;
 use bb8_postgres::tokio_postgres::{types::ToSql, NoTls, RowStream, SimpleQueryMessage};
 use bb8_postgres::PostgresConnectionManager;
 use futures_util::TryStreamExt;
+use metrics_utils::{self as metrics, counter};
 use rpc::query_service::query_service_server::QueryService;
 use rpc::query_service::{Object, ObjectIds, ObjectStream, RawStatement, SchemaId, ValueBytes};
 use serde_json::Value;
+use settings_utils::PostgresSettings;
 use tonic::{Request, Response, Status};
-use utils::settings::PostgresSettings;
-use utils::{
-    metrics::{self, counter},
-    psql::validate_schema,
-};
+use utils::psql::validate_schema;
 use uuid::Uuid;
 
 pub struct PsqlQuery {

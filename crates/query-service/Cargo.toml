@@ -15,20 +15,24 @@ path = "src/main.rs"
 
 [dependencies]
 # Workspace
+misc_utils  = { path = "../utils/crates/misc" }
 rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }
+settings_utils          = { path = "../utils/crates/settings" }
+metrics_utils           = { path = "../utils/crates/metrics" }
+tracing_utils           = { path = "../utils/crates/tracing" }
 
 # Crates.io
-anyhow      = "1.0"
-bb8         = "0.7"
-reqwest     = { version = "0.11", features = ["json"] }
-serde       = { version = "1.0", features = ["derive"] }
-serde_json  = "1.0"
-thiserror   = "1.0"
-tokio       = { version = "1.6", features = ["macros", "rt-multi-thread"] }
-tonic       = "0.4"
-tracing     = "0.1"
-uuid        = { version = "0.8", features = ["v4", "serde"] }
-bb8-postgres            = { version = "0.7", features = ["with-uuid-0_8", "with-serde_json-1"] }
-futures-util            = "0.3"
-tracing-futures         = "0.2"
+anyhow      = "1.0.40"
+bb8         = "0.7.0"
+reqwest     = { version = "0.11.3", features = ["json"] }
+serde       = { version = "1.0.126", features = ["derive"] }
+serde_json  = "1.0.64"
+thiserror   = "1.0.25"
+tokio       = { version = "1.6.1", features = ["macros", "rt-multi-thread"] }
+tonic       = "0.4.3"
+tracing     = "0.1.26"
+uuid        = { version = "0.8.2", features = ["v4", "serde"] }
+bb8-postgres            = { version = "0.7.0", features = ["with-uuid-0_8", "with-serde_json-1"] }
+futures-util            = "0.3.15"
+tracing-futures         = "0.2.5"

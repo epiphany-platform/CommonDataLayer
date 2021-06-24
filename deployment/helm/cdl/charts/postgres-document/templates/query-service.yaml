@@ -48,6 +48,10 @@ spec:
           value: "info,query_service=debug"
         - name: QUERY_SERVICE_MONITORING__OTEL_SERVICE_NAME
           value: "postgres-query"
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          value: {{ .Values.global.jaegerAgentHost }}
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          value: "{{ .Values.global.jaegerAgentPort }}"
         ports:
         - containerPort: 51805
       imagePullSecrets:

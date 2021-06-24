@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use semver::Version;
 use serde_json::Value;
 use sqlx::pool::PoolConnection;
-use sqlx::postgres::{PgConnectOptions, PgListener, PgPool, PgPoolOptions};
+use sqlx::postgres::{PgConnectOptions, PgListener, PgPool, PgPoolOptions, PgQueryResult};
 use sqlx::types::Json;
 use sqlx::{Acquire, Connection, Postgres};
 use tokio::sync::mpsc::{unbounded_channel, UnboundedReceiver};
@@ -17,7 +17,10 @@ use crate::types::DbExport;
 use crate::types::VersionedUuid;
 use crate::utils::build_full_schema;
 use crate::{settings::Settings, types::view::FullView};
-use utils::types::materialization::{FieldDefinition, Filter, Relation};
+use cdl_dto::materialization::{FieldDefinition, Filter, Relation};
+use either::Either;
+use futures::future;
+use futures_util::stream::{StreamExt, TryStreamExt};
 
 const SCHEMAS_LISTEN_CHANNEL: &str = "schemas";
 const VIEWS_LISTEN_CHANNEL: &str = "views";
@@ -185,6 +188,53 @@ impl SchemaRegistryDb {
         .map_err(RegistryError::DbError)
     }
 
+    pub async fn get_all_views_by_relation(
+        &self,
+        relation_id: Uuid,
+    ) -> RegistryResult<Vec<FullView>> {
+        let mut conn = self.connect().await?;
+
+        let stream = sqlx::query_as!(
+            FullView,
+            "SELECT id, base_schema, name, materializer_address, materializer_options,
+            fields as \"fields: _\",
+            filters as \"filters: _\",
+            relations as \"relations: _\"
+             FROM views"
+        )
+        .fetch_many(&mut conn);
+
+        stream
+            .filter_map(
+                |res: Result<Either<PgQueryResult, FullView>, sqlx::Error>| {
+                    let view = res
+                        .map_err(RegistryError::DbError)
+                        .map(|res| {
+                            res.right().ok_or(RegistryError::Critical(
+                                "get_all_views_by_relation sql query returned left-side",
+                            ))
+                        })
+                        .flatten();
+                    future::ready(match view {
+                        Ok(view) => {
+                            if view
+                                .relations
+                                .iter()
+                                .any(|relation| relation.global_id == relation_id)
+                            {
+                                Some(Ok(view))
+                            } else {
+                                None
+                            }
+                        }
+                        Err(err) => Some(Err(err)),
+                    })
+                },
+            )
+            .try_collect()
+            .await
+    }
+
     pub async fn get_schema_versions(&self, id: Uuid) -> RegistryResult<Vec<Version>> {
         let mut conn = self.connect().await?;
 
@@ -327,17 +377,19 @@ impl SchemaRegistryDb {
     #[tracing::instrument(skip(self))]
     pub async fn add_view_to_schema(&self, new_view: NewView) -> RegistryResult<Uuid> {
         let mut conn = self.connect().await?;
-        let new_id = Uuid::new_v4();
+        let new_id = new_view.view_id.unwrap_or_else(Uuid::new_v4);
 
         sqlx::query!(
-            "INSERT INTO views(id, base_schema, name, materializer_address, materializer_options, fields)
-             VALUES ($1, $2, $3, $4, $5, $6)",
+            "INSERT INTO views(id, base_schema, name, materializer_address, materializer_options, fields, filters, relations)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
             new_id,
             new_view.base_schema_id,
             new_view.name,
             new_view.materializer_address,
             new_view.materializer_options,
             serde_json::to_value(&new_view.fields).map_err(RegistryError::MalformedViewFields)?,
+            serde_json::to_value(&new_view.filters).map_err(RegistryError::MalformedViewFilters)?,
+            serde_json::to_value(&new_view.relations).map_err(RegistryError::MalformedViewRelations)?,
         )
         .execute(&mut conn)
         .await?;

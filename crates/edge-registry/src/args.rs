@@ -1,6 +1,6 @@
 use clap::Clap;
 use utils::communication::consumer::CommonConsumerConfig;
-use utils::metrics;
+use metrics_utils as metrics;
 use utils::notification::NotificationServiceConfig;
 
 #[derive(Clone, Debug, Clap)]

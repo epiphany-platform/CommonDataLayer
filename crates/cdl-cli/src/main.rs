@@ -10,7 +10,7 @@ use clap::Clap;
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
     let args = Args::parse();
-    ::utils::tracing::init(None, "cdl-cli")?;
+    tracing_utils::init(None, "cdl-cli")?;
 
     match args.action {
         Action::Schema { action } => match action {
@@ -67,6 +67,7 @@ pub async fn main() -> anyhow::Result<()> {
             }
             ViewAction::Get { id } => get_view(id, args.registry_addr).await,
             ViewAction::Add {
+                view_id,
                 schema_id,
                 name,
                 materializer_address,
@@ -76,6 +77,7 @@ pub async fn main() -> anyhow::Result<()> {
                 relations,
             } => {
                 add_view_to_schema(
+                    view_id,
                     schema_id,
                     name,
                     materializer_address,

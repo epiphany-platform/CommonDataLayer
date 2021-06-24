@@ -6,3 +6,4 @@ __pycache__
 .pytest_cache
 tests/rpc/
 docs/mdbook-plantuml-img/
+.tmp

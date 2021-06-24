@@ -1,30 +1,24 @@
-pub mod error;
-pub mod events;
-pub mod schema;
-pub mod settings;
-pub mod types;
-
 use std::convert::Infallible;
 
 use async_graphql::http::{playground_source, GraphQLPlaygroundConfig};
 use async_graphql::Schema;
 use async_graphql_warp::{graphql_subscription, Response};
+use rpc::edge_registry::EdgeRegistryConnectionManager;
+use rpc::materializer_ondemand::OnDemandMaterializerConnectionManager;
+use rpc::schema_registry::SchemaRegistryConnectionManager;
 use warp::{http::Response as HttpResponse, hyper::header::CONTENT_TYPE, hyper::Method, Filter};
 
-use crate::schema::context::EdgeRegistryConnectionManager;
-use schema::context::{
-    MQEvents, OnDemandMaterializerConnectionManager, SchemaRegistryConnectionManager,
-};
-use schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
-use settings::Settings;
-use utils::settings::load_settings;
+use api::schema::context::MQEvents;
+use api::schema::{mutation::MutationRoot, query::QueryRoot, subscription::SubscriptionRoot};
+use api::settings::Settings;
+use settings_utils::load_settings;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    utils::set_aborting_panic_hook();
+    misc_utils::set_aborting_panic_hook();
 
     let settings: Settings = load_settings()?;
-    ::utils::tracing::init(settings.log.rust_log.as_str(), "web-api")?;
+    tracing_utils::init(settings.log.rust_log.as_str(), "web-api")?;
 
     tracing::debug!(?settings, "application environment");
 
@@ -86,7 +80,7 @@ async fn main() -> anyhow::Result<()> {
         .or(graphql_playground)
         .or(warp::path!("graphql").and(graphql_post).with(cors));
 
-    utils::tracing::http::serve(routes, ([0, 0, 0, 0], input_port)).await;
+    tracing_utils::http::serve(routes, ([0, 0, 0, 0], input_port)).await;
 
     Ok(())
 }

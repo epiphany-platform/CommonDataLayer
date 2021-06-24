@@ -10,7 +10,7 @@ pub enum RegistryError {
     #[error("Unable to connect to database: {0}")]
     ConnectionError(sqlx::Error),
     #[error("Error occurred while accessing database: {0}")]
-    DbError(sqlx::Error),
+    DbError(#[from] sqlx::Error),
     #[error("No schema found with id \"{0}\"")]
     NoSchemaWithId(Uuid),
     #[error("No view found with id \"{0}\"")]
@@ -20,7 +20,7 @@ pub enum RegistryError {
     #[error("Given schema type is invalid")]
     InvalidSchemaType,
     #[error("Invalid version retrieved from database: {0}")]
-    InvalidVersion(semver::SemVerError),
+    InvalidVersion(semver::Error),
     #[error("No version of schema with id {} matches the given requirement {}", .0.id, .0.version_req)]
     NoVersionMatchesRequirement(VersionedUuid),
     #[error(
@@ -42,13 +42,15 @@ pub enum RegistryError {
     #[error("{0}")]
     CacheError(String),
     #[error("{0}")]
-    MQError(utils::communication::Error),
+    MQError(#[from] communication_utils::Error),
     #[error("JSON error processing view fields: {0}")]
     MalformedViewFields(serde_json::Error),
     #[error("JSON error processing view filters: {0}")]
     MalformedViewFilters(serde_json::Error),
     #[error("JSON error processing view relations: {0}")]
     MalformedViewRelations(serde_json::Error),
+    #[error("Critical error occured: {0}")]
+    Critical(&'static str),
 }
 
 pub type RegistryResult<T> = Result<T, RegistryError>;
@@ -59,18 +61,6 @@ fn join_with_commas<'a>(errors: impl IntoIterator<Item = &'a String>) -> String 
         .map(|e| e.to_string())
         .collect::<Vec<_>>()
         .join(", ")
-}
-
-impl From<sqlx::Error> for RegistryError {
-    fn from(error: sqlx::Error) -> Self {
-        RegistryError::DbError(error)
-    }
-}
-
-impl From<utils::communication::Error> for RegistryError {
-    fn from(error: utils::communication::Error) -> Self {
-        Self::MQError(error)
-    }
 }
 
 impl From<RegistryError> for Status {
@@ -93,6 +83,7 @@ impl From<RegistryError> for Status {
             | RegistryError::MalformedViewFilters(_)
             | RegistryError::MalformedViewRelations(_)
             | RegistryError::NotificationError(_)
+            | RegistryError::Critical(_)
             | RegistryError::CacheError(_) => Status::internal(error.to_string()),
         }
     }

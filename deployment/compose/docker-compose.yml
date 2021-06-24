@@ -36,7 +36,8 @@ services:
         cdl.document.1.data:1:1,
         cdl.document.2.data:1:1,
         cdl.edge.input:1:1,
-        cdl.materialize:1:1
+        cdl.materialize:1:1,
+        cdl.materialization.reports:1:1
     depends_on:
       - zookeeper
 
@@ -132,6 +133,208 @@ services:
       - "6832:6832/udp"
       - "16686:16686"
       - "14268:14268"
+
+  schema_registry:
+    image: cdl-schema-registry:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=schema-registry
+        - ENV=DEV
+    command: /bin/schema-registry
+    ports:
+      - "50101:50101"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/schema_registry:/var/data
+      - ./setup/configuration:/etc/cdl
+
+  data_router:
+    image: cdl-data-router:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=data-router
+        - ENV=DEV
+    command: /bin/data-router
+    ports:
+      - "50102:50102"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
+
+  query_router:
+    image: cdl-query-router:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-router
+        - ENV=DEV
+    command: "/bin/query-router"
+    ports:
+      - "50103:50103"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
+
+  edge_registry:
+    image: cdl-edge-registry:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=edge-registry
+        - ENV=DEV
+    command: "/bin/edge-registry"
+    ports:
+      - "50110:50110"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
+
+  object_builder:
+    image: cdl-object-builder:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=object-builder
+        - ENV=DEV
+    command: "/bin/object-builder"
+    ports:
+      - "50107:50107"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
+
+  materializer_ondemand:
+    image: cdl-materializer-ondemand:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=materializer-ondemand
+        - ENV=DEV
+    command: "/bin/materializer-ondemand"
+    ports:
+      - "50108:50108"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
+
+  partial_update_engine:
+    image: cdl-partial-update-engine:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=partial-update-engine
+        - ENV=DEV
+    command: "/bin/partial-update-engine"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
+
+  web_api:
+    image: cdl-api:latest
+    command: "/bin/api"
+    ports:
+      - "50106:50106"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=api
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
+
+  command_service:
+    image: cdl-command-service:latest
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=command-service
+        - ENV=DEV
+    command: "/bin/command-service"
+    ports:
+      - "50202:50202"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
+
+  query_service:
+    image: cdl-query-service:latest
+    command: "/bin/query-service"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-service
+        - ENV=DEV
+    ports:
+      - "50201:50201"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
+
+  query_service_ts:
+    image: cdl-query-service-ts:latest
+    command: "/bin/query-service-ts"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=query-service-ts
+        - ENV=DEV
+    ports:
+      - "50201:50201"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
+
+  materializer_general:
+    image: cdl-materializer-general:latest
+    command: "/bin/materializer-general"
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+      args:
+        - BIN=materializer-general
+        - ENV=DEV
+    ports:
+      - "50203:50203"
+    environment:
+      OTEL_EXPORTER_JAEGER_AGENT_HOST: "jaeger"
+      OTEL_EXPORTER_JAEGER_AGENT_PORT: "6831"
+    volumes:
+      - ./setup/configuration:/etc/cdl
 
 networks:
   default:

@@ -8,6 +8,8 @@ global:
   reportDestination: cdl.errors
   objectBuilderInput: cdl.materialize
   amqpConnectionString: "amqp://user:CHANGEME@infrastructure-rabbitmq:5672/%2f"
+  jaegerAgentHost: "jaeger-agent"
+  jaegerAgentPort: "6831"
 
 api:
   port: 30152
@@ -40,12 +42,6 @@ edgeRegistry:
   rpcPort: 50110
   consumerTag: edge-registry
   consumerSource: cdl.edge.input
-
-objectBuilder:
-  inputPort: 50111
-
-materializerOnDemand:
-  inputPort: 50112
 
 webAdmin:
   port: 30151

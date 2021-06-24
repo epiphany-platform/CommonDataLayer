@@ -13,19 +13,33 @@ path = "src/main.rs"
 
 [dependencies]
 # Workspace
+cdl_dto     = { path = "../dto" }
+misc_utils  = { path = "../utils/crates/misc" }
 rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }
+communication_utils     = { path = "../utils/crates/communication" }
+tracing_utils           = { path = "../utils/crates/tracing" }
+settings_utils          = { path = "../utils/crates/settings" }
+metrics_utils           = { path = "../utils/crates/metrics" }
 
 # Crates.io
-anyhow      = "1.0"
-async-trait = "0.1"
-bb8         = "0.7"
-futures     = "0.3"
-serde       = { version = "1.0", features = ["derive"] }
-serde_json  = "1.0"
-thiserror   = "1.0"
-tokio       = { version = "1.6", features = ["rt-multi-thread", "macros", "sync"] }
-tonic       = "0.4"
-tracing     = "0.1"
-uuid        = { version = "0.8", features = ["v1", "serde"] }
-tracing-futures         = "0.2"
+anyhow      = "1.0.40"
+async-trait = "0.1.50"
+bb8         = "0.7.0"
+futures     = "0.3.15"
+itertools   = "0.10.0"
+maplit      = "1.0.2"
+serde       = { version = "1.0.126", features = ["derive"] }
+serde_json  = "1.0.64"
+thiserror   = "1.0.25"
+tokio       = { version = "1.6.1", features = ["rt-multi-thread", "macros", "sync"] }
+tonic       = "0.4.3"
+tracing     = "0.1.26"
+uuid        = { version = "0.8.2", features = ["v1", "serde"] }
+pin-project-lite        = "0.2.6"
+tokio-stream            = "0.1.6"
+tracing-futures         = "0.2.5"
+
+[dev-dependencies]
+test-case   = "1.1.0"
+snapshot-runner         = { git = "https://github.com/frondeus/snapshot-runner.git" }

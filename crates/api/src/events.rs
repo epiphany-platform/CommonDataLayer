@@ -12,11 +12,11 @@ use futures::{Future, Stream};
 use tokio::sync::broadcast::{self, Sender};
 
 use crate::settings::Settings;
-use utils::communication::{
+use communication_utils::{
     consumer::{CommonConsumer, CommonConsumerConfig, ConsumerHandler},
     message::CommunicationMessage,
 };
-use utils::settings::CommunicationMethod;
+use settings_utils::CommunicationMethod;
 
 /// Owned generic message received from message queue.
 #[derive(Clone, Debug)]

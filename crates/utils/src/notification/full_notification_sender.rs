@@ -1,32 +1,35 @@
-use crate::communication::publisher::CommonPublisher;
-use crate::notification::NotificationService;
+use crate::notification::{IntoSerialize, NotificationService};
 use anyhow::Context;
+use communication_utils::publisher::CommonPublisher;
 use serde::Serialize;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use tracing::{debug, trace};
 
 #[derive(Clone)]
-pub struct FullNotificationSenderBase<T>
+pub struct FullNotificationSenderBase<T, S>
 where
-    T: Serialize + Send + Sync + 'static,
+    T: IntoSerialize<S> + Send + Sync + 'static,
+    S: Serialize,
 {
     pub publisher: CommonPublisher,
     pub destination: Arc<String>,
     pub context: Arc<String>,
     pub application: &'static str,
-    _phantom: PhantomData<T>,
+    _phantom: PhantomData<(T, S)>,
 }
 
-pub struct FullNotificationSender<T>
+pub struct FullNotificationSender<T, S>
 where
-    T: Serialize + Send + Sync + 'static,
+    T: IntoSerialize<S> + Send + Sync + 'static,
+    S: Serialize,
 {
     pub producer: CommonPublisher,
     pub destination: Arc<String>,
     pub context: Arc<String>,
     pub msg: T,
     pub application: &'static str,
+    pub _phantom: PhantomData<S>,
 }
 
 #[derive(Serialize)]
@@ -41,9 +44,10 @@ where
     msg: T,
 }
 
-impl<T> FullNotificationSenderBase<T>
+impl<T, S> FullNotificationSenderBase<T, S>
 where
-    T: Serialize + Send + Sync + 'static,
+    T: IntoSerialize<S> + Send + Sync + 'static,
+    S: Serialize,
 {
     pub async fn new(
         publisher: CommonPublisher,
@@ -67,14 +71,17 @@ where
 }
 
 #[async_trait::async_trait]
-impl<T> NotificationService for FullNotificationSender<T>
+impl<T, S> NotificationService for FullNotificationSender<T, S>
 where
-    T: Serialize + Send + Sync + 'static,
+    T: IntoSerialize<S> + Send + Sync + 'static,
+    S: Serialize + Send + Sync + 'static,
 {
     async fn notify(self: Box<Self>, description: &str) -> anyhow::Result<()> {
+        let serialize = self.msg.into_serialize();
+
         trace!(
             "Notification `{}` - `{}`",
-            serde_json::to_string(&self.msg)
+            serde_json::to_string(&serialize)
                 .unwrap_or_else(|err| format!("failed to serialize json {}", err)),
             description
         );
@@ -83,7 +90,7 @@ where
             application: self.application,
             context: self.context.as_str(),
             description,
-            msg: self.msg,
+            msg: serialize,
         };
 
         self.producer

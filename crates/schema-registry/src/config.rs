@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::Clap;
 
-use utils::metrics;
+use metrics_utils as metrics;
 
 pub enum CommunicationMethodConfig {
     Kafka(KafkaConfig),

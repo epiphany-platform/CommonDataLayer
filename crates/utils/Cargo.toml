@@ -11,36 +11,39 @@ path = "src/lib.rs"
 
 [dependencies]
 # Workspace
+cdl_dto     = { path    = "../dto" }
 rpc         = { path    = "../rpc" }
-tracing_tools           = { path    = "../tracing_tools", features = ["kafka", "grpc", "http"] } # TODO: Use these feature flags
+misc_utils  = { path    = "crates/misc" }
+task_utils  = { path    = "crates/task" }
+communication_utils     = { path    = "crates/communication", features = ["kafka", "amqp", "grpc"] }
+tracing_utils           = { path    = "crates/tracing", features = ["kafka", "grpc", "http"] } # TODO: Use these feature flags
+settings_utils          = { path    = "crates/settings" }
 
 # Crates.io
-anyhow      = "1.0"
-async-trait = "0.1"
-config      = "0.11"
+anyhow      = "1.0.40"
+async-trait = "0.1.50"
+config      = "0.11.0"
 derive_more = { version = "0.99.14", features = ["display"] }
 dirs        = "3.0.2"
-hyper       = "0.14"
-lapin       = "1.7"
-lazy_static = "1.4"
-metrics     = { version = "0.15", features = ["std"] }
-rdkafka     = { version = "0.26", features = ["cmake-build"] }
-reqwest     = { version = "0.11", features = ["json"] }
-serde       = { version = "1.0", features = ["derive"] }
-serde_json  = { version = "1.0", features = ["raw_value"] }
-thiserror   = "1.0"
-tokio       = { version = "1.6", features = ["rt-multi-thread"] }
-tokio-amqp  = "1.0"
-tracing     = "0.1"
-url         = { version = "2.2", features = ["serde"] }
-uuid        = { version = "0.8", features = ["v4", "serde"] }
-async-graphql           = { version = "2.6", features = ["uuid", "opentelemetry", "tracing-futures", "tracinglib"] }
-async-stream            = "0.3"
-futures-util            = "0.3"
-tonic                   = "0.4"
-tracing-futures         = "0.2"
-metrics-exporter-prometheus         = "0.5"
+hyper       = "0.14.8"
+lapin       = "1.7.1"
+lazy_static = "1.4.0"
+rdkafka     = { version = "0.26.0", features = ["cmake-build"] }
+reqwest     = { version = "0.11.3", features = ["json"] }
+serde       = { version = "1.0.126", features = ["derive"] }
+serde_json  = { version = "1.0.64", features = ["raw_value"] }
+thiserror   = "1.0.25"
+tokio       = { version = "1.6.1", features = ["rt-multi-thread"] }
+tokio-amqp  = "1.0.0"
+tracing     = "0.1.26"
+url         = { version = "2.2.2", features = ["serde"] }
+uuid        = { version = "0.8.2", features = ["v4", "serde"] }
+async-graphql           = { version = "2.9.0", features = ["uuid", "opentelemetry", "tracing-futures", "tracinglib"] }
+async-stream            = "0.3.2"
+futures-util            = "0.3.15"
+tonic                   = "0.4.3"
+tracing-futures         = "0.2.5"
 
 [dev-dependencies]
-test-case = "1.1"
-tokio       = { version = "1.6", features = ["rt-multi-thread", "macros", "sync"] }
+test-case = "1.1.0"
+tokio       = { version = "1.6.1", features = ["rt-multi-thread", "macros", "sync"] }
