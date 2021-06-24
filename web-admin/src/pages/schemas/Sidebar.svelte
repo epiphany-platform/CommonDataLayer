@@ -7,14 +7,14 @@
   import type { AllSchemasQuery } from "../../generated/graphql";
 
   export let fullWidth: boolean = false;
-  export let schemas: AllSchemasQuery["schemas"];
+  export let schemas: AllSchemasQuery["schemas"] | null;
 
   const selectedId = derived(route, ($r) => ($r as SchemasRoute).id);
   const nameQuery = derived(route, ($r) => ($r as SchemasRoute).query);
 
   const visibleSchemas = derived(nameQuery, ($query) => {
     const lowerQuery = ($query || "").toLowerCase();
-    return schemas.filter((schema) =>
+    return (schemas || []).filter((schema) =>
       schema.name.toLowerCase().includes(lowerQuery)
     );
   });

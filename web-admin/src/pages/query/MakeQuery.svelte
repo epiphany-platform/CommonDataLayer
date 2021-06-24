@@ -3,17 +3,17 @@
   import { route, replaceRoute } from "../../route";
   import type { QueryRoute, QueryType } from "../../route";
   import { derived } from "svelte/store";
-  import { getLoaded, validUuid } from "../../utils";
+  import { validUuid } from "../../utils";
 
   import {
     AsyncSingleObject,
-    CdlObject,
     AsyncSchemaObjects,
     AsyncMultipleObjects,
     AllSchemas,
   } from "../../generated/graphql";
+  import type { CdlObject } from "../../generated/graphql";
 
-  export let setResults: (results: Promise<CdlObject[]> | null) => void;
+  export let setResults: (results: Promise<CdlObject[] | null>) => void;
 
   const queryBy = derived(route, ($r) => ($r as QueryRoute).by || "single");
 
@@ -54,7 +54,11 @@
         return;
       }
 
-      setResults(AsyncSingleObject({ variables: { objectId, schemaId } }));
+      setResults(
+        AsyncSingleObject({ variables: { objectId, schemaId } }).then((res) =>
+          res.data?.object ? [res.data.object] : null
+        )
+      );
     } else if (by === "multiple") {
       const ids = objectIds.trim().split(/[ \r\n\t]+/);
       if (!ids.every(validUuid)) {
@@ -63,10 +67,16 @@
       }
 
       setResults(
-        AsyncMultipleObjects({ variables: { objectIds: ids, schemaId } })
+        AsyncMultipleObjects({ variables: { objectIds: ids, schemaId } }).then(
+          (res) => res.data?.objects || null
+        )
       );
     } else {
-      setResults(AsyncSchemaObjects({ variables: { schemaId } }));
+      setResults(
+        AsyncSchemaObjects({ variables: { schemaId } }).then(
+          (res) => res.data?.schemaObjects || null
+        )
+      );
     }
   }
 </script>

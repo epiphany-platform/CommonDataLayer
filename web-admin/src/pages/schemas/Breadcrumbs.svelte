@@ -2,15 +2,15 @@
   import { get, derived } from "svelte/store";
   import { route, replaceRoute } from "../../route";
   import type { SchemasRoute } from "../../route";
-  import { schemas } from "../../stores";
-  import { getLoaded } from "../../utils";
+  import type { AllSchemasQuery } from "../../generated/graphql";
+
+  export let schemas: AllSchemasQuery["schemas"];
 
   const schemaId = derived(route, ($r) => ($r as SchemasRoute).id);
   const version = derived(route, ($r) => ($r as SchemasRoute).version);
   const schemaName = derived(
-    [schemaId, schemas],
-    ([$id, $schemas]) =>
-      getLoaded($schemas)?.find((schema) => schema.id === $id)?.name
+    schemaId,
+    ($id) => (schemas || []).find((s) => s.id === $id)?.name
   );
 
   function backToAllSchemas() {

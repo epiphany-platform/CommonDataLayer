@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { getLoaded } from "../../utils";
   import type { CdlObject } from "../../generated/graphql";
 
   import MakeQuery from "./MakeQuery.svelte";
@@ -9,28 +8,27 @@
   let loading = false;
 
   $: resultsPretty = JSON.stringify(
-    Array.from(getLoaded(results) || []).reduce((obj, [key, value]) => {
-      obj[key] = value;
+    (results || []).reduce((obj, result) => {
+      obj[result.objectId] = result.data;
       return obj;
     }, {}),
     null,
     4
   );
 
-  function setResults(res: Promise<CdlObject[]> | null) {
-    if (!res) {
-      results = null;
-      loading = false;
-    } else {
-      loading = true;
-      res
-        .then((data) => {
-          results = data;
-        })
-        .finally(() => {
-          loading = false;
-        });
-    }
+  function setResults(res: Promise<CdlObject[] | null>) {
+    loading = true;
+
+    res
+      .then((data) => {
+        results = data;
+      })
+      .catch((err) => {
+        alert(err);
+      })
+      .finally(() => {
+        loading = false;
+      });
   }
 </script>
 
@@ -48,10 +46,10 @@
       <div class="col-sm-8 align-center">
         <section>
           <h4>Results</h4>
-          {#if !results}
-            <p>Make a query to see data.</p>
-          {:else if loading}
+          {#if loading}
             <LoadingBar />
+          {:else if !results}
+            <p>Make a query to see data.</p>
           {:else}
             <pre class="data">{resultsPretty}</pre>
           {/if}

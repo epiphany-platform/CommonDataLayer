@@ -12,3 +12,5 @@ generates:
       asyncQuery: true
       scalars:
         UUID: string
+        JSON: Object
+        JSONObject: Map<string, Object>

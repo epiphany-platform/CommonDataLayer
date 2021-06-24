@@ -11,15 +11,17 @@
 
   const schemaId = derived(route, ($r) => ($r as SchemasRoute).id);
   const version = derived(route, ($r) => ($r as SchemasRoute).version);
-  const creating = derived(route, ($r) => ($r as SchemasRoute).creating);
+  // const creating = derived(route, ($r) => ($r as SchemasRoute).creating);
 
-  $: schemas = AllSchemas({});
+  const schemas = AllSchemas({});
 
   const schema = derived([schemas, schemaId], ([$schemas, $schemaId]) =>
-    ($schemas?.data?.schemas || []).find((schema) => schema.id === $schemaId)
+    ($schemas.data?.schemas || []).find((schema) => schema.id === $schemaId)
   );
 </script>
 
+{$schemas}
+{$schema}
 {#if $schemas.loading}
   <div class="container container-small">
     <div class="row">
@@ -61,13 +63,13 @@
             version={$version}
           />
         {:else}
-          <Sidebar schemas={$schemas.data.schemas} fullWidth={true} />
+          <Sidebar schemas={$schemas.data?.schemas || null} fullWidth={true} />
         {/if}
       </div>
       <div class="display-md-up">
         <div class="row">
           <div class="col-sm-3">
-            <Sidebar />
+            <Sidebar schemas={$schemas.data?.schemas || null} />
           </div>
           <div class="col-sm-9">
             {#if $schema}

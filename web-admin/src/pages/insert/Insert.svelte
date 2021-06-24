@@ -1,11 +1,8 @@
 <script lang="ts">
   import MessageList from "./MessageList.svelte";
   import MessageForm from "./MessageForm.svelte";
-  import {
-    AllSchemas,
-    InputMessage,
-    InsertBatch,
-  } from "../../generated/graphql";
+  import { AllSchemas, InsertBatch } from "../../generated/graphql";
+  import type { InputMessage } from "../../generated/graphql";
 
   let messages: InputMessage[] = [];
   let loading = false;

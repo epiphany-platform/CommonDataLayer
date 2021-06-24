@@ -2,18 +2,17 @@
   import { get } from "svelte/store";
   import { route } from "../../route";
   import type { SchemasRoute } from "../../route";
-  import type { Schema } from "../../models";
 
   import Breadcrumbs from "./Breadcrumbs.svelte";
   import Link from "../../components/Link.svelte";
+  import type { AllSchemasQuery } from "../../generated/graphql";
 
   export let showBreadcrumbs: boolean = false;
-  export let schema: Schema;
+  export let schema: AllSchemasQuery["schemas"][0];
   export let version: string | null;
 
-  $: versionDefinition = schema.versions.find(
-    (v) => v.version === version
-  )?.definition;
+  $: versionDefinition = schema.definitions.find((d) => d.version === version)
+    ?.definition;
   $: versionPretty = versionDefinition
     ? JSON.stringify(versionDefinition, null, 4)
     : "";
@@ -42,8 +41,8 @@
           <td>{schema.id}</td>
         </tr>
         <tr>
-          <td><b>Topic</b></td>
-          <td>{schema.topic}</td>
+          <td><b>Insert Destination</b></td>
+          <td>{schema.insertDestination}</td>
         </tr>
         <tr>
           <td><b>Query Address</b></td>
@@ -51,7 +50,7 @@
         </tr>
         <tr>
           <td><b>Type</b></td>
-          <td>{schema.schemaType}</td>
+          <td>{schema.type}</td>
         </tr>
       </tbody>
     </table>
@@ -59,13 +58,13 @@
   <section>
     <div class="row">
       <div class="col-sm-6">
-        {#if schema.versions.length}
+        {#if schema.definitions.length}
           <h5>Versions</h5>
           <ol>
-            {#each schema.versions as version}
+            {#each schema.definitions as definition}
               <li>
-                <Link replace={true} to={versionLink(version.version)}>
-                  {version.version}
+                <Link replace={true} to={versionLink(definition.version)}>
+                  {definition.version}
                 </Link>
               </li>
             {/each}

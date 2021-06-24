@@ -23,16 +23,16 @@
       </div>
     </div>
     <ul class="nav-links">
-      <!--      <li>-->
-      <!--        <Link to={{ page: "insert" }}>-->
-      <!--          <span class="desktop-link">Insert</span>-->
-      <!--        </Link>-->
-      <!--      </li>-->
-      <!--      <li>-->
-      <!--        <Link to={{ page: "query" }}>-->
-      <!--          <span class="desktop-link">Query</span>-->
-      <!--        </Link>-->
-      <!--      </li>-->
+      <li>
+        <Link to={{ page: "insert" }}>
+          <span class="desktop-link">Insert</span>
+        </Link>
+      </li>
+      <li>
+        <Link to={{ page: "query" }}>
+          <span class="desktop-link">Query</span>
+        </Link>
+      </li>
       <li>
         <Link
           className={$route?.page === "schemas" ? "active" : ""}

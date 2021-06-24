@@ -23,8 +23,9 @@
       errorsFound = true;
     }
 
+    let parsedData: Object | null = null;
     try {
-      JSON.parse(data);
+      parsedData = JSON.parse(data);
     } catch (exception) {
       dataError = "Invalid JSON";
       errorsFound = true;
@@ -34,7 +35,7 @@
       addMessage({
         objectId: objectId || uuidv4(),
         schemaId,
-        payload: data,
+        payload: parsedData,
       });
 
       objectId = "";
