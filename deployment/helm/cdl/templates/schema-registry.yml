@@ -57,6 +57,10 @@ spec:
           value: "info,schema_registry=debug"
         - name: SCHEMA_REGISTRY_MONITORING__OTEL_SERVICE_NAME
           value: "schema-registry"
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          value: {{ .Values.global.jaegerAgentHost }}
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          value: "{{ .Values.global.jaegerAgentPort }}"
         - name: SCHEMA_REGISTRY_SERVICES__EDGE_REGISTRY_URL
           value: "http://{{ .Release.Name }}-edge-registry:{{ .Values.edgeRegistry.rpcPort }}"
         ports:

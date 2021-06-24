@@ -44,6 +44,10 @@ spec:
           value: "info,partial_update_engine=debug"
         - name: PARTIAL_UPDATE_ENGINE_MONITORING__OTEL_SERVICE_NAME
           value: "partial-update-engine"
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          value: {{ .Values.global.jaegerAgentHost }}
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          value: "{{ .Values.global.jaegerAgentPort }}"
         ports:
         - containerPort: 51805
       imagePullSecrets:

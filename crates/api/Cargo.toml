@@ -9,6 +9,10 @@ license = "Apache-2.0"
 name = "api"
 path = "src/main.rs"
 
+[lib]
+name = "api"
+path = "src/lib.rs"
+
 [dependencies]
 # Workspace
 cdl_dto     = { path = "../dto" }

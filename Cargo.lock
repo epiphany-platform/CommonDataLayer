@@ -260,6 +260,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "atom"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c9ff149ed9780025acfdb36862d35b28856bb693ceb451259a7164442f22fdc3"
+
+[[package]]
 name = "atomic-shim"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -536,6 +542,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "eb6210b637171dfba4cda12e579ac6dc73f5165ad56133e5d72ef3131f320855"
 dependencies = [
  "cc",
+]
+
+[[package]]
+name = "colored"
+version = "1.9.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4ffc801dacf156c5854b9df4f425a626539c3a6ef7893cc0c5084a23f0b6c59"
+dependencies = [
+ "atty",
+ "lazy_static",
+ "winapi",
 ]
 
 [[package]]
@@ -898,6 +915,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "diff_utils"
+version = "1.0.0-pre1"
+source = "git+https://github.com/frondeus/diff-assert.git#ec3857677310e49992d5e8ad29445b2e9816ce31"
+dependencies = [
+ "chrono",
+ "colored",
+ "diffs",
+ "itertools 0.9.0",
+]
+
+[[package]]
+name = "diffs"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8117b4111dc8d9e88d92ec2ee1cda48318af35c3e6b4f8599add5048189971d"
+
+[[package]]
 name = "digest"
 version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -946,6 +980,20 @@ name = "dotenv"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77c90badedccf4105eca100756a0b1289e191f6fcbdadd3cee1d2f614f97da8f"
+
+[[package]]
+name = "e2e"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "api",
+ "lazy_static",
+ "reqwest",
+ "serde 1.0.126",
+ "serde_json",
+ "tokio",
+ "uuid",
+]
 
 [[package]]
 name = "edge-registry"
@@ -1206,6 +1254,12 @@ dependencies = [
  "libc",
  "wasi 0.10.2+wasi-snapshot-preview1",
 ]
+
+[[package]]
+name = "glob"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 
 [[package]]
 name = "h2"
@@ -1823,6 +1877,10 @@ dependencies = [
 name = "misc_utils"
 version = "0.1.0"
 dependencies = [
+ "itertools 0.10.0",
+ "serde 1.0.126",
+ "serde_json",
+ "test-case",
  "tracing",
 ]
 
@@ -2063,14 +2121,20 @@ dependencies = [
  "cdl_dto",
  "communication_utils",
  "futures",
+ "itertools 0.10.0",
+ "maplit",
  "metrics_utils",
  "misc_utils",
+ "pin-project-lite",
  "rpc",
  "serde 1.0.126",
  "serde_json",
  "settings_utils",
+ "snapshot-runner",
+ "test-case",
  "thiserror",
  "tokio",
+ "tokio-stream",
  "tonic",
  "tracing",
  "tracing-futures",
@@ -2584,6 +2648,16 @@ checksum = "b518d7cdd93dab1d1122cf07fa9a60771836c668dde9d9e2a139f957f0d9f1bb"
 dependencies = [
  "bytes",
  "prost",
+]
+
+[[package]]
+name = "pulse"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "655612b6c8d96a8a02f331fe296cb4f925b68e87c1d195544675abca2d9b9af0"
+dependencies = [
+ "atom",
+ "time",
 ]
 
 [[package]]
@@ -3244,6 +3318,21 @@ name = "smallvec"
 version = "1.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fe0f37c9e8f3c5a4a66ad655a93c74daac4ad00c441533bf5c6e7990bb42604e"
+
+[[package]]
+name = "snapshot-runner"
+version = "0.1.0"
+source = "git+https://github.com/frondeus/snapshot-runner.git#05beacad44af0976e0106487dbfea2b21bad73fc"
+dependencies = [
+ "anyhow",
+ "chrono",
+ "diff_utils",
+ "glob",
+ "pulse",
+ "regex",
+ "serde 1.0.126",
+ "serde_json",
+]
 
 [[package]]
 name = "socket2"

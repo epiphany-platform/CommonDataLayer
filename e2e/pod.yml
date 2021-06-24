@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cdl-e2e
+spec:
+  containers:
+  - name: e2e
+    image: cdl-e2e
+    imagePullPolicy: IfNotPresent
+    env:
+    - name: RUST_TEST_THREADS
+      value: "1"
+    command:
+      - './e2e'
+#      - '--nocapture'
+  restartPolicy: Never
