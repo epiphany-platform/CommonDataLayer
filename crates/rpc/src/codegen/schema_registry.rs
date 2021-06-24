@@ -69,12 +69,23 @@ pub mod filter {
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SimpleFilter {
+    #[prost(oneof = "simple_filter::SimpleFilter", tags = "1")]
+    pub simple_filter: ::core::option::Option<simple_filter::SimpleFilter>,
+}
+/// Nested message and enum types in `SimpleFilter`.
+pub mod simple_filter {
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum SimpleFilter {
+        #[prost(message, tag = "1")]
+        Equals(super::EqualsFilter),
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EqualsFilter {
     #[prost(message, required, tag = "1")]
-    pub operator: FilterOperator,
-    #[prost(message, required, tag = "2")]
     pub lhs: FilterValue,
-    #[prost(message, optional, tag = "3")]
-    pub rhs: ::core::option::Option<FilterValue>,
+    #[prost(message, required, tag = "2")]
+    pub rhs: FilterValue,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ComplexFilter {

@@ -4,13 +4,6 @@
     "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002": { "b": 42 }
 }
 
-[computation]
-{
-  "RawValue": {
-  "value": "abcd"
-  }
-}
-
 [edges]
 [
   {
@@ -42,9 +35,7 @@
     "foo": {
       "computed": {
         "computation": {
-          "RawValue": {
-            "value": "abcd"
-          }
+          "raw_value": "abcd"
         },
         "field_type": "numeric"
       }
@@ -58,10 +49,6 @@
     }
  ]
 }
-
-
-[expected.computation]
-"abcd"
 
 [expected.view_plan_build]
 {
@@ -77,9 +64,9 @@
     {
       "fields": {
         "foo": {
-          "Computed": {
+          "computed": {
             "computation": {
-              "RawValue": {
+              "raw_value": {
                 "value": "abcd"
               }
             },
@@ -93,5 +80,18 @@
     }
   ]
 }
+
+[expected.builded_rows]
+[
+  {
+    "fields": {
+      "foo": "abcd"
+    },
+    "object_ids": [
+      "00000000-0000-0000-0000-000000000001",
+      "00000000-0000-0000-0000-000000000002"
+    ]
+  }
+]
 
 [end]

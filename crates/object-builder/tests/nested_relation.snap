@@ -62,7 +62,7 @@
     "foo": {
       "computed": {
         "computation": {
-          "FieldValue": {
+          "field_value": {
             "schema_id": 1,
             "field_path": "b"
           }
@@ -73,7 +73,7 @@
     "bar": {
       "computed": {
         "computation": {
-          "FieldValue": {
+          "field_value": {
             "schema_id": 2,
             "field_path": "c"
           }
@@ -120,9 +120,9 @@
     {
       "fields": {
         "bar": {
-          "Computed": {
+          "computed": {
             "computation": {
-              "FieldValue": {
+              "field_value": {
                 "field_path": "c",
                 "object": "a0000000-0000-0000-0000-000000000003,00000000-0000-0000-0000-000000000004"
               }
@@ -131,16 +131,16 @@
           }
         },
         "baz": {
-          "Simple": {
+          "simple": {
             "field_name": "a",
             "field_type": "Numeric",
             "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
           }
         },
         "foo": {
-          "Computed": {
+          "computed": {
             "computation": {
-              "FieldValue": {
+              "field_value": {
                 "field_path": "b",
                 "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003"
               }
@@ -156,9 +156,9 @@
     {
       "fields": {
         "bar": {
-          "Computed": {
+          "computed": {
             "computation": {
-              "FieldValue": {
+              "field_value": {
                 "field_path": "c",
                 "object": "a0000000-0000-0000-0000-000000000003,00000000-0000-0000-0000-000000000005"
               }
@@ -167,16 +167,16 @@
           }
         },
         "baz": {
-          "Simple": {
+          "simple": {
             "field_name": "a",
             "field_type": "Numeric",
             "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
           }
         },
         "foo": {
-          "Computed": {
+          "computed": {
             "computation": {
-              "FieldValue": {
+              "field_value": {
                 "field_path": "b",
                 "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003"
               }
@@ -191,5 +191,33 @@
     }
   ]
 }
+
+[expected.builded_rows]
+[
+  {
+    "fields": {
+      "bar": 420,
+      "baz": 58,
+      "foo": 12
+    },
+    "object_ids": [
+      "00000000-0000-0000-0000-000000000001",
+      "00000000-0000-0000-0000-000000000003",
+      "00000000-0000-0000-0000-000000000005"
+    ]
+  },
+  {
+    "fields": {
+      "bar": 69,
+      "baz": 58,
+      "foo": 12
+    },
+    "object_ids": [
+      "00000000-0000-0000-0000-000000000001",
+      "00000000-0000-0000-0000-000000000003",
+      "00000000-0000-0000-0000-000000000004"
+    ]
+  }
+]
 
 [end]

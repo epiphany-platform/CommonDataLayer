@@ -76,10 +76,10 @@
     {
       "fields": {
         "foo": {
-          "Array": {
+          "array": {
             "fields": {
               "bar": {
-                "Simple": {
+                "simple": {
                   "field_name": "b",
                   "field_type": "Numeric",
                   "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002"
@@ -96,10 +96,10 @@
     {
       "fields": {
         "foo": {
-          "Array": {
+          "array": {
             "fields": {
               "bar": {
-                "Simple": {
+                "simple": {
                   "field_name": "b",
                   "field_type": "Numeric",
                   "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003"

@@ -3,7 +3,7 @@
 
     "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001": { "a": 2 },
     "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002": { "b": 42 },
-    "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003": { "b": 42 }
+    "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003": { "b": 2 }
 }
 
 [edges]
@@ -36,14 +36,36 @@
   "materializer_address": "",
   "fields": {
     "foo": {
-      "computed": {
-        "computation": {
-          "field_value": {
-            "schema_id": 1,
-            "field_path": "b"
-          }
-        },
+      "simple": {
+        "field_name": "a",
         "field_type": "numeric"
+      }
+    },
+    "bar": {
+      "computed": {
+        "field_type": "numeric",
+        "computation": {
+          "raw_value": 42
+        }
+      }
+    }
+  },
+  "filters": {
+    "simple_filter": {
+      "filter": {
+        "equals": {
+          "lhs": {
+            "view_path": {
+              "field_path": "bar"
+            }
+          },
+          "rhs": {
+            "schema_field": {
+              "schema_id": 1,
+              "field_path": "b"
+            }
+          }
+        }
       }
     }
   },
@@ -51,13 +73,10 @@
     {
       "global_id": "b0000000-0000-0000-0000-000000000001",
       "local_id": 1,
-      "search_for": "CHILDREN"
+      "search_for": "Children"
     }
  ]
 }
-
-[expected.computation]
-2
 
 [expected.view_plan_build]
 {
@@ -76,15 +95,36 @@
   "unfinished_rows": [
     {
       "fields": {
-        "foo": {
+        "bar": {
           "computed": {
             "computation": {
-              "field_value": {
-                "field_path": "b",
-                "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002"
+              "raw_value": {
+                "value": 42
               }
             },
             "field_type": "Numeric"
+          }
+        },
+        "foo": {
+          "simple": {
+            "field_name": "a",
+            "field_type": "Numeric",
+            "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
+          }
+        }
+      },
+      "filters": {
+        "equals": {
+          "lhs": {
+            "view_path": {
+              "field_path": "bar"
+            }
+          },
+          "rhs": {
+            "schema_field": {
+              "field_path": "b",
+              "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002"
+            }
           }
         }
       },
@@ -94,15 +134,36 @@
     },
     {
       "fields": {
-        "foo": {
+        "bar": {
           "computed": {
             "computation": {
-              "field_value": {
-                "field_path": "b",
-                "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003"
+              "raw_value": {
+                "value": 42
               }
             },
             "field_type": "Numeric"
+          }
+        },
+        "foo": {
+          "simple": {
+            "field_name": "a",
+            "field_type": "Numeric",
+            "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
+          }
+        }
+      },
+      "filters": {
+        "equals": {
+          "lhs": {
+            "view_path": {
+              "field_path": "bar"
+            }
+          },
+          "rhs": {
+            "schema_field": {
+              "field_path": "b",
+              "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003"
+            }
           }
         }
       },
@@ -117,20 +178,12 @@
 [
   {
     "fields": {
-      "foo": 42
+      "bar": 42,
+      "foo": 2
     },
     "object_ids": [
       "00000000-0000-0000-0000-000000000001",
       "00000000-0000-0000-0000-000000000002"
-    ]
-  },
-  {
-    "fields": {
-      "foo": 42
-    },
-    "object_ids": [
-      "00000000-0000-0000-0000-000000000001",
-      "00000000-0000-0000-0000-000000000003"
     ]
   }
 ]

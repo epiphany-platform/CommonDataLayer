@@ -14,12 +14,13 @@ use uuid::Uuid;
 pub type LocalId = u8; // ID from Relation->local_id. 0 for base_schema_id.
 
 use async_graphql::{Json, SimpleObject, Union};
-use rpc::schema_registry::types::{FilterOperator, LogicOperator};
+use rpc::schema_registry::types::LogicOperator;
 
 use crate::{RequestError, RequestResult, ResponseResult};
 
 /// View's filter
 #[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum Filter {
     SimpleFilter(SimpleFilter),
     ComplexFilter(ComplexFilter),
@@ -52,30 +53,59 @@ impl Filter {
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
 pub struct SimpleFilter {
-    pub operator: FilterOperator,
-    pub lhs: FilterValue,
-    pub rhs: Option<FilterValue>,
+    pub filter: SimpleFilterKind,
+}
+
+#[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum SimpleFilterKind {
+    Equals(EqualsFilter),
 }
 
 impl SimpleFilter {
     fn from_rpc(rpc: rpc::schema_registry::SimpleFilter) -> RequestResult<Self> {
+        let kind = match rpc.simple_filter {
+            Some(kind) => kind,
+            None => return Err(RequestError::new("Expected filter, found none")),
+        };
+        use rpc::schema_registry::simple_filter::SimpleFilter;
+        use rpc::schema_registry::EqualsFilter as EqualsFilterRpc;
         Ok(Self {
-            operator: rpc.operator.try_into()?,
-            lhs: FilterValue::from_rpc(rpc.lhs)?,
-            rhs: rpc.rhs.map(FilterValue::from_rpc).transpose()?,
+            filter: match kind {
+                SimpleFilter::Equals(EqualsFilterRpc { lhs, rhs }) => {
+                    SimpleFilterKind::Equals(EqualsFilter {
+                        lhs: FilterValue::from_rpc(lhs)?,
+                        rhs: FilterValue::from_rpc(rhs)?,
+                    })
+                }
+            },
         })
     }
 
     fn into_rpc(self) -> ResponseResult<rpc::schema_registry::SimpleFilter> {
+        use rpc::schema_registry::simple_filter::SimpleFilter;
+        use rpc::schema_registry::EqualsFilter as EqualsFilterRpc;
         Ok(rpc::schema_registry::SimpleFilter {
-            operator: self.operator.into(),
-            lhs: self.lhs.into_rpc()?,
-            rhs: self.rhs.map(|rhs| rhs.into_rpc()).transpose()?,
+            simple_filter: Some(match self.filter {
+                SimpleFilterKind::Equals(EqualsFilter { lhs, rhs }) => {
+                    SimpleFilter::Equals(EqualsFilterRpc {
+                        lhs: lhs.into_rpc()?,
+                        rhs: rhs.into_rpc()?,
+                    })
+                }
+            }),
         })
     }
 }
 
+#[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
+pub struct EqualsFilter {
+    pub lhs: FilterValue,
+    pub rhs: FilterValue,
+}
+
 #[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum FilterValue {
     SchemaField(SchemaFieldFilter),
     ViewPath(ViewPathFilter),
@@ -115,8 +145,8 @@ impl FilterValue {
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
 pub struct SchemaFieldFilter {
-    schema_id: LocalId,
-    field_path: String,
+    pub schema_id: LocalId,
+    pub field_path: String,
 }
 
 impl SchemaFieldFilter {
@@ -137,7 +167,7 @@ impl SchemaFieldFilter {
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
 pub struct ViewPathFilter {
-    field_path: String,
+    pub field_path: String,
 }
 
 impl ViewPathFilter {
@@ -155,8 +185,9 @@ impl ViewPathFilter {
 }
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
+#[serde(transparent)]
 pub struct RawValueFilter {
-    value: Json<Value>,
+    pub value: Json<Value>,
 }
 
 impl RawValueFilter {
@@ -175,7 +206,7 @@ impl RawValueFilter {
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
 pub struct ComputedFilter {
-    computation: Computation,
+    pub computation: Computation,
 }
 
 impl ComputedFilter {
@@ -193,6 +224,7 @@ impl ComputedFilter {
 }
 
 #[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum Computation {
     RawValue(RawValueComputation),
     FieldValue(FieldValueComputation),
@@ -230,6 +262,7 @@ impl Computation {
 }
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
+#[serde(transparent)]
 pub struct RawValueComputation {
     pub value: Json<Value>,
 }
@@ -297,8 +330,8 @@ impl EqualsComputation {
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
 pub struct ComplexFilter {
-    operator: LogicOperator,
-    operands: Vec<Filter>,
+    pub operator: LogicOperator,
+    pub operands: Vec<Filter>,
 }
 
 impl ComplexFilter {
@@ -433,6 +466,7 @@ pub struct FullView {
     pub materializer_options: Value,
     pub fields: HashMap<String, FieldDefinition>,
     pub relations: Vec<Relation>,
+    pub filters: Option<Filter>,
 }
 
 impl FullView {
@@ -453,6 +487,7 @@ impl FullView {
                 .into_iter()
                 .map(Relation::from_rpc)
                 .collect::<RequestResult<_>>()?,
+            filters: rpc.filters.map(Filter::from_rpc).transpose()?,
         })
     }
 }

@@ -38,7 +38,7 @@ for file in **/*.new; do
 done
 echo "All processed"
 
-for file in ./tests/**/*.orig; do
+for file in **/*.orig; do
   ACTUAL="$file"
   DIR=$(dirname "$file")
 

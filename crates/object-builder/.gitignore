@@ -1,2 +1,3 @@
 tests/**/*.new
 tests/**/*.orig
+tests/**/*.rej

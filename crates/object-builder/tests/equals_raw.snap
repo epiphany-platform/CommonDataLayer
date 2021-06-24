@@ -6,23 +6,6 @@
     "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003": { "b": 2 }
 }
 
-[computation]
-{
-  "Equals": {
-    "lhs": {
-      "FieldValue": {
-        "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001",
-        "field_path": "a"
-      }
-    },
-    "rhs": {
-      "RawValue": {
-        "value": 2
-      }
-    }
-  }
-}
-
 [edges]
 [
   {
@@ -55,17 +38,15 @@
     "foo": {
       "computed": {
         "computation": {
-          "Equals": {
+          "equals": {
             "lhs": {
-              "FieldValue": {
-                "schema_id": 0,
-                "field_path": "a"
+              "field_value": {
+                "schema_id": 1,
+                "field_path": "b"
               }
             },
             "rhs": {
-              "RawValue": {
-                "value": 2
-              }
+              "raw_value": 2
             }
           }
         },
@@ -81,10 +62,6 @@
     }
  ]
 }
-
-
-[expected.computation]
-true
 
 [expected.view_plan_build]
 {
@@ -104,17 +81,17 @@ true
     {
       "fields": {
         "foo": {
-          "Computed": {
+          "computed": {
             "computation": {
-              "Equals": {
+              "equals": {
                 "lhs": {
-                  "FieldValue": {
-                    "field_path": "a",
-                    "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
+                  "field_value": {
+                    "field_path": "b",
+                    "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002"
                   }
                 },
                 "rhs": {
-                  "RawValue": {
+                  "raw_value": {
                     "value": 2
                   }
                 }
@@ -131,17 +108,17 @@ true
     {
       "fields": {
         "foo": {
-          "Computed": {
+          "computed": {
             "computation": {
-              "Equals": {
+              "equals": {
                 "lhs": {
-                  "FieldValue": {
-                    "field_path": "a",
-                    "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001"
+                  "field_value": {
+                    "field_path": "b",
+                    "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003"
                   }
                 },
                 "rhs": {
-                  "RawValue": {
+                  "raw_value": {
                     "value": 2
                   }
                 }
@@ -157,5 +134,27 @@ true
     }
   ]
 }
+
+[expected.builded_rows]
+[
+  {
+    "fields": {
+      "foo": false
+    },
+    "object_ids": [
+      "00000000-0000-0000-0000-000000000001",
+      "00000000-0000-0000-0000-000000000002"
+    ]
+  },
+  {
+    "fields": {
+      "foo": true
+    },
+    "object_ids": [
+      "00000000-0000-0000-0000-000000000001",
+      "00000000-0000-0000-0000-000000000003"
+    ]
+  }
+]
 
 [end]

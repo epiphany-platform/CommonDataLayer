@@ -1,16 +1,21 @@
 use std::collections::{HashMap, HashSet};
 
 use anyhow::{Context, Result};
+use maplit::hashmap;
 use serde_json::Value;
 
 use crate::{
-    row_builder::field_builder::ComputationEngine, FieldDefinitionSource, ObjectIdPair,
-    RowDefinition, RowSource,
+    row_builder::field_builder::ComputationEngine,
+    sources::{FieldDefinitionSource, FilterSource, RowSource},
+    ObjectIdPair, RowDefinition,
 };
 
 mod field_builder;
 
 use field_builder::FieldBuilder;
+use row_filter::RowFilter;
+
+mod row_filter;
 
 pub struct RowBuilder {}
 
@@ -20,16 +25,20 @@ impl RowBuilder {
     }
 
     #[tracing::instrument(skip(self))]
-    pub(crate) fn build(&self, source: RowSource) -> Result<RowDefinition> {
+    pub(crate) fn build(&self, source: RowSource) -> Result<Option<RowDefinition>> {
         match source {
             RowSource::Join {
-                objects, fields, ..
-            } => self.build_join(objects, fields),
+                objects,
+                fields,
+                filters,
+                ..
+            } => self.build_join(objects, fields, filters),
             RowSource::Single {
                 root_object,
                 value,
                 fields,
-            } => self.build_single(root_object, value, fields),
+                filters,
+            } => self.build_single(root_object, value, fields, filters),
         }
     }
 
@@ -37,7 +46,8 @@ impl RowBuilder {
         &self,
         objects: HashMap<ObjectIdPair, Value>,
         fields: HashMap<String, FieldDefinitionSource>,
-    ) -> Result<RowDefinition> {
+        filters: Option<FilterSource>,
+    ) -> Result<Option<RowDefinition>> {
         let field_builder = FieldBuilder { objects: &objects };
 
         let fields = fields
@@ -48,7 +58,8 @@ impl RowBuilder {
             .keys()
             .map(|object_pair| object_pair.object_id)
             .collect();
-        Ok(RowDefinition { object_ids, fields })
+
+        RowFilter::new(&objects).filter(RowDefinition { object_ids, fields }, filters)
     }
 
     fn build_single(
@@ -56,10 +67,14 @@ impl RowBuilder {
         pair: ObjectIdPair,
         object_value: Value,
         fields: HashMap<String, FieldDefinitionSource>,
-    ) -> Result<RowDefinition> {
-        let object = object_value
-            .as_object()
-            .with_context(|| format!("Expected object ({}) to be a JSON object", pair.object_id))?;
+        filters: Option<FilterSource>,
+    ) -> Result<Option<RowDefinition>> {
+        let objects = hashmap!(pair => object_value);
+
+        let object =
+            objects.get(&pair).unwrap().as_object().with_context(|| {
+                format!("Expected object ({}) to be a JSON object", pair.object_id)
+            })?;
 
         use FieldDefinitionSource::*;
 
@@ -79,11 +94,9 @@ impl RowBuilder {
                             })?;
                             value.clone()
                         }
-                        Computed { computation, .. } => ComputationEngine::Simple {
-                            object_id: pair,
-                            value: &object_value,
+                        Computed { computation, .. } => {
+                            ComputationEngine::new(&objects).compute(computation)?
                         }
-                        .compute(computation)?,
                         Array { .. } => {
                             anyhow::bail!(
                                 "Array field definition is not supported in relation-less view"
@@ -95,7 +108,8 @@ impl RowBuilder {
             .collect::<anyhow::Result<_>>()?;
         let mut object_ids = HashSet::new();
         object_ids.insert(pair.object_id);
-        Ok(RowDefinition { object_ids, fields })
+
+        RowFilter::new(&objects).filter(RowDefinition { object_ids, fields }, filters)
     }
 }
 
@@ -128,7 +142,7 @@ mod tests {
                 .expect("row sources")
                 .into_iter()
                 .flatten()
-                .map(|row| row_builder.build(row))
+                .flat_map(|row| row_builder.build(row).transpose())
                 .collect::<Result<Vec<_>>>()
                 .expect("builded rows");
 
