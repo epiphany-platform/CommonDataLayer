@@ -4,7 +4,6 @@ use async_graphql::Enum;
 use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
-use super::filter_operator;
 use super::logic_operator;
 use super::schema_type;
 use super::search_for;
@@ -95,17 +94,6 @@ rpc_enum! {
     [
         Parents,
         Children
-    ]
-}
-
-rpc_enum! {
-    FilterOperator,
-    filter_operator::Operator,
-    operator,
-    "filter operator",
-    "filter_operator_enum",
-    [
-        EqualsOp
     ]
 }
 

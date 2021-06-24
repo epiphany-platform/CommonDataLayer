@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Context, Result};
 use serde_json::Value;
 
-use crate::{FieldDefinitionSource, ObjectIdPair};
+use crate::{sources::FieldDefinitionSource, ObjectIdPair};
 
 mod computation;
 pub use computation::ComputationEngine;
