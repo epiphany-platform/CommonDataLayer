@@ -15,12 +15,14 @@ use communication_utils::{
 use metrics_utils::{self as metrics, counter};
 use misc_utils::current_timestamp;
 use utils::parallel_task_queue::ParallelTaskQueue;
+use std::collections::HashMap;
 
 pub struct Handler {
     pub cache: Arc<Mutex<LruCache<Uuid, String>>>,
     pub producer: Arc<CommonPublisher>,
-    pub schema_registry_addr: Arc<String>,
+    pub schema_registry_url: Arc<String>,
     pub task_queue: Arc<ParallelTaskQueue>,
+    pub routing_table: Arc<HashMap<String, String>>,
 }
 
 #[async_trait]
@@ -53,15 +55,23 @@ impl ParallelConsumerHandler for Handler {
                 let mut result = Ok(());
 
                 for entry in maybe_array.iter() {
-                    let r = route(
-                        &self.cache,
-                        entry,
-                        &message_key,
-                        &self.producer,
-                        &self.schema_registry_addr,
-                    )
-                    .await
-                    .context("Tried to send message and failed");
+                    let r = if let Some(repository_id) = &entry.options.repository_id {
+                        if let Some(repository_path) = self.routing_table.get(repository_id) {
+                            route_static(entry, &message_key, &self.producer, repository_path)
+                        } else {
+                            Err(anyhow::Error::msg("No such entry in routing table"))
+                        }
+                    } else {
+                        route(
+                            &self.cache,
+                            entry,
+                            &message_key,
+                            &self.producer,
+                            &self.schema_registry_url,
+                        )
+                            .await
+                            .context("Tried to send message and failed")
+                    };
 
                     counter!("cdl.data-router.input-multimsg", 1);
                     counter!("cdl.data-router.processed", 1);
@@ -79,15 +89,24 @@ impl ParallelConsumerHandler for Handler {
                     serde_json::from_str::<DataRouterInsertMessage>(message.payload()?).context(
                         "Payload deserialization failed, message is not a valid cdl message",
                     )?;
-                let result = route(
-                    &self.cache,
-                    &owned,
-                    &message_key,
-                    &self.producer,
-                    &self.schema_registry_addr,
-                )
-                .await
-                .context("Tried to send message and failed");
+
+                let result = if let Some(repository_id) = &owned.options.repository_id {
+                    if let Some(repository_path) = self.routing_table.get(repository_id) {
+                        route_static(entry, &message_key, &self.producer, repository_path)
+                    } else {
+                        Err(anyhow::Error::msg("No such entry in routing table"))
+                    }
+                } else {
+                    route(
+                        &self.cache,
+                        &owned,
+                        &message_key,
+                        &self.producer,
+                        &self.schema_registry_url,
+                    )
+                        .await
+                        .context("Tried to send message and failed")
+                };
                 counter!("cdl.data-router.input-singlemsg", 1);
                 counter!("cdl.data-router.processed", 1);
 
@@ -108,6 +127,20 @@ impl ParallelConsumerHandler for Handler {
 
         Ok(())
     }
+}
+
+#[tracing::instrument(skip(producer))]
+fn route_static(event: DataRouterInsertMessage, key: &str, publisher: &Arc<CommonPublisher>, repository_path: &str) -> anyhow::Result<()> {
+    let payload = BorrowedInsertMessage {
+        object_id: event.object_id,
+        schema_id: event.schema_id,
+        timestamp: current_timestamp(),
+        data: event.data,
+    };
+
+    send_message(publisher, repository_path, key, serde_json::to_vec(&payload)?).await;
+
+    Ok(())
 }
 
 #[tracing::instrument(skip(producer))]

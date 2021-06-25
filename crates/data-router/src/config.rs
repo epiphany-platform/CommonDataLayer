@@ -5,6 +5,7 @@ use settings_utils::{
     AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings, MonitoringSettings,
 };
 use task_utils::task_limiter::TaskLimiter;
+use std::collections::HashMap;
 
 #[derive(Deserialize, Debug, Serialize)]
 pub struct Settings {
@@ -22,6 +23,9 @@ pub struct Settings {
     pub services: ServicesSettings,
 
     pub log: LogSettings,
+
+    #[serde(default)]
+    pub repositories: HashMap<String, RepositoryStaticRouting>,
 }
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -36,6 +40,12 @@ pub enum CommunicationMethod {
 #[derive(Deserialize, Debug, Serialize)]
 pub struct ServicesSettings {
     pub schema_registry_url: String,
+}
+
+pub struct RepositoryStaticRouting {
+    pub insert_destination: String,
+    pub query_address: String,
+    pub repository_type: RepositoryType,
 }
 
 const fn default_async_task_limit() -> usize {
