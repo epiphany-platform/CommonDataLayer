@@ -6,26 +6,86 @@
     "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003": { "b": 2 }
 }
 
-[computation]
-{
-  "Equals": {
-    "lhs": {
-      "FieldValue": {
-        "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001",
-        "field_path": "a"
+[edges]
+[
+  {
+    "objects": [
+      {
+        "relation_id": "b0000000-0000-0000-0000-000000000001",
+        "object_id": "00000000-0000-0000-0000-000000000001",
+        "children": [
+          "00000000-0000-0000-0000-000000000002",
+          "00000000-0000-0000-0000-000000000003"
+        ],
+        "subtrees": [],
+        "relation": {
+          "parent_schema_id": "a0000000-0000-0000-0000-000000000001",
+          "child_schema_id": "a0000000-0000-0000-0000-000000000002"
+        }
       }
-    },
-    "rhs": {
-      "FieldValue": {
-        "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000003",
-        "field_path": "b"
+    ]
+  }
+]
+
+[view]
+{
+  "id": "00000000-0000-0000-0000-000000000001",
+  "name": "Sample View",
+  "base_schema_id": "00000000-0000-0000-0000-000000000001",
+  "materializer_options": {},
+  "materializer_address": "",
+  "fields": {
+    "foo": {
+      "computed": {
+        "computation": {
+          "equals": {
+            "lhs": {
+              "field_value": {
+                "schema_id": 0,
+                "field_path": "a"
+              }
+            },
+            "rhs": {
+              "field_value": {
+                "schema_id": 1,
+                "field_path": "b"
+              }
+            }
+          }
+        },
+        "field_type": "numeric"
       }
     }
-  }
+  },
+  "relations": [
+    {
+      "global_id": "b0000000-0000-0000-0000-000000000001",
+      "local_id": 1,
+      "search_for": "Children"
+    }
+ ]
 }
 
-
-[expected.computation]
-true
+[expected.builded_rows]
+[
+  {
+    "fields": {
+      "foo": false
+    },
+    "object_ids": [
+      "00000000-0000-0000-0000-000000000001",
+      "00000000-0000-0000-0000-000000000002"
+    ]
+  },
+  {
+    "fields": {
+      "foo": true
+    },
+    "object_ids": [
+      "00000000-0000-0000-0000-000000000001",
+      "00000000-0000-0000-0000-000000000003"
+    ]
+  }
+]
 
 [end]
