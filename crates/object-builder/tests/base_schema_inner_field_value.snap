@@ -4,14 +4,6 @@
     "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002": { "b": { "bb": 42} }
 }
 
-[computation]
-{
-  "FieldValue": {
-    "object": "a0000000-0000-0000-0000-000000000001,00000000-0000-0000-0000-000000000001",
-    "field_path": "a.aa"
-  }
-}
-
 [edges]
 [
   {
@@ -43,7 +35,7 @@
     "foo": {
       "computed": {
         "computation": {
-          "FieldValue": {
+          "field_value": {
             "schema_id": 1,
             "field_path": "b.bb"
           }
@@ -61,9 +53,6 @@
  ]
 }
 
-[expected.computation]
-58
-
 [expected.view_plan_build]
 {
   "missing": {
@@ -78,9 +67,9 @@
     {
       "fields": {
         "foo": {
-          "Computed": {
+          "computed": {
             "computation": {
-              "FieldValue": {
+              "field_value": {
                 "field_path": "b.bb",
                 "object": "a0000000-0000-0000-0000-000000000002,00000000-0000-0000-0000-000000000002"
               }

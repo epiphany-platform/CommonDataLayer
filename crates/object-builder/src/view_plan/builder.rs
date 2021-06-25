@@ -2,8 +2,9 @@ use anyhow::{Context, Result};
 use cdl_dto::{
     edges::{TreeObject, TreeResponse},
     materialization::{
-        Computation, EqualsComputation, FieldDefinition, FieldValueComputation, FullView,
-        RawValueComputation,
+        ComplexFilter, Computation, ComputedFilter, EqualsComputation, EqualsFilter,
+        FieldDefinition, FieldValueComputation, Filter, FilterValue, FullView, RawValueComputation,
+        RawValueFilter, SchemaFieldFilter, SimpleFilter, SimpleFilterKind, ViewPathFilter,
     },
 };
 use std::collections::{HashMap, HashSet};
@@ -13,7 +14,8 @@ use cdl_dto::materialization::Relation;
 use uuid::Uuid;
 
 use super::{UnfinishedRow, UnfinishedRowVariant};
-use crate::{utils::get_base_object, ComputationSource, FieldDefinitionSource, ObjectIdPair};
+use crate::sources::{ComputationSource, FieldDefinitionSource, FilterSource, FilterValueSource};
+use crate::{utils::get_base_object, ObjectIdPair};
 
 #[derive(Debug)]
 pub struct ViewPlanBuilder<'a> {
@@ -35,11 +37,18 @@ impl<'a> ViewPlanBuilder<'a> {
         };
 
         let fields = self.build_fields(&variant, &self.view.fields)?;
+        let filters = self
+            .view
+            .filters
+            .as_ref()
+            .map(|filters| self.build_filters(&variant, filters))
+            .transpose()?;
 
         Ok(UnfinishedRow {
             missing: 1,
             objects: Default::default(),
             fields,
+            filters,
             root_object,
         })
     }
@@ -52,6 +61,12 @@ impl<'a> ViewPlanBuilder<'a> {
             .into_iter()
             .map(|variant| {
                 let fields = self.build_fields(&variant, &self.view.fields)?;
+                let filters = self
+                    .view
+                    .filters
+                    .as_ref()
+                    .map(|filters| self.build_filters(&variant, filters))
+                    .transpose()?;
 
                 let mut set: HashSet<ObjectIdPair> = variant
                     .objects
@@ -66,12 +81,75 @@ impl<'a> ViewPlanBuilder<'a> {
                         missing: set.len(),
                         objects: Default::default(),
                         fields,
+                        filters,
                         root_object: variant.root_object,
                     },
                     set,
                 ))
             })
             .collect()
+    }
+
+    fn build_filters(
+        &self,
+        variant: &UnfinishedRowVariant,
+        filters: &Filter,
+    ) -> Result<FilterSource> {
+        Ok(match filters {
+            Filter::SimpleFilter(SimpleFilter {
+                filter: SimpleFilterKind::Equals(EqualsFilter { lhs, rhs }),
+            }) => FilterSource::Equals {
+                lhs: self.build_filter_value(variant, lhs)?,
+                rhs: self.build_filter_value(variant, rhs)?,
+            },
+            Filter::ComplexFilter(ComplexFilter { operator, operands }) => {
+                let operands = operands
+                    .iter()
+                    .map(|op| self.build_filters(variant, op))
+                    .collect::<Result<_>>()?;
+                FilterSource::Complex {
+                    operator: *operator,
+                    operands,
+                }
+            }
+        })
+    }
+
+    fn build_filter_value(
+        &self,
+        variant: &UnfinishedRowVariant,
+        filter_value: &FilterValue,
+    ) -> Result<FilterValueSource> {
+        Ok(match filter_value {
+            FilterValue::SchemaField(SchemaFieldFilter {
+                schema_id,
+                field_path,
+            }) => {
+                let object = match NonZeroU8::new(*schema_id) {
+                    None => variant.root_object,
+                    Some(relation_id) => *variant.objects.get(&relation_id).with_context(|| {
+                        format!(
+                            "Could not find a relation {} in view definition",
+                            relation_id
+                        )
+                    })?,
+                };
+                FilterValueSource::SchemaField {
+                    field_path: field_path.clone(),
+                    object,
+                }
+            }
+            FilterValue::ViewPath(ViewPathFilter { field_path }) => FilterValueSource::ViewPath {
+                field_path: field_path.clone(),
+            },
+            FilterValue::RawValue(RawValueFilter { value }) => FilterValueSource::RawValue {
+                value: value.0.clone(),
+            },
+            FilterValue::Computed(ComputedFilter { computation }) => {
+                let computation = self.build_computation(variant, computation)?;
+                FilterValueSource::Computed { computation }
+            }
+        })
     }
 
     fn build_fields(
