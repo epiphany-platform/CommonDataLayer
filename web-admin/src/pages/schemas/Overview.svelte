@@ -11,8 +11,9 @@
   export let schema: AllSchemasQuery["schemas"][0];
   export let version: string | null;
 
-  $: versionDefinition = schema.definitions.find((d) => d.version === version)
-    ?.definition;
+  $: versionDefinition = schema.definitions.find(
+    (d) => d.version === version
+  )?.definition;
   $: versionPretty = versionDefinition
     ? JSON.stringify(versionDefinition, null, 4)
     : "";

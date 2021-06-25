@@ -2,9 +2,7 @@ import { writable } from "svelte/store";
 
 const DEFAULT_GRAPHQL_ENDPOINT = "http://localhost:50106/graphql";
 
-export const apiUrl = writable(
-  localStorage.getItem("api-url") || initApiUrl()
-);
+export const apiUrl = writable(localStorage.getItem("api-url") || initApiUrl());
 export const darkMode = writable(localStorage.getItem("dark-mode") === "true");
 
 apiUrl.subscribe((url) => {
