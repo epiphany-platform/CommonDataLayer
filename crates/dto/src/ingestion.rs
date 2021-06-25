@@ -54,7 +54,7 @@ where
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct DataRouterInsertMessage<'a> {
-    pub version: String,
+    pub version: &'a str,
     pub object_id: Uuid,
     pub schema_id: Uuid,
     #[serde(borrow)]
