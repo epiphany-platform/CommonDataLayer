@@ -20,8 +20,6 @@
   );
 </script>
 
-{$schemas}
-{$schema}
 {#if $schemas.loading}
   <div class="container container-small">
     <div class="row">
