@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 #[derive(Debug, InputObject)]
 pub struct InputMessage {
+    pub version: String,
     /// Object ID
     pub object_id: Uuid,
     /// Schema ID

@@ -20,6 +20,7 @@ pub struct BorrowedInsertMessage<'a> {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct OwnedInsertMessage {
+    pub version: String,
     pub object_id: Uuid,
     pub schema_id: Uuid,
     pub timestamp: i64,
@@ -30,6 +31,7 @@ impl OwnMessage for BorrowedInsertMessage<'_> {
     type Owned = OwnedInsertMessage;
     fn to_owned_message(&self) -> OwnedInsertMessage {
         OwnedInsertMessage {
+            version: "1.0".to_owned(),
             object_id: self.object_id,
             schema_id: self.schema_id,
             timestamp: self.timestamp,
