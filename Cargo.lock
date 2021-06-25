@@ -471,6 +471,7 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "rpc",
+ "rpc_dto_utils",
  "serde 1.0.126",
  "serde_json",
  "thiserror",
@@ -3016,6 +3017,18 @@ dependencies = [
  "tonic",
  "tracing",
  "tracing_utils",
+]
+
+[[package]]
+name = "rpc_dto_utils"
+version = "0.1.0"
+dependencies = [
+ "itertools 0.10.0",
+ "proc-macro-crate 1.0.0",
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
