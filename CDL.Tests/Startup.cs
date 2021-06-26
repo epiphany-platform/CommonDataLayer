@@ -34,6 +34,7 @@ namespace CDL.Tests
                 x.UsingRabbitMq((context, cfg) => cfg.ConfigureEndpoints(context));
                 x.AddRider(rider => {  
                     rider.AddProducer<InsertObject>(configuration.CDL_KAFKA_DATA_INPUT_TOPIC);
+                    rider.AddProducer<InsertEdgeObject>(configuration.CDL_KAFKA_EDGE_INPUT_TOPIC);
                     rider.UsingKafka((context, k) => {
                         k.Host(configuration.CDL_KAFKA_BROKER);
                     });

@@ -21,15 +21,13 @@ namespace CDL.Tests.Services
 
         public Task<Empty> AddEdges()
         {
-            var objectRelation = new ObjectRelations();
-            var response = _client.AddEdges(objectRelation);
+            var response = _client.AddEdges(new ObjectRelations());
             return Task.FromResult(response);
         }
 
         public async Task<Empty> AddEdgesAsync()
         {
-            var objectRelation = new ObjectRelations();
-            var response = await _client.AddEdgesAsync(objectRelation);
+            var response = await _client.AddEdgesAsync(new ObjectRelations());
             return Task.FromResult(response).Result;
         }
 
@@ -37,8 +35,8 @@ namespace CDL.Tests.Services
         {
             var schemaRelation = new AddSchemaRelation() 
             { 
-                ChildSchemaId = childSchemaId,
-                ParentSchemaId = parentSchemaId 
+                ParentSchemaId = parentSchemaId, 
+                ChildSchemaId = childSchemaId,                
             };
             var response = _client.AddRelation(schemaRelation);
             return Task.FromResult(response);

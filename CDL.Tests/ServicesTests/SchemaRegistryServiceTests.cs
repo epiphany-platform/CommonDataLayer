@@ -27,9 +27,9 @@ namespace CDL.Tests.ServicesTests
         }
 
         [Fact]
-        public void ServicePing()
+        public void Heartbeat()
         {
-            var results = _schemaRegistryService.Ping().Result;
+            var results = _schemaRegistryService.Heartbeat().Result;
             Assert.NotNull(results);
             Assert.IsType<Empty>(results);
         }
@@ -55,7 +55,6 @@ namespace CDL.Tests.ServicesTests
             var schema = _schemaRegistryService.AddSchema(name, _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
             var results = _schemaRegistryService.GetFullSchema(schema.Id_).Result;
 
-            Assert.NotNull(results);
             Assert.IsType<FullSchema>(results);
             Assert.Contains(results.Metadata.Name, name);
         }
@@ -64,18 +63,28 @@ namespace CDL.Tests.ServicesTests
         public void CheckViewAddedToSchema()
         {
             var name = _fixture.Create<string>();
+            var viewName = _fixture.Create<string>();
             Guid viewUUID;
             var schema = _schemaRegistryService.AddSchema(name, _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
-            var view = _schemaRegistryService.AddViewToSchema(schema.Id_, _fixture.Create<string>(), "{\"Name\": \"Name\" }").Result;
+            var view = _schemaRegistryService.AddViewToSchema(schema.Id_, viewName, "{\"Name\": \"Name\" }").Result;
             var viewDetails = _schemaRegistryService.GetView(view.Id_).Result;
 
             Guid.TryParse(view.Id_, out viewUUID);
             Assert.NotNull(view.Id_);
             Assert.IsType<string>(view.Id_);
-            Assert.NotEqual("00000000-0000-0000-0000-000000000000", viewUUID.ToString());
+            Assert.Matches("(\\{){0,1}[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}(\\}){0,1}", viewUUID.ToString());
             Assert.NotNull(viewDetails);
             Assert.IsType<FullView>(viewDetails);
-            Assert.NotEqual(name, viewDetails.Name);
+
+            var schemaWithView = _schemaRegistryService.GetFullSchema(schema.Id_).Result;
+            Assert.Equal(1, schemaWithView.Views.Count);
+            
+            var viewObject = schemaWithView.Views[0];
+            Assert.Equal(viewName, viewObject.Name);
+            Assert.IsType<string>(viewObject.Id);
+            Assert.NotEqual("{\"Name\": \"Name\" }", viewObject.MaterializerOptions);
+            Assert.NotNull(viewDetails);
+            Assert.IsType<FullView>(viewDetails);
         }
 
         [Theory]
@@ -125,12 +134,19 @@ namespace CDL.Tests.ServicesTests
         }
 
         [Fact]
-        public void GetObjectsAndObjectDetailsFromSchema()
+        public void AddObjectToSchema()
         {
-            var schema = _schemaRegistryService.AddSchema(_fixture.Create<string>(), _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
-            var schemaObjectsBefore = _queryService.GetAllObjectsFromSchema(schema.Id_).Result;
-            var objectId = Guid.NewGuid().ToString();
+            var schema = _schemaRegistryService.AddSchema(
+                _fixture.Create<string>(), 
+                _fixture.Create<GeneralObject>().ToJSONString(), 
+                new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage 
+            }).Result;
             
+            var schemaObjectsBefore = _queryService.GetAllObjectsFromSchema(schema.Id_).ExecuteWithRetryPolicy().Result;
+            Assert.Equal(System.Net.HttpStatusCode.OK, schemaObjectsBefore.StatusCode);
+            Assert.Equal("{}", schemaObjectsBefore.Content);
+            
+            var objectId = Guid.NewGuid().ToString();            
             _kafkaProducer.Produce(new InsertObject()
             {
                 schemaId = schema.Id_,
@@ -138,14 +154,9 @@ namespace CDL.Tests.ServicesTests
                 data = _fixture.Create<GeneralObject>(),
             });
 
-            var schemaObjectsAfter = _queryService.GetAllObjectsFromSchema(schema.Id_).Result;
-            var objectDetails = _queryService.GetSingleObject(schema.Id_, objectId).Result;
-
-            Assert.NotNull(schema.Id_);
-            Assert.NotNull(objectDetails.ResponseStatus);
-            Assert.NotNull(schemaObjectsAfter.ResponseStatus);
-            Assert.Equal(System.Net.HttpStatusCode.OK, objectDetails.StatusCode);
+            var schemaObjectsAfter = _queryService.GetAllObjectsFromSchema(schema.Id_).ExecuteWithRetryPolicy(m => m.Content.Equals("{}")).Result;
             Assert.Equal(System.Net.HttpStatusCode.OK, schemaObjectsAfter.StatusCode);
+            Assert.Contains(objectId, schemaObjectsAfter.Content);
         }
     }
 }

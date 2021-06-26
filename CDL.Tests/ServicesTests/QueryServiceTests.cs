@@ -17,7 +17,7 @@ namespace CDL.Tests.ServicesTests
         [InlineData("123")]
         public void GetSchema_WrongSchemaId(string valueToTest)
         {
-            var results = _queryService.GetAllObjectsFromSchema(valueToTest).Result;
+            var results = _queryService.GetAllObjectsFromSchema(valueToTest).ExecuteWithRetryPolicy().Result;
 
             Assert.Equal(System.Net.HttpStatusCode.BadRequest, results.StatusCode);
             Assert.Contains("Invalid request header", results.Content);
@@ -26,7 +26,7 @@ namespace CDL.Tests.ServicesTests
         [Fact]
         public void GetSchema_SchemaNotExist()
         {
-            var results = _queryService.GetAllObjectsFromSchema(Guid.NewGuid().ToString()).Result;
+            var results = _queryService.GetAllObjectsFromSchema(Guid.NewGuid().ToString()).ExecuteWithRetryPolicy().Result;
 
             Assert.Equal(System.Net.HttpStatusCode.InternalServerError, results.StatusCode);
             Assert.Contains("No schema found", results.Content);

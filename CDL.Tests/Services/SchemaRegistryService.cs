@@ -189,10 +189,9 @@ namespace CDL.Tests.Services
         {
             return Task.FromResult(_client.WatchAllSchemaUpdates(new Empty(), options));
         }
-        
-        public Task<Empty> Ping()
+        public Task<Empty> Heartbeat()
         {
-            return Task.FromResult(_client.Ping(new Empty()));
+            return Task.FromResult(_client.Heartbeat(new Empty()));
         }
     }
 }

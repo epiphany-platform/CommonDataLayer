@@ -9,37 +9,49 @@ namespace CDL.Tests.Services
 {
     public class QueryRouterService
     {
-        private IRestClient _restClient;
+        private readonly TimeSpan[] retryPattern = new[]{
+                TimeSpan.FromMilliseconds(100),
+                TimeSpan.FromMilliseconds(500),
+                TimeSpan.FromSeconds(1),
+                TimeSpan.FromSeconds(2)
+            };
+        private IRestClient _client;
+        private IRestRequest _request;
+        private IRestResponse _response;
         private ConfigurationOptions _options;
         public QueryRouterService(IOptions<ConfigurationOptions> options)
         {
             _options = options.Value;
-            _restClient = new RestClient(_options.CDL_QUERY_ROUTER_ADDRESS);
+            _client = new RestClient(_options.CDL_QUERY_ROUTER_ADDRESS);
         }
 
-        public Task<IRestResponse> GetAllObjectsFromSchema(string schemaId)
+        public QueryRouterService GetAllObjectsFromSchema(string schemaId)
         {
-            var request = new RestRequest("schema", Method.GET);
-            request.AddHeader("SCHEMA_ID", schemaId);
-            return Task.FromResult(ExecuteWithPolly(request));
+            _request = new RestRequest("schema", Method.GET);
+            _request.AddHeader("SCHEMA_ID", schemaId);
+            return this;
         }
 
-        public Task<IRestResponse> GetSingleObject(string schemaId, string objectId)
+        public QueryRouterService GetSingleObject(string schemaId, string objectId)
         {
-            var request = new RestRequest($"/single/{objectId}", Method.POST);
-            request.AddHeader("SCHEMA_ID", schemaId);
-            return Task.FromResult(ExecuteWithPolly(request));
+            _request = new RestRequest($"/single/{objectId}", Method.POST);
+            _request.AddHeader("SCHEMA_ID", schemaId);
+            return this;
         }
 
-        private IRestResponse ExecuteWithPolly(IRestRequest request)
+        public Task<IRestResponse> ExecuteWithRetryPolicy()
         {
-            return Policy.HandleResult<IRestResponse>(m => !m.IsSuccessful)
-                .WaitAndRetry(new[]{
-                    TimeSpan.FromMilliseconds(500),
-                    TimeSpan.FromSeconds(1),
-                    TimeSpan.FromSeconds(2)
-                })
-                .Execute(() => _restClient.Execute(request));
+            return Task.FromResult(Policy.HandleResult<IRestResponse>(m => !m.IsSuccessful)
+                .WaitAndRetry(retryPattern)
+                .Execute(() => _client.Execute(_request)));
+        }
+
+        public Task<IRestResponse> ExecuteWithRetryPolicy(Func<IRestResponse, bool> customResultCondition)
+        {
+            return Task.FromResult(Policy.HandleResult<IRestResponse>(m => !m.IsSuccessful)
+                .OrResult(customResultCondition)
+                .WaitAndRetry(retryPattern)
+                .Execute(() => _client.Execute(_request)));
         }
     }
 }
