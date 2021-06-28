@@ -68,7 +68,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --workspace --exclude=e2e
+          args: --workspace
 
       - name: Miri
         uses: actions-rs/cargo@v1
