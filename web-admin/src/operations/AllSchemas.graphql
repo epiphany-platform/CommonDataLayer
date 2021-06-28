@@ -1,0 +1,13 @@
+query AllSchemas {
+  schemas {
+    id
+    name
+    type
+    definitions {
+      version
+      definition
+    }
+    queryAddress
+    insertDestination
+  }
+}

@@ -24,6 +24,8 @@ spec:
         imagePullPolicy: {{ .Values.global.imagePullPolicy }}
         command: ["/bin/materializer-general","postgres"]
         env:
+        - name: MATERIALIZER_GENERAL_SERVICES__SCHEMA_REGISTRY_URL
+          value: "http://{{ .Release.Name }}-schema-registry:6400"
         - name: MATERIALIZER_GENERAL_POSTGRES__USERNAME
           value: {{ .Values.postgresUsername }}
         - name: MATERIALIZER_GENERAL_POSTGRES__PASSWORD
@@ -38,10 +40,16 @@ spec:
           value: {{ .Values.postgresSchema }}
         - name: MATERIALIZER_GENERAL_INPUT_PORT
           value: "6400"
+        - name: MATERIALIZER_GENERAL_CACHE_CAPACITY
+          value: "500"
         - name: MATERIALIZER_GENERAL_LOG__RUST_LOG
-          value: "info,materializer-general=debug"
+          value: "info,materializer_general=trace"
         - name: MATERIALIZER_GENERAL_MONITORING__OTEL_SERVICE_NAME
           value: "postgres-materializer"
+        - name: OTEL_EXPORTER_JAEGER_AGENT_HOST
+          value: {{ .Values.global.jaegerAgentHost }}
+        - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
+          value: "{{ .Values.global.jaegerAgentPort }}"
         ports:
         - containerPort: 51805
       imagePullSecrets:

@@ -59,4 +59,12 @@ pub struct DataRouterInsertMessage<'a> {
     pub schema_id: Uuid,
     #[serde(borrow)]
     pub data: &'a RawValue,
+    #[serde(default)]
+    pub options: Options,
+}
+
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Options {
+    pub repository_id: Option<String>,
 }

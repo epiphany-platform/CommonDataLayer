@@ -79,6 +79,13 @@ pub struct LogSettings {
     pub rust_log: String,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct RepositoryStaticRouting {
+    pub insert_destination: String,
+    pub query_address: String,
+    pub repository_type: rpc::schema_registry::types::SchemaType,
+}
+
 impl Default for LogSettings {
     fn default() -> Self {
         Self {

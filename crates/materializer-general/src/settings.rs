@@ -6,6 +6,7 @@ use utils::notification::NotificationSettings;
 #[derive(Debug, Deserialize)]
 pub struct Settings {
     pub input_port: u16,
+    pub cache_capacity: usize,
 
     pub postgres: PostgresSettings,
     pub kafka: Option<KafkaProducerSettings>,
@@ -15,6 +16,13 @@ pub struct Settings {
     pub monitoring: MonitoringSettings,
 
     pub log: LogSettings,
+
+    pub services: ServicesSettings,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ServicesSettings {
+    pub schema_registry_url: String,
 }
 
 #[derive(Debug, Deserialize)]

@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 use communication_utils::{parallel_consumer::ParallelCommonConsumer, publisher::CommonPublisher};
 use settings_utils::{
     AmqpSettings, ConsumerKafkaSettings, GRpcSettings, LogSettings, MonitoringSettings,
+    RepositoryStaticRouting,
 };
+use std::collections::HashMap;
 use task_utils::task_limiter::TaskLimiter;
 
 #[derive(Deserialize, Debug, Serialize)]
@@ -22,6 +24,9 @@ pub struct Settings {
     pub services: ServicesSettings,
 
     pub log: LogSettings,
+
+    #[serde(default)]
+    pub repositories: HashMap<String, RepositoryStaticRouting>,
 }
 
 #[derive(Deserialize, Debug, Serialize)]

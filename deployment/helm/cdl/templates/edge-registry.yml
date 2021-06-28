@@ -37,7 +37,7 @@ spec:
         - name: EDGE_REGISTRY_POSTGRES__SCHEMA
           value: {{ .Values.edgeRegistry.postgresSchema }}
         - name: EDGE_REGISTRY_INPUT_PORT
-          value: "{{ .Values.edgeRegistry.rpcPort }}"
+          value: "6400"
         - name: EDGE_REGISTRY_COMMUNICATION_METHOD
           value: {{ .Values.global.communicationMethod }}
         {{- if eq .Values.global.communicationMethod "kafka" }}
@@ -83,5 +83,5 @@ spec:
   selector:
     app: {{ .Release.Name }}-edge-registry
   ports:
-    - port: {{ .Values.edgeRegistry.rpcPort }}
-      targetPort: {{ .Values.edgeRegistry.rpcPort }}
+    - port: 6400
+      targetPort: 6400

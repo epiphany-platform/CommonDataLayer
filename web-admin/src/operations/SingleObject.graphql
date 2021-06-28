@@ -1,0 +1,6 @@
+query SingleObject($objectId: UUID!, $schemaId: UUID!) {
+  object(objectId: $objectId, schemaId: $schemaId) {
+    objectId
+    data
+  }
+}
