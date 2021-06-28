@@ -8,6 +8,7 @@ use uuid::Uuid;
 use crate::types::IntoQueried;
 
 use cdl_dto::materialization::{Filter, Relation};
+use cdl_dto::TryIntoRpc;
 
 /// A new view under a schema.
 #[derive(Clone, Debug, InputObject)]
@@ -111,7 +112,7 @@ impl ViewUpdate {
 
         let (update_filters, filters) = match (self.filters, self.clean_filters) {
             (_, true) => (true, Default::default()),
-            (filters @ Some(_), _) => (true, filters.map(|f| f.0.into_rpc()).transpose()?),
+            (filters @ Some(_), _) => (true, filters.map(|f| f.0.try_into_rpc()).transpose()?),
             _ => (false, Default::default()),
         };
 

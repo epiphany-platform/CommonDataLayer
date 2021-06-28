@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use cdl_dto::materialization::{Filter, Relation};
+use cdl_dto::TryIntoRpc;
 use rpc::schema_registry::{Id, NewView, ViewUpdate};
 use uuid::Uuid;
 
@@ -48,7 +49,7 @@ pub async fn add_view_to_schema(
         materializer_address,
         materializer_options,
         fields: serde_json::from_value(fields)?,
-        filters: filters.map(|f| f.into_rpc()).transpose()?,
+        filters: filters.map(|f| f.try_into_rpc()).transpose()?,
         relations: relations.into_iter().map(|r| r.into_rpc()).collect(),
     };
 
@@ -82,7 +83,7 @@ pub async fn update_view(
 
     let filters = if update_filters {
         let filter: Option<Filter> = serde_json::from_value(read_json(filters)?)?;
-        filter.map(|f| f.into_rpc()).transpose()?
+        filter.map(|f| f.try_into_rpc()).transpose()?
     } else {
         Default::default()
     };

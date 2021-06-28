@@ -5,7 +5,8 @@ use crate::types::schema::{NewSchema, SchemaDefinition, SchemaUpdate};
 use crate::types::view::{FullView, NewView, ViewUpdate};
 use crate::types::{DbExport, VersionedUuid};
 use bb8::Pool;
-use cdl_dto::materialization::{Filter, Relation};
+use cdl_dto::materialization::Relation;
+use cdl_dto::{TryFromRpc, TryIntoRpc};
 use communication_utils::metadata_fetcher::MetadataFetcher;
 use communication_utils::Result;
 use futures_util::future::{BoxFuture, FutureExt};
@@ -172,7 +173,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
         let relations = request
             .relations
             .into_iter()
-            .map(Relation::from_rpc)
+            .map(TryFromRpc::try_from_rpc)
             .collect::<Result<Vec<_>, _>>()?;
 
         self.validate_relations(&relations).await?;
@@ -202,7 +203,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
                     })
                     .collect::<RegistryResult<HashMap<_, _>>>()?,
             ),
-            filters: Json(request.filters.map(Filter::from_rpc).transpose()?),
+            filters: Json(request.filters.map(TryFromRpc::try_from_rpc).transpose()?),
             relations: Json(relations),
         };
 
@@ -244,7 +245,7 @@ impl SchemaRegistry for SchemaRegistryImpl {
             let relations = request
                 .relations
                 .into_iter()
-                .map(Relation::from_rpc)
+                .map(TryFromRpc::try_from_rpc)
                 .collect::<Result<Vec<_>, _>>()?;
 
             self.validate_relations(&relations).await?;
@@ -255,7 +256,9 @@ impl SchemaRegistry for SchemaRegistryImpl {
         };
 
         let filters = if request.update_filters {
-            Some(Json(request.filters.map(Filter::from_rpc).transpose()?))
+            Some(Json(
+                request.filters.map(TryFromRpc::try_from_rpc).transpose()?,
+            ))
         } else {
             None
         };
@@ -513,7 +516,11 @@ impl SchemaRegistry for SchemaRegistryImpl {
                                         .into_iter()
                                         .map(|r| r.into_rpc())
                                         .collect(),
-                                    filters: view.filters.0.map(|f| f.into_rpc()).transpose()?,
+                                    filters: view
+                                        .filters
+                                        .0
+                                        .map(|f| f.try_into_rpc())
+                                        .transpose()?,
                                 })
                             })
                             .collect::<Result<Vec<_>, Status>>()?,
@@ -709,7 +716,7 @@ fn vec_into_rpc(views: Vec<FullView>) -> Result<Vec<rpc::schema_registry::FullVi
                     })
                     .collect::<RegistryResult<_>>()?,
                 relations: view.relations.0.into_iter().map(|r| r.into_rpc()).collect(),
-                filters: view.filters.0.map(|f| f.into_rpc()).transpose()?,
+                filters: view.filters.0.map(|f| f.try_into_rpc()).transpose()?,
             })
         })
         .collect::<Result<Vec<_>, tonic::Status>>()
