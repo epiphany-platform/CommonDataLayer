@@ -88,6 +88,7 @@ pub async fn insert_message(object_id: Uuid, schema_id: Uuid, payload: &str) -> 
             "operationName": "InsertMessage",
             "variables": {{
                 "msg": {{
+                    "version": "1.0",
                     "objectId": "{}",
                     "schemaId": "{}",
                     "payload": {}

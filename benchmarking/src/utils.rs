@@ -6,6 +6,8 @@ use std::io::Stdout;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
+static CDL_INPUT_PROTOCOL_VERSION: &str = "1.0";
+
 pub fn create_progress_bar(count: u64) -> Mutex<ProgressBar<Stdout>> {
     let mut pb = ProgressBar::new(count);
     pb.format("╢▌▌░╟");
@@ -54,6 +56,7 @@ pub fn generate_messages(
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Message<'v> {
+    version: String,
     object_id: Uuid,
     schema_id: Uuid,
     order_group_id: Option<Uuid>,
@@ -63,6 +66,7 @@ pub struct Message<'v> {
 impl<'v> Message<'v> {
     pub fn new(schema_id: Uuid, data: &'v Value) -> Message<'v> {
         Message {
+            version: CDL_INPUT_PROTOCOL_VERSION.to_owned(),
             object_id: Uuid::new_v4(),
             schema_id,
             order_group_id: Some(schema_id),

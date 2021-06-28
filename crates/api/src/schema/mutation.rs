@@ -144,6 +144,7 @@ impl MutationRoot {
     ) -> FieldResult<bool> {
         let publisher = context.data_unchecked::<Settings>().publisher().await?;
         let payload = serde_json::to_vec(&OwnedInsertMessage {
+            version: "1.0".to_owned(),
             object_id: message.object_id,
             schema_id: message.schema_id,
             data: to_raw_value(&message.payload.0).unwrap(), // serde_json::Value -> RawValue should never fail
@@ -172,6 +173,7 @@ impl MutationRoot {
 
         for message in messages {
             let payload = serde_json::to_vec(&OwnedInsertMessage {
+                version: "1.0".to_owned(),
                 object_id: message.object_id,
                 schema_id: message.schema_id,
                 data: to_raw_value(&message.payload.0).unwrap(), // serde_json::Value -> RawValue should never fail
