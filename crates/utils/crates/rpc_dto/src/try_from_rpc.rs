@@ -221,7 +221,7 @@ impl TryFromRpc {
                     Ok( Self { #name: TryFromRpc::try_from_rpc(rpc)? } )
                 }
             }
-            Details::Struct(struct_) => struct_.synthesis(), // _ => todo!()
+            Details::Struct(struct_) => struct_.synthesis(),
         };
 
         TokenStream::from(quote! {

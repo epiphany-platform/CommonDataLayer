@@ -231,7 +231,7 @@ impl TryIntoRpc {
                     TryIntoRpc::try_into_rpc(self.#name)
                 }
             }
-            Details::Struct(struct_) => struct_.synthesis(), // _ => todo!()
+            Details::Struct(struct_) => struct_.synthesis(),
         };
 
         TokenStream::from(quote! {

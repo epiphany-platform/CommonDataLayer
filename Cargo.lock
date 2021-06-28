@@ -3023,7 +3023,6 @@ dependencies = [
 name = "rpc_dto_utils"
 version = "0.1.0"
 dependencies = [
- "itertools 0.10.0",
  "proc-macro-error",
  "proc-macro2",
  "quote",
