@@ -23,7 +23,8 @@ nowait = false
 address = ""
 
 [repositories]
-backup_data = { insert_destination = "", query_address = "", repository_type = "DocumentStorage" }
+key1 = { insert_destination = "", query_address = "", repository_type = "DocumentStorage" }
+key2 = { insert_destination = "", query_address = "", repository_type = "DocumentStorage" }
 
 [monitoring]
 metrics_port = 0
