@@ -5,6 +5,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use cdl_dto::materialization::{Filter, Relation};
+use cdl_dto::TryFromRpc;
 
 /// A view under a schema.
 #[derive(Debug, SimpleObject)]
@@ -38,11 +39,11 @@ impl View {
                     .map(|(k, v)| Ok((k, serde_json::from_str(&v)?)))
                     .collect::<FieldResult<_>>()?,
             ),
-            filters: view.filters.map(Filter::from_rpc).transpose()?,
+            filters: view.filters.map(TryFromRpc::try_from_rpc).transpose()?,
             relations: view
                 .relations
                 .into_iter()
-                .map(Relation::from_rpc)
+                .map(TryFromRpc::try_from_rpc)
                 .collect::<Result<_, _>>()?,
         })
     }
@@ -84,7 +85,7 @@ impl FullView {
             relations: view
                 .relations
                 .into_iter()
-                .map(Relation::from_rpc)
+                .map(TryFromRpc::try_from_rpc)
                 .collect::<Result<_, _>>()?,
         })
     }
