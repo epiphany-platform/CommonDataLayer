@@ -68,13 +68,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --workspace --exclude=e2e
-
-      - name: Miri
-        uses: actions-rs/cargo@v1
-        with:
-         command: miri
-         args: test
+          args: --workspace
 
       - name: Clear bloat
         run: find . -path "./target/debug/deps*" -type f ! -name "*.*" | xargs rm
