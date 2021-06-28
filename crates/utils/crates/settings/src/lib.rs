@@ -79,6 +79,20 @@ pub struct LogSettings {
     pub rust_log: String,
 }
 
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+pub struct RepositoryStaticRouting {
+    pub insert_destination: String,
+    pub query_address: String,
+    pub repository_type: RepositoryType,
+}
+
+#[derive(Clone, Debug, Deserialize, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RepositoryType {
+    DocumentStorage,
+    Timeseries,
+}
+
 impl Default for LogSettings {
     fn default() -> Self {
         Self {

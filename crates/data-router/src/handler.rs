@@ -16,13 +16,14 @@ use metrics_utils::{self as metrics, counter};
 use misc_utils::current_timestamp;
 use utils::parallel_task_queue::ParallelTaskQueue;
 use std::collections::HashMap;
+use settings_utils::RepositoryStaticRouting;
 
 pub struct Handler {
     pub cache: Arc<Mutex<LruCache<Uuid, String>>>,
     pub producer: Arc<CommonPublisher>,
     pub schema_registry_url: Arc<String>,
     pub task_queue: Arc<ParallelTaskQueue>,
-    pub routing_table: Arc<HashMap<String, String>>,
+    pub routing_table: Arc<HashMap<String, RepositoryStaticRouting>>,
 }
 
 #[async_trait]
@@ -56,8 +57,8 @@ impl ParallelConsumerHandler for Handler {
 
                 for entry in maybe_array.iter() {
                     let r = if let Some(repository_id) = &entry.options.repository_id {
-                        if let Some(repository_path) = self.routing_table.get(repository_id) {
-                            route_static(entry, &message_key, &self.producer, repository_path)
+                        if let Some(routing) = self.routing_table.get(repository_id) {
+                            route_static(entry, &message_key, &self.producer, &routing.insert_destination).await
                         } else {
                             Err(anyhow::Error::msg("No such entry in routing table"))
                         }
@@ -91,8 +92,8 @@ impl ParallelConsumerHandler for Handler {
                     )?;
 
                 let result = if let Some(repository_id) = &owned.options.repository_id {
-                    if let Some(repository_path) = self.routing_table.get(repository_id) {
-                        route_static(entry, &message_key, &self.producer, repository_path)
+                    if let Some(routing) = self.routing_table.get(repository_id) {
+                        route_static(&owned, &message_key, &self.producer, &routing.insert_destination).await
                     } else {
                         Err(anyhow::Error::msg("No such entry in routing table"))
                     }
@@ -129,8 +130,8 @@ impl ParallelConsumerHandler for Handler {
     }
 }
 
-#[tracing::instrument(skip(producer))]
-fn route_static(event: DataRouterInsertMessage, key: &str, publisher: &Arc<CommonPublisher>, repository_path: &str) -> anyhow::Result<()> {
+#[tracing::instrument(skip(publisher))]
+async fn route_static(event: &DataRouterInsertMessage<'_>, key: &str, publisher: &CommonPublisher, repository_path: &str) -> anyhow::Result<()> {
     let payload = BorrowedInsertMessage {
         object_id: event.object_id,
         schema_id: event.schema_id,
@@ -143,33 +144,25 @@ fn route_static(event: DataRouterInsertMessage, key: &str, publisher: &Arc<Commo
     Ok(())
 }
 
-#[tracing::instrument(skip(producer))]
+#[tracing::instrument(skip(publisher))]
 async fn route(
     cache: &Mutex<LruCache<Uuid, String>>,
     event: &DataRouterInsertMessage<'_>,
-    message_key: &str,
-    producer: &CommonPublisher,
-    schema_registry_addr: &str,
+    key: &str,
+    publisher: &CommonPublisher,
+    schema_registry_url: &str,
 ) -> anyhow::Result<()> {
-    let payload = BorrowedInsertMessage {
-        object_id: event.object_id,
-        schema_id: event.schema_id,
-        timestamp: current_timestamp(),
-        data: event.data,
-    };
-
     let insert_destination =
-        crate::schema::get_schema_insert_destination(cache, event.schema_id, schema_registry_addr)
+        crate::schema::get_schema_insert_destination(cache, event.schema_id, schema_registry_url)
             .await?;
 
-    send_message(
-        producer,
-        &insert_destination,
-        message_key,
-        serde_json::to_vec(&payload)?,
+    route_static(
+        event,
+        &key,
+        publisher,
+        &insert_destination
     )
-    .await;
-    Ok(())
+    .await
 }
 
 #[tracing::instrument(skip(producer))]
