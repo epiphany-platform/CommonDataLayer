@@ -14,9 +14,9 @@ use communication_utils::{
 };
 use metrics_utils::{self as metrics, counter};
 use misc_utils::current_timestamp;
-use utils::parallel_task_queue::ParallelTaskQueue;
-use std::collections::HashMap;
 use settings_utils::RepositoryStaticRouting;
+use std::collections::HashMap;
+use utils::parallel_task_queue::ParallelTaskQueue;
 
 pub struct Handler {
     pub cache: Arc<Mutex<LruCache<Uuid, String>>>,
@@ -58,7 +58,13 @@ impl ParallelConsumerHandler for Handler {
                 for entry in maybe_array.iter() {
                     let r = if let Some(repository_id) = &entry.options.repository_id {
                         if let Some(routing) = self.routing_table.get(repository_id) {
-                            route_static(entry, &message_key, &self.producer, &routing.insert_destination).await
+                            route_static(
+                                entry,
+                                &message_key,
+                                &self.producer,
+                                &routing.insert_destination,
+                            )
+                            .await
                         } else {
                             Err(anyhow::Error::msg("No such entry in routing table"))
                         }
@@ -70,8 +76,8 @@ impl ParallelConsumerHandler for Handler {
                             &self.producer,
                             &self.schema_registry_url,
                         )
-                            .await
-                            .context("Tried to send message and failed")
+                        .await
+                        .context("Tried to send message and failed")
                     };
 
                     counter!("cdl.data-router.input-multimsg", 1);
@@ -93,7 +99,13 @@ impl ParallelConsumerHandler for Handler {
 
                 let result = if let Some(repository_id) = &owned.options.repository_id {
                     if let Some(routing) = self.routing_table.get(repository_id) {
-                        route_static(&owned, &message_key, &self.producer, &routing.insert_destination).await
+                        route_static(
+                            &owned,
+                            &message_key,
+                            &self.producer,
+                            &routing.insert_destination,
+                        )
+                        .await
                     } else {
                         Err(anyhow::Error::msg("No such entry in routing table"))
                     }
@@ -105,8 +117,8 @@ impl ParallelConsumerHandler for Handler {
                         &self.producer,
                         &self.schema_registry_url,
                     )
-                        .await
-                        .context("Tried to send message and failed")
+                    .await
+                    .context("Tried to send message and failed")
                 };
                 counter!("cdl.data-router.input-singlemsg", 1);
                 counter!("cdl.data-router.processed", 1);
@@ -131,7 +143,12 @@ impl ParallelConsumerHandler for Handler {
 }
 
 #[tracing::instrument(skip(publisher))]
-async fn route_static(event: &DataRouterInsertMessage<'_>, key: &str, publisher: &CommonPublisher, repository_path: &str) -> anyhow::Result<()> {
+async fn route_static(
+    event: &DataRouterInsertMessage<'_>,
+    key: &str,
+    publisher: &CommonPublisher,
+    repository_path: &str,
+) -> anyhow::Result<()> {
     let payload = BorrowedInsertMessage {
         object_id: event.object_id,
         schema_id: event.schema_id,
@@ -139,7 +156,13 @@ async fn route_static(event: &DataRouterInsertMessage<'_>, key: &str, publisher:
         data: event.data,
     };
 
-    send_message(publisher, repository_path, key, serde_json::to_vec(&payload)?).await;
+    send_message(
+        publisher,
+        repository_path,
+        key,
+        serde_json::to_vec(&payload)?,
+    )
+    .await;
 
     Ok(())
 }
@@ -156,13 +179,7 @@ async fn route(
         crate::schema::get_schema_insert_destination(cache, event.schema_id, schema_registry_url)
             .await?;
 
-    route_static(
-        event,
-        &key,
-        publisher,
-        &insert_destination
-    )
-    .await
+    route_static(event, &key, publisher, &insert_destination).await
 }
 
 #[tracing::instrument(skip(producer))]
