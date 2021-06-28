@@ -1,0 +1,6 @@
+query SchemaObjects($schemaId: UUID!) {
+  schemaObjects(schemaId: $schemaId) {
+    objectId
+    data
+  }
+}

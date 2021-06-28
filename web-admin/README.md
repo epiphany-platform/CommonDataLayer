@@ -14,6 +14,10 @@ like [fnm][fnm], a Rust-based version manager for NPM.
 Once you have NPM in your path, run `npm i` in this directory to
 install all package dependencies.
 
+This app uses [graphql-codegen][codegen] to automatically generate
+bindings for the CDL's GraphQL API. To generate the bindings, run
+`npx graphql-codegen` with the CDL API running.
+
 
 ## Running
 

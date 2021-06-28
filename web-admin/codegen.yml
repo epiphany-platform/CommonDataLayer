@@ -1,0 +1,16 @@
+overwrite: true
+schema: "http://localhost:50106/graphql"
+documents: "src/operations/*.graphql"
+generates:
+  src/generated/graphql.ts:
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "graphql-codegen-svelte-apollo"
+    config:
+      clientPath: "../apollo-client"
+      asyncQuery: true
+      scalars:
+        UUID: string
+        JSON: Object
+        JSONObject: Map<string, Object>

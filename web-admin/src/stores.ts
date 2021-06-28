@@ -1,22 +1,19 @@
-import { get, writable } from "svelte/store";
-import { notLoaded, RemoteData, Schema } from "./models";
+import { writable } from "svelte/store";
 
-export const schemas = writable<RemoteData<Schema[]>>(notLoaded);
+const DEFAULT_GRAPHQL_ENDPOINT = "http://localhost:50106/graphql";
 
-export const apiUrl = writable(localStorage.getItem("api-url") || "");
+export const apiUrl = writable(localStorage.getItem("api-url") || initApiUrl());
+export const darkMode = writable(localStorage.getItem("dark-mode") === "true");
 
-apiUrl.subscribe(url => {
+apiUrl.subscribe((url) => {
   localStorage.setItem("api-url", url);
 });
 
-if (get(apiUrl) === "") {
-  apiUrl.set("http://localhost:50106");
-}
-
-export const darkMode = writable(
-  localStorage.getItem("dark-mode") === "true",
-);
-
-darkMode.subscribe(isDarkMode => {
+darkMode.subscribe((isDarkMode) => {
   localStorage.setItem("dark-mode", JSON.stringify(isDarkMode));
 });
+
+function initApiUrl() {
+  localStorage.setItem("api-url", DEFAULT_GRAPHQL_ENDPOINT);
+  return DEFAULT_GRAPHQL_ENDPOINT;
+}

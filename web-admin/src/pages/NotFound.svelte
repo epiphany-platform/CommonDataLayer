@@ -7,7 +7,7 @@
     <div class="col align-center">
       <h2>Error 404</h2>
       <p>That page doesn't exist.</p>
-      <Link to={{ page: 'home' }}><button>Back to Home</button></Link>
+      <Link to={{ page: "home" }}><button>Back to Home</button></Link>
     </div>
   </div>
 </div>
