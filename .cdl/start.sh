@@ -15,6 +15,7 @@ cargo build --workspace || exit 1
 ./target/debug/api                   > .tmp/api.log                   2>&1 &
 ./target/debug/command-service       > .tmp/command-service.log       2>&1 &
 ./target/debug/query-service         > .tmp/query-service.log         2>&1 &
+./target/debug/query-router          > .tmp/query-router.log          2>&1 &
 ./target/debug/materializer-general  > .tmp/materializer-general.log  2>&1 &
 ./target/debug/partial-update-engine > .tmp/partial-update-engine.log 2>&1 &
 ./target/debug/object-builder        > .tmp/object-builder.log        2>&1 &

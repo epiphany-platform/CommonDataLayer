@@ -6,7 +6,8 @@ use warp::Filter;
 use cache::SchemaRegistryCache;
 use metrics_utils as metrics;
 use serde::Deserialize;
-use settings_utils::{load_settings, LogSettings, MonitoringSettings};
+use settings_utils::{load_settings, LogSettings, MonitoringSettings, RepositoryStaticRouting};
+use std::collections::HashMap;
 
 pub mod cache;
 pub mod error;
@@ -23,6 +24,9 @@ struct Settings {
 
     #[serde(default)]
     log: LogSettings,
+
+    #[serde(default)]
+    repositories: HashMap<String, RepositoryStaticRouting>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -50,18 +54,28 @@ async fn main() -> anyhow::Result<()> {
     ));
 
     let cache_filter = warp::any().map(move || schema_registry_cache.clone());
+
+    let routing_table = Arc::new(settings.repositories);
+
+    let routing_filter = warp::any().map(move || routing_table.clone());
+
     let schema_id_filter = warp::header::header::<Uuid>("SCHEMA_ID");
+    let repository_id_filter = warp::header::optional::<String>("REPOSITORY_ID");
     let body_filter = warp::body::content_length_limit(1024 * 32).and(warp::body::json());
 
     let single_route = warp::path!("single" / Uuid)
         .and(schema_id_filter)
+        .and(repository_id_filter)
         .and(cache_filter.clone())
+        .and(routing_filter.clone())
         .and(body_filter)
         .and_then(handler::query_single);
 
     let multiple_route = warp::path!("multiple" / String)
         .and(schema_id_filter)
+        .and(repository_id_filter)
         .and(cache_filter.clone())
+        .and(routing_filter.clone())
         .and_then(handler::query_multiple);
 
     let schema_route = warp::path!("schema")

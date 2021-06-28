@@ -36,8 +36,9 @@ async fn main() -> anyhow::Result<()> {
         .par_run(Handler {
             cache,
             producer,
-            schema_registry_addr,
+            schema_registry_url: schema_registry_addr,
             task_queue,
+            routing_table: Arc::new(settings.repositories),
         })
         .await?;
 

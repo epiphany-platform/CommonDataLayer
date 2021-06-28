@@ -1,0 +1,3 @@
+mutation InsertBatch($messages: [InputMessage!]!) {
+  insertBatch(messages: $messages)
+}

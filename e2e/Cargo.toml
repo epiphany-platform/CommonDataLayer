@@ -9,6 +9,10 @@ license = "Apache-2.0"
 name = "e2e"
 path = "src/lib.rs"
 
+[features]
+default = []
+e2e = []
+
 [dependencies]
 # Workspace
 cdl_api     = { path = "../crates/api", package="api" }

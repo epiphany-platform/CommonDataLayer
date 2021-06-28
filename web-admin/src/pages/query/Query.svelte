@@ -1,32 +1,36 @@
 <script lang="ts">
-  import type { QueryResult, RemoteData } from "../../models";
-  import { notLoaded } from "../../models";
-  import { getLoaded } from "../../utils";
+  import type { CdlObject } from "../../generated/graphql";
 
-  import RemoteContent from "../../components/RemoteContent.svelte";
   import MakeQuery from "./MakeQuery.svelte";
+  import LoadingBar from "../../components/LoadingBar.svelte";
 
-  let results: RemoteData<QueryResult> = notLoaded;
+  let results: CdlObject[] | null = null;
+  let loading = false;
+
   $: resultsPretty = JSON.stringify(
-    Array.from(getLoaded(results) || []).reduce((obj, [key, value]) => {
-      obj[key] = value;
+    (results || []).reduce((obj, result) => {
+      obj[result.objectId] = result.data;
       return obj;
     }, {}),
     null,
     4
   );
 
-  function setResults(res: RemoteData<QueryResult>) {
-    results = res;
+  function setResults(res: Promise<CdlObject[] | null>) {
+    loading = true;
+
+    res
+      .then((data) => {
+        results = data;
+      })
+      .catch((err) => {
+        alert(err);
+      })
+      .finally(() => {
+        loading = false;
+      });
   }
 </script>
-
-<style>
-  .data {
-    white-space: pre-wrap;
-    text-align: left;
-  }
-</style>
 
 <div class="container">
   <div class="row">
@@ -42,12 +46,22 @@
       <div class="col-sm-8 align-center">
         <section>
           <h4>Results</h4>
-          <RemoteContent data={results}>
+          {#if loading}
+            <LoadingBar />
+          {:else if !results}
+            <p>Make a query to see data.</p>
+          {:else}
             <pre class="data">{resultsPretty}</pre>
-            <p slot="not-loaded">Make a query to see data.</p>
-          </RemoteContent>
+          {/if}
         </section>
       </div>
     </div>
   </section>
 </div>
+
+<style>
+  .data {
+    white-space: pre-wrap;
+    text-align: left;
+  }
+</style>

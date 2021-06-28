@@ -33,7 +33,7 @@ function parseCurrentRoute(): Route | null {
   } else if (hash.startsWith("#/query")) {
     const by = params.get("by") || undefined;
     if (["single", "multiple", "schema"].includes(by)) {
-      return { page: "query", by: (by as QueryType) };
+      return { page: "query", by: by as QueryType };
     } else {
       return { page: "query" };
     }
@@ -50,7 +50,6 @@ function parseCurrentRoute(): Route | null {
 
   return null;
 }
-
 
 export function routeToString(route: Route): string {
   if (route.page === "home") {
@@ -71,7 +70,9 @@ export function routeToString(route: Route): string {
       ["version", route.version],
       ["query", route.query],
       ["creating", route.creating ? "true" : undefined],
-    ].filter(([_, value]) => value).map(([key, value]) => `${key}=${value}`);
+    ]
+      .filter(([_, value]) => value)
+      .map(([key, value]) => `${key}=${value}`);
 
     if (params.length) {
       return `#/schemas?${params.join("&")}`;
@@ -97,4 +98,4 @@ export function replaceRoute(to: Route) {
   innerRoute.set(to);
 }
 
-export const route = derived(innerRoute, $inner => $inner);
+export const route = derived(innerRoute, ($inner) => $inner);
