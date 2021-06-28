@@ -22,6 +22,9 @@ nowait = false
 [grpc]
 address = ""
 
+[repositories]
+backup_data = { insert_destination = "", query_address = "", repository_type = "DocumentStorage" }
+
 [monitoring]
 metrics_port = 0
 status_port = 0
