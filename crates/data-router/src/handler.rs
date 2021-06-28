@@ -201,7 +201,6 @@ async fn send_message(
 #[cfg(test)]
 mod tests {
     use super::check_inbound_version;
-    // use semver::{Version, VersionReq};
 
     static PROPER_VERSION1: &str = "1.0";
     static PROPER_VERSION2: &str = "1";
