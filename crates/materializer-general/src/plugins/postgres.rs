@@ -1,20 +1,24 @@
+use std::collections::VecDeque;
 use std::{collections::HashMap, convert::TryFrom, convert::TryInto};
 
 use super::MaterializerPlugin;
+use anyhow::Context;
 use bb8_postgres::tokio_postgres::{types::Type, Config, NoTls};
 use bb8_postgres::{bb8, PostgresConnectionManager};
 use bb8_postgres::{
     bb8::{Pool, PooledConnection},
     tokio_postgres::{binary_copy::BinaryCopyInWriter, types::ToSql},
 };
+use cdl_dto::materialization::{FieldDefinition, FullView, PostgresMaterializerOptions};
 use futures::pin_mut;
 use itertools::Itertools;
 use metrics_utils::{self as metrics, counter};
 use rpc::materializer_general::MaterializedView;
-use serde::Deserialize;
 use serde_json::Value;
 use settings_utils::PostgresSettings;
 use uuid::Uuid;
+
+// TODO: Move some of those structs to dto crate
 
 pub struct PostgresMaterializer {
     pool: Pool<PostgresConnectionManager<NoTls>>,
@@ -23,7 +27,7 @@ pub struct PostgresMaterializer {
 
 #[derive(Debug)]
 struct PsqlView {
-    options: Options,
+    options: PostgresMaterializerOptions,
     rows: Vec<RowDefinition>,
 }
 
@@ -33,9 +37,12 @@ struct RowDefinition {
     fields: HashMap<String, Value>,
 }
 
-#[derive(Deserialize, Debug)]
-struct Options {
-    table: String,
+#[derive(Debug)]
+struct Field {
+    sql_name: String,
+    name: String,
+    json_path: String,
+    type_: Type,
 }
 
 impl TryFrom<MaterializedView> for PsqlView {
@@ -78,7 +85,11 @@ impl MaterializerPlugin for PostgresMaterializer {
     }
 
     #[tracing::instrument(skip(self))]
-    async fn upsert_view(&self, view: MaterializedView) -> anyhow::Result<()> {
+    async fn upsert_view(
+        &self,
+        view: MaterializedView,
+        view_definition: FullView,
+    ) -> anyhow::Result<()> {
         counter!("cdl.materializer.postgres.upsert-materialized-view", 1);
 
         let psql_view: PsqlView = view.try_into()?;
@@ -88,55 +99,61 @@ impl MaterializerPlugin for PostgresMaterializer {
 
         //TODO: Validate if column names are only in ASCII letters and numbers (prevent sql injection)
 
-        if let Some((copy_stm, insert_stm, types, columns)) = self.build_query(&psql_view).await? {
-            let tx = conn.transaction().await?;
-            // Temporary table is unique per session
-            tx.batch_execute(&format!(
-                "CREATE TABLE IF NOT EXISTS {table} ( \
+        if psql_view.rows.is_empty() {
+            tracing::warn!("Materialized view is empty, skipping upserting");
+        }
+
+        let (copy_stm, insert_stm, types, columns, fields) =
+            self.build_query(&psql_view, &view_definition).await?;
+        let tx = conn.transaction().await?;
+        // Temporary table is unique per session
+        tx.batch_execute(&format!(
+            "CREATE TABLE IF NOT EXISTS {table} ( \
                     object_ids UUID[] NOT NULL,\
                     {columns},\
-                    PRIMARY KEY (object_id)
+                    PRIMARY KEY (object_ids)
                  );\
                  CREATE TEMP TABLE upserts ON COMMIT DROP \
                  AS TABLE {table} WITH NO DATA;",
-                table = psql_view.options.table,
-                columns = columns
-            ))
-            .await?;
-            let sink = tx.copy_in(copy_stm.as_str()).await?;
+            table = psql_view.options.table,
+            columns = columns
+        ))
+        .await?;
+        let sink = tx.copy_in(copy_stm.as_str()).await?;
+        let writer = BinaryCopyInWriter::new(sink, &types); // Batch insert
 
-            let writer = BinaryCopyInWriter::new(sink, &types); // Batch insert
+        let num_written = self.write(writer, &psql_view, &fields).await?;
 
-            let num_written = self.write(writer, &psql_view).await?;
+        tx.batch_execute(&insert_stm).await?;
 
-            tx.batch_execute(&insert_stm).await?;
+        let store_result = tx.commit().await;
+        tracing::trace!("PSQL `UPSERT` {:?}", store_result);
+        store_result?;
 
-            let store_result = tx.commit().await;
-            tracing::trace!("PSQL `UPSERT` {:?}", store_result);
-            store_result?;
-
-            counter!("cdl.materializer.postgres.store", num_written as u64);
-        } else {
-            tracing::warn!("Materialized view is empty, skipping upserting");
-        }
+        counter!("cdl.materializer.postgres.store", num_written as u64);
 
         Ok(())
     }
 }
 
 impl PostgresMaterializer {
-    async fn write(&self, writer: BinaryCopyInWriter, view: &PsqlView) -> anyhow::Result<usize> {
+    async fn write(
+        &self,
+        writer: BinaryCopyInWriter,
+        view: &PsqlView,
+        fields: &[Field],
+    ) -> anyhow::Result<usize> {
         pin_mut!(writer);
 
         let mut row: Vec<&'_ (dyn ToSql + Sync)> = Vec::with_capacity(view.rows.len());
         for m in view.rows.iter() {
             row.clear();
             row.push(&m.object_ids);
-            row.extend(
-                m.fields
-                    .iter()
-                    .map(|(_, field)| field as &(dyn ToSql + Sync)),
-            );
+            for field in fields {
+                let f = m.fields.get(&field.name).context("Field not found")?;
+                row.push(f.pointer(&field.json_path).context("Subobject not found")?);
+            }
+
             writer.as_mut().write(&row).await?;
         }
         writer.finish().await?;
@@ -147,44 +164,39 @@ impl PostgresMaterializer {
     async fn build_query(
         &self,
         view: &PsqlView,
-    ) -> anyhow::Result<Option<(String, String, Vec<Type>, String)>> {
+        definition: &FullView,
+    ) -> anyhow::Result<(String, String, Vec<Type>, String, Vec<Field>)> {
         let table = &view.options.table;
 
-        let first_row = view.rows.get(0);
+        let fields = get_field_list(definition);
 
-        match first_row {
-            Some(first_row) => {
-                let columns = first_row.fields.keys().join(", ");
-                let update_columns = first_row
-                    .fields
-                    .keys()
-                    .map(|f| format!("{field} = EXCLUDED.{field}", field = f))
-                    .join(", ");
-                let insert_stm = format!(
-                    "INSERT INTO {} \
-                     SELECT * FROM upserts \
-                     ON CONFLICT (object_id) DO UPDATE SET {}",
-                    table, update_columns
-                );
-                let copy_stm = format!("COPY upserts (object_ids, {}) FROM STDIN BINARY", columns);
-                let mut types = vec![Type::UUID];
-                // TODO: For now each column is stored as a JSON field.
-                // Later we can introduce some kind of type infering mechanism here, so each field in
-                // Materialized view would be stored with better column type.
-                // We can achieve that by matching `Value` variants (leaving `JSON` for complex objects like arrays or structs).
-                types.extend(first_row.fields.keys().map(|_| Type::JSON));
+        let columns = fields.iter().map(|x| x.sql_name.to_owned()).join(", ");
+        let update_columns = fields
+            .iter()
+            .map(|f| format!("{field} = EXCLUDED.{field}", field = f.sql_name))
+            .join(", ");
+        let insert_stm = format!(
+            "INSERT INTO {} \
+                                  SELECT * FROM upserts \
+                                  ON CONFLICT (object_ids) DO UPDATE SET {}",
+            table, update_columns
+        );
+        let copy_stm = format!("COPY upserts (object_ids, {}) FROM STDIN BINARY", columns);
+        let mut types = vec![Type::UUID_ARRAY];
+        // TODO: For now each column is stored as a JSON field.
+        // Later we can introduce some kind of type infering mechanism here, so each field in
+        // Materialized view would be stored with better column type.
+        // We can achieve that by matching `Value` variants (leaving `JSON` for complex objects like arrays or structs).
 
-                let columns = first_row
-                    .fields
-                    .keys()
-                    .map(|f| format!("{} JSON NOT NULL", f))
-                    .join(", ");
+        let columns = fields
+            .iter()
+            .map(|f| format!("{} JSON NOT NULL", f.sql_name))
+            .join(", ");
 
-                tracing::debug!(?insert_stm, ?copy_stm, ?types, "Build query");
-                Ok(Some((copy_stm, insert_stm, types, columns)))
-            }
-            None => Ok(None),
-        }
+        types.extend(fields.iter().map(|x| x.type_.clone()));
+
+        tracing::debug!(?insert_stm, ?copy_stm, ?types, "Build query");
+        Ok((copy_stm, insert_stm, types, columns, fields))
     }
 
     pub async fn new(args: &PostgresSettings) -> anyhow::Result<Self> {
@@ -208,6 +220,60 @@ impl PostgresMaterializer {
             schema: args.schema.clone(),
         })
     }
+}
+
+fn get_field_list(definition: &FullView) -> Vec<Field> {
+    #[derive(Debug)]
+    struct PartialFieldDefinition<'a> {
+        sql_name: String,
+        field_name: String,
+        json_path: Vec<String>,
+        definition: &'a FieldDefinition,
+    }
+
+    let mut fields = vec![];
+
+    let mut fields_to_process = definition
+        .fields
+        .iter()
+        .map(|x| PartialFieldDefinition {
+            json_path: vec!["".to_owned()],
+            sql_name: x.0.to_owned(),
+            field_name: x.0.to_owned(),
+            definition: x.1,
+        })
+        .collect::<VecDeque<_>>();
+
+    while let Some(field) = fields_to_process.pop_front() {
+        match field.definition {
+            FieldDefinition::Simple { .. } | FieldDefinition::Computed { .. } => {
+                fields.push(Field {
+                    sql_name: field.sql_name,
+                    name: field.field_name,
+                    json_path: field.json_path.join("/"),
+                    type_: Type::JSON,
+                });
+            }
+            FieldDefinition::Array { fields, .. } => {
+                fields_to_process = fields
+                    .iter()
+                    .map(|x| PartialFieldDefinition {
+                        definition: x.1,
+                        sql_name: format!("{}_{}", field.sql_name, x.0),
+                        field_name: field.field_name.clone(),
+                        json_path: {
+                            let mut vec = field.json_path.clone();
+                            vec.push(x.0.clone());
+                            vec
+                        },
+                    })
+                    .chain(fields_to_process.into_iter())
+                    .collect()
+            }
+        }
+    }
+
+    fields
 }
 
 impl PostgresMaterializer {

@@ -244,9 +244,19 @@ kafka:
   replicaCount: 1
   autoCreateTopicsEnable: true
   deleteTopicEnable: true
-  autoCreateTopicsEnable: true
   zookeeper:
     enabled: true
+  provisioning:
+    enabled: true
+    topics:
+    - name: "cdl.data.input"
+    - name: "cdl.document.data"
+    - name: "cdl.timeseries.data"
+    - name: "cdl.timeseries.generic-druid"
+    - name: "cdl.timeseries2.data"
+    - name: "cdl.edge.input"
+    - name: "cdl.materialize"
+    - name: "cdl.errors"
 
 postgresql:
   initdbScriptsConfigMap: infrastructure-postgres-migrations

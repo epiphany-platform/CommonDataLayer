@@ -28,7 +28,8 @@ pub struct NewView {
 }
 
 /// Relation between a view's schemas
-#[derive(Clone, Debug, InputObject)]
+#[derive(Clone, Debug, InputObject, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct NewRelation {
     /// Relation ID stored in Edge Registry
     pub global_id: Uuid,

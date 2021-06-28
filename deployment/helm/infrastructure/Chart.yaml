@@ -27,7 +27,7 @@ dependencies:
   version: "8.6.0"
   repository: "https://charts.bitnami.com/bitnami"
 - name: kafka
-  version: "12.4.0"
+  version: "12.19.2"
   repository: "https://charts.bitnami.com/bitnami"
 - name: postgresql
   version: "10.2.0"

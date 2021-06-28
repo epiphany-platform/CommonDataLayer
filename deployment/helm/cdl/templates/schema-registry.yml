@@ -62,7 +62,7 @@ spec:
         - name: OTEL_EXPORTER_JAEGER_AGENT_PORT
           value: "{{ .Values.global.jaegerAgentPort }}"
         - name: SCHEMA_REGISTRY_SERVICES__EDGE_REGISTRY_URL
-          value: "http://{{ .Release.Name }}-edge-registry:{{ .Values.edgeRegistry.rpcPort }}"
+          value: "http://{{ .Release.Name }}-edge-registry:6400"
         ports:
         - containerPort: 51805
         readinessProbe:

@@ -17,9 +17,6 @@ api:
 dataRouter:
   inputSource: cdl.data.input
 
-leaderElector:
-  heartbeatTime: 2
-
 queryRouter:
   port: 30153
 
@@ -39,7 +36,6 @@ edgeRegistry:
   postgresPort: 5432
   postgresDbname: CDL
   postgresSchema: public
-  rpcPort: 50110
   consumerTag: edge-registry
   consumerSource: cdl.edge.input
 
@@ -47,7 +43,7 @@ webAdmin:
   port: 30151
 
 partialUpdateEngine:
-  sleepPhaseLength: 120
+  sleepPhaseLength: 5
 
 
 postgres-document:
