@@ -36,7 +36,8 @@ pub async fn query_single(
     routing: Arc<HashMap<String, RepositoryStaticRouting>>,
     request_body: Body,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let (query_address, schema_type) = get_routing_info(schema_id, repository_id, cache, routing).await?;
+    let (query_address, schema_type) =
+        get_routing_info(schema_id, repository_id, cache, routing).await?;
 
     let values = match (&schema_type, request_body) {
         (SchemaType::DocumentStorage, _) => {
@@ -90,7 +91,8 @@ pub async fn query_multiple(
     cache: Arc<SchemaRegistryCache>,
     routing: Arc<HashMap<String, RepositoryStaticRouting>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let (query_address, schema_type) = get_routing_info(schema_id, repository_id, cache, routing).await?;
+    let (query_address, schema_type) =
+        get_routing_info(schema_id, repository_id, cache, routing).await?;
 
     let object_ids = object_ids.split(',').map(str::to_owned).collect();
 
@@ -205,13 +207,18 @@ fn byte_map_to_json_map(map: HashMap<String, Vec<u8>>) -> Result<HashMap<String,
         .collect()
 }
 
-async fn get_routing_info(schema_id: Uuid, repository_id: Option<String>, cache: Arc<SchemaRegistryCache>, routing: Arc<HashMap<String, RepositoryStaticRouting>>) -> Result<(String, SchemaType), Error> {
+async fn get_routing_info(
+    schema_id: Uuid,
+    repository_id: Option<String>,
+    cache: Arc<SchemaRegistryCache>,
+    routing: Arc<HashMap<String, RepositoryStaticRouting>>,
+) -> Result<(String, SchemaType), Error> {
     let (query_address, schema_type) = if let Some(repository_id) = repository_id {
         let entry = routing.get(&repository_id);
         if let Some(routing) = entry {
             (routing.query_address.clone(), routing.repository_type)
         } else {
-            return Err(Error::InvalidRepository(repository_id))
+            return Err(Error::InvalidRepository(repository_id));
         }
     } else {
         cache.get_schema_info(schema_id).await?

@@ -28,12 +28,14 @@ pub fn recover(rejection: Rejection) -> Result<impl warp::Reply, Rejection> {
             Error::ExpectedSchemaType(expected) => {
                 format!("This route expects schema type: {:?}", expected)
             }
-            Error::InvalidRepository(repository_id) => format!("Repository with id `{}` is not present in config", repository_id),
+            Error::InvalidRepository(repository_id) => format!(
+                "Repository with id `{}` is not present in config",
+                repository_id
+            ),
         };
 
         let code = match error {
-            Error::ExpectedSchemaType(_)
-            | Error::InvalidRepository(_) => StatusCode::BAD_REQUEST,
+            Error::ExpectedSchemaType(_) | Error::InvalidRepository(_) => StatusCode::BAD_REQUEST,
             Error::ClientError(_)
             | Error::JsonError(_)
             | Error::SingleQueryMissingValue
