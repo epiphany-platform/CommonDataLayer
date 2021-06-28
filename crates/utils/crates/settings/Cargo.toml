@@ -11,6 +11,7 @@ license = "Apache-2.0"
 # Workspace
 communication_utils     = { path    = "../communication", features = ["kafka", "amqp", "grpc"] }
 task_utils  = { path    = "../task" }
+rpc         = { path    = "../../../rpc" }
 
 # Crates.io
 anyhow      = "1.0.40"

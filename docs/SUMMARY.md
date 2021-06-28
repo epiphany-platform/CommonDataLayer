@@ -14,6 +14,7 @@
 - [Features](features/index.md)
     - [Message ordering](features/ordering.md)
     - [Materialization](features/materialization.md)
+    - [Client routing](features/client_routing.md)
 - [Versioning](versioning.md)
 - [Protocol schema](protocol.md)
 - [Benchmarks](benchmarks.md)
