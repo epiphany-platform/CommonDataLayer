@@ -2,6 +2,7 @@ mod plugins;
 pub mod settings;
 
 use cdl_dto::materialization::FullView;
+use cdl_dto::TryFromRpc;
 use lru_cache::LruCache;
 use misc_utils::abort_on_poison;
 use plugins::{MaterializerPlugin, PostgresMaterializer};
@@ -106,7 +107,7 @@ impl MaterializerImpl {
             .await?
             .into_inner();
 
-        let view_definition = FullView::from_rpc(view_definition)?;
+        let view_definition = FullView::try_from_rpc(view_definition)?;
 
         self.view_cache
             .lock()
