@@ -3243,6 +3243,7 @@ dependencies = [
  "derive_more",
  "dirs",
  "lapin",
+ "rpc",
  "serde 1.0.126",
  "task_utils",
  "url",
