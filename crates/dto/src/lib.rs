@@ -62,3 +62,15 @@ impl From<ResponseError> for tonic::Status {
 
 type RequestResult<T> = std::result::Result<T, RequestError>;
 type ResponseResult<T> = std::result::Result<T, ResponseError>;
+
+// TODO: Introduce FromRpc for cases where Error is infallible
+pub trait TryFromRpc<Rpc>: Sized {
+    fn try_from_rpc(rpc: Rpc) -> RequestResult<Self>;
+}
+
+pub trait TryIntoRpc {
+    type Rpc;
+    fn try_into_rpc(self) -> ResponseResult<Self::Rpc>;
+}
+
+pub use rpc_dto_utils::{TryFromRpc, TryIntoRpc};
