@@ -14,13 +14,16 @@ use communication_utils::{
 };
 use metrics_utils::{self as metrics, counter};
 use misc_utils::current_timestamp;
+use settings_utils::RepositoryStaticRouting;
+use std::collections::HashMap;
 use utils::parallel_task_queue::ParallelTaskQueue;
 
 pub struct Handler {
     pub cache: Arc<Mutex<LruCache<Uuid, String>>>,
     pub producer: Arc<CommonPublisher>,
-    pub schema_registry_addr: Arc<String>,
+    pub schema_registry_url: Arc<String>,
     pub task_queue: Arc<ParallelTaskQueue>,
+    pub routing_table: Arc<HashMap<String, RepositoryStaticRouting>>,
 }
 
 #[async_trait]
@@ -53,15 +56,29 @@ impl ParallelConsumerHandler for Handler {
                 let mut result = Ok(());
 
                 for entry in maybe_array.iter() {
-                    let r = route(
-                        &self.cache,
-                        entry,
-                        &message_key,
-                        &self.producer,
-                        &self.schema_registry_addr,
-                    )
-                    .await
-                    .context("Tried to send message and failed");
+                    let r = if let Some(repository_id) = &entry.options.repository_id {
+                        if let Some(routing) = self.routing_table.get(repository_id) {
+                            route_static(
+                                entry,
+                                &message_key,
+                                &self.producer,
+                                &routing.insert_destination,
+                            )
+                            .await
+                        } else {
+                            Err(anyhow::Error::msg("No such entry in routing table"))
+                        }
+                    } else {
+                        route(
+                            &self.cache,
+                            entry,
+                            &message_key,
+                            &self.producer,
+                            &self.schema_registry_url,
+                        )
+                        .await
+                        .context("Tried to send message and failed")
+                    };
 
                     counter!("cdl.data-router.input-multimsg", 1);
                     counter!("cdl.data-router.processed", 1);
@@ -79,15 +96,30 @@ impl ParallelConsumerHandler for Handler {
                     serde_json::from_str::<DataRouterInsertMessage>(message.payload()?).context(
                         "Payload deserialization failed, message is not a valid cdl message",
                     )?;
-                let result = route(
-                    &self.cache,
-                    &owned,
-                    &message_key,
-                    &self.producer,
-                    &self.schema_registry_addr,
-                )
-                .await
-                .context("Tried to send message and failed");
+
+                let result = if let Some(repository_id) = &owned.options.repository_id {
+                    if let Some(routing) = self.routing_table.get(repository_id) {
+                        route_static(
+                            &owned,
+                            &message_key,
+                            &self.producer,
+                            &routing.insert_destination,
+                        )
+                        .await
+                    } else {
+                        Err(anyhow::Error::msg("No such entry in routing table"))
+                    }
+                } else {
+                    route(
+                        &self.cache,
+                        &owned,
+                        &message_key,
+                        &self.producer,
+                        &self.schema_registry_url,
+                    )
+                    .await
+                    .context("Tried to send message and failed")
+                };
                 counter!("cdl.data-router.input-singlemsg", 1);
                 counter!("cdl.data-router.processed", 1);
 
@@ -110,13 +142,12 @@ impl ParallelConsumerHandler for Handler {
     }
 }
 
-#[tracing::instrument(skip(producer))]
-async fn route(
-    cache: &Mutex<LruCache<Uuid, String>>,
+#[tracing::instrument(skip(publisher))]
+async fn route_static(
     event: &DataRouterInsertMessage<'_>,
-    message_key: &str,
-    producer: &CommonPublisher,
-    schema_registry_addr: &str,
+    key: &str,
+    publisher: &CommonPublisher,
+    repository_path: &str,
 ) -> anyhow::Result<()> {
     let payload = BorrowedInsertMessage {
         object_id: event.object_id,
@@ -125,18 +156,30 @@ async fn route(
         data: event.data,
     };
 
-    let insert_destination =
-        crate::schema::get_schema_insert_destination(cache, event.schema_id, schema_registry_addr)
-            .await?;
-
     send_message(
-        producer,
-        &insert_destination,
-        message_key,
+        publisher,
+        repository_path,
+        key,
         serde_json::to_vec(&payload)?,
     )
     .await;
+
     Ok(())
+}
+
+#[tracing::instrument(skip(publisher))]
+async fn route(
+    cache: &Mutex<LruCache<Uuid, String>>,
+    event: &DataRouterInsertMessage<'_>,
+    key: &str,
+    publisher: &CommonPublisher,
+    schema_registry_url: &str,
+) -> anyhow::Result<()> {
+    let insert_destination =
+        crate::schema::get_schema_insert_destination(cache, event.schema_id, schema_registry_url)
+            .await?;
+
+    route_static(event, &key, publisher, &insert_destination).await
 }
 
 #[tracing::instrument(skip(producer))]

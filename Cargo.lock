@@ -471,6 +471,7 @@ dependencies = [
  "anyhow",
  "async-graphql",
  "rpc",
+ "rpc_dto_utils",
  "serde 1.0.126",
  "serde_json",
  "thiserror",
@@ -3019,6 +3020,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rpc_dto_utils"
+version = "0.1.0"
+dependencies = [
+ "proc-macro-error",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
 name = "rust-ini"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3243,6 +3254,7 @@ dependencies = [
  "derive_more",
  "dirs",
  "lapin",
+ "rpc",
  "serde 1.0.126",
  "task_utils",
  "url",
