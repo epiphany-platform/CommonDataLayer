@@ -421,7 +421,7 @@ impl ObjectBuilderImpl {
             .await?
             .into_inner();
 
-        let view = cdl_dto::materialization::FullView::from_rpc(view)?;
+        let view = cdl_dto::TryFromRpc::try_from_rpc(view)?;
         Ok(view)
     }
 
