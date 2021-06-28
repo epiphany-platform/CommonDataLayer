@@ -22,6 +22,10 @@ nowait = false
 [grpc]
 address = ""
 
+[repositories]
+key1 = { insert_destination = "", query_address = "", repository_type = "DocumentStorage" }
+key2 = { insert_destination = "", query_address = "", repository_type = "Timeseries" }
+
 [monitoring]
 metrics_port = 0
 status_port = 0
