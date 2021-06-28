@@ -6,6 +6,7 @@ use crate::{error::Error, settings::Settings};
 use crate::{types::view::FullView, types::IntoQueried};
 use async_graphql::{Context, FieldResult, Object};
 use cdl_dto::ingestion::OwnedInsertMessage;
+use cdl_dto::TryIntoRpc;
 use misc_utils::current_timestamp;
 use rpc::edge_registry::EdgeRegistryPool;
 use rpc::schema_registry::SchemaRegistryPool;
@@ -79,7 +80,7 @@ impl MutationRoot {
                 filters: new_view
                     .filters
                     .clone()
-                    .map(|f| f.0.into_rpc())
+                    .map(|f| f.0.try_into_rpc())
                     .transpose()?,
                 relations: new_view
                     .relations

@@ -16,131 +16,59 @@ pub type LocalId = u8; // ID from Relation->local_id. 0 for base_schema_id.
 use async_graphql::{Json, SimpleObject, Union};
 use rpc::schema_registry::types::LogicOperator;
 
-use crate::{RequestError, RequestResult, ResponseResult};
+use crate::{RequestError, RequestResult, ResponseResult, TryFromRpc, TryIntoRpc};
 
 /// View's filter
-#[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq, TryFromRpc, TryIntoRpc)]
 #[serde(rename_all = "snake_case")]
+#[rpc(
+    rpc = "rpc::schema_registry::Filter",
+    tag = "filter_kind",
+    tag_rpc = "rpc::schema_registry::filter::FilterKind"
+)]
 pub enum Filter {
+    #[rpc(rename = "Simple")]
     SimpleFilter(SimpleFilter),
+    #[rpc(rename = "Complex")]
     ComplexFilter(ComplexFilter),
 }
 
-impl Filter {
-    pub fn from_rpc(rpc: rpc::schema_registry::Filter) -> RequestResult<Self> {
-        let kind = match rpc.filter_kind {
-            Some(kind) => kind,
-            None => return Err(RequestError::new("Expected filter, found none")),
-        };
-        use rpc::schema_registry::filter::FilterKind;
-        Ok(match kind {
-            FilterKind::Simple(filter) => Self::SimpleFilter(SimpleFilter::from_rpc(filter)?),
-            FilterKind::Complex(filter) => Self::ComplexFilter(ComplexFilter::from_rpc(filter)?),
-        })
-    }
-
-    pub fn into_rpc(self) -> ResponseResult<rpc::schema_registry::Filter> {
-        use rpc::schema_registry::filter::FilterKind;
-
-        Ok(rpc::schema_registry::Filter {
-            filter_kind: Some(match self {
-                Filter::SimpleFilter(filter) => FilterKind::Simple(filter.into_rpc()?),
-                Filter::ComplexFilter(filter) => FilterKind::Complex(filter.into_rpc()?),
-            }),
-        })
-    }
-}
-
-#[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq, TryFromRpc, TryIntoRpc)]
+#[rpc(transparent, rpc = "rpc::schema_registry::SimpleFilter")]
 pub struct SimpleFilter {
     pub filter: SimpleFilterKind,
 }
 
-#[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq, TryFromRpc, TryIntoRpc)]
 #[serde(rename_all = "snake_case")]
+#[rpc(
+    rpc = "rpc::schema_registry::SimpleFilter",
+    tag = "simple_filter",
+    tag_rpc = "rpc::schema_registry::simple_filter::SimpleFilter"
+)]
 pub enum SimpleFilterKind {
     Equals(EqualsFilter),
 }
 
-impl SimpleFilter {
-    fn from_rpc(rpc: rpc::schema_registry::SimpleFilter) -> RequestResult<Self> {
-        let kind = match rpc.simple_filter {
-            Some(kind) => kind,
-            None => return Err(RequestError::new("Expected filter, found none")),
-        };
-        use rpc::schema_registry::simple_filter::SimpleFilter;
-        use rpc::schema_registry::EqualsFilter as EqualsFilterRpc;
-        Ok(Self {
-            filter: match kind {
-                SimpleFilter::Equals(EqualsFilterRpc { lhs, rhs }) => {
-                    SimpleFilterKind::Equals(EqualsFilter {
-                        lhs: FilterValue::from_rpc(lhs)?,
-                        rhs: FilterValue::from_rpc(rhs)?,
-                    })
-                }
-            },
-        })
-    }
-
-    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::SimpleFilter> {
-        use rpc::schema_registry::simple_filter::SimpleFilter;
-        use rpc::schema_registry::EqualsFilter as EqualsFilterRpc;
-        Ok(rpc::schema_registry::SimpleFilter {
-            simple_filter: Some(match self.filter {
-                SimpleFilterKind::Equals(EqualsFilter { lhs, rhs }) => {
-                    SimpleFilter::Equals(EqualsFilterRpc {
-                        lhs: lhs.into_rpc()?,
-                        rhs: rhs.into_rpc()?,
-                    })
-                }
-            }),
-        })
-    }
-}
-
-#[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq, TryFromRpc, TryIntoRpc)]
+#[rpc(rpc = "rpc::schema_registry::EqualsFilter")]
 pub struct EqualsFilter {
     pub lhs: FilterValue,
     pub rhs: FilterValue,
 }
 
-#[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq, TryFromRpc, TryIntoRpc)]
 #[serde(rename_all = "snake_case")]
+#[rpc(
+    rpc = "rpc::schema_registry::FilterValue",
+    tag = "filter_value",
+    tag_rpc = "rpc::schema_registry::filter_value::FilterValue"
+)]
 pub enum FilterValue {
     SchemaField(SchemaFieldFilter),
     ViewPath(ViewPathFilter),
     RawValue(RawValueFilter),
     Computed(ComputedFilter),
-}
-
-impl FilterValue {
-    fn from_rpc(rpc: rpc::schema_registry::FilterValue) -> RequestResult<Self> {
-        let kind = match rpc.filter_value {
-            Some(kind) => kind,
-            None => return Err(RequestError::new("Expected filter value, found none")),
-        };
-        use rpc::schema_registry::filter_value::FilterValue;
-        Ok(match kind {
-            FilterValue::SchemaField(filter) => {
-                Self::SchemaField(SchemaFieldFilter::from_rpc(filter)?)
-            }
-            FilterValue::ViewPath(filter) => Self::ViewPath(ViewPathFilter::from_rpc(filter)),
-            FilterValue::RawValue(filter) => Self::RawValue(RawValueFilter::from_rpc(filter)?),
-            FilterValue::Computed(filter) => Self::Computed(ComputedFilter::from_rpc(filter)?),
-        })
-    }
-
-    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::FilterValue> {
-        use rpc::schema_registry::filter_value::FilterValue;
-        Ok(rpc::schema_registry::FilterValue {
-            filter_value: Some(match self {
-                Self::SchemaField(filter) => FilterValue::SchemaField(filter.into_rpc()),
-                Self::ViewPath(filter) => FilterValue::ViewPath(filter.into_rpc()),
-                Self::RawValue(filter) => FilterValue::RawValue(filter.into_rpc()?),
-                Self::Computed(filter) => FilterValue::Computed(filter.into_rpc()?),
-            }),
-        })
-    }
 }
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
@@ -149,19 +77,22 @@ pub struct SchemaFieldFilter {
     pub field_path: String,
 }
 
-impl SchemaFieldFilter {
-    fn from_rpc(rpc: rpc::schema_registry::SchemaFieldFilter) -> RequestResult<Self> {
+impl TryFromRpc<rpc::schema_registry::SchemaFieldFilter> for SchemaFieldFilter {
+    fn try_from_rpc(rpc: rpc::schema_registry::SchemaFieldFilter) -> RequestResult<Self> {
         Ok(Self {
             schema_id: rpc.schema_id.try_into()?,
             field_path: rpc.field_path,
         })
     }
+}
 
-    fn into_rpc(self) -> rpc::schema_registry::SchemaFieldFilter {
-        rpc::schema_registry::SchemaFieldFilter {
+impl TryIntoRpc for SchemaFieldFilter {
+    type Rpc = rpc::schema_registry::SchemaFieldFilter;
+    fn try_into_rpc(self) -> ResponseResult<rpc::schema_registry::SchemaFieldFilter> {
+        Ok(rpc::schema_registry::SchemaFieldFilter {
             schema_id: self.schema_id.into(),
             field_path: self.field_path,
-        }
+        })
     }
 }
 
@@ -170,17 +101,20 @@ pub struct ViewPathFilter {
     pub field_path: String,
 }
 
-impl ViewPathFilter {
-    fn from_rpc(rpc: rpc::schema_registry::ViewPathFilter) -> Self {
-        Self {
+impl TryFromRpc<rpc::schema_registry::ViewPathFilter> for ViewPathFilter {
+    fn try_from_rpc(rpc: rpc::schema_registry::ViewPathFilter) -> RequestResult<Self> {
+        Ok(Self {
             field_path: rpc.field_path,
-        }
+        })
     }
+}
 
-    fn into_rpc(self) -> rpc::schema_registry::ViewPathFilter {
-        rpc::schema_registry::ViewPathFilter {
+impl TryIntoRpc for ViewPathFilter {
+    type Rpc = rpc::schema_registry::ViewPathFilter;
+    fn try_into_rpc(self) -> ResponseResult<Self::Rpc> {
+        Ok(rpc::schema_registry::ViewPathFilter {
             field_path: self.field_path,
-        }
+        })
     }
 }
 
@@ -190,75 +124,42 @@ pub struct RawValueFilter {
     pub value: Json<Value>,
 }
 
-impl RawValueFilter {
-    fn from_rpc(rpc: rpc::schema_registry::RawValueFilter) -> RequestResult<Self> {
+impl TryFromRpc<rpc::schema_registry::RawValueFilter> for RawValueFilter {
+    fn try_from_rpc(rpc: rpc::schema_registry::RawValueFilter) -> RequestResult<Self> {
         Ok(Self {
             value: Json(serde_json::from_str(&rpc.value)?),
         })
     }
+}
 
-    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::RawValueFilter> {
+impl TryIntoRpc for RawValueFilter {
+    type Rpc = rpc::schema_registry::RawValueFilter;
+    fn try_into_rpc(self) -> ResponseResult<Self::Rpc> {
         Ok(rpc::schema_registry::RawValueFilter {
             value: serde_json::to_string(&self.value.0)?,
         })
     }
 }
 
-#[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq, TryFromRpc, TryIntoRpc)]
+#[rpc(rpc = "rpc::schema_registry::ComputedFilter")]
 pub struct ComputedFilter {
     pub computation: Computation,
 }
 
-impl ComputedFilter {
-    fn from_rpc(rpc: rpc::schema_registry::ComputedFilter) -> RequestResult<Self> {
-        Ok(Self {
-            computation: Computation::from_rpc(rpc.computation)?,
-        })
-    }
-
-    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::ComputedFilter> {
-        Ok(rpc::schema_registry::ComputedFilter {
-            computation: self.computation.into_rpc()?,
-        })
-    }
-}
-
-#[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, Union, Serialize, Deserialize, PartialEq, TryFromRpc, TryIntoRpc)]
 #[serde(rename_all = "snake_case")]
+#[rpc(
+    rpc = "rpc::schema_registry::Computation",
+    tag = "computation",
+    tag_rpc = "rpc::schema_registry::computation::Computation"
+)]
 pub enum Computation {
     RawValue(RawValueComputation),
     FieldValue(FieldValueComputation),
+    #[rpc(rename = "EqualsComputation")]
+    #[rpc(into_boxed)]
     Equals(EqualsComputation),
-}
-
-impl Computation {
-    fn from_rpc(rpc: rpc::schema_registry::Computation) -> RequestResult<Self> {
-        let kind = match rpc.computation {
-            Some(kind) => kind,
-            None => return Err(RequestError::new("Expected computation, found none")),
-        };
-        use rpc::schema_registry::computation::Computation;
-        Ok(match kind {
-            Computation::RawValue(filter) => Self::RawValue(RawValueComputation::from_rpc(filter)?),
-            Computation::FieldValue(filter) => {
-                Self::FieldValue(FieldValueComputation::from_rpc(filter)?)
-            }
-            Computation::EqualsComputation(filter) => {
-                Self::Equals(EqualsComputation::from_rpc(*filter)?)
-            }
-        })
-    }
-
-    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::Computation> {
-        use rpc::schema_registry::computation::Computation;
-        Ok(rpc::schema_registry::Computation {
-            computation: Some(match self {
-                Self::RawValue(op) => Computation::RawValue(op.into_rpc()?),
-                Self::FieldValue(op) => Computation::FieldValue(op.into_rpc()),
-                Self::Equals(op) => Computation::EqualsComputation(Box::new(op.into_rpc()?)),
-            }),
-        })
-    }
 }
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
@@ -267,14 +168,17 @@ pub struct RawValueComputation {
     pub value: Json<Value>,
 }
 
-impl RawValueComputation {
-    fn from_rpc(rpc: rpc::schema_registry::RawValueComputation) -> RequestResult<Self> {
+impl TryFromRpc<rpc::schema_registry::RawValueComputation> for RawValueComputation {
+    fn try_from_rpc(rpc: rpc::schema_registry::RawValueComputation) -> RequestResult<Self> {
         Ok(Self {
             value: Json(serde_json::from_str(&rpc.value)?),
         })
     }
+}
 
-    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::RawValueComputation> {
+impl TryIntoRpc for RawValueComputation {
+    type Rpc = rpc::schema_registry::RawValueComputation;
+    fn try_into_rpc(self) -> ResponseResult<Self::Rpc> {
         Ok(rpc::schema_registry::RawValueComputation {
             value: serde_json::to_string(&self.value.0)?,
         })
@@ -287,45 +191,36 @@ pub struct FieldValueComputation {
     pub field_path: String,
 }
 
-impl FieldValueComputation {
-    fn from_rpc(rpc: rpc::schema_registry::FieldValueComputation) -> RequestResult<Self> {
+impl TryFromRpc<rpc::schema_registry::FieldValueComputation> for FieldValueComputation {
+    fn try_from_rpc(rpc: rpc::schema_registry::FieldValueComputation) -> RequestResult<Self> {
         Ok(Self {
             schema_id: rpc.schema_id.unwrap_or_default().try_into()?,
             field_path: rpc.field_path,
         })
     }
+}
 
-    fn into_rpc(self) -> rpc::schema_registry::FieldValueComputation {
-        rpc::schema_registry::FieldValueComputation {
+impl TryIntoRpc for FieldValueComputation {
+    type Rpc = rpc::schema_registry::FieldValueComputation;
+
+    fn try_into_rpc(self) -> ResponseResult<Self::Rpc> {
+        Ok(rpc::schema_registry::FieldValueComputation {
             schema_id: match self.schema_id {
                 0 => None,
                 x => Some(x.into()),
             },
             field_path: self.field_path,
-        }
+        })
     }
 }
 
-#[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq, TryFromRpc, TryIntoRpc)]
+#[rpc(rpc = "rpc::schema_registry::EqualsComputation")]
 pub struct EqualsComputation {
+    #[rpc(boxed, into_boxed)] // TODO: Document whats the difference between boxed and into_boxed
     pub lhs: Box<Computation>,
+    #[rpc(boxed, into_boxed)]
     pub rhs: Box<Computation>,
-}
-
-impl EqualsComputation {
-    fn from_rpc(rpc: rpc::schema_registry::EqualsComputation) -> RequestResult<Self> {
-        Ok(EqualsComputation {
-            lhs: Box::new(Computation::from_rpc(*rpc.lhs)?),
-            rhs: Box::new(Computation::from_rpc(*rpc.rhs)?),
-        })
-    }
-
-    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::EqualsComputation> {
-        Ok(rpc::schema_registry::EqualsComputation {
-            lhs: Box::new(self.lhs.into_rpc()?),
-            rhs: Box::new(self.rhs.into_rpc()?),
-        })
-    }
 }
 
 #[derive(Clone, Debug, SimpleObject, Serialize, Deserialize, PartialEq)]
@@ -334,25 +229,29 @@ pub struct ComplexFilter {
     pub operands: Vec<Filter>,
 }
 
-impl ComplexFilter {
-    fn from_rpc(rpc: rpc::schema_registry::ComplexFilter) -> RequestResult<Self> {
+impl TryFromRpc<rpc::schema_registry::ComplexFilter> for ComplexFilter {
+    fn try_from_rpc(rpc: rpc::schema_registry::ComplexFilter) -> RequestResult<Self> {
         Ok(Self {
             operator: rpc.operator.try_into()?,
             operands: rpc
                 .operands
                 .into_iter()
-                .map(Filter::from_rpc)
+                .map(TryFromRpc::try_from_rpc)
                 .collect::<RequestResult<_>>()?,
         })
     }
+}
 
-    fn into_rpc(self) -> ResponseResult<rpc::schema_registry::ComplexFilter> {
+impl TryIntoRpc for ComplexFilter {
+    type Rpc = rpc::schema_registry::ComplexFilter;
+
+    fn try_into_rpc(self) -> ResponseResult<Self::Rpc> {
         Ok(rpc::schema_registry::ComplexFilter {
             operator: self.operator.into(),
             operands: self
                 .operands
                 .into_iter()
-                .map(|o| o.into_rpc())
+                .map(|o| o.try_into_rpc())
                 .collect::<ResponseResult<_>>()?,
         })
     }
@@ -372,20 +271,22 @@ pub struct Relation {
     pub relations: Vec<Relation>,
 }
 
-impl Relation {
-    pub fn from_rpc(relation: rpc::schema_registry::Relation) -> RequestResult<Self> {
+impl TryFromRpc<rpc::schema_registry::Relation> for Relation {
+    fn try_from_rpc(rpc: rpc::schema_registry::Relation) -> RequestResult<Self> {
         Ok(Self {
-            global_id: Uuid::parse_str(&relation.global_id)?,
-            local_id: create_non_zero_u8(relation.local_id)?,
-            search_for: relation.search_for.try_into()?,
-            relations: relation
+            global_id: Uuid::parse_str(&rpc.global_id)?,
+            local_id: create_non_zero_u8(rpc.local_id)?,
+            search_for: rpc.search_for.try_into()?,
+            relations: rpc
                 .relations
                 .into_iter()
-                .map(Relation::from_rpc)
+                .map(TryFromRpc::try_from_rpc)
                 .collect::<RequestResult<_>>()?,
         })
     }
+}
 
+impl Relation {
     pub fn into_rpc(self) -> rpc::schema_registry::Relation {
         let local_id: u8 = self.local_id.into();
         rpc::schema_registry::Relation {
@@ -469,8 +370,8 @@ pub struct FullView {
     pub filters: Option<Filter>,
 }
 
-impl FullView {
-    pub fn from_rpc(rpc: rpc::schema_registry::FullView) -> RequestResult<Self> {
+impl TryFromRpc<rpc::schema_registry::FullView> for FullView {
+    fn try_from_rpc(rpc: rpc::schema_registry::FullView) -> RequestResult<Self> {
         Ok(Self {
             id: rpc.id.parse()?,
             base_schema_id: rpc.base_schema_id.parse()?,
@@ -485,9 +386,9 @@ impl FullView {
             relations: rpc
                 .relations
                 .into_iter()
-                .map(Relation::from_rpc)
+                .map(TryFromRpc::try_from_rpc)
                 .collect::<RequestResult<_>>()?,
-            filters: rpc.filters.map(Filter::from_rpc).transpose()?,
+            filters: rpc.filters.map(TryFromRpc::try_from_rpc).transpose()?,
         })
     }
 }
@@ -539,11 +440,6 @@ impl TryFrom<rpc::object_builder::View> for Request {
         Ok(Self { view_id, schemas })
     }
 }
-
-//fn parse_uuid(id: &str) -> Result<Uuid, tonic::Status> {
-//Uuid::parse_str(id)
-//.map_err(|err| tonic::Status::invalid_argument(format!("Failed to parse UUID: {}", err)))
-//}
 
 fn create_non_zero_u8(num: u32) -> RequestResult<NonZeroU8> {
     let num: u8 = num.try_into().map_err(|err| {
