@@ -13,6 +13,8 @@
   let objectIdError: string = "";
   let dataError: string = "";
 
+  const CDL_MESSAGE_VERSION = "1.0";
+
   function submit() {
     objectIdError = "";
     dataError = "";
@@ -33,6 +35,7 @@
 
     if (!errorsFound) {
       addMessage({
+        version: CDL_MESSAGE_VERSION,
         objectId: objectId || uuidv4(),
         schemaId,
         payload: parsedData,
