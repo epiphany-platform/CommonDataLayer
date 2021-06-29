@@ -2,7 +2,7 @@
 
 The CDL consists of six layers, each horizontally scalable and replaceable.
 
-``` plantuml
+```plantuml
 {{#include graphs/cdl.puml}}
 ```
 
