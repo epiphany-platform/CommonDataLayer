@@ -9,13 +9,9 @@
 ### New components
 - CDL Web Admin (GUI) - For management purposes only
 - Edge Registry (ER) - Manages relationships between schemas (schema to schema) and objects (object to object)
-    - ER is available in graphQL API
-    - ER pushes notifications
 - Materializer - general (M-G) - Writes materialized data to the repository
 - Materializer - ondemand (M-O) - Returns materialized data to the user (Request-Response)
 - Object Builder (OB) - Creates materialized data based on first stage repositories
-    - OB is available in graphQL API
-    - OB supports empty filters for accessing all data
 - Partial Update Engine (PUE) - Notifies OB when materialized view needs to be processed
 
 ### Changes to existing components
