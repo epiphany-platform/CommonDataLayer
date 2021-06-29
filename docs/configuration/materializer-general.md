@@ -1,6 +1,7 @@
 ```toml
 communication_method = "kafka"
 input_port = 50203
+cache_capacity = 1024
 
 [postgres]
 username = ""
