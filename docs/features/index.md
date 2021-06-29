@@ -31,9 +31,9 @@
 | CDLF-0000C-00 | Full GRPC communication support          | Ready      | 1.0.0       | [RFC](../rfc/CDLF-0000C-00-rfc-01.md) |
 | CDLF-0000D-00 | Service Mesh (istio)                     | Abandoned  | -----       | N/A                                   |
 | CDLF-0000E-00 | CDL Input Message Format - MessagePack   | TechSpec   | -----       | [RFC](../rfc/CDLF-0000E-00-rfc-01.md) |
-| CDLF-0000F-00 | Configuration Service                    | TechSpec   | -----       |                                       |
+| CDLF-0000F-00 | Configuration Service                    | Suggestion | -----       |                                       |
 | CDLF-00010-00 | Protocol Versioning                      | TechSpec   | -----       | [RFC](../rfc/CDLF-00010-00-rfc-01.md) |
-| CDLF-00011-00 | Basic Materialization                    | Retired    | -----       | [RFC](../rfc/CDLF-00011-00-rfc-01.md) |
+| CDLF-00011-00 | Basic Materialization                    | Abandoned  | -----       | [RFC](../rfc/CDLF-00011-00-rfc-01.md) |
 | CDLF-00012-00 | Edge registry                            | Ready      | 1.0.0       | [RFC](../rfc/CDLF-00012-00-rfc-01.md) |
 | CDLF-00013-00 | Materialized views                       | Ready      | 1.0.0       | [RFC](../rfc/CDLF-00013-00-rfc-01.md) |
 | CDLF-00014-00 | Materialization - Filters                | Ready      | 1.0.0       | N/A                                   |
