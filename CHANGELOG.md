@@ -16,12 +16,11 @@
 
 ### Changes to existing components
 - Data Router and Query Router supports static routing allowing Schema-Registry-absent deployment
-- Query Service supports returning stream of data without allocating hughe amounts of memory
+- Query Service supports returning stream of data without allocating huge amounts of memory
 - Schema Registry now uses Postgres as a backend
 - Data Router supports message batching
 
 ### General changes
-- E2E tests (E2E)
 - Added gRPC as an alternative communication method between services
 - CDL supports basic materialization with filtering
 - CDL loads configuration from configuration files
