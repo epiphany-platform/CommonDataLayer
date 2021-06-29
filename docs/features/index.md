@@ -7,7 +7,7 @@
   - `[discussion/idea/request]->[TechSpec/RFC] and optionally [PoC] -> [RC] -> [Ready]`
   - `RC` means that the feature is waiting for the release
   - `Ready` means that the feature is tested, merged and released
-  - `Retired` means that the feature was dropped due to various factors, including but not limited to lack of support, legacy code or lack of usage.
+  - `Retired` or `Abandoned` means that the feature was dropped due to various factors, including but not limited to lack of support, legacy code or lack of usage.
   - `Suggestion` means the feature was requested or suggested, and is in preplanning or plannig stage. This shoud result in a Technical Specification or in a doc.
   - Features in `TechSpec` phase can have missing or broken document links, since documentation is usually waiting for pull request or have additional comments pending.
 
@@ -25,25 +25,24 @@
 | CDLF-00006-00 | Automatic Query Destination              | Ready      | 0.0.1       | N/A                                   |
 | CDLF-00007-00 | System Metrics Support                   | Ready      | 0.0.1       | N/A                                   |
 | CDLF-00008-00 | Victoria Metrics Support                 | Ready      | 0.0.9       | N/A                                   |
-| CDLF-00009-00 | CDL Input Message Batching               | RC         | 0.3.1-rc    | N/A                                   |
-| CDLF-0000A-00 | Message Ordering                         | RC         | 0.0.9       | [DOC](./ordering.md)                  |
+| CDLF-00009-00 | CDL Input Message Batching               | Ready      | 1.0.0       | N/A                                   |
+| CDLF-0000A-00 | Message Ordering                         | Ready      | 1.0.0       | [DOC](./ordering.md)                  |
 | CDLF-0000B-00 | Access Groups                            | Suggestion | -----       | N/A                                   |
-| CDLF-0000C-00 | Full GRPC communication support          | PoC        | 0.3.1-rc    | [RFC](../rfc/CDLF-0000C-00-rfc-01.md) |
+| CDLF-0000C-00 | Full GRPC communication support          | Ready      | 1.0.0       | [RFC](../rfc/CDLF-0000C-00-rfc-01.md) |
 | CDLF-0000D-00 | Service Mesh (istio)                     | Abandoned  | -----       | N/A                                   |
-| CDLF-0000E-00 | CIM MessagePack Format                   | TechSpec   | -----       | [RFC](../rfc/CDLF-0000E-00-rfc-01.md) |
+| CDLF-0000E-00 | CDL Input Message Format - MessagePack   | TechSpec   | -----       | [RFC](../rfc/CDLF-0000E-00-rfc-01.md) |
 | CDLF-0000F-00 | Configuration Service                    | TechSpec   | -----       |                                       |
 | CDLF-00010-00 | Protocol Versioning                      | TechSpec   | -----       | [RFC](../rfc/CDLF-00010-00-rfc-01.md) |
-| CDLF-00011-00 | Basic Materialization                    | TechSpec   | 0.3.1-rc    | [RFC](../rfc/CDLF-00011-00-rfc-01.md) |
-| CDLF-00012-00 | Edge registry                            | RC         | 0.3.1-rc    | [RFC](../rfc/CDLF-00012-00-rfc-01.md) |
-| CDLF-00013-00 | Materialized views                       | RC         | 0.3.1-rc    | [RFC](../rfc/CDLF-00013-00-rfc-01.md) |
-| CDLF-00014-00 | Materialization - Filters                | Ready      | 1.0.0       | missing                               |
-| CDLF-00015-00 | CDL publishing deployment configurations | TechSpec   | -----       | [RFC](../rfc/CDLF-00015-00-rfc-01.md) |
+| CDLF-00011-00 | Basic Materialization                    | Retired    | -----       | [RFC](../rfc/CDLF-00011-00-rfc-01.md) |
+| CDLF-00012-00 | Edge registry                            | Ready      | 1.0.0       | [RFC](../rfc/CDLF-00012-00-rfc-01.md) |
+| CDLF-00013-00 | Materialized views                       | Ready      | 1.0.0       | [RFC](../rfc/CDLF-00013-00-rfc-01.md) |
+| CDLF-00014-00 | Materialization - Filters                | Ready      | 1.0.0       | N/A                                   |
 | CDLF-00016-00 | Schema-Registry-less CDL deployment      | Ready      | 1.0.0       | [RFC](../rfc/CDLF-00016-00-rfc-01.md) |
 | CDLF-00017-00 | Materialization - Computation            | TechSpec   | -----       |                                       |
 | CDLF-00018-00 | Materialization - Materialized Types     | TechSpec   | -----       |                                       |
-| CDLF-00019-00 | Materializer - OnDemand                  | Ready      | 1.0.0       | missing                               |
-| CDLF-0001A-00 | Materializer - General                   | Ready      | 1.0.0       | missing                               |
-| CDLF-0001B-00 | Materialization - Notifications          | Ready      | 1.0.0       | missing                               |
+| CDLF-00019-00 | Materializer - OnDemand                  | Ready      | 1.0.0       | N/A                                   |
+| CDLF-0001A-00 | Materializer - General                   | Ready      | 1.0.0       | N/A                                   |
+| CDLF-0001B-00 | Materialization - Notifications          | Ready      | 1.0.0       | N/A                                   |
 | CDLF-0001C-00 | Object-side configuration                | Suggestion | -----       |                                       |
 | CDLF-0001D-00 | CIM Object Valdiation                    | Suggestion | -----       |                                       |
 | CDLF-0001E-00 | Materialization - Relationships          | Idea       | -----       |                                       |
