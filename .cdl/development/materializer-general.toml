@@ -1,4 +1,5 @@
 input_port = 50203
+cache_capacity = 1000
 
 [notifications]
 enabled = true
