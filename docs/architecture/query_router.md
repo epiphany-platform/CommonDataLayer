@@ -43,7 +43,7 @@ Currently, the **query-router** can:
 - query data from repositories by SCHEMA_ID.
 
 Rough sketch of working process:
-``` plantuml
+```plantuml
 {{#include graphs/query_router_data_retrieval.puml}}
 ```
 
