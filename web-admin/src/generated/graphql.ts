@@ -140,6 +140,7 @@ export type FullView = {
 };
 
 export type InputMessage = {
+  version: Scalars['String'];
   /** Object ID */
   objectId: Scalars['UUID'];
   /** Schema ID */
