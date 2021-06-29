@@ -1,53 +1,57 @@
 # Common Data Layer Changelog
 
-## 0.3.1-rc (Unreleased)
+## 1.0.0
+
 ### Breaking changes
+- Data Router expects `version` field in CDL Ingestion Message in format "MAJOR_VERSION.MINOR_VERSION". In this release the only supported version is "1.0".
+- Changed ENV variables
 
-### New Components
-- Object Builder (OB)
-- Materializer - ondemand (M-OD)
-- Materializer - general (M-G)
-- CDL Web Admin (GUI)
-- Edge Registry - (ER)
-- Partial Update Engine - (PUE)
+### New components
+- CDL Web Admin (GUI) - For management purposes only
+- Edge Registry (ER) - Manages relationships between schemas (schema to schema) and objects (object to object)
+- Materializer - general (M-G) - Writes materialized data to the materialization-database
+- Materializer - ondemand (M-O) - Returns materialized data to the user (Request-Response)
+- Object Builder (OB) - Creates materialized data based on first stage repositories
+- Partial Update Engine (PUE) - Notifies OB when materialized view needs to be processed
 
-### Changes to existing components:
-- Schema Registry now uses Postgres Backend
-- CDL can now work in ordered (messages) mode
-- CDL now uses Open Telemetry
-- Data Router supports Message Batching
+### Changes to existing components
+- Data Router and Query Router supports static routing allowing Schema-Registry-absent deployment
+- Query Service supports returning stream of data without allocating huge amounts of memory
+- Schema Registry now uses Postgres as a backend
+- Data Router supports message batching
 
-### General Changes:
-- Object Builder is available in Graphql API
-- Object Builder supports empty filters
-- Object Builder can use filters in queries
-- Edge Registry is available in Graphql API
-- Edge Registry notifications support added
-- All services can be queried with --help to get full list of options with explanations
+### General changes
+- Added gRPC as an alternative communication method between services
+- CDL supports basic materialization with filtering
+- CDL loads configuration from configuration files
+- CDL supports Open Telemetry for traces
 
-### Major Bugfixes
-- Data Router - It is now possible to swith to multi/single threaded behaviour
+### Major bugfixes
+- It is now possible to switch to multi/single threaded behaviour in Data Router
 
-### Documentation:
-- General Materialization documentation and how-to
-- CDL versioning
-- Updated ENV variables and their descriptions
-- Add Feature List and descriptions
-- gRPC implementation
+### Documentation
+- Added MdBook on Github Pages
+- Added Feature List and descriptions
+- Added tutorial for basic materialization
+- Added documentation for configuration files and for ENV variables
+- Formalized commit messages and tags
+- Added information about CDL versioning
 
-### General Fixes
-- Consumer-based services will log error and continue on invalid message. no longer resulting in crash loop
-- Query multiple returns error for timeseries
-- build script fix
-- Metrics port defaulted to invalid ones
+### Geneal fixes
+- Query-multiple RPC method returns an error for Timeseries schema type
+- Metrics port defaulted to invalid one
+- Consumer-based services will log an error and continue working on next message, no longer resulting in the crash loop
 
-### RFCs:
-- Materialization RFC
-- RFC index page
-- partial materialization
+### RFCs
+- Static routing
+- CDL Ingestion API versioning
+- CDL publishing deployment configurations
+- Partial Materialization
 - Edge Registry
-- Initial draft of the MessagePack
-- Alternative communication method to Kafka and RabbitMQ
+- Alternative communication method to Kafka and RabbitMQ (gRPC)
+
+### Known issues
+- Relationships in materialization may generate wrong set of data
 
 ## v0.2.0
 
@@ -75,7 +79,7 @@
 ### Documentation
 - Updated documentation for basic services
 - Added UML diagrams of our services
--
+
 ### Dependencies
 - Bumped anyhow to 1.0.38
 - Bumped thiserror to 1.0.23
@@ -95,21 +99,21 @@
 - Bumped test-case to 1.1.0
 - Bumped log to 0.4.13
 - Bumped rust toolchain to 30-12-2020
--
+
 ### CI and infrastructure
 - Improved performance of CI
 - Added DepdendaBot
 - Added cargo-deny to CI
 - Added component tests jobs for PRs
 - Added markdown link check
--
+
 ### Internal
 - Refactored internal message format
 - Moved gRPC definitions to `rpc` crate
 - Moved crates to separate folder `crates`
 - Splited helm component definitions
 - Moved benchmarking outside crates
--
+
 ### Tests
 - Added testcontainers for acceptance tests
 - Added component tests for query-router
