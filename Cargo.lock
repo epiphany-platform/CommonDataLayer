@@ -869,6 +869,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "cache",
  "cdl_dto",
  "communication_utils",
  "lenient_semver",
@@ -2737,6 +2738,8 @@ name = "query-router"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "async-trait",
+ "cache",
  "futures-util",
  "lru-cache",
  "metrics_utils",

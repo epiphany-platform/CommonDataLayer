@@ -14,12 +14,14 @@ path = "src/main.rs"
 misc_utils  = { path = "../utils/crates/misc" }
 rpc         = { path = "../rpc" }
 utils       = { path = "../utils" }
+cache       = { path = "../utils/crates/cache" }
 settings_utils          = { path = "../utils/crates/settings" }
 metrics_utils           = { path = "../utils/crates/metrics" }
 tracing_utils           = { path = "../utils/crates/tracing", features = ["http"] }
 
 # Crates.io
 anyhow      = "1.0.40"
+async-trait = "0.1.50"
 lru-cache   = "0.1.2"
 serde       = { version = "1.0.126", features = ["derive"] }
 serde_json  = "1.0.64"

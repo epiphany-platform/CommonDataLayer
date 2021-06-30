@@ -16,6 +16,7 @@ misc_utils  = { path = "../utils/crates/misc" }
 rpc         = { path = "../rpc" }
 task_utils  = { path = "../utils/crates/task" }
 utils       = { path = "../utils" }
+cache       = { path = "../utils/crates/cache" }
 settings_utils          = { path = "../utils/crates/settings" }
 metrics_utils           = { path = "../utils/crates/metrics" }
 communication_utils     = { path = "../utils/crates/communication" }

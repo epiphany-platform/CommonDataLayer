@@ -1,9 +1,10 @@
-use lru_cache::LruCache;
-use std::sync::{Arc, Mutex};
-
+use crate::schema::SchemaMetadataFetcher;
 use crate::{config::Settings, handler::Handler};
+use cache::DynamicCache;
 use metrics_utils as metrics;
 use settings_utils::load_settings;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use utils::parallel_task_queue::ParallelTaskQueue;
 
 mod config;
@@ -27,8 +28,10 @@ async fn main() -> anyhow::Result<()> {
     let consumer = settings.consumer().await?;
     let producer = Arc::new(settings.producer().await?);
 
-    let cache = Arc::new(Mutex::new(LruCache::new(settings.cache_capacity)));
-    let schema_registry_addr = Arc::new(settings.services.schema_registry_url);
+    let cache = Arc::new(Mutex::new(DynamicCache::new(
+        settings.cache_capacity,
+        SchemaMetadataFetcher::boxed(settings.services.schema_registry_url),
+    )));
 
     let task_queue = Arc::new(ParallelTaskQueue::default());
 
@@ -36,7 +39,6 @@ async fn main() -> anyhow::Result<()> {
         .par_run(Handler {
             cache,
             producer,
-            schema_registry_url: schema_registry_addr,
             task_queue,
             routing_table: Arc::new(settings.repositories),
         })
