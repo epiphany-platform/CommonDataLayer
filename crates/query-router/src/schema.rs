@@ -6,11 +6,11 @@ use uuid::Uuid;
 
 pub type SchemaCache = Mutex<DynamicCache<Uuid, (String, SchemaType)>>;
 
-pub struct SchemaMetadataFetcher {
+pub struct SchemaMetadataSupplier {
     schema_registry_url: String,
 }
 
-impl SchemaMetadataFetcher {
+impl SchemaMetadataSupplier {
     pub fn boxed(schema_registry_url: String) -> Box<Self> {
         Box::new(Self {
             schema_registry_url,
@@ -19,7 +19,7 @@ impl SchemaMetadataFetcher {
 }
 
 #[async_trait::async_trait]
-impl CacheSupplier<Uuid, (String, SchemaType)> for SchemaMetadataFetcher {
+impl CacheSupplier<Uuid, (String, SchemaType)> for SchemaMetadataSupplier {
     async fn retrieve(&self, key: Uuid) -> anyhow::Result<(String, SchemaType)> {
         let mut conn = rpc::schema_registry::connect(self.schema_registry_url.clone()).await?;
 

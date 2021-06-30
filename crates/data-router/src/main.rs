@@ -1,4 +1,4 @@
-use crate::schema::SchemaMetadataFetcher;
+use crate::schema::SchemaMetadataSupplier;
 use crate::{config::Settings, handler::Handler};
 use cache::DynamicCache;
 use metrics_utils as metrics;
@@ -30,7 +30,7 @@ async fn main() -> anyhow::Result<()> {
 
     let cache = Arc::new(Mutex::new(DynamicCache::new(
         settings.cache_capacity,
-        SchemaMetadataFetcher::boxed(settings.services.schema_registry_url),
+        SchemaMetadataSupplier::boxed(settings.services.schema_registry_url),
     )));
 
     let task_queue = Arc::new(ParallelTaskQueue::default());

@@ -1,12 +1,14 @@
 use cache::CacheSupplier;
+use cdl_dto::materialization::FullView;
+use cdl_dto::TryFromRpc;
 use rpc::schema_registry::Id;
 use uuid::Uuid;
 
-pub struct SchemaMetadataSupplier {
+pub struct ViewSupplier {
     schema_registry_url: String,
 }
 
-impl SchemaMetadataSupplier {
+impl ViewSupplier {
     pub fn boxed(schema_registry_url: String) -> Box<Self> {
         Box::new(Self {
             schema_registry_url,
@@ -15,16 +17,16 @@ impl SchemaMetadataSupplier {
 }
 
 #[async_trait::async_trait]
-impl CacheSupplier<Uuid, String> for SchemaMetadataSupplier {
-    async fn retrieve(&self, key: Uuid) -> anyhow::Result<String> {
+impl CacheSupplier<Uuid, FullView> for ViewSupplier {
+    async fn retrieve(&self, key: Uuid) -> anyhow::Result<FullView> {
         let mut client = rpc::schema_registry::connect(self.schema_registry_url.to_owned()).await?;
-
-        Ok(client
-            .get_schema_metadata(Id {
+        let view_definition = client
+            .get_view(Id {
                 id: key.to_string(),
             })
             .await?
-            .into_inner()
-            .insert_destination)
+            .into_inner();
+
+        Ok(FullView::try_from_rpc(view_definition)?)
     }
 }

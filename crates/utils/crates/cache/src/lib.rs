@@ -1,5 +1,3 @@
-#![feature(trait_alias)]
-
 use anyhow::Context;
 use lru_cache::LruCache;
 use std::future::Future;
