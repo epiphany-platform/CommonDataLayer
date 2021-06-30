@@ -31,7 +31,7 @@ pub struct Handler {
 
 #[async_trait]
 impl ParallelConsumerHandler for Handler {
-    // #[tracing::instrument(skip(self, message))]
+    #[tracing::instrument(skip(self, message))]
     async fn handle<'a>(&'a self, message: &'a dyn CommunicationMessage) -> anyhow::Result<()> {
         let order_group_id = get_order_group_id(message);
         let _guard =
