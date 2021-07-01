@@ -1,5 +1,8 @@
+using System.Collections.Generic;
+using System.Text.Json;
 using System.Threading.Tasks;
 using CDL.Tests.Configuration;
+using CDL.Tests.ServiceObjects.SchemaService;
 using Google.Protobuf;
 using Grpc.Core;
 using Microsoft.Extensions.Options;
@@ -67,18 +70,21 @@ namespace CDL.Tests.Services
             return Task.FromResult(_client.UpdateSchema(newUpdateSchema));
         }
 
-        public Task<Id> AddViewToSchema(string schemaId, string name, string materializerFields, string materializerOptions = "")
+        public Task<Id> AddViewToSchema(string schemaId, string name, IList<Simple> materializerFields, bool materializerOnDemand = false, string materializerOptions = "{}")
         {
             var view = new NewView()
             {
                 BaseSchemaId = schemaId,
                 Name = name,
-                MaterializerAddress = _options.CDL_MATERIALIZER_GENERAL_ADDRESS,
+                MaterializerAddress = materializerOnDemand ? string.Empty : _options.CDL_MATERIALIZER_GENERAL_ADDRESS,
                 MaterializerOptions = materializerOptions,
             };
-            
-            view.Fields.Add("Name", materializerFields);
 
+            foreach (var field in materializerFields)
+            {
+                view.Fields.Add(field.simple.field_name, JsonSerializer.Serialize(field));
+            }            
+            
             return Task.FromResult(_client.AddViewToSchema(view));
         }
 

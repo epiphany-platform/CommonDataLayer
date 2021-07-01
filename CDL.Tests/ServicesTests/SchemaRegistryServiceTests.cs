@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 using AutoFixture;
 using CDL.Tests.MessageBroker.Kafka;
+using CDL.Tests.ServiceObjects.SchemaService;
 using CDL.Tests.Services;
 using CDL.Tests.TestDataObjects;
 using MassTransit.KafkaIntegration;
@@ -64,8 +65,25 @@ namespace CDL.Tests.ServicesTests
         {
             var name = _fixture.Create<string>();
             var viewName = _fixture.Create<string>();            
-            var schema = _schemaRegistryService.AddSchema(name, _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
-            var view = _schemaRegistryService.AddViewToSchema(schema.Id_, viewName, "{\"Name\": \"Name\" }").Result;
+            var schema = _schemaRegistryService.AddSchema(name, _fixture.Create<Person>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
+            var viewFields = new List<Simple>();
+            viewFields.Add(new Simple()
+                {
+                    simple = new SimpleItem()
+                    {
+                        field_name = "FirstName",
+                        field_type = "String" 
+                    }
+                });
+            viewFields.Add(new Simple()
+                {
+                    simple = new SimpleItem()
+                    {
+                        field_name = "LastName",
+                        field_type = "String" 
+                    }
+                });
+            var view = _schemaRegistryService.AddViewToSchema(schema.Id_, viewName, viewFields).Result;
             var viewDetails = _schemaRegistryService.GetView(view.Id_).Result;
             
             Guid viewUUID = Guid.Parse(view.Id_);            
@@ -96,7 +114,7 @@ namespace CDL.Tests.ServicesTests
             
             try
             {
-                _schemaRegistryService.AddViewToSchema(schema.Id_, name, materializerOptions);
+                _schemaRegistryService.AddViewToSchema(schema.Id_, name, new List<Simple>(), false, materializerOptions);
             }
             catch (Exception e)
             {

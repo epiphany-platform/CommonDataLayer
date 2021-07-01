@@ -7,9 +7,10 @@ using Microsoft.Extensions.DependencyInjection;
 using CDL.Tests.Services;
 using static SchemaRegistry.SchemaRegistry;
 using System;
-using AutoFixture;
 using static EdgeRegistry.EdgeRegistry;
 using EdgeRegistry;
+using static MaterializerOndemand.OnDemandMaterializer;
+using AutoFixture;
 
 namespace CDL.Tests
 {
@@ -42,7 +43,6 @@ namespace CDL.Tests
                 });
             });
             services.AddMassTransitHostedService();
-
             services.AddGrpcClient<SchemaRegistryClient>(o =>
             {
                 o.Address = new Uri(configuration.CDL_SCHEMA_REGISTRY_ADDRESS);
@@ -51,12 +51,15 @@ namespace CDL.Tests
             {
                 o.Address = new Uri(configuration.CDL_EDGE_REGISTRY_ADDRESS);
             });
-
+            services.AddGrpcClient<OnDemandMaterializerClient>(o =>
+            {
+                o.Address = new Uri(configuration.CDL_MATERIALIZER_ONDEMAND_ADDRESS);
+            });
             services.AddScoped<EdgeRegistryService>();
             services.AddScoped<SchemaRegistryService>();
             services.AddScoped<QueryRouterService>();
+            services.AddScoped<OnDemandMaterializerService>();
             services.AddScoped<Fixture>();
-
         } 
 
         // public void ConfigureHost(IHostBuilder hostBuilder)

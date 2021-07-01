@@ -37,8 +37,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Protobuf Include="Proto/common.proto" GrpcServices="Client" />    
 		<Protobuf Include="Proto/schema_registry.proto" GrpcServices="Client" />
     <Protobuf Include="Proto/edge_registry.proto" GrpcServices="Client" />
+    <Protobuf Include="Proto/materializer_ondemand.proto" GrpcServices="Client" />
 	</ItemGroup>
 
 </Project>
