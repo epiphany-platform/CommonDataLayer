@@ -57,8 +57,8 @@ where
         let value = self.cache_supplier.retrieve(key.to_owned()).await?;
 
         let mut cache = self.inner.lock().await;
+        // This check is mandatory, as we aren't sure if other process didn't update cache before us
         if !cache.contains(&key) {
-            // This check is mandatory, as we aren't sure if other process didn't update cache before us
             cache.put(key.to_owned(), value.clone());
             Ok(value)
         } else {
@@ -70,6 +70,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::DynamicCache;
+    use test::{black_box, Bencher};
 
     async fn multiplier(key: i32) -> anyhow::Result<i32> {
         if key == 10 {

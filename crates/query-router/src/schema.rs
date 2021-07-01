@@ -1,7 +1,6 @@
 use cache::{CacheSupplier, DynamicCache};
 use rpc::schema_registry::types::SchemaType;
 use std::convert::TryInto;
-use tokio::sync::Mutex;
 use uuid::Uuid;
 
 pub type SchemaCache = DynamicCache<Uuid, (String, SchemaType)>;
