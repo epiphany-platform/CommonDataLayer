@@ -2,7 +2,6 @@ use anyhow::{bail, Context};
 use async_trait::async_trait;
 use serde_json::Value;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use tracing::{error, trace};
 use uuid::Uuid;
 
@@ -23,7 +22,7 @@ static CDL_INPUT_PROTOCOL_VERSION_MAJOR: u64 = 1;
 static CDL_INPUT_PROTOCOL_VERSION_MINOR: u64 = 0;
 
 pub struct Handler {
-    pub cache: Arc<Mutex<DynamicCache<Uuid, String>>>,
+    pub cache: DynamicCache<Uuid, String>,
     pub producer: Arc<CommonPublisher>,
     pub task_queue: Arc<ParallelTaskQueue>,
     pub routing_table: Arc<HashMap<String, RepositoryStaticRouting>>,
@@ -72,7 +71,7 @@ impl ParallelConsumerHandler for Handler {
                             Err(anyhow::Error::msg("No such entry in routing table"))
                         }
                     } else {
-                        route(self.cache.clone(), entry, &message_key, &self.producer)
+                        route(&self.cache, entry, &message_key, &self.producer)
                             .await
                             .context("Tried to send message and failed")
                     };
@@ -107,7 +106,7 @@ impl ParallelConsumerHandler for Handler {
                         Err(anyhow::Error::msg("No such entry in routing table"))
                     }
                 } else {
-                    route(self.cache.clone(), &owned, &message_key, &self.producer)
+                    route(&self.cache, &owned, &message_key, &self.producer)
                         .await
                         .context("Tried to send message and failed")
                 };
@@ -193,12 +192,11 @@ async fn route_static(
 
 #[tracing::instrument(skip(cache, publisher))]
 async fn route(
-    cache: Arc<Mutex<DynamicCache<Uuid, String>>>,
+    cache: &DynamicCache<Uuid, String>,
     event: &DataRouterInsertMessage<'_>,
     key: &str,
     publisher: &CommonPublisher,
 ) -> anyhow::Result<()> {
-    let mut cache = cache.lock().await;
     let insert_destination = cache.get(event.schema_id).await?;
 
     route_static(event, &key, publisher, &insert_destination).await

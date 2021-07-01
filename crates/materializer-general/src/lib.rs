@@ -58,7 +58,7 @@ type MaterializerNotificationPublisher =
 pub struct MaterializerImpl {
     materializer: Arc<dyn MaterializerPlugin>,
     notification_publisher: MaterializerNotificationPublisher,
-    view_cache: Mutex<DynamicCache<Uuid, FullView>>,
+    view_cache: DynamicCache<Uuid, FullView>,
 }
 
 impl MaterializerImpl {
@@ -71,10 +71,10 @@ impl MaterializerImpl {
         Ok(Self {
             materializer: Arc::new(PostgresMaterializer::new(&args).await?),
             notification_publisher,
-            view_cache: Mutex::new(DynamicCache::new(
+            view_cache: DynamicCache::new(
                 cache_size,
                 ViewSupplier::boxed(schema_registry_url),
-            )),
+            ),
         })
     }
 }
@@ -121,8 +121,7 @@ impl GeneralMaterializer for MaterializerImpl {
             .parse()
             .map_err(anyhow::Error::from)
             .map_err(error_handler)?;
-        let mut view_cache = self.view_cache.lock().await;
-        let view_definition = view_cache.get(view_id).await.map_err(error_handler)?;
+        let view_definition = self.view_cache.get(view_id).await.map_err(error_handler)?;
 
         let publisher = self.notification_publisher.clone();
         let publisher = publisher.lock().await; // TODO: Should we have lock active for the whole time?

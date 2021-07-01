@@ -4,7 +4,6 @@ use cache::DynamicCache;
 use metrics_utils as metrics;
 use settings_utils::load_settings;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 use utils::parallel_task_queue::ParallelTaskQueue;
 
 mod config;
@@ -28,10 +27,10 @@ async fn main() -> anyhow::Result<()> {
     let consumer = settings.consumer().await?;
     let producer = Arc::new(settings.producer().await?);
 
-    let cache = Arc::new(Mutex::new(DynamicCache::new(
+    let cache = DynamicCache::new(
         settings.cache_capacity,
         SchemaMetadataSupplier::boxed(settings.services.schema_registry_url),
-    )));
+    );
 
     let task_queue = Arc::new(ParallelTaskQueue::default());
 

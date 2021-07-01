@@ -233,7 +233,6 @@ async fn get_routing_info(
             .get(schema_id)
             .await
             .map_err(Error::SchemaFetchError)?
-            .clone()
     };
 
     Ok((query_address, schema_type))

@@ -1,7 +1,7 @@
-use anyhow::Context;
-use lru_cache::LruCache;
 use std::future::Future;
 use std::hash::Hash;
+use tokio::sync::Mutex;
+use lru::LruCache;
 
 #[async_trait::async_trait]
 pub trait CacheSupplier<Key, Value>
@@ -28,12 +28,13 @@ where
     Key: Eq + Hash + ToOwned<Owned = Key>,
 {
     cache_supplier: Box<dyn CacheSupplier<Key, Value> + Send + Sync>,
-    inner: LruCache<Key, Value>,
+    inner: Mutex<LruCache<Key, Value>>,
 }
 
 impl<Key, Value> DynamicCache<Key, Value>
 where
     Key: Eq + Hash + ToOwned<Owned = Key>,
+    Value: Clone,
 {
     pub fn new(
         capacity: usize,
@@ -41,18 +42,27 @@ where
     ) -> Self {
         Self {
             cache_supplier: on_missing,
-            inner: LruCache::new(capacity),
+            inner: Mutex::new(LruCache::new(capacity)),
         }
     }
 
-    pub async fn get(&mut self, key: Key) -> anyhow::Result<&mut Value> {
-        if self.inner.contains_key(&key) {
-            return Ok(self.inner.get_mut(&key).unwrap());
+    pub async fn get(&self, key: Key) -> anyhow::Result<Value> {
+        {
+            let mut cache = self.inner.lock().await;
+            if cache.contains(&key) {
+                return Ok(cache.get(&key).unwrap().clone())
+            }
         }
 
-        let val = self.cache_supplier.retrieve(key.to_owned()).await?;
-        self.inner.insert(key.to_owned(), val);
-        self.inner.get_mut(&key).context("Critical error")
+        let value = self.cache_supplier.retrieve(key.to_owned()).await?;
+
+        let mut cache = self.inner.lock().await;
+        if !cache.contains(&key) { // This check is mandatory, as we aren't sure if other process didn't update cache before us
+            cache.put(key.to_owned(), value.clone());
+            Ok(value)
+        } else {
+            Ok(cache.get(&key).unwrap().clone())
+        }
     }
 }
 
@@ -69,12 +79,12 @@ mod tests {
 
     #[tokio::test]
     async fn computes_new_values() {
-        let mut cache = DynamicCache::new(2, Box::new(multiplier));
+        let cache = DynamicCache::new(2, Box::new(multiplier));
 
-        assert_eq!(*cache.get(12).await.unwrap(), 24);
-        assert_eq!(*cache.get(13).await.unwrap(), 26);
-        assert_eq!(*cache.get(12).await.unwrap(), 24);
-        assert_eq!(*cache.get(78).await.unwrap(), 156);
+        assert_eq!(cache.get(12).await.unwrap(), 24);
+        assert_eq!(cache.get(13).await.unwrap(), 26);
+        assert_eq!(cache.get(12).await.unwrap(), 24);
+        assert_eq!(cache.get(78).await.unwrap(), 156);
         assert!(cache.get(10).await.is_err());
     }
 }
