@@ -1,7 +1,0 @@
-syntax = "proto2";
-package common;
-
-message RowDefinition {
-  repeated string object_ids = 1;
-  map<string, string> fields = 2;
-}
