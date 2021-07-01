@@ -70,7 +70,6 @@ where
 #[cfg(test)]
 mod tests {
     use crate::DynamicCache;
-    use test::{black_box, Bencher};
 
     async fn multiplier(key: i32) -> anyhow::Result<i32> {
         if key == 10 {
