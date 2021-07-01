@@ -71,10 +71,7 @@ impl MaterializerImpl {
         Ok(Self {
             materializer: Arc::new(PostgresMaterializer::new(&args).await?),
             notification_publisher,
-            view_cache: DynamicCache::new(
-                cache_size,
-                ViewSupplier::boxed(schema_registry_url),
-            ),
+            view_cache: DynamicCache::new(cache_size, ViewSupplier::boxed(schema_registry_url)),
         })
     }
 }

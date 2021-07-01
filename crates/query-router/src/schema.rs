@@ -4,7 +4,7 @@ use std::convert::TryInto;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-pub type SchemaCache = Mutex<DynamicCache<Uuid, (String, SchemaType)>>;
+pub type SchemaCache = DynamicCache<Uuid, (String, SchemaType)>;
 
 pub struct SchemaMetadataSupplier {
     schema_registry_url: String,

@@ -1,15 +1,12 @@
-use std::sync::Arc;
-
-use uuid::Uuid;
-use warp::Filter;
-
 use cache::DynamicCache;
 use metrics_utils as metrics;
 use schema::SchemaMetadataSupplier;
 use serde::Deserialize;
 use settings_utils::{load_settings, LogSettings, MonitoringSettings, RepositoryStaticRouting};
 use std::collections::HashMap;
-use tokio::sync::Mutex;
+use std::sync::Arc;
+use uuid::Uuid;
+use warp::Filter;
 
 pub mod error;
 pub mod handler;
@@ -50,10 +47,10 @@ async fn main() -> anyhow::Result<()> {
 
     metrics::serve(&settings.monitoring);
 
-    let schema_registry_cache = Arc::new(Mutex::new(DynamicCache::new(
+    let schema_registry_cache = Arc::new(DynamicCache::new(
         settings.cache_capacity,
         SchemaMetadataSupplier::boxed(settings.services.schema_registry_url),
-    )));
+    ));
 
     let cache_filter = warp::any().map(move || schema_registry_cache.clone());
 

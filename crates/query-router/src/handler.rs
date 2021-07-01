@@ -228,8 +228,6 @@ async fn get_routing_info(
         }
     } else {
         cache
-            .lock()
-            .await
             .get(schema_id)
             .await
             .map_err(Error::SchemaFetchError)?

@@ -1,7 +1,7 @@
+use lru::LruCache;
 use std::future::Future;
 use std::hash::Hash;
 use tokio::sync::Mutex;
-use lru::LruCache;
 
 #[async_trait::async_trait]
 pub trait CacheSupplier<Key, Value>
@@ -50,14 +50,15 @@ where
         {
             let mut cache = self.inner.lock().await;
             if cache.contains(&key) {
-                return Ok(cache.get(&key).unwrap().clone())
+                return Ok(cache.get(&key).unwrap().clone());
             }
         }
 
         let value = self.cache_supplier.retrieve(key.to_owned()).await?;
 
         let mut cache = self.inner.lock().await;
-        if !cache.contains(&key) { // This check is mandatory, as we aren't sure if other process didn't update cache before us
+        if !cache.contains(&key) {
+            // This check is mandatory, as we aren't sure if other process didn't update cache before us
             cache.put(key.to_owned(), value.clone());
             Ok(value)
         } else {
