@@ -1,14 +1,12 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
-
     <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Polly" Version="7.2.2" />
-		<PackageReference Include="RestSharp" Version="106.11.7" />
+    <PackageReference Include="RestSharp" Version="106.11.7" />
     <PackageReference Include="AutoFixture" Version="4.17.0" />
     <PackageReference Include="MassTransit.AspNetCore" Version="7.2.0" />
     <PackageReference Include="MassTransit.Kafka" Version="7.2.0" />    
@@ -27,20 +25,19 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-		<PackageReference Include="Google.Protobuf" Version="3.17.0" />
-		<PackageReference Include="Grpc.Net.Client" Version="2.38.0" />
+    <PackageReference Include="Google.Protobuf" Version="3.17.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.38.0" />
     <PackageReference Include="Grpc.Net.ClientFactory" Version="2.38.0" />
-		<PackageReference Include="Grpc.Tools" Version="2.37.1">
-		  <PrivateAssets>all</PrivateAssets>
-		  <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-		</PackageReference>
+    <PackageReference Include="Grpc.Tools" Version="2.37.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
   </ItemGroup>
 
   <ItemGroup>
     <Protobuf Include="Proto/common.proto" GrpcServices="Client" />    
-		<Protobuf Include="Proto/schema_registry.proto" GrpcServices="Client" />
+    <Protobuf Include="Proto/schema_registry.proto" GrpcServices="Client" />
     <Protobuf Include="Proto/edge_registry.proto" GrpcServices="Client" />
     <Protobuf Include="Proto/materializer_ondemand.proto" GrpcServices="Client" />
-	</ItemGroup>
-
+  </ItemGroup>
 </Project>
