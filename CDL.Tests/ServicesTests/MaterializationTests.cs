@@ -39,11 +39,11 @@ namespace CDL.Tests.ServicesTests
         {
             var results = _onDemandMaterializerService.Heartbeat().Result;
             Assert.NotNull(results);
-            Assert.IsType<Empty>(results);
+            Assert.IsType<MaterializerOndemand.Empty>(results);
         }
 
         [Fact]
-        public async void TestName()
+        public async void MaterializerOnDemand()
         {
             var name = _fixture.Create<string>();
             var objectId_a = Guid.NewGuid().ToString(); 
