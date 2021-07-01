@@ -63,16 +63,14 @@ namespace CDL.Tests.ServicesTests
         public void CheckViewAddedToSchema()
         {
             var name = _fixture.Create<string>();
-            var viewName = _fixture.Create<string>();
-            Guid viewUUID;
+            var viewName = _fixture.Create<string>();            
             var schema = _schemaRegistryService.AddSchema(name, _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
             var view = _schemaRegistryService.AddViewToSchema(schema.Id_, viewName, "{\"Name\": \"Name\" }").Result;
             var viewDetails = _schemaRegistryService.GetView(view.Id_).Result;
-
-            Guid.TryParse(view.Id_, out viewUUID);
+            
+            Guid viewUUID = Guid.Parse(view.Id_);            
             Assert.NotNull(view.Id_);
             Assert.IsType<string>(view.Id_);
-            Assert.Matches("(\\{){0,1}[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}(\\}){0,1}", viewUUID.ToString());
             Assert.NotNull(viewDetails);
             Assert.IsType<FullView>(viewDetails);
 

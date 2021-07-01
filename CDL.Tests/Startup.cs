@@ -9,6 +9,7 @@ using static SchemaRegistry.SchemaRegistry;
 using System;
 using AutoFixture;
 using static EdgeRegistry.EdgeRegistry;
+using EdgeRegistry;
 
 namespace CDL.Tests
 {

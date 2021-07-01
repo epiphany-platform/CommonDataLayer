@@ -67,15 +67,17 @@ namespace CDL.Tests.Services
             return Task.FromResult(_client.UpdateSchema(newUpdateSchema));
         }
 
-        public Task<Id> AddViewToSchema(string schemaId, string name, string materializerOptions)
+        public Task<Id> AddViewToSchema(string schemaId, string name, string materializerFields, string materializerOptions = "")
         {
             var view = new NewView()
             {
                 BaseSchemaId = schemaId,
                 Name = name,
                 MaterializerAddress = _options.CDL_MATERIALIZER_GENERAL_ADDRESS,
-                MaterializerOptions = materializerOptions
+                MaterializerOptions = materializerOptions,
             };
+            
+            view.Fields.Add("Name", materializerFields);
 
             return Task.FromResult(_client.AddViewToSchema(view));
         }

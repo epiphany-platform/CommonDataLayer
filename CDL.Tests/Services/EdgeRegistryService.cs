@@ -1,7 +1,5 @@
 ﻿using CDL.Tests.Configuration;
 using EdgeRegistry;
-using Google.Protobuf.Collections;
-using Grpc.Core;
 using Microsoft.Extensions.Options;
 using System.Threading.Tasks;
 using static EdgeRegistry.EdgeRegistry;
@@ -19,9 +17,11 @@ namespace CDL.Tests.Services
             _client = client;
         }
 
-        public Task<Empty> AddEdges()
+        public Task<Empty> AddEdges(Edge edgeItem)
         {
-            var response = _client.AddEdges(new ObjectRelations());
+            var relation = new ObjectRelations();
+            relation.Relations.Add(edgeItem);
+            var response = _client.AddEdges(relation);
             return Task.FromResult(response);
         }
 
@@ -135,6 +135,16 @@ namespace CDL.Tests.Services
             };
             var response = await _client.GetSchemaRelationsAsync(schemaId);
             return Task.FromResult(response).Result;
+        }
+
+        public Task<SchemaRelation> GetSchemaByRelation(string relationId)
+        {
+            var relationIdObject = new RelationId()
+            {
+                RelationId_ = relationId
+            };
+            var response = _client.GetSchemaByRelation(relationIdObject);
+            return Task.FromResult(response);
         }
 
         public Task<Empty> Heartbeat()
