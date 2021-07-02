@@ -56,6 +56,7 @@
     - [schema-registry](configuration/schema-registry.md)
 - [RFCs]()
    - [Commit message formalization](./rfc/NAF-Commit_message_formalization_and_enforcement.md)
+   - [Documentation restructure and RFC process](./rfc/NAF-Documentation_and_RFC_process.md)
    - [0000C - Alternative communication method](./rfc/CDLF-0000C-00-rfc-01.md)
    - [0000E - MessagePack support](./rfc/CDLF-0000E-00-rfc-01.md)
    - [00010 - CdlIM Versioning](./rfc/CDLF-00010-00-rfc-01.md)
