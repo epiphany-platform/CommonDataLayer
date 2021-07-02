@@ -65,3 +65,4 @@
    - [00013 - Materialized Views](./rfc/CDLF-00013-00-rfc-01.md)
    - [00015 - CDL publishing deployment configurations](./rfc/CDLF-00015-00-rfc-01.md)
    - [00016 - Schema-Registry-less CDL deployment](./rfc/CDLF-00016-00-rfc-01.md)
+   - [CDL Documentation Generation](rfc/NAF-CDL_documentation_generation.md)
