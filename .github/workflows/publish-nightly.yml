@@ -60,7 +60,7 @@ jobs:
     - name: Build and push web-admin
       run: |
         cd web-admin
-        version="dev-$(date -u +'%Y-%m-%d')
+        version="dev-$(date -u +'%Y-%m-%d')"
         docker build . -t epiphanyplatform/cdl-web-admin:$version
         docker tag epiphanyplatform/cdl-web-admin:$version epiphanyplatform/cdl-web-admin:latest-dev
         docker push epiphanyplatform/cdl-web-admin:$version
