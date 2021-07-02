@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use cdl_dto::{
-    edges::{TreeObject, TreeResponse},
+    edges::{RelationTree, TreeObject},
     materialization::{
         ComplexFilter, Computation, ComputedFilter, EqualsComputation, EqualsFilter,
         FieldDefinition, FieldValueComputation, Filter, FilterValue, FullView, RawValueComputation,
@@ -55,7 +55,7 @@ impl<'a> ViewPlanBuilder<'a> {
 
     pub fn build_rows(
         &self,
-        tree_responses: &[TreeResponse],
+        tree_responses: &[RelationTree],
     ) -> Result<Vec<(UnfinishedRow, HashSet<ObjectIdPair>)>> {
         self.build_variants(tree_responses)
             .into_iter()
@@ -166,7 +166,7 @@ impl<'a> ViewPlanBuilder<'a> {
             .collect::<Result<HashMap<_, _>>>()
     }
 
-    fn build_variants(&self, tree_responses: &[TreeResponse]) -> Vec<UnfinishedRowVariant> {
+    fn build_variants(&self, tree_responses: &[RelationTree]) -> Vec<UnfinishedRowVariant> {
         tree_responses
             .iter()
             .flat_map(|tree_response| tree_response.objects.iter())

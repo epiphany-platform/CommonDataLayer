@@ -8,7 +8,7 @@ pub struct TreeQuery {
     pub filter_ids: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TreeResponse {
+pub struct RelationTree {
     #[prost(message, repeated, tag = "1")]
     pub objects: ::prost::alloc::vec::Vec<TreeObject>,
 }
@@ -23,7 +23,7 @@ pub struct TreeObject {
     #[prost(string, repeated, tag = "3")]
     pub children: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     #[prost(message, repeated, tag = "4")]
-    pub subtrees: ::prost::alloc::vec::Vec<TreeResponse>,
+    pub subtrees: ::prost::alloc::vec::Vec<RelationTree>,
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AddSchemaRelation {
@@ -296,7 +296,7 @@ pub mod edge_registry_client {
         pub async fn resolve_tree(
             &mut self,
             request: impl tonic::IntoRequest<super::TreeQuery>,
-        ) -> Result<tonic::Response<super::TreeResponse>, tonic::Status> {
+        ) -> Result<tonic::Response<super::RelationTree>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -372,7 +372,7 @@ pub mod edge_registry_server {
         async fn resolve_tree(
             &self,
             request: tonic::Request<super::TreeQuery>,
-        ) -> Result<tonic::Response<super::TreeResponse>, tonic::Status>;
+        ) -> Result<tonic::Response<super::RelationTree>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct EdgeRegistryServer<T: EdgeRegistry> {
@@ -716,7 +716,7 @@ pub mod edge_registry_server {
                     #[allow(non_camel_case_types)]
                     struct ResolveTreeSvc<T: EdgeRegistry>(pub Arc<T>);
                     impl<T: EdgeRegistry> tonic::server::UnaryService<super::TreeQuery> for ResolveTreeSvc<T> {
-                        type Response = super::TreeResponse;
+                        type Response = super::RelationTree;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
                             &mut self,
