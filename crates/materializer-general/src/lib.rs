@@ -1,5 +1,5 @@
+use crate::view::ViewCache;
 use cache::DynamicCache;
-use cdl_dto::materialization::FullView;
 use plugins::{MaterializerPlugin, PostgresMaterializer};
 use rpc::materializer_general::{general_materializer_server::GeneralMaterializer, Empty, Options};
 use rpc::{common::RowDefinition, materializer_general::MaterializedView};
@@ -9,7 +9,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use utils::notification::{IntoSerialize, NotificationPublisher};
-use uuid::Uuid;
 use view::ViewSupplier;
 
 mod plugins;
@@ -58,7 +57,7 @@ type MaterializerNotificationPublisher =
 pub struct MaterializerImpl {
     materializer: Arc<dyn MaterializerPlugin>,
     notification_publisher: MaterializerNotificationPublisher,
-    view_cache: DynamicCache<Uuid, FullView>,
+    view_cache: ViewCache,
 }
 
 impl MaterializerImpl {
@@ -71,7 +70,7 @@ impl MaterializerImpl {
         Ok(Self {
             materializer: Arc::new(PostgresMaterializer::new(&args).await?),
             notification_publisher,
-            view_cache: DynamicCache::new(cache_size, ViewSupplier::boxed(schema_registry_url)),
+            view_cache: DynamicCache::new(cache_size, ViewSupplier::new(schema_registry_url)),
         })
     }
 }

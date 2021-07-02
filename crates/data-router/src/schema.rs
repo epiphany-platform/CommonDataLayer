@@ -1,16 +1,18 @@
-use cache::CacheSupplier;
+use cache::{CacheSupplier, DynamicCache};
 use rpc::schema_registry::Id;
 use uuid::Uuid;
+
+pub type SchemaCache = DynamicCache<SchemaMetadataSupplier, Uuid, String>;
 
 pub struct SchemaMetadataSupplier {
     schema_registry_url: String,
 }
 
 impl SchemaMetadataSupplier {
-    pub fn boxed(schema_registry_url: String) -> Box<Self> {
-        Box::new(Self {
+    pub fn new(schema_registry_url: String) -> Self {
+        Self {
             schema_registry_url,
-        })
+        }
     }
 }
 

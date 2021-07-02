@@ -3,7 +3,7 @@ use rpc::schema_registry::types::SchemaType;
 use std::convert::TryInto;
 use uuid::Uuid;
 
-pub type SchemaCache = DynamicCache<Uuid, SchemaMetadata>;
+pub type SchemaCache = DynamicCache<SchemaMetadataSupplier, Uuid, SchemaMetadata>;
 
 pub struct SchemaMetadataSupplier {
     schema_registry_url: String,
@@ -16,10 +16,10 @@ pub struct SchemaMetadata {
 }
 
 impl SchemaMetadataSupplier {
-    pub fn boxed(schema_registry_url: String) -> Box<Self> {
-        Box::new(Self {
+    pub fn new(schema_registry_url: String) -> Self {
+        Self {
             schema_registry_url,
-        })
+        }
     }
 }
 

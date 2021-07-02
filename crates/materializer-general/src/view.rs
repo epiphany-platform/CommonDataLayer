@@ -1,18 +1,20 @@
-use cache::CacheSupplier;
+use cache::{CacheSupplier, DynamicCache};
 use cdl_dto::materialization::FullView;
 use cdl_dto::TryFromRpc;
 use rpc::schema_registry::Id;
 use uuid::Uuid;
+
+pub type ViewCache = DynamicCache<ViewSupplier, Uuid, FullView>;
 
 pub struct ViewSupplier {
     schema_registry_url: String,
 }
 
 impl ViewSupplier {
-    pub fn boxed(schema_registry_url: String) -> Box<Self> {
-        Box::new(Self {
+    pub fn new(schema_registry_url: String) -> Self {
+        Self {
             schema_registry_url,
-        })
+        }
     }
 }
 

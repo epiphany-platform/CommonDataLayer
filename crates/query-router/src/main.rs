@@ -49,7 +49,7 @@ async fn main() -> anyhow::Result<()> {
 
     let schema_registry_cache = Arc::new(DynamicCache::new(
         settings.cache_capacity,
-        SchemaMetadataSupplier::boxed(settings.services.schema_registry_url),
+        SchemaMetadataSupplier::new(settings.services.schema_registry_url),
     ));
 
     let cache_filter = warp::any().map(move || schema_registry_cache.clone());

@@ -29,7 +29,7 @@ async fn main() -> anyhow::Result<()> {
 
     let cache = DynamicCache::new(
         settings.cache_capacity,
-        SchemaMetadataSupplier::boxed(settings.services.schema_registry_url),
+        SchemaMetadataSupplier::new(settings.services.schema_registry_url),
     );
 
     let task_queue = Arc::new(ParallelTaskQueue::default());

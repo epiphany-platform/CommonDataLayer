@@ -1,11 +1,6 @@
+use crate::schema::SchemaCache;
 use anyhow::{bail, Context};
 use async_trait::async_trait;
-use serde_json::Value;
-use std::sync::Arc;
-use tracing::{error, trace};
-use uuid::Uuid;
-
-use cache::DynamicCache;
 use cdl_dto::ingestion::{BorrowedInsertMessage, DataRouterInsertMessage};
 use communication_utils::{
     get_order_group_id, message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,
@@ -14,15 +9,18 @@ use communication_utils::{
 use lenient_semver::Version;
 use metrics_utils::{self as metrics, counter};
 use misc_utils::current_timestamp;
+use serde_json::Value;
 use settings_utils::RepositoryStaticRouting;
 use std::collections::HashMap;
+use std::sync::Arc;
+use tracing::{error, trace};
 use utils::parallel_task_queue::ParallelTaskQueue;
 
 static CDL_INPUT_PROTOCOL_VERSION_MAJOR: u64 = 1;
 static CDL_INPUT_PROTOCOL_VERSION_MINOR: u64 = 0;
 
 pub struct Handler {
-    pub cache: DynamicCache<Uuid, String>,
+    pub cache: SchemaCache,
     pub producer: Arc<CommonPublisher>,
     pub task_queue: Arc<ParallelTaskQueue>,
     pub routing_table: Arc<HashMap<String, RepositoryStaticRouting>>,
@@ -192,7 +190,7 @@ async fn route_static(
 
 #[tracing::instrument(skip(cache, publisher))]
 async fn route(
-    cache: &DynamicCache<Uuid, String>,
+    cache: &SchemaCache,
     event: &DataRouterInsertMessage<'_>,
     key: &str,
     publisher: &CommonPublisher,

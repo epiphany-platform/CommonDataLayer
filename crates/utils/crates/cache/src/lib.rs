@@ -23,23 +23,22 @@ where
     }
 }
 
-pub struct DynamicCache<Key, Value>
+pub struct DynamicCache<Sup, Key, Value>
 where
     Key: Eq + Hash + ToOwned<Owned = Key>,
+    Sup: CacheSupplier<Key, Value> + Send + Sync,
 {
-    cache_supplier: Box<dyn CacheSupplier<Key, Value> + Send + Sync>,
+    cache_supplier: Sup,
     inner: Mutex<LruCache<Key, Value>>,
 }
 
-impl<Key, Value> DynamicCache<Key, Value>
+impl<Sup, Key, Value> DynamicCache<Sup, Key, Value>
 where
     Key: Eq + Hash + ToOwned<Owned = Key>,
     Value: Clone,
+    Sup: CacheSupplier<Key, Value> + Send + Sync,
 {
-    pub fn new(
-        capacity: usize,
-        on_missing: Box<dyn CacheSupplier<Key, Value> + Send + Sync>,
-    ) -> Self {
+    pub fn new(capacity: usize, on_missing: Sup) -> Self {
         Self {
             cache_supplier: on_missing,
             inner: Mutex::new(LruCache::new(capacity)),
