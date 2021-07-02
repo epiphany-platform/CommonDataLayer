@@ -26,11 +26,12 @@ Before you start, you have to have latest proto files. Test solution requires pr
 
 
 ## Launch tests
-If you use sources 'dotnet test' 
+If you use sources 'dotnet test'
+
 If you use build artifacts. 'dotnet vstest CDL.Tests.dll'
+
 Also you can use 'build.sh', to build app and create docker image. Then you have to run container to lunch the tests.
 
-## Contributions
 [net5]: https://docs.microsoft.com/en-us/aspnet/core/?view=aspnetcore-5.0
 [cdl]: https://epiphany-platform.github.io/CommonDataLayer/
 [deployment]: https://epiphany-platform.github.io/CommonDataLayer/deployment/index.html
