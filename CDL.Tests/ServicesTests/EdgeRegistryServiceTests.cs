@@ -164,7 +164,7 @@ namespace CDL.Tests.ServicesTests
             var relation = _edgeRegistryService.AddRelation(childSchema.Id_, parentSchema.Id_).Result;
             var schemaRelations = _edgeRegistryService.GetSchemaRelations(parentSchema.Id_).Result;
 
-            Assert.Equal(1, schemaRelations.Items.Count);
+            Assert.True(schemaRelations.Items.Count == 1);
             var item = schemaRelations.Items[0];
 
             Assert.Equal(parentSchema.Id_, item.ParentSchemaId);

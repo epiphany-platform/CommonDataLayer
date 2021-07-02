@@ -17,7 +17,6 @@ namespace CDL.Tests.Services
             };
         private IRestClient _client;
         private IRestRequest _request;
-        private IRestResponse _response;
         private ConfigurationOptions _options;
         public QueryRouterService(IOptions<ConfigurationOptions> options)
         {

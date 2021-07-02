@@ -1,6 +1,6 @@
 syntax = "proto2";
 package materializer_ondemand;
-import "common.proto";
+import "proto/common.proto";
 
 service OnDemandMaterializer {
   rpc Materialize(OnDemandRequest) returns (stream common.RowDefinition);

@@ -93,7 +93,7 @@ namespace CDL.Tests.ServicesTests
             Assert.IsType<FullView>(viewDetails);
 
             var schemaWithView = _schemaRegistryService.GetFullSchema(schema.Id_).Result;
-            Assert.Equal(1, schemaWithView.Views.Count);
+            Assert.True(schemaWithView.Views.Count == 1);
             
             var viewObject = schemaWithView.Views[0];
             Assert.Equal(viewName, viewObject.Name);
