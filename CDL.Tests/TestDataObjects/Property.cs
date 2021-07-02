@@ -11,7 +11,7 @@ namespace CDL.Tests.TestDataObjects
         public int BuildingNumber { get; set; }
         public Nullable<int> FlatNumber { get; set; }
         public string Type { get; set; }
-        public decimal Adres { get; set; }
+        public decimal Address { get; set; }
 
         public string ToJSONString() 
         {
