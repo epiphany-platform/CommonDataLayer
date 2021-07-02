@@ -17,7 +17,7 @@ RFC - Request for Comments
 
 # Preface
 
-This RFC introduces a new process to keep our documentation clean and up-to-date. Both subjects - documentation restructure and RFC process is married and cannot be discussed separately.
+This RFC introduces a new process to keep our documentation clean and up-to-date. Both subjects - documentation restructure and RFC process are married and cannot be discussed separately.
 
 # Documentation restructure
 
