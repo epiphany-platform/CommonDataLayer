@@ -101,7 +101,7 @@ TBD
 [OpenApi]: https://swagger.io/specification/
 [configuration-docs]: ../configuration/index.md
 [cdl-input-message]: ../architecture/data_router.md
-[cdl-rpc-rs]: ../../crates/rpc/proto
+[cdl-rpc-rs]: ../../crates/rpc/proto/common.proto
 [tonic-rs]: https://github.com/hyperium/tonic
 [config-rs]: https://github.com/mehcode/config-rs
 [schemafy-rs]: https://docs.rs/schemafy/0.5.2/schemafy/
