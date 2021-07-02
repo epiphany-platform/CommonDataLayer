@@ -1,13 +1,7 @@
-mod plugins;
-pub mod settings;
-
-use cdl_dto::materialization::FullView;
-use cdl_dto::TryFromRpc;
-use lru_cache::LruCache;
-use misc_utils::abort_on_poison;
+use crate::view::ViewCache;
+use cache::DynamicCache;
 use plugins::{MaterializerPlugin, PostgresMaterializer};
 use rpc::materializer_general::{general_materializer_server::GeneralMaterializer, Empty, Options};
-use rpc::schema_registry::Id;
 use rpc::{common::RowDefinition, materializer_general::MaterializedView};
 use serde::Serialize;
 use settings_utils::PostgresSettings;
@@ -15,7 +9,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use utils::notification::{IntoSerialize, NotificationPublisher};
-use uuid::Uuid;
+use view::ViewSupplier;
+
+mod plugins;
+pub mod settings;
+mod view;
 
 #[derive(Serialize, Clone)]
 pub struct MaterializationNotification {
@@ -59,22 +57,20 @@ type MaterializerNotificationPublisher =
 pub struct MaterializerImpl {
     materializer: Arc<dyn MaterializerPlugin>,
     notification_publisher: MaterializerNotificationPublisher,
-    schema_registry_addr: String,
-    view_cache: std::sync::Mutex<LruCache<Uuid, FullView>>,
+    view_cache: ViewCache,
 }
 
 impl MaterializerImpl {
     pub async fn new(
         args: PostgresSettings,
         notification_publisher: MaterializerNotificationPublisher,
-        schema_registry_addr: String,
+        schema_registry_url: String,
         cache_size: usize,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             materializer: Arc::new(PostgresMaterializer::new(&args).await?),
             notification_publisher,
-            schema_registry_addr,
-            view_cache: std::sync::Mutex::new(LruCache::new(cache_size)),
+            view_cache: DynamicCache::new(cache_size, ViewSupplier::new(schema_registry_url)),
         })
     }
 }
@@ -84,37 +80,6 @@ impl MaterializerImpl {
         let options: serde_json::Value = serde_json::from_str(&options)?;
         self.materializer.validate_options(options)?;
         Ok(())
-    }
-
-    #[tracing::instrument(skip(self))]
-    pub async fn get_view_definition(&self, view_id: Uuid) -> anyhow::Result<FullView> {
-        let view_definition = self
-            .view_cache
-            .lock()
-            .unwrap_or_else(abort_on_poison)
-            .get_mut(&view_id)
-            .cloned();
-        if let Some(dest) = view_definition {
-            return Ok(dest);
-        }
-
-        let mut client =
-            rpc::schema_registry::connect(self.schema_registry_addr.to_owned()).await?;
-        let view_definition = client
-            .get_view(Id {
-                id: view_id.to_string(),
-            })
-            .await?
-            .into_inner();
-
-        let view_definition = FullView::try_from_rpc(view_definition)?;
-
-        self.view_cache
-            .lock()
-            .unwrap_or_else(abort_on_poison)
-            .insert(view_id, view_definition.clone());
-
-        Ok(view_definition)
     }
 }
 
@@ -152,10 +117,7 @@ impl GeneralMaterializer for MaterializerImpl {
             .parse()
             .map_err(anyhow::Error::from)
             .map_err(error_handler)?;
-        let view_definition = self
-            .get_view_definition(view_id)
-            .await
-            .map_err(error_handler)?;
+        let view_definition = self.view_cache.get(view_id).await.map_err(error_handler)?;
 
         let publisher = self.notification_publisher.clone();
         let publisher = publisher.lock().await; // TODO: Should we have lock active for the whole time?
@@ -163,7 +125,7 @@ impl GeneralMaterializer for MaterializerImpl {
             NotificationPublisher::clone(&publisher).with_message_body(&materialized_view);
 
         self.materializer
-            .upsert_view(materialized_view, view_definition)
+            .upsert_view(materialized_view, view_definition.clone())
             .await
             .map_err(error_handler)?;
         if let Err(err) = instance.notify("success").await {

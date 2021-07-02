@@ -12,6 +12,7 @@ pub enum Error {
     InvalidSchemaType(anyhow::Error),
     ExpectedSchemaType(SchemaType),
     InvalidRepository(String),
+    SchemaFetchError(anyhow::Error),
 }
 
 impl Reject for Error {}
@@ -32,6 +33,7 @@ pub fn recover(rejection: Rejection) -> Result<impl warp::Reply, Rejection> {
                 "Repository with id `{}` is not present in config",
                 repository_id
             ),
+            Error::SchemaFetchError(error) => format!("Failed to fetch schema: {}", error),
         };
 
         let code = match error {
@@ -41,7 +43,8 @@ pub fn recover(rejection: Rejection) -> Result<impl warp::Reply, Rejection> {
             | Error::SingleQueryMissingValue
             | Error::RawQueryMissingValue
             | Error::WrongValueFormat
-            | Error::InvalidSchemaType(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            | Error::InvalidSchemaType(_)
+            | Error::SchemaFetchError(_) => StatusCode::INTERNAL_SERVER_ERROR,
         };
 
         Ok(warp::reply::with_status(
