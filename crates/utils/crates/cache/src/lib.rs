@@ -1,4 +1,5 @@
 use lru::LruCache;
+use std::fmt;
 use std::future::Future;
 use std::hash::Hash;
 use tokio::sync::Mutex;
@@ -6,7 +7,8 @@ use tokio::sync::Mutex;
 #[async_trait::async_trait]
 pub trait CacheSupplier<Key, Value>
 where
-    Key: Eq + Hash + ToOwned<Owned = Key>,
+    Key: Eq + Hash + ToOwned<Owned = Key> + fmt::Debug,
+    Value: Clone,
 {
     async fn retrieve(&self, key: Key) -> anyhow::Result<Value>;
 }
@@ -16,7 +18,8 @@ impl<Key, Value, Fun, Fut> CacheSupplier<Key, Value> for Fun
 where
     Fun: (Fn(Key) -> Fut) + Sync + Send,
     Fut: Future<Output = anyhow::Result<Value>> + Sync + Send,
-    Key: Eq + Hash + ToOwned<Owned = Key> + Sync + Send + 'static,
+    Key: Eq + Hash + ToOwned<Owned = Key> + fmt::Debug + Sync + Send + 'static,
+    Value: Clone,
 {
     async fn retrieve(&self, key: Key) -> anyhow::Result<Value> {
         (*self)(key).await
@@ -25,7 +28,8 @@ where
 
 pub struct DynamicCache<Sup, Key, Value>
 where
-    Key: Eq + Hash + ToOwned<Owned = Key>,
+    Key: Eq + Hash + ToOwned<Owned = Key> + fmt::Debug,
+    Value: Clone,
     Sup: CacheSupplier<Key, Value> + Send + Sync,
 {
     cache_supplier: Sup,
@@ -34,7 +38,7 @@ where
 
 impl<Sup, Key, Value> DynamicCache<Sup, Key, Value>
 where
-    Key: Eq + Hash + ToOwned<Owned = Key>,
+    Key: Eq + Hash + ToOwned<Owned = Key> + fmt::Debug,
     Value: Clone,
     Sup: CacheSupplier<Key, Value> + Send + Sync,
 {
@@ -49,11 +53,14 @@ where
         {
             let mut cache = self.inner.lock().await;
             if cache.contains(&key) {
+                tracing::trace!("cache entry {:?} was present in cache", key);
                 return Ok(cache.get(&key).unwrap().clone());
             }
         }
 
         let value = self.cache_supplier.retrieve(key.to_owned()).await?;
+
+        tracing::trace!("retrieved {:?} via supplier", key);
 
         let mut cache = self.inner.lock().await;
         // This check is mandatory, as we aren't sure if other process didn't update cache before us
