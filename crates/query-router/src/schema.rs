@@ -3,10 +3,16 @@ use rpc::schema_registry::types::SchemaType;
 use std::convert::TryInto;
 use uuid::Uuid;
 
-pub type SchemaCache = DynamicCache<Uuid, (String, SchemaType)>;
+pub type SchemaCache = DynamicCache<Uuid, SchemaMetadata>;
 
 pub struct SchemaMetadataSupplier {
     schema_registry_url: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct SchemaMetadata {
+    pub query_address: String,
+    pub schema_type: SchemaType,
 }
 
 impl SchemaMetadataSupplier {
@@ -18,8 +24,8 @@ impl SchemaMetadataSupplier {
 }
 
 #[async_trait::async_trait]
-impl CacheSupplier<Uuid, (String, SchemaType)> for SchemaMetadataSupplier {
-    async fn retrieve(&self, key: Uuid) -> anyhow::Result<(String, SchemaType)> {
+impl CacheSupplier<Uuid, SchemaMetadata> for SchemaMetadataSupplier {
+    async fn retrieve(&self, key: Uuid) -> anyhow::Result<SchemaMetadata> {
         let mut conn = rpc::schema_registry::connect(self.schema_registry_url.clone()).await?;
 
         let metadata = conn
@@ -29,6 +35,9 @@ impl CacheSupplier<Uuid, (String, SchemaType)> for SchemaMetadataSupplier {
             .await?
             .into_inner();
 
-        Ok((metadata.query_address, metadata.schema_type.try_into()?))
+        Ok(SchemaMetadata {
+            query_address: metadata.query_address,
+            schema_type: metadata.schema_type.try_into()?,
+        })
     }
 }
