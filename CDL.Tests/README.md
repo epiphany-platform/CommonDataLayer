@@ -22,13 +22,13 @@ CDL and infrastructure have to be deployed somewhere. Please see our docs - [dep
 | CDL_SCHEMA_REGISTRY_DESTINATION | cdl.document.1.data |
 
 Before you start, you have to have latest proto files. Test solution requires proto files in 'proto' folder. To do that you can create symlink 
-'''ln -s ../crates/rpc/proto .'''
+'ln -s ../crates/rpc/proto .'
 
 
 ## Launch tests
-If you use sources '''dotnet test'''  
-If you use build artifacts. '''dotnet vstest CDL.Tests.dll'''
-Also you can use '''build.sh''', to build app and create docker image. Then you have to run container to lunch the tests.
+If you use sources 'dotnet test' 
+If you use build artifacts. 'dotnet vstest CDL.Tests.dll'
+Also you can use 'build.sh', to build app and create docker image. Then you have to run container to lunch the tests.
 
 ## Contributions
 [net5]: https://docs.microsoft.com/en-us/aspnet/core/?view=aspnetcore-5.0
