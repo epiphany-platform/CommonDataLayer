@@ -1,17 +1,16 @@
-use std::sync::Arc;
-
-use uuid::Uuid;
-use warp::Filter;
-
-use cache::SchemaRegistryCache;
+use cache::DynamicCache;
 use metrics_utils as metrics;
+use schema::SchemaMetadataSupplier;
 use serde::Deserialize;
 use settings_utils::{load_settings, LogSettings, MonitoringSettings, RepositoryStaticRouting};
 use std::collections::HashMap;
+use std::sync::Arc;
+use uuid::Uuid;
+use warp::Filter;
 
-pub mod cache;
 pub mod error;
 pub mod handler;
+pub mod schema;
 
 #[derive(Debug, Deserialize)]
 struct Settings {
@@ -48,9 +47,9 @@ async fn main() -> anyhow::Result<()> {
 
     metrics::serve(&settings.monitoring);
 
-    let schema_registry_cache = Arc::new(SchemaRegistryCache::new(
-        settings.services.schema_registry_url,
+    let schema_registry_cache = Arc::new(DynamicCache::new(
         settings.cache_capacity,
+        SchemaMetadataSupplier::new(settings.services.schema_registry_url),
     ));
 
     let cache_filter = warp::any().map(move || schema_registry_cache.clone());
@@ -80,13 +79,17 @@ async fn main() -> anyhow::Result<()> {
 
     let schema_route = warp::path!("schema")
         .and(schema_id_filter)
+        .and(repository_id_filter)
         .and(cache_filter.clone())
+        .and(routing_filter.clone())
         .and_then(handler::query_by_schema);
 
     let raw_route = warp::path!("raw")
         .and(schema_id_filter)
+        .and(repository_id_filter)
         .and(cache_filter.clone())
         .and(body_filter)
+        .and(routing_filter.clone())
         .and_then(handler::query_raw);
 
     let routes = warp::post()

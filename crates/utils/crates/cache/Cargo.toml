@@ -1,0 +1,17 @@
+[package]
+name = "cache"
+version = "0.1.0"
+edition = "2018"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+lru         = "0.6.5"
+anyhow      = "1.0.41"
+async-trait = "0.1.50"
+tokio       = "1.7.1"
+tracing     = "0.1.26"
+
+[dev-dependencies]
+tokio       = { version = "1.7.1", features = ["macros"] }
