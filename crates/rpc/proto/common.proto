@@ -2,7 +2,6 @@ syntax = "proto2";
 package common;
 
 message RowDefinition {
-  repeated string version = 1;
-  repeated string object_ids = 2;
-  map<string, string> fields = 3;
+  repeated string object_ids = 1;
+  map<string, string> fields = 2;
 }

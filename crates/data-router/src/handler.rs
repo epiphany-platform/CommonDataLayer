@@ -1,12 +1,6 @@
-use std::sync::{Arc, Mutex};
-
+use crate::schema::SchemaCache;
 use anyhow::{bail, Context};
 use async_trait::async_trait;
-use lru_cache::LruCache;
-use serde_json::Value;
-use tracing::{error, trace};
-use uuid::Uuid;
-
 use cdl_dto::ingestion::{BorrowedInsertMessage, DataRouterInsertMessage};
 use communication_utils::{
     get_order_group_id, message::CommunicationMessage, parallel_consumer::ParallelConsumerHandler,
@@ -15,17 +9,19 @@ use communication_utils::{
 use lenient_semver::Version;
 use metrics_utils::{self as metrics, counter};
 use misc_utils::current_timestamp;
+use serde_json::Value;
 use settings_utils::RepositoryStaticRouting;
 use std::collections::HashMap;
+use std::sync::Arc;
+use tracing::{error, trace};
 use utils::parallel_task_queue::ParallelTaskQueue;
 
 static CDL_INPUT_PROTOCOL_VERSION_MAJOR: u64 = 1;
 static CDL_INPUT_PROTOCOL_VERSION_MINOR: u64 = 0;
 
 pub struct Handler {
-    pub cache: Arc<Mutex<LruCache<Uuid, String>>>,
+    pub cache: SchemaCache,
     pub producer: Arc<CommonPublisher>,
-    pub schema_registry_url: Arc<String>,
     pub task_queue: Arc<ParallelTaskQueue>,
     pub routing_table: Arc<HashMap<String, RepositoryStaticRouting>>,
 }
@@ -73,15 +69,9 @@ impl ParallelConsumerHandler for Handler {
                             Err(anyhow::Error::msg("No such entry in routing table"))
                         }
                     } else {
-                        route(
-                            &self.cache,
-                            entry,
-                            &message_key,
-                            &self.producer,
-                            &self.schema_registry_url,
-                        )
-                        .await
-                        .context("Tried to send message and failed")
+                        route(&self.cache, entry, &message_key, &self.producer)
+                            .await
+                            .context("Tried to send message and failed")
                     };
 
                     counter!("cdl.data-router.input-multimsg", 1);
@@ -114,15 +104,9 @@ impl ParallelConsumerHandler for Handler {
                         Err(anyhow::Error::msg("No such entry in routing table"))
                     }
                 } else {
-                    route(
-                        &self.cache,
-                        &owned,
-                        &message_key,
-                        &self.producer,
-                        &self.schema_registry_url,
-                    )
-                    .await
-                    .context("Tried to send message and failed")
+                    route(&self.cache, &owned, &message_key, &self.producer)
+                        .await
+                        .context("Tried to send message and failed")
                 };
                 counter!("cdl.data-router.input-singlemsg", 1);
                 counter!("cdl.data-router.processed", 1);
@@ -204,17 +188,14 @@ async fn route_static(
     Ok(())
 }
 
-#[tracing::instrument(skip(publisher))]
+#[tracing::instrument(skip(cache, publisher))]
 async fn route(
-    cache: &Mutex<LruCache<Uuid, String>>,
+    cache: &SchemaCache,
     event: &DataRouterInsertMessage<'_>,
     key: &str,
     publisher: &CommonPublisher,
-    schema_registry_url: &str,
 ) -> anyhow::Result<()> {
-    let insert_destination =
-        crate::schema::get_schema_insert_destination(cache, event.schema_id, schema_registry_url)
-            .await?;
+    let insert_destination = cache.get(event.schema_id).await?;
 
     route_static(event, &key, publisher, &insert_destination).await
 }
