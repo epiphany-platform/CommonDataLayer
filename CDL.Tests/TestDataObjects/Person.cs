@@ -10,7 +10,7 @@ namespace CDL.Tests.TestDataObjects
         public string LastName { get; set; }
         public double CardId { get; set; }
         public string Email { get; set; }
-        public Gander Gander { get; set; }
+        public Gender Gender { get; set; }
         public DateTime Birthday { get; set; }
         public string ToJSONString() 
         {
@@ -18,7 +18,7 @@ namespace CDL.Tests.TestDataObjects
         }
     }
 
-    public enum Gander
+    public enum Gender
     {
         Male,
         Female

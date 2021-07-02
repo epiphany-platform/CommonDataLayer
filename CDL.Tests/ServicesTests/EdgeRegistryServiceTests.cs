@@ -34,11 +34,10 @@ namespace CDL.Tests.ServicesTests
             var childName = _fixture.Create<string>();
             var parentSchema = _schemaRegistryService.AddSchema(parentName, _fixture.Create<Person>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
             var childSchema = _schemaRegistryService.AddSchema(childName, _fixture.Create<Car>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
-
             var results = _edgeRegistryService.AddRelation(childSchema.Id_, parentSchema.Id_).Result;
-
+            
             Assert.True(results.HasRelationId_);
-            Assert.Matches("(\\{){0,1}[0-9a-fA-F]{8}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{4}\\-[0-9a-fA-F]{12}(\\}){0,1}", results.RelationId_);
+            Guid.Parse(results.RelationId_);  
         }
 
         [Fact]

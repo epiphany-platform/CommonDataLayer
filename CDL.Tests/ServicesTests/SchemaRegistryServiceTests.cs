@@ -40,13 +40,11 @@ namespace CDL.Tests.ServicesTests
         [InlineData("MyName")]
         public void AddSchema(string schemaName)
         {
-            Guid schemaUUID;
+            
             var schema = _schemaRegistryService.AddSchema(schemaName, _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
-            Guid.TryParse(schema.Id_, out schemaUUID);
-
             Assert.NotNull(schema);
             Assert.IsType<string>(schema.Id_);
-            Assert.NotEqual("00000000-0000-0000-0000-000000000000", schemaUUID.ToString());
+            Guid.Parse(schema.Id_);
         }
 
         [Fact]
@@ -85,13 +83,13 @@ namespace CDL.Tests.ServicesTests
                 });
             var view = _schemaRegistryService.AddViewToSchema(schema.Id_, viewName, viewFields).Result;
             var viewDetails = _schemaRegistryService.GetView(view.Id_).Result;
-            
-            Guid viewUUID = Guid.Parse(view.Id_);            
+                     
             Assert.NotNull(view.Id_);
             Assert.IsType<string>(view.Id_);
             Assert.NotNull(viewDetails);
             Assert.IsType<FullView>(viewDetails);
-
+            var viewUUID = Guid.Parse(view.Id_);   
+            
             var schemaWithView = _schemaRegistryService.GetFullSchema(schema.Id_).Result;
             Assert.True(schemaWithView.Views.Count == 1);
             
