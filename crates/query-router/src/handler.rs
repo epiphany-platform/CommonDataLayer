@@ -4,8 +4,8 @@ use std::{collections::HashMap, sync::Arc};
 use uuid::Uuid;
 use warp::hyper::header::CONTENT_TYPE;
 
-use crate::cache::SchemaRegistryCache;
 use crate::error::Error;
+use crate::schema::{SchemaCache, SchemaMetadata};
 use futures_util::TryStreamExt;
 use rpc::schema_registry::types::SchemaType;
 use rpc::{query_service, query_service_ts};
@@ -32,12 +32,14 @@ pub async fn query_single(
     object_id: Uuid,
     schema_id: Uuid,
     repository_id: Option<String>,
-    cache: Arc<SchemaRegistryCache>,
+    cache: Arc<SchemaCache>,
     routing: Arc<HashMap<String, RepositoryStaticRouting>>,
     request_body: Body,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let (query_address, schema_type) =
-        get_routing_info(schema_id, repository_id, cache, routing).await?;
+    let SchemaMetadata {
+        query_address,
+        schema_type,
+    } = get_routing_info(schema_id, repository_id, cache, routing).await?;
 
     let values = match (&schema_type, request_body) {
         (SchemaType::DocumentStorage, _) => {
@@ -88,11 +90,13 @@ pub async fn query_multiple(
     object_ids: String,
     schema_id: Uuid,
     repository_id: Option<String>,
-    cache: Arc<SchemaRegistryCache>,
+    cache: Arc<SchemaCache>,
     routing: Arc<HashMap<String, RepositoryStaticRouting>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let (query_address, schema_type) =
-        get_routing_info(schema_id, repository_id, cache, routing).await?;
+    let SchemaMetadata {
+        query_address,
+        schema_type,
+    } = get_routing_info(schema_id, repository_id, cache, routing).await?;
 
     let object_ids = object_ids.split(',').map(str::to_owned).collect();
 
@@ -126,9 +130,14 @@ pub async fn query_multiple(
 #[tracing::instrument(skip(cache))]
 pub async fn query_by_schema(
     schema_id: Uuid,
-    cache: Arc<SchemaRegistryCache>,
+    repository_id: Option<String>,
+    cache: Arc<SchemaCache>,
+    routing: Arc<HashMap<String, RepositoryStaticRouting>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let (query_address, schema_type) = cache.get_schema_info(schema_id).await?;
+    let SchemaMetadata {
+        query_address,
+        schema_type,
+    } = get_routing_info(schema_id, repository_id, cache, routing).await?;
 
     match &schema_type {
         SchemaType::DocumentStorage => {
@@ -166,10 +175,15 @@ pub async fn query_by_schema(
 #[tracing::instrument(skip(cache))]
 pub async fn query_raw(
     schema_id: Uuid,
-    cache: Arc<SchemaRegistryCache>,
+    repository_id: Option<String>,
+    cache: Arc<SchemaCache>,
     request_body: Body,
+    routing: Arc<HashMap<String, RepositoryStaticRouting>>,
 ) -> Result<impl warp::Reply, warp::Rejection> {
-    let (query_address, schema_type) = cache.get_schema_info(schema_id).await?;
+    let SchemaMetadata {
+        query_address,
+        schema_type,
+    } = get_routing_info(schema_id, repository_id, cache, routing).await?;
 
     let values = match (request_body, &schema_type) {
         (Body::Raw { raw_statement }, SchemaType::DocumentStorage) => {
@@ -210,19 +224,25 @@ fn byte_map_to_json_map(map: HashMap<String, Vec<u8>>) -> Result<HashMap<String,
 async fn get_routing_info(
     schema_id: Uuid,
     repository_id: Option<String>,
-    cache: Arc<SchemaRegistryCache>,
+    cache: Arc<SchemaCache>,
     routing: Arc<HashMap<String, RepositoryStaticRouting>>,
-) -> Result<(String, SchemaType), Error> {
-    let (query_address, schema_type) = if let Some(repository_id) = repository_id {
+) -> Result<SchemaMetadata, Error> {
+    let metadata = if let Some(repository_id) = repository_id {
         let entry = routing.get(&repository_id);
         if let Some(routing) = entry {
-            (routing.query_address.clone(), routing.repository_type)
+            SchemaMetadata {
+                query_address: routing.query_address.clone(),
+                schema_type: routing.repository_type,
+            }
         } else {
             return Err(Error::InvalidRepository(repository_id));
         }
     } else {
-        cache.get_schema_info(schema_id).await?
+        cache
+            .get(schema_id)
+            .await
+            .map_err(Error::SchemaFetchError)?
     };
 
-    Ok((query_address, schema_type))
+    Ok(metadata)
 }
