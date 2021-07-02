@@ -55,9 +55,9 @@ impl<'a> ViewPlanBuilder<'a> {
 
     pub fn build_rows(
         &self,
-        tree_responses: &[RelationTree],
+        relation_trees: &[RelationTree],
     ) -> Result<Vec<(UnfinishedRow, HashSet<ObjectIdPair>)>> {
-        self.build_variants(tree_responses)
+        self.build_variants(relation_trees)
             .into_iter()
             .map(|variant| {
                 let fields = self.build_fields(&variant, &self.view.fields)?;
@@ -166,8 +166,8 @@ impl<'a> ViewPlanBuilder<'a> {
             .collect::<Result<HashMap<_, _>>>()
     }
 
-    fn build_variants(&self, tree_responses: &[RelationTree]) -> Vec<UnfinishedRowVariant> {
-        tree_responses
+    fn build_variants(&self, relation_trees: &[RelationTree]) -> Vec<UnfinishedRowVariant> {
+        relation_trees
             .iter()
             .flat_map(|tree_response| tree_response.objects.iter())
             .flat_map(|tree_obj| {
