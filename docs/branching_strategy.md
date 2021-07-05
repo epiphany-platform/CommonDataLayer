@@ -29,8 +29,9 @@ If we consider a release to be a collection of features added since a prior rele
 
 The proposed solution is a combination of the two most popular means for making releases: making and maintaining release branches, and tagging commits in those branches.
 
-When a release is planned, a branch should be created (sprouted from the common development branch) and named based on the major and minor versions only for the release family (e.g. v1.3).
+When a release is planned, next branch should be created (sprouted from the common development branch) with name based on the major and minor versions only for the release family (e.g. v1.3).
 First, all the features should be completed and then merged into develop. Develop should then be frozen and prepared for next release. A release branch should be then created from the tip of the freeze (if any last-minute fixes are applied).
+If feature is planned but not delivered in time before the freeze, then afterwar the freeze not delivered changes should not be commited (only last minute fixes to existing ones), until release branch is created, main branch is treated as one and it can not get new features. Additionally release branch's origin can not be moved after ceation and features can not be cherry-picked or merged afterwards.
 
 After release branch is created, all further development will proceed on development branch in the meantime. That means if release deadline will be missed by a developer, freeze does not have to wait for the feature development to release. That also means that no new features can be commited to the released branch, only patches and/or bugfixes.
 
