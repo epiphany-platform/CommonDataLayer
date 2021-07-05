@@ -11,8 +11,8 @@ use metrics_utils::{self as metrics, counter};
 use rpc::edge_registry::edge_registry_server::EdgeRegistry;
 use rpc::edge_registry::{
     AddSchemaRelation, Edge, Empty, ObjectIdQuery, ObjectRelations, RelationDetails, RelationId,
-    RelationIdQuery, RelationList, RelationQuery, RelationResponse, SchemaId, SchemaRelation,
-    TreeObject, TreeQuery, TreeResponse, ValidateRelationQuery,
+    RelationIdQuery, RelationList, RelationQuery, RelationResponse, RelationTree, SchemaId,
+    SchemaRelation, TreeObject, TreeQuery, ValidateRelationQuery,
 };
 use serde::{Deserialize, Serialize};
 use settings_utils::PostgresSettings;
@@ -321,7 +321,7 @@ impl EdgeRegistryImpl {
         relation_id: R,
         filter_ids: F,
         relations: &'a [TreeQuery],
-    ) -> BoxFuture<'_, anyhow::Result<TreeResponse>>
+    ) -> BoxFuture<'_, anyhow::Result<RelationTree>>
     where
         F: IntoIterator<Item = S> + Send + Sync + 'a,
         <F as IntoIterator>::IntoIter: Send + Sync,
@@ -361,7 +361,7 @@ impl EdgeRegistryImpl {
         relation_id: R,
         relations: &'a [TreeQuery],
         filter_ids: F,
-    ) -> BoxFuture<'_, anyhow::Result<TreeResponse, Error>>
+    ) -> BoxFuture<'_, anyhow::Result<RelationTree, Error>>
     where
         F: IntoIterator<Item = S> + Send + Sync + 'a,
         <F as IntoIterator>::IntoIter: Send + Sync,
@@ -407,7 +407,7 @@ impl EdgeRegistryImpl {
                                 )
                                 .await?
                             } else {
-                                TreeResponse { objects: vec![] }
+                                RelationTree { objects: vec![] }
                             }
                         };
                         subtrees.push(subtree);
@@ -425,7 +425,7 @@ impl EdgeRegistryImpl {
                 }
             }
 
-            Ok(TreeResponse { objects })
+            Ok(RelationTree { objects })
         }
         .boxed()
     }
@@ -724,7 +724,7 @@ impl EdgeRegistry for EdgeRegistryImpl {
     async fn resolve_tree(
         &self,
         request: Request<TreeQuery>,
-    ) -> Result<Response<TreeResponse>, Status> {
+    ) -> Result<Response<RelationTree>, Status> {
         let request = request.into_inner();
 
         trace!(

@@ -4,7 +4,7 @@ use uuid::Uuid;
 use crate::{RequestError, RequestResult};
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
-pub struct TreeResponse {
+pub struct RelationTree {
     pub objects: Vec<TreeObject>,
 }
 
@@ -14,7 +14,7 @@ pub struct TreeObject {
     pub relation_id: Uuid,
     pub relation: SchemaRelation,
     pub children: Vec<Uuid>,
-    pub subtrees: Vec<TreeResponse>,
+    pub subtrees: Vec<RelationTree>,
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
@@ -23,8 +23,8 @@ pub struct SchemaRelation {
     pub child_schema_id: Uuid,
 }
 
-impl TreeResponse {
-    pub fn from_rpc(rpc: rpc::edge_registry::TreeResponse) -> RequestResult<Self> {
+impl RelationTree {
+    pub fn from_rpc(rpc: rpc::edge_registry::RelationTree) -> RequestResult<Self> {
         Ok(Self {
             objects: rpc
                 .objects
@@ -49,7 +49,7 @@ impl TreeObject {
             subtrees: rpc
                 .subtrees
                 .into_iter()
-                .map(TreeResponse::from_rpc)
+                .map(RelationTree::from_rpc)
                 .collect::<RequestResult<Vec<_>>>()?,
         })
     }
