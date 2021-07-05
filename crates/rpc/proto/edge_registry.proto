@@ -15,7 +15,7 @@ service EdgeRegistry {
 
   rpc Heartbeat (Empty) returns (Empty);
 
-  rpc ResolveTree (TreeQuery) returns (TreeResponse);
+  rpc ResolveTree (TreeQuery) returns (RelationTree);
 }
 
 message TreeQuery {
@@ -24,7 +24,7 @@ message TreeQuery {
   repeated string filter_ids = 3;
 }
 
-message TreeResponse {
+message RelationTree {
   repeated TreeObject objects = 1;
 }
 
@@ -33,7 +33,7 @@ message TreeObject {
   required string relation_id = 2;
   required SchemaRelation relation = 5;
   repeated string children = 3;
-  repeated TreeResponse subtrees = 4;
+  repeated RelationTree subtrees = 4;
 }
 
 message AddSchemaRelation {

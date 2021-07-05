@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use bb8::Pool;
-use cdl_dto::{edges::TreeResponse, materialization};
+use cdl_dto::{edges::RelationTree, materialization};
 use communication_utils::{consumer::ConsumerHandler, message::CommunicationMessage};
 use futures::{future::ready, Stream, StreamExt, TryStreamExt};
 use metrics_utils::{self as metrics, counter};
@@ -447,7 +447,7 @@ impl ObjectBuilderImpl {
         &self,
         view: &cdl_dto::materialization::FullView,
         object_filters: &[Uuid],
-    ) -> anyhow::Result<Vec<TreeResponse>> {
+    ) -> anyhow::Result<Vec<RelationTree>> {
         let mut relations = Vec::default();
         for relation in view.relations.iter() {
             let request = into_resolve_tree_request(relation, object_filters);
@@ -459,7 +459,7 @@ impl ObjectBuilderImpl {
                 .await?
                 .into_inner();
 
-            let tree = TreeResponse::from_rpc(tree)?;
+            let tree = RelationTree::from_rpc(tree)?;
             relations.push(tree);
         }
         Ok(relations)
