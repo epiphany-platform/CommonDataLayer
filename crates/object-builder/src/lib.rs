@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use bb8::Pool;
-use cdl_dto::{edges::TreeResponse, materialization};
+use cdl_dto::{edges::RelationTree, materialization};
 use communication_utils::{consumer::ConsumerHandler, message::CommunicationMessage};
 use futures::{future::ready, Stream, StreamExt, TryStreamExt};
 use metrics_utils::{self as metrics, counter};
@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::{collections::HashMap, convert::TryInto, pin::Pin};
+use tracing_futures::Instrument;
 use uuid::Uuid;
 
 use crate::{buffer_stream::ObjectBufferedStream, view_plan::ViewPlan};
@@ -243,7 +244,8 @@ impl ObjectBuilder for ObjectBuilderImpl {
                     tracing::error!("Could not serialize materialized row: {:?}", err);
                     tonic::Status::internal("Could not serialize materialized row")
                 })
-            });
+            })
+            .in_current_span();
 
         let stream = Box::pin(stream);
 
@@ -447,7 +449,7 @@ impl ObjectBuilderImpl {
         &self,
         view: &cdl_dto::materialization::FullView,
         object_filters: &[Uuid],
-    ) -> anyhow::Result<Vec<TreeResponse>> {
+    ) -> anyhow::Result<Vec<RelationTree>> {
         let mut relations = Vec::default();
         for relation in view.relations.iter() {
             let request = into_resolve_tree_request(relation, object_filters);
@@ -459,7 +461,7 @@ impl ObjectBuilderImpl {
                 .await?
                 .into_inner();
 
-            let tree = TreeResponse::from_rpc(tree)?;
+            let tree = RelationTree::from_rpc(tree)?;
             relations.push(tree);
         }
         Ok(relations)
