@@ -1,0 +1,78 @@
+name: Release Build
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
+    branches-ignore:
+      - '*'
+      - '!develop'
+      - '!releases/[0-9]+.[0-9]+'
+
+# its negativbe matching patterns,
+# it would be optimal to exclude all branches that are not release or develop branches
+# https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#example-using-positive-and-negative-patterns
+
+jobs:
+  checkpoint:
+    runs-on: ubuntu-latest
+    name: Check if job should start
+    outputs:
+      version: ${{ steps.checkpoint.outputs.version }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Print latest_commit
+        run: echo ${{ github.sha }}
+
+      - name: get long version from tag
+        id: version
+        continue-on-error: false
+        run: |
+          VERSION=${GITHUB_REF##*/}
+          if ! echo ${VERSION} | grep -qP '^\d+\.\d+.\d+$'
+           then
+            echo "its not a valid version: ${VERSION}"
+            exit 1
+          else
+            echo "::set-output name=version::$(echo ${VERSION})"
+          fi
+
+  build-and-push:
+    name: build and push to registry
+    needs: checkpoint
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Login to registry
+      uses: docker/login-action@v1
+      with:
+        username: ${{ secrets.DOCKERHUB_LOGIN }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+    - name: Build and push crates
+      run: |
+        VERSION_LONG=${{ steps.checkpoint.outputs.version }}
+        VERSION_SHORT=$(echo ${VERSION_LONG} | cut -d '.' -f -2)
+        echo "current versions are ${VERSION_LONG} and ${VERSION_SHORT}"
+        crates=(data-router command-service query-router query-service query-service-ts schema-registry api edge-registry partial-update-engine object-builder materializer-general materializer-ondemand)
+        for crate in "${crates[@]}"
+        do
+          echo "building ${crate}
+          docker build . --build-arg BIN=$crate -t "epiphanyplatform/cdl-${crate}:${VERSION_LONG}"
+          docker tag "epiphanyplatform/cdl-${crate}:${VERSION_LONG}" "epiphanyplatform/cdl-${crate}:${VERSION_SHORT}"
+          docker push "epiphanyplatform/cdl-${crate}:${VERSION_LONG}"
+          docker push "epiphanyplatform/cdl-${crate}:${VERSION_SHORT}"
+        done
+      env:
+        DOCKER_BUILDKIT: 1
+
+    - name: Build and push web-admin
+      run: |
+        VERSION_LONG=${{ steps.checkpoint.outputs.version }}
+        VERSION_SHORT=$(echo ${VERSION_LONG} | cut -d '.' -f -2)
+        cd web-admin
+        docker build . -t "epiphanyplatform/cdl-web-admin:${VERSION_LONG}"
+        docker tag "epiphanyplatform/cdl-web-admin:${VERSION_LONG}" "epiphanyplatform/cdl-web-admin:{VERSION_SHORT}"
+        docker push "epiphanyplatform/cdl-web-admin:${VERSION_LONG}"
+        docker push "epiphanyplatform/cdl-web-admin:${VERSION_SHORT}"
