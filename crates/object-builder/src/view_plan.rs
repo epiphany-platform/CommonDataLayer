@@ -1,6 +1,6 @@
 use anyhow::Result;
 use cdl_dto::{
-    edges::TreeResponse,
+    edges::RelationTree,
     materialization::{self, FullView},
 };
 use itertools::Itertools;
@@ -69,7 +69,7 @@ pub struct ViewPlan {
 }
 
 impl ViewPlan {
-    pub fn try_new(view: FullView, edges: &[TreeResponse]) -> Result<Self> {
+    pub fn try_new(view: FullView, edges: &[RelationTree]) -> Result<Self> {
         let mut missing: HashMap<ObjectIdPair, Vec<usize>> = Default::default();
 
         let builder = ViewPlanBuilder::new(&view);
