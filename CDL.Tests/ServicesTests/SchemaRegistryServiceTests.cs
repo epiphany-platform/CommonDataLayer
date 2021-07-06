@@ -159,12 +159,11 @@ namespace CDL.Tests.ServicesTests
             var schemaObjectsBefore = _queryService.GetAllObjectsFromSchema(schema.Id_).ExecuteWithRetryPolicy().Result;
             Assert.Equal(System.Net.HttpStatusCode.OK, schemaObjectsBefore.StatusCode);
             Assert.Equal("{}", schemaObjectsBefore.Content);
-            
             var objectId = Guid.NewGuid().ToString();            
             _kafkaProducer.Produce(new InsertObject()
             {
                 schemaId = schema.Id_,
-                objectId = objectId,
+                objectId = objectId,                
                 data = _fixture.Create<GeneralObject>(),
             });
 

@@ -171,7 +171,7 @@ namespace CDL.Tests.Services
             return Task.FromResult(response).Result;
         }
 
-        public Task<TreeResponse> ResolveTree(string relationId)
+        public Task<RelationTree> ResolveTree(string relationId)
         {
             var treeQuery = new TreeQuery()
             {
@@ -181,7 +181,7 @@ namespace CDL.Tests.Services
             return Task.FromResult(response);
         }
 
-        public async Task<TreeResponse> ResolveTreeAsync(string relationId)
+        public async Task<RelationTree> ResolveTreeAsync(string relationId)
         {
             var treeQuery = new TreeQuery()
             {

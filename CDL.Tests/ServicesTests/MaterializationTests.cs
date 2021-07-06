@@ -47,7 +47,7 @@ namespace CDL.Tests.ServicesTests
         {
             var name = _fixture.Create<string>();
             var objectId_a = Guid.NewGuid().ToString(); 
-            var objectId_b = Guid.NewGuid().ToString(); 
+            var payload_a = _fixture.Create<Person>();
             var viewName = _fixture.Create<string>();            
             var schema = _schemaRegistryService.AddSchema(name, _fixture.Create<GeneralObject>().ToJSONString(), new SchemaType() { SchemaType_ = SchemaType.Types.Type.DocumentStorage }).Result;
             var viewFields = new List<Simple>();
@@ -55,7 +55,7 @@ namespace CDL.Tests.ServicesTests
                 {
                     simple = new SimpleItem()
                     {
-                        field_name = "FirstName",
+                        field_name = "firstName",
                         field_type = "String" 
                     }
                 });
@@ -63,41 +63,34 @@ namespace CDL.Tests.ServicesTests
                 {
                     simple = new SimpleItem()
                     {
-                        field_name = "LastName",
+                        field_name = "lastName",
                         field_type = "String" 
                     }
                 });
             var view = _schemaRegistryService.AddViewToSchema(schema.Id_, viewName, viewFields, true).Result;
             var viewDetails = _schemaRegistryService.GetView(view.Id_).Result;
             var schemaWithView = _schemaRegistryService.GetFullSchema(schema.Id_).Result;
-            Assert.Equal(1, schemaWithView.Views.Count);
+            Assert.True(schemaWithView.Views.Count == 1);
             
             await _kafkaProducer.Produce(new InsertObject()
             {
                 schemaId = schema.Id_,
                 objectId = objectId_a,
-                data = _fixture.Create<Person>(),
-            });
-
-            await _kafkaProducer.Produce(new InsertObject()
-            {
-                schemaId = schema.Id_,
-                objectId = objectId_b,
-                data = _fixture.Create<Person>(),
+                data = payload_a
             });
 
             var res = _onDemandMaterializerService.Materialize(view.Id_, schema.Id_, new List<string>(){
                 objectId_a,
-                objectId_b
             });
 
+            //should have only one row
             while (await res.ResponseStream.MoveNext())
             {
-                Console.WriteLine(res.ResponseStream.Current.Fields);
-                //TODO Add Assertions
+                Assert.True(res.ResponseStream.Current.Fields.Count == 2);
+                Assert.Contains(payload_a.FirstName, res.ResponseStream.Current.Fields["firstName"]);
+                Assert.Contains(payload_a.LastName, res.ResponseStream.Current.Fields["lastName"]);
             }
         }
-
         
     }
 }
