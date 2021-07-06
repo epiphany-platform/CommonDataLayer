@@ -21,12 +21,13 @@ jobs:
         username: ${{ secrets.DOCKERHUB_LOGIN }}
         password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
+    - uses: actions/checkout@v2
     - name: Build and push crates
       run: |
         crates=(data-router command-service query-router query-service query-service-ts schema-registry api edge-registry partial-update-engine object-builder materializer-general materializer-ondemand)
         for crate in "${crates[@]}"
         do
-          echo "building ${crate}
+          echo "building ${crate}"
           docker build . --build-arg BIN=$crate -t "epiphanyplatform/cdl-${crate}:lastest"
           docker tag "epiphanyplatform/cdl-${crate}:latest"
           docker push "epiphanyplatform/cdl-${crate}:latest"
@@ -36,8 +37,6 @@ jobs:
 
     - name: Build and push web-admin
       run: |
-        VERSION_LONG=${{ steps.checkpoint.outputs.version }}
-        VERSION_SHORT=$(echo ${VERSION_LONG} | cut -d '.' -f -2)
         cd web-admin
         docker build . -t "epiphanyplatform/cdl-web-admin:latest"
         docker tag "epiphanyplatform/cdl-web-admin:latest"
