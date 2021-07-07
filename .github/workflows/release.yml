@@ -29,7 +29,8 @@ jobs:
           if ! echo ${VERSION} | grep -qP '^\d+\.\d+.\d+$'
            then
             echo "its not a valid version: ${VERSION}"
-            exit 1
+            echo "release will not be made"
+            echo "::set-output name=value::false"
           else
             echo "::set-output name=value::$(echo ${VERSION})"
           fi
@@ -38,6 +39,7 @@ jobs:
     name: build and push to registry
     needs: checkpoint
     runs-on: ubuntu-latest
+    if: ${{ needs.checkpoint.outputs.version != 'false' }}
     steps:
     - uses: actions/checkout@v2
     - name: Login to registry
