@@ -14,6 +14,7 @@ Version         : 1.0.0
 * `QR` - Query Router
 * `xtask` - cargo job; similar to how you may define run targets in npm, rake, etc.
 * `PoC` - proof of concept
+* `Swagger` - Swagger is a tool for generating client and server code from OpenAPI specification. It supports most major languages.
 
 # Preface
 
@@ -48,7 +49,7 @@ It most likely needs to be done via `xtask`, similar to how we are generating th
 As for OpenAPI, it would require us to switch away from using [warp][warp-rs] in favour of [hyper][hyper-rs]. Swagger can generate new crate in our repo, 
 that `QR` would use as a base.
 
-For graphQL api - we would need to provide a `xtask` which pulls spec from running api instance. There's no easy way to generate rust code from existing api spec. I we were to stick with this approach - we'd have to write something in-house.
+For graphQL api - we would need to provide a `xtask` which pulls spec from running api instance. There's no easy way to generate rust code from existing api spec. If we were to stick with this approach - we'd have to write something in-house.
 
 TOML configuration is a bit problematic. There are no known crates that can easily generate rust structs out from Toml config, and our structs
 are usually reused. What I mean is that generating code would introduce duplication. It's not necessarily bad, but that's confusing.
