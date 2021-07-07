@@ -65,3 +65,4 @@
    - [00013 - Materialized Views](./rfc/CDLF-00013-00-rfc-01.md)
    - [00015 - CDL publishing deployment configurations](./rfc/CDLF-00015-00-rfc-01.md)
    - [00016 - Schema-Registry-less CDL deployment](./rfc/CDLF-00016-00-rfc-01.md)
+   - [0001F - Edge registry - Resolving relation trees](./rfc/CDLF-0001F-00-rfc-01.md)
