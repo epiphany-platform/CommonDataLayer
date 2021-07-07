@@ -99,7 +99,7 @@ impl RowBuilder {
                         }
                         SubObject { .. } => {
                             anyhow::bail!(
-                                "Array field definition is not supported in relation-less view"
+                                "SubObject field definition is not supported in relation-less view"
                             )
                         }
                     },
