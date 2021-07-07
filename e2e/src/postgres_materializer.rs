@@ -108,7 +108,7 @@ mod relations {
         );
         fields.insert(
             "field_b".to_owned(),
-            FieldDefinition::Array {
+            FieldDefinition::SubObject {
                 base: 1,
                 fields: {
                     let mut subfields = HashMap::new();
