@@ -9,7 +9,7 @@ on:
       - '!develop'
       - '!releases/[0-9]+.[0-9]+'
 
-# its negativbe matching patterns,
+# it's negative pattern matching
 # it would be optimal to exclude all branches that are not release or develop branches
 # https://docs.github.com/en/actions/reference/workflow-syntax-for-github-actions#example-using-positive-and-negative-patterns
 
