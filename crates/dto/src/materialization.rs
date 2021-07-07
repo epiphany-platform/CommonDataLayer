@@ -309,7 +309,7 @@ pub enum FieldDefinition {
         computation: Computation,
         field_type: FieldType,
     },
-    Array {
+    SubObject {
         base: LocalId,
         fields: HashMap<String, FieldDefinition>,
     },

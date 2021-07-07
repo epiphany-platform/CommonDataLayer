@@ -36,7 +36,7 @@
   "materializer_address": "",
   "fields": {
     "foo": {
-      "array": {
+      "sub_object": {
         "base": 1,
         "fields": {
           "bar": {
@@ -76,7 +76,7 @@
     {
       "fields": {
         "foo": {
-          "array": {
+          "sub_object": {
             "fields": {
               "bar": {
                 "simple": {
@@ -96,7 +96,7 @@
     {
       "fields": {
         "foo": {
-          "array": {
+          "sub_object": {
             "fields": {
               "bar": {
                 "simple": {
