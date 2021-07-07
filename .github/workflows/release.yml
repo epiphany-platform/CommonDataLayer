@@ -4,10 +4,6 @@ on:
     tags:
       - '[0-9]+.[0-9]+.[0-9]+'
       - '[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
-    branches-ignore:
-      - '**'
-      - '!develop'
-      - '!releases/[0-9]+.[0-9]+'
 
 # it's negative pattern matching
 # it would be optimal to exclude all branches that are not release or develop branches
