@@ -42,7 +42,7 @@ impl<'a> FieldBuilder<'a> {
                     let engine: ComputationEngine = self.into();
                     engine.compute(computation)?
                 }
-                Array { fields } => {
+                SubObject { fields } => {
                     let fields = fields
                         .iter()
                         .map(|field| self.build(field))

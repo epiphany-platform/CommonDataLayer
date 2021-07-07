@@ -254,7 +254,7 @@ fn get_field_list(definition: &FullView) -> Vec<Field> {
                     type_: Type::JSON,
                 });
             }
-            FieldDefinition::Array { fields, .. } => {
+            FieldDefinition::SubObject { fields, .. } => {
                 fields_to_process = fields
                     .iter()
                     .map(|x| PartialFieldDefinition {
