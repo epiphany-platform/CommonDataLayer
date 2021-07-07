@@ -18,7 +18,7 @@ pub enum FieldDefinitionSource {
         computation: ComputationSource,
         field_type: FieldType,
     },
-    Array {
+    SubObject {
         fields: HashMap<String, FieldDefinitionSource>,
     },
 }
