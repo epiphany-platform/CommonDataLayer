@@ -13,6 +13,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::HashSet;
 use std::{collections::HashMap, convert::TryInto, pin::Pin};
+use tracing_futures::Instrument;
 use uuid::Uuid;
 
 use crate::{buffer_stream::ObjectBufferedStream, view_plan::ViewPlan};
@@ -243,7 +244,8 @@ impl ObjectBuilder for ObjectBuilderImpl {
                     tracing::error!("Could not serialize materialized row: {:?}", err);
                     tonic::Status::internal("Could not serialize materialized row")
                 })
-            });
+            })
+            .in_current_span();
 
         let stream = Box::pin(stream);
 
