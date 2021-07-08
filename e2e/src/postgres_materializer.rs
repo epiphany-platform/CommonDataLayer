@@ -25,7 +25,6 @@ mod simple_views {
     use super::*;
 
     #[tokio::test]
-    #[cfg_attr(miri, ignore)]
     async fn should_create_table_and_feed_data() -> Result<()> {
         let table_name = "test_simple";
         let pg = pg_connect().await?;
@@ -91,7 +90,6 @@ mod relations {
     use super::*;
 
     #[tokio::test]
-    #[cfg_attr(miri, ignore)]
     async fn should_properly_name_fields_from_subobjects() -> Result<()> {
         let table_name = "test_relation";
         let pg = pg_connect().await?;

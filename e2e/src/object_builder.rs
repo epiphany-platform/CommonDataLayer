@@ -17,7 +17,6 @@ mod simple_views {
     use super::*;
 
     #[tokio::test]
-    #[cfg_attr(miri, ignore)]
     async fn should_generate_empty_result_set_for_view_without_objects() -> Result<()> {
         let schema_id =
             add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
@@ -37,7 +36,6 @@ mod simple_views {
     }
 
     #[tokio::test]
-    #[cfg_attr(miri, ignore)]
     async fn should_generate_results() -> Result<()> {
         let schema_id =
             add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
@@ -69,7 +67,6 @@ mod relations {
     use super::*;
 
     #[tokio::test]
-    #[cfg_attr(miri, ignore)]
     #[ignore = "todo"]
     async fn should_return_no_results_when_one_of_related_objects_does_not_exist() -> Result<()> {
         let schema_a = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
@@ -105,7 +102,6 @@ mod relations {
     }
 
     #[tokio::test]
-    #[cfg_attr(miri, ignore)]
     #[ignore = "todo"]
     async fn should_return_no_results_when_edge_was_not_added() -> Result<()> {
         let schema_a = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
@@ -141,7 +137,6 @@ mod relations {
     }
 
     #[tokio::test]
-    #[cfg_attr(miri, ignore)]
     async fn should_apply_inner_join_strategy() -> Result<()> {
         let schema_a = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
         let schema_b = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
@@ -182,7 +177,6 @@ mod computed_fields {
     use super::*;
 
     #[tokio::test]
-    #[cfg_attr(miri, ignore)]
     #[ignore = "todo"]
     async fn should_compute_field_from_another_value_in_relationless_view() -> Result<()> {
         let schema_a = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
@@ -246,7 +240,6 @@ mod computed_fields {
     }
 
     #[tokio::test]
-    #[cfg_attr(miri, ignore)]
     async fn should_compute_field_from_another_object() -> Result<()> {
         let schema_a = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
         let schema_b = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
