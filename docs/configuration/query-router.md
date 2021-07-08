@@ -14,6 +14,9 @@ otel_service_name = ""
 key1 = { insert_destination = "", query_address = "", repository_type = "DocumentStorage" }
 key2 = { insert_destination = "", query_address = "", repository_type = "Timeseries" }
 
+[features]
+raw_endpoint = true
+
 [log]
 rust_log = "info,query_router=debug"
 ```

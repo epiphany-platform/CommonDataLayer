@@ -96,21 +96,6 @@ pub mod query_service_ts_client {
             );
             self.inner.unary(request.into_request(), path, codec).await
         }
-        pub async fn query_raw(
-            &mut self,
-            request: impl tonic::IntoRequest<super::RawStatement>,
-        ) -> Result<tonic::Response<super::ValueBytes>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::new(
-                    tonic::Code::Unknown,
-                    format!("Service was not ready: {}", e.into()),
-                )
-            })?;
-            let codec = tonic::codec::ProstCodec::default();
-            let path =
-                http::uri::PathAndQuery::from_static("/query_service_ts.QueryServiceTs/QueryRaw");
-            self.inner.unary(request.into_request(), path, codec).await
-        }
     }
     impl<T: Clone> Clone for QueryServiceTsClient<T> {
         fn clone(&self) -> Self {
@@ -122,6 +107,69 @@ pub mod query_service_ts_client {
     impl<T> std::fmt::Debug for QueryServiceTsClient<T> {
         fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
             write!(f, "QueryServiceTsClient {{ ... }}")
+        }
+    }
+}
+#[doc = r" Generated client implementations."]
+pub mod query_service_ts_raw_client {
+    #![allow(unused_variables, dead_code, missing_docs)]
+    use tonic::codegen::*;
+    pub struct QueryServiceTsRawClient<T> {
+        inner: tonic::client::Grpc<T>,
+    }
+    impl QueryServiceTsRawClient<tonic::transport::Channel> {
+        #[doc = r" Attempt to create a new client by connecting to a given endpoint."]
+        pub async fn connect<D>(dst: D) -> Result<Self, tonic::transport::Error>
+        where
+            D: std::convert::TryInto<tonic::transport::Endpoint>,
+            D::Error: Into<StdError>,
+        {
+            let conn = tonic::transport::Endpoint::new(dst)?.connect().await?;
+            Ok(Self::new(conn))
+        }
+    }
+    impl<T> QueryServiceTsRawClient<T>
+    where
+        T: tonic::client::GrpcService<tonic::body::BoxBody>,
+        T::ResponseBody: Body + HttpBody + Send + 'static,
+        T::Error: Into<StdError>,
+        <T::ResponseBody as HttpBody>::Error: Into<StdError> + Send,
+    {
+        pub fn new(inner: T) -> Self {
+            let inner = tonic::client::Grpc::new(inner);
+            Self { inner }
+        }
+        pub fn with_interceptor(inner: T, interceptor: impl Into<tonic::Interceptor>) -> Self {
+            let inner = tonic::client::Grpc::with_interceptor(inner, interceptor);
+            Self { inner }
+        }
+        pub async fn query_raw(
+            &mut self,
+            request: impl tonic::IntoRequest<super::RawStatement>,
+        ) -> Result<tonic::Response<super::ValueBytes>, tonic::Status> {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/query_service_ts.QueryServiceTsRaw/QueryRaw",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+    }
+    impl<T: Clone> Clone for QueryServiceTsRawClient<T> {
+        fn clone(&self) -> Self {
+            Self {
+                inner: self.inner.clone(),
+            }
+        }
+    }
+    impl<T> std::fmt::Debug for QueryServiceTsRawClient<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "QueryServiceTsRawClient {{ ... }}")
         }
     }
 }
@@ -140,10 +188,6 @@ pub mod query_service_ts_server {
             &self,
             request: tonic::Request<super::Range>,
         ) -> Result<tonic::Response<super::TimeSeries>, tonic::Status>;
-        async fn query_raw(
-            &self,
-            request: tonic::Request<super::RawStatement>,
-        ) -> Result<tonic::Response<super::ValueBytes>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct QueryServiceTsServer<T: QueryServiceTs> {
@@ -236,10 +280,85 @@ pub mod query_service_ts_server {
                     };
                     Box::pin(fut)
                 }
-                "/query_service_ts.QueryServiceTs/QueryRaw" => {
+                _ => Box::pin(async move {
+                    Ok(http::Response::builder()
+                        .status(200)
+                        .header("grpc-status", "12")
+                        .header("content-type", "application/grpc")
+                        .body(tonic::body::BoxBody::empty())
+                        .unwrap())
+                }),
+            }
+        }
+    }
+    impl<T: QueryServiceTs> Clone for QueryServiceTsServer<T> {
+        fn clone(&self) -> Self {
+            let inner = self.inner.clone();
+            Self { inner }
+        }
+    }
+    impl<T: QueryServiceTs> Clone for _Inner<T> {
+        fn clone(&self) -> Self {
+            Self(self.0.clone(), self.1.clone())
+        }
+    }
+    impl<T: std::fmt::Debug> std::fmt::Debug for _Inner<T> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "{:?}", self.0)
+        }
+    }
+    impl<T: QueryServiceTs> tonic::transport::NamedService for QueryServiceTsServer<T> {
+        const NAME: &'static str = "query_service_ts.QueryServiceTs";
+    }
+}
+#[doc = r" Generated server implementations."]
+pub mod query_service_ts_raw_server {
+    #![allow(unused_variables, dead_code, missing_docs)]
+    use tonic::codegen::*;
+    #[doc = "Generated trait containing gRPC methods that should be implemented for use with QueryServiceTsRawServer."]
+    #[async_trait]
+    pub trait QueryServiceTsRaw: Send + Sync + 'static {
+        async fn query_raw(
+            &self,
+            request: tonic::Request<super::RawStatement>,
+        ) -> Result<tonic::Response<super::ValueBytes>, tonic::Status>;
+    }
+    #[derive(Debug)]
+    pub struct QueryServiceTsRawServer<T: QueryServiceTsRaw> {
+        inner: _Inner<T>,
+    }
+    struct _Inner<T>(Arc<T>, Option<tonic::Interceptor>);
+    impl<T: QueryServiceTsRaw> QueryServiceTsRawServer<T> {
+        pub fn new(inner: T) -> Self {
+            let inner = Arc::new(inner);
+            let inner = _Inner(inner, None);
+            Self { inner }
+        }
+        pub fn with_interceptor(inner: T, interceptor: impl Into<tonic::Interceptor>) -> Self {
+            let inner = Arc::new(inner);
+            let inner = _Inner(inner, Some(interceptor.into()));
+            Self { inner }
+        }
+    }
+    impl<T, B> Service<http::Request<B>> for QueryServiceTsRawServer<T>
+    where
+        T: QueryServiceTsRaw,
+        B: HttpBody + Send + Sync + 'static,
+        B::Error: Into<StdError> + Send + 'static,
+    {
+        type Response = http::Response<tonic::body::BoxBody>;
+        type Error = Never;
+        type Future = BoxFuture<Self::Response, Self::Error>;
+        fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+            Poll::Ready(Ok(()))
+        }
+        fn call(&mut self, req: http::Request<B>) -> Self::Future {
+            let inner = self.inner.clone();
+            match req.uri().path() {
+                "/query_service_ts.QueryServiceTsRaw/QueryRaw" => {
                     #[allow(non_camel_case_types)]
-                    struct QueryRawSvc<T: QueryServiceTs>(pub Arc<T>);
-                    impl<T: QueryServiceTs> tonic::server::UnaryService<super::RawStatement> for QueryRawSvc<T> {
+                    struct QueryRawSvc<T: QueryServiceTsRaw>(pub Arc<T>);
+                    impl<T: QueryServiceTsRaw> tonic::server::UnaryService<super::RawStatement> for QueryRawSvc<T> {
                         type Response = super::ValueBytes;
                         type Future = BoxFuture<tonic::Response<Self::Response>, tonic::Status>;
                         fn call(
@@ -278,13 +397,13 @@ pub mod query_service_ts_server {
             }
         }
     }
-    impl<T: QueryServiceTs> Clone for QueryServiceTsServer<T> {
+    impl<T: QueryServiceTsRaw> Clone for QueryServiceTsRawServer<T> {
         fn clone(&self) -> Self {
             let inner = self.inner.clone();
             Self { inner }
         }
     }
-    impl<T: QueryServiceTs> Clone for _Inner<T> {
+    impl<T: QueryServiceTsRaw> Clone for _Inner<T> {
         fn clone(&self) -> Self {
             Self(self.0.clone(), self.1.clone())
         }
@@ -294,7 +413,7 @@ pub mod query_service_ts_server {
             write!(f, "{:?}", self.0)
         }
     }
-    impl<T: QueryServiceTs> tonic::transport::NamedService for QueryServiceTsServer<T> {
-        const NAME: &'static str = "query_service_ts.QueryServiceTs";
+    impl<T: QueryServiceTsRaw> tonic::transport::NamedService for QueryServiceTsRawServer<T> {
+        const NAME: &'static str = "query_service_ts.QueryServiceTsRaw";
     }
 }

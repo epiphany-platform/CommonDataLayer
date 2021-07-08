@@ -2,6 +2,7 @@ use crate::error::ClientError;
 use query_service_ts_client::QueryServiceTsClient;
 use tonic::transport::Channel;
 
+use crate::codegen::query_service_ts::query_service_ts_raw_client::QueryServiceTsRawClient;
 pub use crate::codegen::query_service_ts::*;
 
 pub async fn connect(addr: String) -> Result<QueryServiceTsClient<Channel>, ClientError> {
@@ -16,6 +17,23 @@ async fn connect_inner(
     let conn = tonic::transport::Endpoint::new(addr)?.connect().await?;
 
     Ok(QueryServiceTsClient::with_interceptor(
+        conn,
+        tracing_utils::grpc::interceptor(),
+    ))
+}
+
+pub async fn connect_raw(addr: String) -> Result<QueryServiceTsRawClient<Channel>, ClientError> {
+    connect_inner_raw(addr)
+        .await
+        .map_err(|err| ClientError::ConnectionError { source: err })
+}
+
+async fn connect_inner_raw(
+    addr: String,
+) -> Result<QueryServiceTsRawClient<Channel>, tonic::transport::Error> {
+    let conn = tonic::transport::Endpoint::new(addr)?.connect().await?;
+
+    Ok(QueryServiceTsRawClient::with_interceptor(
         conn,
         tracing_utils::grpc::interceptor(),
     ))
@@ -55,7 +73,7 @@ pub async fn query_by_schema(schema_id: String, addr: String) -> Result<String, 
 }
 
 pub async fn query_raw(raw_statement: String, addr: String) -> Result<Vec<u8>, ClientError> {
-    let mut conn = connect(addr).await?;
+    let mut conn = connect_raw(addr).await?;
     let response = conn
         .query_raw(RawStatement { raw_statement })
         .await

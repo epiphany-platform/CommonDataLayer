@@ -2,6 +2,9 @@ use anyhow::Context;
 use metrics_utils as metrics;
 use query_service_ts::druid::{DruidQuery, DruidSettings};
 use query_service_ts::victoria::VictoriaQuery;
+use rpc::query_service_ts::query_service_ts_raw_server::{
+    QueryServiceTsRaw, QueryServiceTsRawServer,
+};
 use rpc::query_service_ts::query_service_ts_server::{QueryServiceTs, QueryServiceTsServer};
 use serde::Deserialize;
 use settings_utils::*;
@@ -20,6 +23,20 @@ pub struct Settings {
 
     #[serde(default)]
     log: LogSettings,
+
+    #[serde(default)]
+    features: FeatureSettings,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FeatureSettings {
+    pub raw_endpoint: bool,
+}
+
+impl Default for FeatureSettings {
+    fn default() -> Self {
+        Self { raw_endpoint: true }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq)]
@@ -30,12 +47,17 @@ pub enum RepositoryKind {
 }
 
 //Could be extracted to utils, dunno how without schema
-async fn spawn_server<Q: QueryServiceTs>(service: Q, port: u16) -> anyhow::Result<()> {
+async fn spawn_server<Q: QueryServiceTs, R: QueryServiceTsRaw>(
+    raw_service: Option<R>,
+    main_service: Q,
+    port: u16,
+) -> anyhow::Result<()> {
     let addr = SocketAddrV4::new(Ipv4Addr::new(0, 0, 0, 0), port);
 
     Server::builder()
         .trace_fn(tracing_utils::grpc::trace_fn)
-        .add_service(QueryServiceTsServer::new(service))
+        .add_service(QueryServiceTsServer::new(main_service))
+        .add_optional_service(raw_service.map(QueryServiceTsRawServer::new))
         .serve(addr.into())
         .await
         .context("gRPC server failed")
@@ -56,16 +78,21 @@ async fn main() -> anyhow::Result<()> {
 
     match settings.repository_kind {
         RepositoryKind::VictoriaMetrics => {
-            spawn_server(
+            let vm =
                 VictoriaQuery::load(settings.victoria_metrics.expect("victoria_metrics config"))
-                    .await?,
+                    .await?;
+            spawn_server(
+                settings.features.raw_endpoint.then(|| vm.clone()),
+                vm,
                 settings.input_port,
             )
             .await
         }
         RepositoryKind::Druid => {
+            let druid = DruidQuery::load(settings.druid.expect("druid config")).await?;
             spawn_server(
-                DruidQuery::load(settings.druid.expect("druid config")).await?,
+                settings.features.raw_endpoint.then(|| druid.clone()),
+                druid,
                 settings.input_port,
             )
             .await

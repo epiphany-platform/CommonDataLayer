@@ -1,3 +1,4 @@
+use crate::schema::SchemaMetadata;
 use cache::DynamicCache;
 use metrics_utils as metrics;
 use schema::SchemaMetadataSupplier;
@@ -26,11 +27,36 @@ struct Settings {
 
     #[serde(default)]
     repositories: HashMap<String, RepositoryStaticRouting>,
+
+    #[serde(default)]
+    features: FeatureSettings,
 }
 
 #[derive(Debug, Deserialize)]
 struct ServicesSettings {
     schema_registry_url: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct FeatureSettings {
+    raw_endpoint: bool,
+}
+
+impl Default for FeatureSettings {
+    fn default() -> Self {
+        Self { raw_endpoint: true }
+    }
+}
+
+pub struct Config {
+    cache: DynamicCache<SchemaMetadataSupplier, Uuid, SchemaMetadata>,
+    routing: HashMap<String, RepositoryStaticRouting>,
+}
+
+#[derive(Debug)]
+pub struct Headers {
+    schema_id: Uuid,
+    repository_id: Option<String>,
 }
 
 #[tokio::main]
@@ -47,56 +73,62 @@ async fn main() -> anyhow::Result<()> {
 
     metrics::serve(&settings.monitoring);
 
-    let schema_registry_cache = Arc::new(DynamicCache::new(
-        settings.cache_capacity,
-        SchemaMetadataSupplier::new(settings.services.schema_registry_url),
-    ));
+    let config = Arc::new(Config {
+        cache: DynamicCache::new(
+            settings.cache_capacity,
+            SchemaMetadataSupplier::new(settings.services.schema_registry_url),
+        ),
+        routing: settings.repositories,
+    });
 
-    let cache_filter = warp::any().map(move || schema_registry_cache.clone());
+    let config_filter = warp::any().map(move || config.clone());
 
-    let routing_table = Arc::new(settings.repositories);
+    let common_headers = warp::header::header::<Uuid>("SCHEMA_ID")
+        .and(warp::header::optional::<String>("REPOSITORY_ID"))
+        .map(|schema_id, repository_id| Headers {
+            schema_id,
+            repository_id,
+        });
 
-    let routing_filter = warp::any().map(move || routing_table.clone());
-
-    let schema_id_filter = warp::header::header::<Uuid>("SCHEMA_ID");
-    let repository_id_filter = warp::header::optional::<String>("REPOSITORY_ID");
     let body_filter = warp::body::content_length_limit(1024 * 32).and(warp::body::json());
 
     let single_route = warp::path!("single" / Uuid)
-        .and(schema_id_filter)
-        .and(repository_id_filter)
-        .and(cache_filter.clone())
-        .and(routing_filter.clone())
+        .and(common_headers)
+        .and(config_filter.clone())
         .and(body_filter)
         .and_then(handler::query_single);
 
     let multiple_route = warp::path!("multiple" / String)
-        .and(schema_id_filter)
-        .and(repository_id_filter)
-        .and(cache_filter.clone())
-        .and(routing_filter.clone())
+        .and(common_headers)
+        .and(config_filter.clone())
         .and_then(handler::query_multiple);
 
     let schema_route = warp::path!("schema")
-        .and(schema_id_filter)
-        .and(repository_id_filter)
-        .and(cache_filter.clone())
-        .and(routing_filter.clone())
+        .and(common_headers)
+        .and(config_filter.clone())
         .and_then(handler::query_by_schema);
 
-    let raw_route = warp::path!("raw")
-        .and(schema_id_filter)
-        .and(repository_id_filter)
-        .and(cache_filter.clone())
-        .and(body_filter)
-        .and(routing_filter.clone())
-        .and_then(handler::query_raw);
+    if settings.features.raw_endpoint {
+        let raw_route = warp::path!("raw")
+            .and(common_headers)
+            .and(config_filter)
+            .and(body_filter)
+            .and_then(handler::query_raw);
 
-    let routes = warp::post()
-        .and(single_route.or(raw_route))
-        .or(warp::get().and(multiple_route.or(schema_route)));
+        let post_routes = warp::post().and(single_route.or(raw_route));
 
-    tracing_utils::http::serve(routes, ([0, 0, 0, 0], settings.input_port)).await;
+        let get_routes = warp::get().and(multiple_route.or(schema_route));
+
+        let routes = post_routes.or(get_routes);
+
+        tracing_utils::http::serve(routes, ([0, 0, 0, 0], settings.input_port)).await;
+    } else {
+        let get_routes = warp::get().and(multiple_route.or(schema_route));
+
+        let routes = get_routes.or(single_route);
+
+        tracing_utils::http::serve(routes, ([0, 0, 0, 0], settings.input_port)).await;
+    }
 
     Ok(())
 }

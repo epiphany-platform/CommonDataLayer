@@ -5,6 +5,7 @@ use bb8_postgres::tokio_postgres::{types::ToSql, NoTls, RowStream, SimpleQueryMe
 use bb8_postgres::PostgresConnectionManager;
 use futures_util::TryStreamExt;
 use metrics_utils::{self as metrics, counter};
+use rpc::query_service::query_service_raw_server::QueryServiceRaw;
 use rpc::query_service::query_service_server::QueryService;
 use rpc::query_service::{Object, ObjectIds, ObjectStream, RawStatement, SchemaId, ValueBytes};
 use serde_json::Value;
@@ -13,6 +14,7 @@ use tonic::{Request, Response, Status};
 use utils::psql::validate_schema;
 use uuid::Uuid;
 
+#[derive(Debug, Clone)]
 pub struct PsqlQuery {
     pool: Pool<PostgresConnectionManager<NoTls>>,
     schema: String,
@@ -182,7 +184,10 @@ impl QueryService for PsqlQuery {
         let stream = Self::map_id_payload_rows(row_stream);
         Ok(tonic::Response::new(stream))
     }
+}
 
+#[tonic::async_trait]
+impl QueryServiceRaw for PsqlQuery {
     #[tracing::instrument(skip(self))]
     async fn query_raw(
         &self,

@@ -4,6 +4,9 @@ package query_service_ts;
 service QueryServiceTs {
   rpc QueryBySchema(SchemaId) returns (TimeSeries);
   rpc QueryByRange(Range) returns (TimeSeries);
+}
+
+service QueryServiceTsRaw {
   rpc QueryRaw (RawStatement) returns (ValueBytes);
 }
 

@@ -2,6 +2,7 @@ use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use metrics_utils::{self as metrics, counter};
 use reqwest::Client;
+use rpc::query_service_ts::query_service_ts_raw_server::QueryServiceTsRaw;
 use rpc::query_service_ts::{
     query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
 };
@@ -35,6 +36,7 @@ impl bb8::ManageConnection for DruidConnectionManager {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct DruidQuery {
     pool: Pool<DruidConnectionManager>,
     addr: String,
@@ -151,7 +153,10 @@ impl QueryServiceTs for DruidQuery {
             timeseries: self.query_db(&query).await?,
         }))
     }
+}
 
+#[tonic::async_trait]
+impl QueryServiceTsRaw for DruidQuery {
     #[tracing::instrument(skip(self))]
     async fn query_raw(
         &self,

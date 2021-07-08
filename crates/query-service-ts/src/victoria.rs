@@ -1,6 +1,7 @@
 use anyhow::Context;
 use bb8::{Pool, PooledConnection};
 use reqwest::{Client, Url};
+use rpc::query_service_ts::query_service_ts_raw_server::QueryServiceTsRaw;
 use rpc::query_service_ts::{
     query_service_ts_server::QueryServiceTs, Range, RawStatement, SchemaId, TimeSeries, ValueBytes,
 };
@@ -28,6 +29,7 @@ impl bb8::ManageConnection for VictoriaConnectionManager {
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct VictoriaQuery {
     pool: Pool<VictoriaConnectionManager>,
     addr: Url,
@@ -143,7 +145,10 @@ impl QueryServiceTs for VictoriaQuery {
             timeseries: response,
         }))
     }
+}
 
+#[tonic::async_trait]
+impl QueryServiceTsRaw for VictoriaQuery {
     #[tracing::instrument(skip(self))]
     async fn query_raw(
         &self,

@@ -4,6 +4,9 @@ package query_service;
 service QueryService {
   rpc QueryMultiple (ObjectIds) returns (stream Object);
   rpc QueryBySchema (SchemaId) returns (stream Object);
+}
+
+service QueryServiceRaw {
   rpc QueryRaw (RawStatement) returns (ValueBytes);
 }
 
