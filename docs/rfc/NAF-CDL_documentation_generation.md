@@ -26,8 +26,10 @@ these parts as well. Thus, reader should mind, that result of this document may 
 # Current state
 
 `QR` API is documented manually via [OpenApi][OpenApi] spec file. At the moment of writing this rfc it's outdated.  
-`Configuration` is documented manually via [toml][configuration-docs] files compliant with [rust config crate][config-rs].  
-`gRPC` configuration is hand-written and [tonic][tonic-rs] generates rust files with code needed for client and server implementation; proto files are located in [rpc crate][cdl-rpc-rs].  
+`Configuration` is documented manually via [toml][configuration-docs] files compliant with [rust config crate][config-rs].
+Later, it's possible that we'll replace these configs with configuration service.  
+`gRPC` configuration is hand-written and [tonic][tonic-rs] generates rust files with code needed for client and server implementation; 
+proto files are located in [rpc crate][cdl-rpc-rs].  
 `CDL Input Message` format is documented by hand in [docs][cdl-input-message]. At the moment of writing this rfc it's outdated.  
 `Notification Message` format is not documented to my knowing.  
 `graphQL` provides documentation via its endpoint and it's built into library we use. It may be wort considering to provide static graphQL spec in repository.
@@ -53,7 +55,8 @@ For graphQL api - we would need to provide a `xtask` which pulls spec from runni
 
 TOML configuration is a bit problematic. There are no known crates that can easily generate rust structs out from Toml config, and our structs
 are usually reused. What I mean is that generating code would introduce duplication. It's not necessarily bad, but that's confusing.
-We probably would need to produce an in-house solution for that problem.
+We probably would need to produce an in-house solution for that problem. 
+There's also issue that at some point toml configuration may be phased out in favour of Config Service, so let's not get attached.
 
 In general - it requires some significant work from team to switch fully to configs generating rust code and it can't be done easily in all of the places.
 
@@ -97,7 +100,14 @@ Some initial discussion happened on this topic, and it seems that team, in major
 
 # Conclusion
 
-TBD
+We've discussed this topic on 07.07.2021.
+Conclusion:
+* gRPC isn't our priority, and we are happy with current state; with `ap_pe_ce` being worked on, it's possible to revive this topic once it gets plugged into cdl.
+* graphql needs no work; specification in web service is sufficient for now.
+* configs, public json APIs and QR got their own tasks with preparing PoCs with homegrown solution:
+    * https://github.com/epiphany-platform/CommonDataLayer/issues/628
+    * https://github.com/epiphany-platform/CommonDataLayer/issues/629
+    * https://github.com/epiphany-platform/CommonDataLayer/issues/630
 
 [OpenApi]: https://swagger.io/specification/
 [configuration-docs]: ../configuration/index.md
