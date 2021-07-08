@@ -266,9 +266,10 @@ impl<'a> ViewPlanBuilder<'a> {
                     field_type: field_type.clone(),
                 }
             }
-            FieldDefinition::Array { base, fields } => {
-                let relation_id = NonZeroU8::new(*base)
-                    .context("Array field type needs a reference to relation in view definition")?;
+            FieldDefinition::SubObject { base, fields } => {
+                let relation_id = NonZeroU8::new(*base).context(
+                    "SubObject field type needs a reference to relation in view definition",
+                )?;
 
                 let object = *variant.objects.get(&relation_id).with_context(|| {
                     format!(
@@ -280,7 +281,7 @@ impl<'a> ViewPlanBuilder<'a> {
                 let mut variant = variant.clone();
                 variant.root_object = object;
 
-                FieldDefinitionSource::Array {
+                FieldDefinitionSource::SubObject {
                     fields: self.build_fields(&variant, fields)?,
                 }
             }
