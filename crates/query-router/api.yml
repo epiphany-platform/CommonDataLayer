@@ -22,6 +22,13 @@ paths:
           schema:
             type: string
             example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+        - name: REPOSITORY_ID
+          in: header
+          description: 'Static routing repository name'
+          required: false
+          schema:
+            type: string
+            example: document_backup_repository
       requestBody:
         required: true
         content:
@@ -62,6 +69,13 @@ paths:
           schema:
             type: string
             example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+        - name: REPOSITORY_ID
+          in: header
+          description: 'Static routing repository name'
+          required: false
+          schema:
+            type: string
+            example: document_backup_repository
       responses:
         '200':
           description: >-
@@ -85,6 +99,13 @@ paths:
           schema:
             type: string
             example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+        - name: REPOSITORY_ID
+          in: header
+          description: 'Static routing repository name'
+          required: false
+          schema:
+            type: string
+            example: document_backup_repository
       responses:
         '200':
           description: >-
@@ -105,6 +126,13 @@ paths:
           schema:
             type: string
             example: "15251181-f749-42e0-b4a4-e4b3d90e990d"
+        - name: REPOSITORY_ID
+          in: header
+          description: 'Static routing repository name'
+          required: false
+          schema:
+            type: string
+            example: document_backup_repository
       requestBody:
         required: true
         content:
