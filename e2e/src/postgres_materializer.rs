@@ -216,5 +216,22 @@ async fn pg_connect() -> anyhow::Result<PooledConnection<'static, PostgresConnec
 }
 
 mod data_types{
-    // TODO:
+    // types from #631
+    
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_work_with_bool() -> Result<()> {
+    }
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_work_with_string() -> Result<()> {
+    }
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_work_with_number() -> Result<()> {
+    }
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_work_with_any() -> Result<()> {
+    }
 }
