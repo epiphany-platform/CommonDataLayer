@@ -102,7 +102,7 @@ Some initial discussion happened on this topic, and it seems that team, in major
 
 We've discussed this topic on 07.07.2021.
 Conclusion:
-* gRPC isn't our priority, and we are happy with current state; with `ap_pe_ce` being worked on, it's possible to revive this topic once it gets plugged into cdl.
+* gRPC isn't our priority, and we are happy with current state; with `ar_pe_ce` being worked on, it's possible to revive this topic once it gets plugged into cdl.
 * graphql needs no work; specification in web service is sufficient for now.
 * configs, public json APIs and QR got their own tasks with preparing PoCs with homegrown solution:
     * https://github.com/epiphany-platform/CommonDataLayer/issues/628
