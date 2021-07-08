@@ -1,7 +1,6 @@
 #![cfg(all(test, feature = "e2e"))]
 mod api;
-mod object_builder;
-
+mod on_demand_materializer;
 mod postgres_materializer;
 
 const POSTGRES_QUERY_ADDR: &str = "http://cdl-postgres-query-service:6400";

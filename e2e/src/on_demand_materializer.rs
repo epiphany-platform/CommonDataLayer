@@ -170,6 +170,23 @@ mod relations {
 
         Ok(())
     }
+
+
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_join_objects_from_parent_side() -> Result<()> {
+    }
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_join_objects_from_child_side() -> Result<()> {
+    }
+    
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_join_objects_in_complex_example() -> Result<()> {
+        // TODO: Rename
+        // relation tree is not simple path - multiple children of one of the schemas(not view base schema)
+    }
 }
 
 mod computed_fields {
@@ -319,8 +336,42 @@ mod computed_fields {
 
         Ok(())
     }
+
+    
 }
 
 mod filtering {
-    // TODO:
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_apply_simple_filter_for_request_with_empty_relations() -> Result<()> {
+    }
+
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_allow_filtering_by_parent_schema_objects() -> Result<()> {
+    }
+
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_allow_filtering_by_child_schema_objects() -> Result<()> {
+    }
+    
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_properly_merge_multiple_filters_AND() -> Result<()> {
+    }
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_properly_merge_multiple_filters_OR() -> Result<()> {
+    }
+
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_properly_merge_multiple_filters_complex() -> Result<()> {
+    }
+
+    #[tokio::test]
+    #[ignore = "todo"]
+    async fn should_apply_filters_to_subrelations() -> Result<()> {
+    }
 }
