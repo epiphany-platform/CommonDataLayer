@@ -1,5 +1,6 @@
 #![cfg(all(test, feature = "e2e"))]
 mod api;
+mod edge_registry;
 mod on_demand_materializer;
 mod postgres_materializer;
 
