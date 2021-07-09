@@ -66,7 +66,7 @@ message Filter {
 
 message SimpleFilter {
     oneof simple_filter {
-        EqualsFilter equals = 1;
+        EqualsFilter EqualsSF = 1;
     }
 }
 

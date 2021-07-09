@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Polly" Version="7.2.2" />
+    <PackageReference Include="RestSharp" Version="106.11.7" />
+    <PackageReference Include="AutoFixture" Version="4.17.0" />
+    <PackageReference Include="MassTransit.AspNetCore" Version="7.2.0" />
+    <PackageReference Include="MassTransit.Kafka" Version="7.2.0" />    
+    <PackageReference Include="MassTransit.RabbitMQ" Version="7.2.0" />
+    <PackageReference Include="MassTransit.Extensions.DependencyInjection" Version="7.2.0" /> 
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" Version="5.0.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.7.1" />
+    <PackageReference Include="xunit" Version="2.4.1" />
+    <PackageReference Include="Xunit.DependencyInjection" Version="7.2.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector" Version="1.3.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Google.Protobuf" Version="3.17.0" />
+    <PackageReference Include="Grpc.Net.Client" Version="2.38.0" />
+    <PackageReference Include="Grpc.Net.ClientFactory" Version="2.38.0" />
+    <PackageReference Include="Grpc.Tools" Version="2.37.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Protobuf Include="common.proto" GrpcServices="Client" />    
+    <Protobuf Include="schema_registry.proto" GrpcServices="Client" />
+    <Protobuf Include="edge_registry.proto" GrpcServices="Client" />
+    <Protobuf Include="materializer_ondemand.proto" GrpcServices="Client" />
+  </ItemGroup>
+</Project>
