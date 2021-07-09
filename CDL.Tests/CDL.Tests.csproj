@@ -35,9 +35,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="proto/common.proto" GrpcServices="Client" />    
-    <Protobuf Include="proto/schema_registry.proto" GrpcServices="Client" />
-    <Protobuf Include="proto/edge_registry.proto" GrpcServices="Client" />
-    <Protobuf Include="proto/materializer_ondemand.proto" GrpcServices="Client" />
+    <Protobuf Include="common.proto" GrpcServices="Client" />    
+    <Protobuf Include="schema_registry.proto" GrpcServices="Client" />
+    <Protobuf Include="edge_registry.proto" GrpcServices="Client" />
+    <Protobuf Include="materializer_ondemand.proto" GrpcServices="Client" />
   </ItemGroup>
 </Project>
