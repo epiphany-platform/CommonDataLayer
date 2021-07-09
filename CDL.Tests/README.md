@@ -21,7 +21,8 @@ CDL and infrastructure have to be deployed somewhere. Please see our docs - [dep
 | CDL_KAFKA_EDGE_INPUT_TOPIC | cdl.edge.input |
 | CDL_SCHEMA_REGISTRY_DESTINATION | cdl.document.1.data |
 
-Before you start, you have to have latest proto files. Test solution requires proto files in 'proto' folder. To do that you can create symlink 
+Before you start, you have to have the latest proto files. Test solution requires proto files in the 'proto' folder. To do that you can create a symlink 
+
 'ln -s ../crates/rpc/proto .'
 
 
