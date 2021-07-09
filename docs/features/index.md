@@ -46,6 +46,7 @@
 | CDLF-0001C-00 | Object-side configuration                | Suggestion | -----       |                                       |
 | CDLF-0001D-00 | CIM Object Valdiation                    | Suggestion | -----       |                                       |
 | CDLF-0001E-00 | Materialization - Relationships          | Idea       | -----       |                                       |
+| CDLF-0001F-00 | Edge registry - Resolving relation trees | TechSpec   | -----       | [RFC](../rfc/CDLF-0001F-00-rfc-01.md) |
 
 ## References:
 [CDL RFC directory](https://github.com/epiphany-platform/CommonDataLayer/tree/develop/docs/rfc)
