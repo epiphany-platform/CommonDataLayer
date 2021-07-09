@@ -217,18 +217,104 @@ async fn pg_connect() -> anyhow::Result<PooledConnection<'static, PostgresConnec
 
 mod data_types {
 
-    // types from #631
+    use super::*;
 
     #[tokio::test]
     #[ignore = "todo"]
-    async fn should_work_with_bool() {}
-    #[tokio::test]
-    #[ignore = "todo"]
-    async fn should_work_with_string() {}
-    #[tokio::test]
-    #[ignore = "todo"]
-    async fn should_work_with_number() {}
-    #[tokio::test]
-    #[ignore = "todo"]
-    async fn should_work_with_any() {}
+    async fn should_store_data_in_stored_columns() -> Result<()> {
+        let table_name = "test_data_types";
+        let pg = pg_connect().await?;
+        pg.batch_execute(&format!("DROP TABLE IF EXISTS {} CASCADE;", table_name))
+            .await?;
+
+        let mut fields = HashMap::new();
+        // TODO: Add more fields if we decide to support more field types(e.g. Bool)
+        fields.insert(
+            "field_a".to_owned(),
+            FieldDefinition::Simple {
+                field_name: "FieldA".to_owned(),
+                field_type: FieldType::String,
+            },
+        );
+        fields.insert(
+            "field_b".to_owned(),
+            FieldDefinition::Simple {
+                field_name: "FieldB".to_owned(),
+                field_type: FieldType::Numeric,
+            },
+        );
+        fields.insert(
+            "field_c".to_owned(),
+            FieldDefinition::Simple {
+                field_name: "FieldC".to_owned(),
+                field_type: FieldType::Json,
+            },
+        );
+
+        let schema_a = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
+
+        let _view_id = add_view(
+            schema_a,
+            "test",
+            POSTGRES_MATERIALIZER_ADDR,
+            fields,
+            Some(PostgresMaterializerOptions {
+                table: table_name.to_owned(),
+            }),
+            &[],
+        )
+        .await?;
+        let object_id_a = Uuid::new_v4();
+        insert_message(
+            object_id_a,
+            schema_a,
+            r#"{"FieldA":"A", "FieldB":1, "FieldC":""}"#,
+        )
+        .await?;
+
+        sleep(Duration::from_secs(10)).await; // async view generation
+
+        let pg_results = pg
+            .query(
+                format!(
+                    "SELECT object_ids, field_a, field_b, field_c FROM {}",
+                    table_name
+                )
+                .as_str(),
+                &[],
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(pg_results.len(), 1);
+
+        let row = pg_results.first().unwrap();
+
+        // TODO: Validate pg types
+        assert_eq!(row.columns().get(1).unwrap().type_().name(), "VARCHAR");
+        assert_eq!(row.columns().get(2).unwrap().type_().name(), "INTEGER");
+        assert_eq!(row.columns().get(3).unwrap().type_().name(), "JSON");
+
+        #[derive(Debug)]
+        struct TestRow {
+            object_ids: Vec<Uuid>,
+            field_a: Value,
+            field_b: Value,
+            field_c: Value,
+        }
+
+        let row = TestRow {
+            object_ids: row.get(0),
+            field_a: row.get(1),
+            field_b: row.get(2),
+            field_c: row.get(3),
+        };
+        assert_eq!(row.field_a.as_str().unwrap(), "A");
+        assert_eq!(row.field_b.as_i64().unwrap(), 1);
+        assert_eq!(row.field_c.as_str().unwrap(), "");
+
+        Ok(())
+    }
+
+    // TODO: derived types from #631 if implemented
 }

@@ -337,23 +337,22 @@ mod computed_fields {
 
 mod filtering {
 
-
-    mod on_standard_field{
+    mod on_standard_field {
         #[tokio::test]
         #[ignore = "todo"]
         async fn should_apply_simple_filter_for_request_with_empty_relations() {}
-    
+
         #[tokio::test]
         #[ignore = "todo"]
         async fn should_properly_merge_multiple_filters_using_and_operator() {}
         #[tokio::test]
         #[ignore = "todo"]
         async fn should_properly_merge_multiple_filters_using_or_operator() {}
-    
+
         #[tokio::test]
         #[ignore = "todo"]
         async fn should_properly_merge_multiple_filters_complex() {}
-    
+
         #[tokio::test]
         #[ignore = "todo"]
         async fn should_apply_filters_to_subrelations() {}
@@ -370,10 +369,8 @@ mod filtering {
         #[ignore = "todo"]
         async fn should_allow_filtering_using_raw_value() {}
 
-
         #[tokio::test]
         #[ignore = "todo"]
         async fn should_allow_filtering_using_computed_field() {}
-
     }
 }
