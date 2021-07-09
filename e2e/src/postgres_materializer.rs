@@ -51,6 +51,7 @@ mod simple_views {
                 table: table_name.to_owned(),
             }),
             Default::default(),
+            None,
         )
         .await?;
         let object_id = Uuid::new_v4();
@@ -140,6 +141,7 @@ mod relations {
                 relations: vec![],
                 search_for: SearchFor::Children,
             }],
+            None,
         )
         .await?;
         let object_id_a = Uuid::new_v4();
@@ -262,6 +264,7 @@ mod data_types {
                 table: table_name.to_owned(),
             }),
             &[],
+            None,
         )
         .await?;
         let object_id_a = Uuid::new_v4();

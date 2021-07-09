@@ -302,6 +302,7 @@ impl Relation {
 #[serde(rename_all = "snake_case")]
 pub enum FieldDefinition {
     Simple {
+        // TODO: Consider adding optional base field - for fields from related schema without need of using subobject - currently workaround as computed field
         field_name: String,
         field_type: FieldType,
     },

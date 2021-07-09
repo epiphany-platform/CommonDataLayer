@@ -1,4 +1,3 @@
-
 mod filtering {
     // talk to edge registry directly as currently there is no `in` operator available in view definition filter
     #[tokio::test]
