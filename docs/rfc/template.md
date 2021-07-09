@@ -17,5 +17,3 @@ Version         : 1.0.0
 ### Scalability
 ### Testing
 
-[gRPC]: https://grpc.io/
-
