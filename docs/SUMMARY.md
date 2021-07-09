@@ -68,3 +68,4 @@
     - [00015 - CDL publishing deployment configurations](./rfc/CDLF-00015-00-rfc-01.md)
     - [00016 - Schema-Registry-less CDL deployment](./rfc/CDLF-00016-00-rfc-01.md)
     - [00017 - Query raw routes](rfc/CDLF-00017-00-rfc-01.md)
+    - [0001F - Transport headers passthrough](rfc/CDLF-0001F-00-rfc-01.md)
