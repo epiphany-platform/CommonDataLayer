@@ -40,12 +40,10 @@
 | CDLF-00016-00 | Schema-Registry-less CDL deployment      | Ready      | 1.0.0       | [RFC](../rfc/CDLF-00016-00-rfc-01.md) |
 | CDLF-00017-00 | Materialization - Computation            | TechSpec   | -----       |                                       |
 | CDLF-00018-00 | Materialization - Materialized Types     | TechSpec   | -----       |                                       |
-| CDLF-00019-00 | Materializer - OnDemand                  | Ready      | 1.0.0       | N/A                                   |
-| CDLF-0001A-00 | Materializer - General                   | Ready      | 1.0.0       | N/A                                   |
-| CDLF-0001B-00 | Materialization - Notifications          | Ready      | 1.0.0       | N/A                                   |
-| CDLF-0001C-00 | Object-side configuration                | Suggestion | -----       |                                       |
-| CDLF-0001D-00 | CIM Object Valdiation                    | Suggestion | -----       |                                       |
-| CDLF-0001E-00 | Materialization - Relationships          | Idea       | -----       |                                       |
+| CDLF-00019-00 | Materialization - Notifications          | Ready      | 1.0.0       | N/A                                   |
+| CDLF-0001A-00 | Object-side configuration                | Suggestion | -----       |                                       |
+| CDLF-0001B-00 | CIM Object Valdiation                    | Suggestion | -----       |                                       |
+| CDLF-0001C-00 | Materialization - Relationships          | Idea       | -----       |                                       |
 
 ## References:
 [CDL RFC directory](https://github.com/epiphany-platform/CommonDataLayer/tree/develop/docs/rfc)
