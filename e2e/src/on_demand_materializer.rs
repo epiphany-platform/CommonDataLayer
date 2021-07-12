@@ -181,6 +181,7 @@ mod relations {
     #[tokio::test]
     #[ignore = "todo"]
     async fn should_join_objects_from_parent_side() {}
+
     #[tokio::test]
     #[ignore = "todo"]
     async fn should_join_objects_from_child_side() {}
@@ -347,6 +348,8 @@ mod filtering {
     // TODO: Check if at least some of them can be enabled now
     use super::*;
     mod on_standard_field {
+
+        use cdl_dto::materialization::{ComputedFilter, ViewPathFilter};
 
         use super::*;
 
@@ -744,20 +747,299 @@ mod filtering {
 
         #[tokio::test]
         #[ignore = "todo"]
-        async fn should_allow_filtering_using_field_from_specified_schema_not_materialized_in_view()
-        {
+        async fn should_allow_filtering_using_field_not_materialized_in_view() -> Result<()> {
+            let schema_a =
+                add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
+
+            let object_id_a = Uuid::new_v4();
+            let object_id_b = Uuid::new_v4();
+            insert_message(object_id_a, schema_a, r#"{"FieldA":1, "FieldB":1}"#).await?;
+            insert_message(object_id_b, schema_a, r#"{"FieldA":2, "FieldB":2}"#).await?;
+
+            let mut fields = HashMap::new();
+            fields.insert(
+                "field_a".to_owned(),
+                FieldDefinition::Simple {
+                    field_name: "FieldA".to_owned(),
+                    field_type: FieldType::Numeric,
+                },
+            );
+            let view = add_view(
+                schema_a,
+                "test",
+                "",
+                fields,
+                None,
+                &[],
+                Some(Filter::SimpleFilter(SimpleFilter {
+                    filter: SimpleFilterKind::Equals(EqualsFilter {
+                        lhs: FilterValue::SchemaField(SchemaFieldFilter {
+                            field_path: "FieldB".to_owned(),
+                            schema_id: 0,
+                        }),
+                        rhs: FilterValue::RawValue(RawValueFilter {
+                            value: serde_json::to_value(&1)?.into(),
+                        }),
+                    }),
+                })),
+            )
+            .await?;
+
+            sleep(Duration::from_secs(1)).await; // async insert
+
+            let view_data = materialize_view(view, &[schema_a]).await?;
+            assert_eq!(view_data.rows.len(), 1);
+            let row = view_data.rows.first().unwrap();
+            let field_a = row.fields.get("field_a").unwrap().0.as_u64().unwrap();
+            assert_eq!(field_a, 1);
+
+            Ok(())
         }
 
         #[tokio::test]
         #[ignore = "todo"]
-        async fn should_allow_filtering_using_field_from_view() {}
+        async fn should_allow_filtering_using_field_from_schema_not_materialized_in_view(
+        ) -> Result<()> {
+            let schema_a =
+                add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
+            let schema_b =
+                add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
+            let relation_id = add_relation(schema_a, schema_b).await?;
+
+            let mut fields = HashMap::new();
+            fields.insert(
+                "field_a".to_owned(),
+                FieldDefinition::Simple {
+                    field_name: "FieldA".to_owned(),
+                    field_type: FieldType::Numeric,
+                },
+            );
+
+            let object_id_a = Uuid::new_v4();
+            let object_id_b = Uuid::new_v4();
+            let object_id_c = Uuid::new_v4();
+            let object_id_d = Uuid::new_v4();
+            insert_message(object_id_a, schema_a, r#"{"FieldA":1}"#).await?;
+            insert_message(object_id_b, schema_a, r#"{"FieldA":2}"#).await?;
+            insert_message(object_id_c, schema_b, r#"{"FieldB":1}"#).await?;
+            insert_message(object_id_d, schema_b, r#"{"FieldB":2}"#).await?;
+            add_edges(relation_id, object_id_a, &[object_id_c]).await?;
+            add_edges(relation_id, object_id_b, &[object_id_d]).await?;
+
+            let view = add_view(
+                schema_a,
+                "test",
+                "",
+                Default::default(),
+                None,
+                &[NewRelation {
+                    global_id: relation_id,
+                    local_id: NonZeroU8::new(1).unwrap(),
+                    relations: vec![],
+                    search_for: SearchFor::Children,
+                }],
+                Some(Filter::SimpleFilter(SimpleFilter {
+                    filter: SimpleFilterKind::Equals(EqualsFilter {
+                        lhs: FilterValue::SchemaField(SchemaFieldFilter {
+                            field_path: "FieldB".to_owned(),
+                            schema_id: 1,
+                        }),
+                        rhs: FilterValue::RawValue(RawValueFilter {
+                            value: serde_json::to_value(&1)?.into(),
+                        }),
+                    }),
+                })),
+            )
+            .await?;
+
+            sleep(Duration::from_secs(1)).await; // async insert
+
+            let view_data = materialize_view(view, &[schema_a, schema_b]).await?;
+            assert_eq!(view_data.rows.len(), 1);
+
+            let row = view_data.rows.first().unwrap();
+            let field_a = row.fields.get("field_a").unwrap().0.as_u64().unwrap();
+            assert_eq!(field_a, 1);
+
+            Ok(())
+        }
 
         #[tokio::test]
         #[ignore = "todo"]
-        async fn should_allow_filtering_using_raw_value() {}
+        async fn should_allow_filtering_using_fields_from_view() -> Result<()> {
+            let schema_a =
+                add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
+
+            let object_id_a = Uuid::new_v4();
+            let object_id_b = Uuid::new_v4();
+            insert_message(object_id_a, schema_a, r#"{"FieldA":1, "FieldB":1}"#).await?;
+            insert_message(object_id_b, schema_a, r#"{"FieldA":1, "FieldB":2}"#).await?;
+
+            let mut fields = HashMap::new();
+            fields.insert(
+                "field_a".to_owned(),
+                FieldDefinition::Simple {
+                    field_name: "FieldA".to_owned(),
+                    field_type: FieldType::Numeric,
+                },
+            );
+            fields.insert(
+                "field_b".to_owned(),
+                FieldDefinition::Simple {
+                    field_name: "FieldB".to_owned(),
+                    field_type: FieldType::Numeric,
+                },
+            );
+            let view = add_view(
+                schema_a,
+                "test",
+                "",
+                fields,
+                None,
+                &[],
+                Some(Filter::SimpleFilter(SimpleFilter {
+                    filter: SimpleFilterKind::Equals(EqualsFilter {
+                        lhs: FilterValue::ViewPath(ViewPathFilter {
+                            field_path: "field_a".to_owned(),
+                        }),
+                        rhs: FilterValue::ViewPath(ViewPathFilter {
+                            field_path: "field_b".to_owned(),
+                        }),
+                    }),
+                })),
+            )
+            .await?;
+
+            sleep(Duration::from_secs(1)).await; // async insert
+
+            let view_data = materialize_view(view, &[schema_a]).await?;
+            assert_eq!(view_data.rows.len(), 1);
+            let row = view_data.rows.first().unwrap();
+            let field_a = row.fields.get("field_a").unwrap().0.as_u64().unwrap();
+            let field_b = row.fields.get("field_b").unwrap().0.as_u64().unwrap();
+            assert_eq!(field_a, 1);
+            assert_eq!(field_b, 1);
+
+            Ok(())
+        }
 
         #[tokio::test]
         #[ignore = "todo"]
-        async fn should_allow_filtering_using_computed_field() {}
+        async fn should_allow_filtering_using_raw_value() -> Result<()> {
+            let schema_a =
+                add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
+
+            let object_id_a = Uuid::new_v4();
+            insert_message(object_id_a, schema_a, r#"{"FieldA":1, "FieldB":1}"#).await?;
+
+            let mut fields = HashMap::new();
+            fields.insert(
+                "field_a".to_owned(),
+                FieldDefinition::Simple {
+                    field_name: "FieldA".to_owned(),
+                    field_type: FieldType::Numeric,
+                },
+            );
+            let view_a = add_view(
+                schema_a,
+                "test",
+                "",
+                fields.clone(),
+                None,
+                &[],
+                Some(Filter::SimpleFilter(SimpleFilter {
+                    filter: SimpleFilterKind::Equals(EqualsFilter {
+                        lhs: FilterValue::RawValue(RawValueFilter {
+                            value: serde_json::to_value(0)?.into(),
+                        }),
+                        rhs: FilterValue::RawValue(RawValueFilter {
+                            value: serde_json::to_value(1)?.into(),
+                        }),
+                    }),
+                })),
+            )
+            .await?;
+            let view_b = add_view(
+                schema_a,
+                "test",
+                "",
+                fields,
+                None,
+                &[],
+                Some(Filter::SimpleFilter(SimpleFilter {
+                    filter: SimpleFilterKind::Equals(EqualsFilter {
+                        lhs: FilterValue::RawValue(RawValueFilter {
+                            value: serde_json::to_value(1)?.into(),
+                        }),
+                        rhs: FilterValue::RawValue(RawValueFilter {
+                            value: serde_json::to_value(1)?.into(),
+                        }),
+                    }),
+                })),
+            )
+            .await?;
+
+            sleep(Duration::from_secs(1)).await; // async insert
+
+            let view_data_a = materialize_view(view_a, &[schema_a]).await?;
+            let view_data_b = materialize_view(view_b, &[schema_a]).await?;
+            assert_eq!(view_data_a.rows.len(), 0);
+            assert_eq!(view_data_b.rows.len(), 1);
+
+            Ok(())
+        }
+
+        #[tokio::test]
+        #[ignore = "todo"]
+        async fn should_allow_filtering_using_computed_field() -> Result<()> {
+            let schema_a =
+                add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
+
+            let object_id_a = Uuid::new_v4();
+            let object_id_b = Uuid::new_v4();
+            insert_message(object_id_a, schema_a, r#"{"FieldA":1}"#).await?;
+            insert_message(object_id_b, schema_a, r#"{"FieldA":2}"#).await?;
+
+            let mut fields = HashMap::new();
+            fields.insert(
+                "field_a".to_owned(),
+                FieldDefinition::Simple {
+                    field_name: "FieldA".to_owned(),
+                    field_type: FieldType::Numeric,
+                },
+            );
+            let view = add_view(
+                schema_a,
+                "test",
+                "",
+                fields,
+                None,
+                &[],
+                Some(Filter::SimpleFilter(SimpleFilter {
+                    filter: SimpleFilterKind::Equals(EqualsFilter {
+                        lhs: FilterValue::Computed(ComputedFilter {
+                            computation: Computation::FieldValue(FieldValueComputation {
+                                field_path: "FieldA".to_owned(),
+                                schema_id: 0,
+                            }),
+                        }),
+                        rhs: FilterValue::RawValue(RawValueFilter {
+                            value: serde_json::to_value(1)?.into(),
+                        }),
+                    }),
+                })),
+            )
+            .await?;
+
+            sleep(Duration::from_secs(1)).await; // async insert
+
+            let view_data = materialize_view(view, &[schema_a]).await?;
+            assert_eq!(view_data.rows.len(), 1);
+            let row = view_data.rows.first().unwrap();
+            let field_a = row.fields.get("field_a").unwrap().0.as_u64().unwrap();
+            assert_eq!(field_a, 1);
+
+            Ok(())
+        }
     }
 }
