@@ -107,7 +107,6 @@ mod relations {
     }
 
     #[tokio::test]
-    #[ignore = "todo"]
     async fn should_return_no_results_when_edge_was_not_added() -> Result<()> {
         let schema_a = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
         let schema_b = add_schema("test", POSTGRES_QUERY_ADDR, POSTGRES_INSERT_DESTINATION).await?;
@@ -345,7 +344,7 @@ mod computed_fields {
 }
 
 mod filtering {
-    // TODO: Check if at least some of them can be enabled now
+
     use super::*;
     mod on_standard_field {
 
